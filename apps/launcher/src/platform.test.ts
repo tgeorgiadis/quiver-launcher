@@ -19,6 +19,11 @@ test("Win64 and similar names say which architecture a release file is for", () 
   expect(arch("Game (32-bit).zip")).toBe("x86");
 });
 
+test("a Windows script is for Windows", () => {
+  expect(inferPlatform("GT5-Installer.bat")).toEqual({ os: "windows", architecture: "unknown" });
+  expect(inferPlatform("Start.CMD").os).toBe("windows");
+});
+
 test("names that only look like an architecture don't count", () => {
   // "darwin64" is a Mac build, not Windows.
   expect(inferPlatform("game-darwin64.tar.gz").os).toBe("macos");

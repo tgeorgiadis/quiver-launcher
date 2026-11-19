@@ -20,6 +20,8 @@ import { foldersOn, providerName, shortcutRequest, shortcutsOn, steamRunsUsNote,
 import { bare, versionLabel } from "./versions";
 import { isLocal } from "./custom";
 import { toggleHidden } from "./browse-hidden";
+import { tagLabel } from "@quiverlauncher/ui";
+import { hiddenOnApp, hideOnApp, hideableTags } from "./catalog-tags";
 import { native } from "./native";
 import { track } from "./telemetry";
 import { boxZoom, windowBox, zoom } from "./zoom";
@@ -301,7 +303,7 @@ function MainItem({ main, onClick, onPointerMove }: { main: Item; onClick: () =>
 
 /** The menu's items, made anew each time it opens. */
 function MenuItems({ entry, onOpen, close, escape }: { entry: Entry; onOpen: () => void; close: () => void; escape: { current: (() => boolean) | null } }) {
-  const { config, installs, jobs, catalog, collections, library, settings, setSettings, get, play, reinstall, cancel, dismiss, confirmUninstall, askRename, askName, askManage, askAddFiles, changeVersion, locateInstall, remove, saveCollection, setNotice, setLaunch, setTags, askPlace, appMoves } = useLauncher();
+  const { config, installs, jobs, catalog, collections, library, settings, setSettings, get, play, reinstall, cancel, dismiss, confirmUninstall, askRename, askName, askManage, askAddFiles, changeVersion, locateInstall, remove, saveCollection, setNotice, setLaunch, setTags, askPlace, appMoves, consoleNames } = useLauncher();
   const [sub, setSub] = useState<Sub | null>(null);
   // Where the open submenu sits: beside the menu, or under its item where neither side has room (a phone).
   const [place, setPlace] = useState<{ key: Sub["key"]; side: "right" | "left" | "below"; top: number }>();
@@ -345,7 +347,7 @@ function MenuItems({ entry, onOpen, close, escape }: { entry: Entry; onOpen: () 
 
   const install = installs[entry.id];
   // Play with: for an app in its own folder, not one the player added from where it is, or one its Windows installer put elsewhere.
-  const programsOn = Boolean(install && !install.program && install.installer !== "msi" && foldersOn(config.os));
+  const programsOn = Boolean(install && !install.program && !install.installer && foldersOn(config.os));
   useEffect(() => {
     if (sub?.key !== "programs" || found || !install) return;
     native.listPrograms(install.folder, install.dir).then(setFound, () => setFound([]));
@@ -382,7 +384,7 @@ function MenuItems({ entry, onOpen, close, escape }: { entry: Entry; onOpen: () 
       // Steam running Quiver can't take a shortcut on Windows (lib.rs): greyed, saying why, rather than failing once it's pressed. On Linux it can.
       config.steamRunsUs && config.os !== "linux" ? { text: t`Add to Steam`, act: () => {}, disabled: true, note: steamRunsUsNote() } : { text: t`Add to Steam`, act: () => void shortcut(native.addToSteam) },
     );
-  if (install?.installer === "msi" && !busy) manage.push({ text: t`Run installer again`, act: () => void reinstall(entry.id) });
+  if (install?.installer && !busy) manage.push({ text: t`Run installer again`, act: () => void reinstall(entry.id) });
   // Every release, verified or not, as the app's page has them: the player's own files have none.
   if (!isLocal(entry.id) && !install?.local && !busy) manage.push({ text: install ? t`Change version…` : t`Choose a version…`, act: () => changeVersion(entry) });
   // Already on this computer, somewhere Quiver doesn't know: played from there, with nothing to download.
@@ -392,7 +394,7 @@ function MenuItems({ entry, onOpen, close, escape }: { entry: Entry; onOpen: () 
   const newest = latest.verified?.version ?? latest.lastReleaseVersion;
   const both = config.os === "linux" && latest.supportedOS.includes("linux") && latest.supportedOS.includes("windows");
   const onNewest = !install || Boolean(newest && bare(install.version) === bare(newest));
-  if (both && onNewest && canGet(latest, config.os) && !pulledVerified(latest) && !isLocal(entry.id) && !install?.local && install?.installer !== "msi" && !busy)
+  if (both && onNewest && canGet(latest, config.os) && !pulledVerified(latest) && !isLocal(entry.id) && !install?.local && !install?.installer && !busy)
     manage.push({
       text: install?.wine ? t`Switch to the Linux version` : install ? t`Switch to the Windows version (Wine)` : t`Install the Windows version (Wine)`,
       act: () => void get(latest, undefined, { platform: install?.wine ? "linux" : "windows" }),
@@ -434,6 +436,9 @@ function MenuItems({ entry, onOpen, close, escape }: { entry: Entry; onOpen: () 
   const hasTag = (tag: string) => tags.some((x) => x.toLowerCase() === tag.toLowerCase());
   const allTags = [...tags, ...library.flatMap((i) => i.overrides?.tags ?? [])].filter((tag, i, all) => all.findIndex((x) => x.toLowerCase() === tag.toLowerCase()) === i);
   const toggleTag = (tag: string) => setTags(entry.id, hasTag(tag) ? tags.filter((x) => x.toLowerCase() !== tag.toLowerCase()) : withTag(tags, tag));
+  // The catalog's tags on it, to untick: all but a console's, and those hidden on every app (Settings shows them).
+  const theirTags = hideableTags(catalog[entry.id], settings.hiddenTags, consoleNames);
+  const toggleTheirs = (tag: string) => setSettings((s) => ({ ...s, hiddenTags: hideOnApp(s.hiddenTags, entry.id, tag, !hiddenOnApp(s.hiddenTags, entry.id, tag)) }));
   const addTag = () => {
     const next = withTag(tags, newTag);
     if (next !== tags) setTags(entry.id, next);
@@ -610,7 +615,20 @@ function MenuItems({ entry, onOpen, close, escape }: { entry: Entry; onOpen: () 
               onChange={(e) => setNewTag(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addTag())}
             />
-            {allTags.length > 0 && (
+            {theirTags.length > 0 && (
+              <>
+                <div className="game-menu-heading">
+                  <Trans comment="Heading in an app's Tags menu, over the tags the catalog gave it">From the catalog</Trans>
+                </div>
+                {theirTags.map((tag) => (
+                  <button key={tag} type="button" role="menuitemcheckbox" data-item aria-checked={!hiddenOnApp(settings.hiddenTags, entry.id, tag)} onClick={() => toggleTheirs(tag)}>
+                    <span className="game-menu-check">{!hiddenOnApp(settings.hiddenTags, entry.id, tag) && <Check size={14} />}</span>
+                    {tagLabel(tag)}
+                  </button>
+                ))}
+              </>
+            )}
+            {(allTags.length > 0 || theirTags.length > 0) && (
               <>
                 <hr />
                 {item({ text: t({ message: "Manage tags…", comment: "Menu item: rename or delete the player's tags, in Settings" }), act: manageTags }, true)}

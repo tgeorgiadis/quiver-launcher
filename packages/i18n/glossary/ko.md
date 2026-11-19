@@ -34,6 +34,7 @@ Polite, friendly 해요체 in sentences; short noun forms on buttons and labels
 | usage data | 사용 데이터 | |
 | sign in / sign out / account | 로그인 / 로그아웃 / 계정 | |
 | feedback / player | 피드백 / 플레이어 | |
+| PC specs | PC 사양 | the computer a player tried an app on: system, processor, graphics card, memory |
 | mod | 모드 | |
 | launch options / launch flags | 실행 옵션 / 실행 인수 | |
 | backup (of the library) | 백업 | |

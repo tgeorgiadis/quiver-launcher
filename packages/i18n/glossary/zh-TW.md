@@ -35,6 +35,7 @@
 | usage data | 使用情況資料 | |
 | sign in / sign out / account | 登入 / 登出 / 帳戶 | |
 | feedback / player | 意見回饋 / 玩家 | 直接對玩家說話時優先使用「你」 |
+| PC specs | 電腦配置 | the computer a player tried an app on: system, processor, graphics card, memory |
 | mod | 模組 | |
 | launch options / launch flags | 啟動選項 / 啟動參數 | 選項是設定；參數是傳給程式的命令列內容 |
 | backup (of the library) | 備份 | |

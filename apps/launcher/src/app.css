@@ -157,6 +157,9 @@ button.danger { color: var(--danger); }
 .muted { color: var(--muted); font-size: 13px; }
 .description { color: var(--text-2); white-space: pre-line; }
 .choices { display: flex; flex-direction: column; gap: 8px; }
+/* The folders a save backup would be put in (App.tsx's SavePlaces): shown whole, however long the path. */
+.save-places { margin: 0 0 12px; padding: 8px 12px; list-style: none; border: 1px solid var(--line-strong); border-radius: 8px; font-family: ui-monospace, monospace; font-size: 13px; overflow-wrap: anywhere; user-select: text; }
+.save-places li + li { margin-top: 4px; }
 .choices button { justify-content: flex-start; }
 .choices button span { display: grid; gap: 2px; text-align: left; }
 .choices button small { color: var(--muted); font-size: 12px; font-weight: 400; overflow-wrap: anywhere; }
@@ -335,6 +338,7 @@ p.job-error { color: var(--danger); font-size: 13px; }
 .installed { color: var(--green); }
 .shortcuts { display: grid; gap: 6px; }
 .controls { display: grid; gap: 10px; border-top: 1px solid var(--line); padding-top: 14px; }
+.controls .close-combo { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin-left: 21px; color: var(--muted); font-size: 13px; } .controls .close-combo select { min-width: 0; max-width: 100%; }
 .pads { margin: 0; padding-left: 20px; font-size: 13px; }
 .bindings { border-collapse: collapse; font-size: 13px; }
 .bindings td, .bindings th { padding: 4px 6px; text-align: left; }
@@ -512,6 +516,38 @@ main.app-main { padding: 0 0 40px; }
 .panel-action > svg { flex: none; color: var(--text-3); }
 .panel-action.danger > svg { color: inherit; }
 .panel-action .action-note { color: var(--muted); font-weight: 400; }
+/* The Saves tab: a place or a backup to a row, its buttons at the end. */
+.save-row { display: flex; align-items: center; gap: 8px; min-height: 38px; padding: 8px 12px; border-radius: 8px; background: var(--field); font-size: 13px; }
+.save-main { display: flex; flex: 1; flex-direction: column; gap: 2px; min-width: 0; }
+.save-path { overflow-wrap: anywhere; }
+.save-note { color: var(--muted); font-size: 12px; }
+.save-button { display: inline-flex; flex: none; align-items: center; gap: 6px; min-height: 28px; padding: 4px 10px; border-radius: 8px; background: var(--field-hover); font-size: 12px; font-weight: 500; white-space: nowrap; }
+.save-button:hover:not(:disabled) { background: var(--line); }
+.save-source, .save-said { margin: 0; }
+.save-said { font-size: 13px; }
+.save-said.error { color: var(--red-text); }
+/* Settings, Cloud saves (cloud-saves-page.tsx): the room used as a bar, then an app to a row that opens to its copies. */
+.storage-bar { height: 8px; max-width: 760px; border-radius: 8px; background: var(--field); overflow: hidden; }
+.storage-bar > span { display: block; height: 100%; border-radius: 8px; background: var(--accent); }
+.storage-bar.full > span { background: var(--red-text); }
+.cloud-apps { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; max-width: 760px; }
+.cloud-app { border: 1px solid var(--line); border-radius: 10px; background: var(--panel); }
+.cloud-app:has(> .cloud-app-row:hover) { border-color: var(--line-strong); }
+.settings-pane button.cloud-app-row { display: flex; align-items: center; justify-content: flex-start; gap: 10px; width: 100%; padding: 10px 14px; border-radius: 10px; background: none; font-size: 13px; font-weight: 500; text-align: left; }
+.settings-pane button.cloud-app-row:hover { background: none; color: var(--strong); }
+.cloud-app-icon { flex: none; width: 36px; height: 36px; overflow: hidden; border-radius: 8px; background: var(--field); }
+.cloud-app-icon .artwork { width: 100%; height: 100%; }
+.cloud-app-row > svg { flex: none; color: var(--text-3); }
+.cloud-app-copies { display: flex; flex-direction: column; gap: 8px; padding: 0 14px 14px; }
+.cloud-app-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.settings-pane button.save-button { padding: 4px 10px; border-radius: 8px; background: var(--field-hover); font-size: 12px; font-weight: 500; }
+.settings-pane button.save-button:hover:not(:disabled) { background: var(--line); }
+.settings-pane button.save-button.danger { color: var(--red-text); }
+/* Settings, Sync folder (sync-folder-page.tsx): the folder to a row, then an app to a row. */
+.sync-folder > :is(p, .save-row, .cloud-app-actions) { max-width: 760px; }
+.sync-folder-row { flex-wrap: wrap; }
+.sync-folder-row .save-main { flex-basis: 240px; }
+.sync-app-row { display: flex; align-items: center; gap: 10px; padding: 10px 14px; font-size: 13px; font-weight: 500; }
 .panel-action.opens::after {
   content: ""; flex: none; width: 6px; height: 6px; margin: 0 3px 0 auto;
   border-right: 1.5px solid var(--text-4); border-bottom: 1.5px solid var(--text-4); transform: rotate(-45deg);
@@ -916,6 +952,12 @@ button.download { width: 100%; text-align: left; }
 .review-reply p { white-space: pre-wrap; margin: 6px 0 0; font-size: 13px; color: var(--text-3); overflow-wrap: anywhere; }
 .fixed-note { display: flex; align-items: center; gap: 6px; margin: 12px 0 0; font-size: 12px; color: var(--green); }
 .fixed-note.disputed { color: var(--caution); }
+.review-specs { display: flex; align-items: flex-start; gap: 8px; margin: 12px 0 0; font-size: 12px; color: var(--muted); }
+.review-specs > svg { flex: none; margin-top: 2px; }
+.review-specs .chip { margin-left: 8px; }
+.review-specs-choice { display: grid; gap: 4px; margin: 4px 0 16px; }
+.review-specs-choice .review-specs { margin: 0; }
+.review-specs-choice small { font-size: 12px; color: var(--muted); }
 .fixed-reviews > summary { cursor: pointer; margin: 4px 0 14px; color: var(--text-4); font-size: 13px; }
 .developer-badges { display: inline-flex; flex-wrap: wrap; gap: 6px; margin-left: 6px; vertical-align: 1px; }
 .trusted-badge, .verified-developer-badge { display: inline-flex; align-items: center; gap: 4px; padding: 1px 7px; border-radius: 999px; font-size: 10px; font-weight: 600; white-space: nowrap; }
@@ -1859,6 +1901,8 @@ body:has(.overlay) .shell > main { overflow: hidden; scrollbar-gutter: stable; }
 .tag-list .tag-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tag-list .tag-name .muted { font-size: 12px; margin-left: 6px; }
 .tag-list .tag-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.tag-list .tag-actions { align-items: center; }
+.tag-all { display: flex; gap: 8px; margin: 10px 0 6px; }
 .tag-rename { display: flex; gap: 6px; flex: 1; }
 .tag-rename input { flex: 1; min-width: 0; }
 

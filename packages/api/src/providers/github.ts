@@ -48,6 +48,13 @@ const fromGithub = (r: RawRelease): Release => ({
 });
 
 /**
+ * A release file of a GitHub repository, through GitHub's API (`fromGithub`'s asset id): with a token and
+ * `Accept: application/octet-stream`, the way a private repository's files download, where its browser link 404s.
+ * None for an id that isn't GitHub's.
+ */
+export const githubAsset = (base: string, repository: string, id: string) => (/^\d+$/.test(id) ? `${base}/repos/${repository}/releases/assets/${id}` : undefined);
+
+/**
  * Releases straight from GitHub, for custom apps the catalog doesn't list.
  * Nobody has checked these; GitHub's own SHA-256 digest still guards the
  * download when it has one. With the player's token, GitHub counts requests

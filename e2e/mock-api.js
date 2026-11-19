@@ -139,9 +139,16 @@ export async function startMockApi({ pageSize = Infinity } = {}) {
   ];
   let base = "";
   let lastQuery = new URLSearchParams();
+  /** The catalog's consoles, as its facets list them, and each one's maker. */
+  const CONSOLES = [
+    { id: "n64", name: "Nintendo 64", brand: "Nintendo" },
+    { id: "snes", name: "Super Nintendo Entertainment System", brand: "Nintendo" },
+  ];
+  const brands = Object.fromEntries(CONSOLES.map((c) => [c.id, c.brand]));
   const catalogQueries = [];
   const downloads = [];
   const downloadProblems = [];
+  const saveReports = [];
   // While set, downloads stop halfway until it resolves; `stalls` are the ones waiting.
   let stalled = null;
   let unstall = () => {};
@@ -229,7 +236,10 @@ export async function startMockApi({ pageSize = Infinity } = {}) {
       // As URL parameters, so tests read the last listing's filters the same way as before.
       lastQuery = new URLSearchParams(Object.entries(a).filter(([k, v]) => k !== "paginationOpts" && v !== undefined).map(([k, v]) => [k, String(v)]));
       const search = (a.search ?? "").toLowerCase();
-      const items = entries.filter((e) => e.name.toLowerCase().includes(search) && (!a.console || e.consoles.includes(a.console)) && (!a.consoles || a.consoles.some((c) => e.consoles.includes(c))) && (!a.platforms || a.platforms.some((o) => e.supportedOS?.includes(o))) && (!a.setup || e.launcher?.setupFiles?.length));
+      // A maker's consoles, as the facets list them: "maker" for one, "makers" beside "consoles" for several.
+      const made = (e) => [a.maker, ...(a.makers ?? [])].filter(Boolean).some((m) => e.consoles.some((c) => brands[c] === m));
+      const anySystem = a.consoles || a.makers;
+      const items = entries.filter((e) => e.name.toLowerCase().includes(search) && (!a.console || e.consoles.includes(a.console)) && (!a.maker || made(e)) && (!anySystem || (a.consoles ?? []).some((c) => e.consoles.includes(c)) || made(e)) && (!a.platforms || a.platforms.some((o) => e.supportedOS?.includes(o))) && (!a.setup || e.launcher?.setupFiles?.length));
       return page(items.map(withVersion), a.paginationOpts);
     },
     "catalog:detail": ({ slug }) => {
@@ -311,13 +321,7 @@ export async function startMockApi({ pageSize = Infinity } = {}) {
         );
       return page(all.sort((a, b) => b.releasedAt - a.releasedAt), paginationOpts);
     },
-    "catalog:facets": () => ({
-      total: entries.length,
-      consoles: [
-        { id: "n64", name: "Nintendo 64", brand: "Nintendo" },
-        { id: "snes", name: "Super Nintendo Entertainment System", brand: "Nintendo" },
-      ],
-    }),
+    "catalog:facets": () => ({ total: entries.length, consoles: CONSOLES }),
     "catalog:matchingGames": ({ search }) => {
       const text = search.trim();
       if (text.length < 2) return [];
@@ -643,6 +647,25 @@ export async function startMockApi({ pageSize = Infinity } = {}) {
       res.writeHead(200, { "Content-Type": "image/png" });
       return res.end(PIXEL);
     }
+    // Where the launcher saw an app save, as it tells the site: noted for an app it lists.
+    const saved = url.pathname.match(/^\/api\/v1\/apps\/([^/]+)\/save-locations$/);
+    if (saved) {
+      const headers = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "content-type", "Access-Control-Allow-Methods": "POST, OPTIONS" };
+      if (req.method === "OPTIONS") {
+        res.writeHead(204, headers);
+        return res.end();
+      }
+      const body = await new Promise((resolve) => {
+        let text = "";
+        req.on("data", (c) => (text += c));
+        req.on("end", () => resolve(JSON.parse(text || "{}")));
+      });
+      const slug = decodeURIComponent(saved[1]);
+      const listed = entries.some((e) => e.slug === slug);
+      if (listed) saveReports.push({ slug, ...body });
+      res.writeHead(listed ? 202 : 404, { ...headers, "Content-Type": "application/json" });
+      return res.end(JSON.stringify(listed ? { status: "noted" } : { error: { code: "NOT_FOUND", message: "No such app" } }));
+    }
     // A download that failed, as the launcher tells the site: noted for a file of an app it lists, as the site does.
     const problem = url.pathname.match(/^\/api\/v1\/apps\/([^/]+)\/download-problem$/);
     if (problem) {
@@ -759,6 +782,12 @@ export async function startMockApi({ pageSize = Infinity } = {}) {
     telemetry: () => telemetry,
     telemetryBodies: () => telemetryBodies,
     /** Calls to users.setAnalytics: { user, enabled }. */
+    /**
+     * Cloud saves, as the site keeps them: `rows` (each copy's { id, user, entryId, status, size, hash, os, device, … }),
+     * `objects` (the bytes by row id), and what a test can set: `limit`, `keep`, `on`, and `off` (entry ids staff
+     * switched it off for).
+     */
+    cloudSaves: account.cloud,
     analyticsCalls: account.analyticsCalls,
     /** Turns usage data off (or on) for an account, as the website's privacy page does. */
     setAnalytics: account.setAnalytics,
@@ -781,6 +810,8 @@ export async function startMockApi({ pageSize = Infinity } = {}) {
     downloads: () => downloads,
     /** Failed downloads the launcher told the site of, oldest first: { slug, version, file, problem }. */
     downloadProblems: () => downloadProblems,
+    /** Where the launcher told the site an app saves, oldest first: { slug, os, places }. */
+    saveReports: () => saveReports,
     /** Downloads stop halfway while on, and finish when it's turned off. */
     stall(on) {
       if (on && !stalled) stalled = new Promise((resolve) => (unstall = resolve));
@@ -790,6 +821,8 @@ export async function startMockApi({ pageSize = Infinity } = {}) {
     stalled: () => stalls.size,
     /** The verified releases an app lists in place of its one, newest first. */
     setReleases: (slug, list) => (listedReleases[slug] = list),
+    /** Changes a catalog app as the site has it (its tags, say). */
+    setEntry: (slug, changes) => Object.assign(entries.find((e) => e.slug === slug), changes),
     /** Publishes a new verified release of every app. */
     release: (next) => (version = next),
     /** Quiver Launcher's releases, for updates, and the key they're signed with. */
@@ -854,8 +887,32 @@ function mockAccount(entries) {
     res.writeHead(status, { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "*" });
     res.end(JSON.stringify(body));
   };
+  // Cloud saves, as the site's cloudSaves functions and its private bucket: rows { id, user, entryId, status, size,
+  // hash, os, device, files, version, reason, madeAt, createdAt } and each stored object's bytes by row id.
+  const cloud = { rows: [], objects: new Map(), limit: 250 * 1024 * 1024, maxCopy: 100 * 1024 * 1024, keep: 5, on: true, why: undefined, off: new Set(), next: 1 };
+  const cloudUsed = (name) => cloud.rows.filter((r) => r.user === name).reduce((n, r) => n + r.size, 0);
+  const cloudDrop = (rows) => {
+    for (const row of rows) cloud.objects.delete(row.id);
+    cloud.rows = cloud.rows.filter((r) => !rows.includes(r));
+  };
+  /** The bucket: a signed link takes one PUT of exactly the size it was signed for, or gives the object back. */
+  function bucket(req, res, id) {
+    const row = cloud.rows.find((r) => r.id === id);
+    if (!row || new URL(req.url, "http://x").searchParams.get("signed") !== row.key) return res.writeHead(403).end();
+    if (req.method === "GET") {
+      const object = cloud.objects.get(id);
+      if (!object) return res.writeHead(404).end();
+      res.writeHead(200, { "Content-Type": "application/zip", "Content-Length": object.length });
+      return res.end(object);
+    }
+    if (req.method !== "PUT" || Number(req.headers["content-length"]) !== row.size) return res.writeHead(403).end();
+    const chunks = [];
+    req.on("data", (c) => chunks.push(c));
+    req.on("end", () => (cloud.objects.set(id, Buffer.concat(chunks)), res.writeHead(200).end()));
+  }
   async function handle(req, res, path) {
     if (req.method === "OPTIONS") return send(res, {});
+    if (path.startsWith("/cloud-saves/object/")) return bucket(req, res, path.slice(20));
     const body = req.method === "POST" ? await read(req) : {};
     // GitHub/Discord: start, the provider page that sends the browser back, and redeem.
     if (path === "/oauth/start") {
@@ -944,6 +1001,59 @@ function mockAccount(entries) {
       lists.delete(body.slug);
       return send(res, null);
     }
+    if (path === "/cloud-saves/mine")
+      return send(res, {
+        on: cloud.on && !cloud.why, ...(cloud.why ? { why: cloud.why } : {}), limit: cloud.limit, used: cloudUsed(name), keep: cloud.keep, maxCopy: cloud.maxCopy, allowed: !cloud.off.has(body.entryId),
+        copies: cloud.rows.filter((r) => r.user === name && r.entryId === body.entryId && r.status === "stored").sort((a, b) => b.createdAt - a.createdAt)
+          .map(({ user: _, key: __, status: ___, entryId: ____, ...copy }) => copy),
+      });
+    if (path === "/cloud-saves/usage") {
+      const stored = cloud.rows.filter((r) => r.user === name && r.status === "stored");
+      const apps = [...new Set(stored.map((r) => r.entryId))].map((entryId) => {
+        const copies = stored.filter((r) => r.entryId === entryId).sort((a, b) => b.createdAt - a.createdAt);
+        const entry = entries.find((e) => e.id === entryId);
+        return {
+          entryId, name: entry?.projectName ?? "Removed app", ...(entry ? { slug: entry.slug } : {}), allowed: !cloud.off.has(entryId),
+          size: copies.reduce((n, r) => n + r.size, 0),
+          copies: copies.map(({ user: _, key: __, status: ___, entryId: ____, ...copy }) => copy),
+        };
+      });
+      return send(res, { on: cloud.on && !cloud.why, ...(cloud.why ? { why: cloud.why } : {}), limit: cloud.limit, used: cloudUsed(name), keep: cloud.keep, apps: apps.sort((a, b) => b.size - a.size) });
+    }
+    if (path === "/cloud-saves/begin") {
+      if (body.size > cloud.maxCopy) return send(res, { error: "That backup is too big for cloud saves" }, 400);
+      if (!cloud.on || cloud.why || cloud.off.has(body.entryId)) return send(res, { status: "off" });
+      const ofApp = cloud.rows.filter((r) => r.user === name && r.entryId === body.entryId).sort((a, b) => a.createdAt - b.createdAt);
+      const same = ofApp.find((r) => r.status === "stored" && r.hash === body.hash);
+      if (same) return send(res, { status: "have", id: same.id });
+      const stale = ofApp.filter((r) => r.status === "pending");
+      const kept = ofApp.filter((r) => r.status === "stored");
+      const leaving = kept.slice(0, Math.max(0, kept.length - (cloud.keep - 1)));
+      const freed = [...stale, ...leaving].reduce((n, r) => n + r.size, 0);
+      if (cloudUsed(name) - freed + body.size > cloud.limit) return send(res, { status: "full", used: cloudUsed(name), limit: cloud.limit });
+      cloudDrop(stale);
+      const id = `save_${cloud.next++}`;
+      const key = `key_${Math.random()}`;
+      cloud.rows.push({ ...body, id, user: name, status: "pending", key, createdAt: Date.now() + cloud.next });
+      return send(res, { status: "upload", id, url: `http://${req.headers.host}/account/cloud-saves/object/${id}?signed=${key}`, headers: { "content-length": String(body.size), "content-type": "application/zip" } });
+    }
+    if (path === "/cloud-saves/finish") {
+      const row = cloud.rows.find((r) => r.id === body.id && r.user === name);
+      if (!row) return send(res, false);
+      if (cloud.objects.get(row.id)?.length !== row.size) return cloudDrop([row]), send(res, false);
+      row.status = "stored";
+      const copies = cloud.rows.filter((r) => r.user === name && r.entryId === row.entryId && r.status === "stored").sort((a, b) => b.createdAt - a.createdAt);
+      cloudDrop(copies.slice(cloud.keep));
+      return send(res, true);
+    }
+    if (path === "/cloud-saves/download") {
+      const row = cloud.rows.find((r) => r.id === body.id && r.user === name && r.status === "stored");
+      return send(res, row ? { url: `http://${req.headers.host}/account/cloud-saves/object/${row.id}?signed=${row.key}`, size: row.size } : null);
+    }
+    if (path === "/cloud-saves/remove") {
+      cloudDrop(cloud.rows.filter((r) => r.user === name && (r.id === body.id || (body.entryId && r.entryId === body.entryId))));
+      return send(res, null);
+    }
     if (path === "/library/save") {
       // As on the site: an add fills only empty fields, an edit sets what it names.
       for (const c of body.changes) {
@@ -1010,10 +1120,15 @@ function mockAccount(entries) {
       if (refused) return send(res, { error: refused }, 400);
       const key = `${name}:${body.entryId}`;
       const now = Date.now();
+      // As the site keeps PC specs: sent ones replace the earlier, and so does a choice of who sees them.
+      const before = saved.get(key);
+      const specs = body.specs ?? before?.specs;
+      const specsPublic = body.specsPublic ?? before?.specsPublic ?? true;
       saved.set(key, {
         id: `review_${name}_${body.entryId}`, userId: user.id, author: name, entryId: body.entryId,
         ...(body.entryReleaseId ? { entryReleaseId: body.entryReleaseId, version: `v${body.entryReleaseId.split("_").pop()}` } : {}),
-        result: body.result, body: note, platform: body.platform, createdAt: saved.get(key)?.createdAt ?? now, updatedAt: now,
+        result: body.result, body: note, platform: body.platform, createdAt: before?.createdAt ?? now, updatedAt: now,
+        ...(specs ? { specs, specsPublic } : {}),
       });
       reviews.push({ ...body, user: name });
       return send(res, null);
@@ -1034,8 +1149,12 @@ function mockAccount(entries) {
     const c = corrections.find((c) => c.id === id);
     Object.assign(c, { status, reply, resolvedAt: Date.now(), unseen: true });
   };
+  // Everyone's feedback on an app, as reviews.list shows it: PC specs only where their author shows them.
   const feedback = (slug) =>
-    [...saved.values()].filter((r) => r.entryId === entries.find((e) => e.slug === slug)?.id).sort((a, b) => b.createdAt - a.createdAt);
+    [...saved.values()]
+      .filter((r) => r.entryId === entries.find((e) => e.slug === slug)?.id)
+      .sort((a, b) => b.createdAt - a.createdAt)
+      .map(({ specs, specsPublic, ...r }) => (specs && specsPublic ? { ...r, specs, specsPublic } : r));
   const setAnalytics = (name, enabled) => {
     const user = users.get(name);
     if (user) user.analyticsOptOut = enabled ? undefined : true;
@@ -1045,5 +1164,5 @@ function mockAccount(entries) {
     if (user) user.catalogDefaults = defaults;
   };
   const collections = (name) => [...(users.get(name)?.collections.values() ?? [])];
-  return { handle, reviews, corrections, resolveCorrection, feedback, lists, analyticsCalls, setAnalytics, setCatalogDefaults, collections };
+  return { handle, reviews, corrections, resolveCorrection, feedback, lists, analyticsCalls, setAnalytics, setCatalogDefaults, collections, cloud };
 }

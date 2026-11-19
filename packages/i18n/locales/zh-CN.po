@@ -32,10 +32,22 @@ msgstr "{0, plural, other {# 个应用留在应用文件夹顶层}}"
 msgid "{0, plural, one {# app} other {# apps}}"
 msgstr "{0, plural, one {# 个应用} other {# 个应用}}"
 
+#. placeholder {0}: app.copies
+#: ../../apps/launcher/src/sync-folder-page.tsx
+msgid "{0, plural, one {# backup} other {# backups}}"
+msgstr ""
+
 #. placeholder {0}: thread.comments
 #: ../../apps/launcher/src/discussions.tsx
 msgid "{0, plural, one {# comment} other {# comments}}"
 msgstr "{0, plural, other {# 条评论}}"
+
+#. placeholder {0}: backup.files
+#. placeholder {0}: copy.files
+#: ../../apps/launcher/src/cloud-saves-page.tsx
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "{0, plural, one {# file} other {# files}}"
+msgstr "{0, plural, other {# 个文件}}"
 
 #. placeholder {0}: library.apps.length
 #: ../../apps/launcher/src/old-library.tsx
@@ -123,6 +135,10 @@ msgstr "{app} 的版本"
 msgid "{app}'s folder is now {renamed}."
 msgstr "{app} 的文件夹现已重命名为 {renamed}。"
 
+#: ../../apps/launcher/src/sync-folder-page.tsx
+msgid "{apps, plural, one {# app} other {# apps}}"
+msgstr ""
+
 #: ../../apps/launcher/src/game.tsx
 #: ../../apps/launcher/src/library-tile.tsx
 #: ../../apps/launcher/src/ways-to-play.tsx
@@ -174,6 +190,14 @@ msgstr "{count, plural, one {# 个应用} other {# 个应用}}，{installed, plu
 msgid "{count, plural, one {# app} other {# apps}}, {installed, plural, one {# already installed} other {# already installed}}"
 msgstr "{count, plural, other {# 个应用}}，{installed, plural, other {# 个已安装}}"
 
+#: ../../apps/launcher/src/sync-folder-page.tsx
+msgid "{count, plural, one {# backup} other {# backups}}"
+msgstr ""
+
+#: ../../apps/launcher/src/cloud-saves-page.tsx
+msgid "{count, plural, one {# copy} other {# copies}}"
+msgstr "{count, plural, other {# 个副本}}"
+
 #: ../../apps/launcher/src/discussions.tsx
 msgid "{count, plural, one {# discussion with new comments} other {# discussions with new comments}}"
 msgstr "{count, plural, other {# 个讨论有新评论}}"
@@ -181,6 +205,10 @@ msgstr "{count, plural, other {# 个讨论有新评论}}"
 #: ../../apps/launcher/src/old-library.tsx
 msgid "{count, plural, one {Add # app} other {Add # apps}}"
 msgstr "{count, plural, one {添加 # 个应用} other {添加 # 个应用}}"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "{count, plural, one {It keeps the most. Its # copy ({largestSize}) is removed from your account. Its saves and backups on this computer stay.} other {It keeps the most. Its # copies ({largestSize}) are removed from your account. Its saves and backups on this computer stay.}}"
+msgstr "{count, plural, other {它占用的空间最多。它的 # 个副本（{largestSize}）会从你的账号中移除。它在这台电脑上的存档和备份会保留。}}"
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "{count, plural, one {Keep your # installed app where it is, in {dir}} other {Keep your # installed apps where they are, in {dir}}}"
@@ -311,7 +339,7 @@ msgstr "{hours, plural, one {它正处于 48 小时等待期，大约还需 # �
 
 #: ../../apps/launcher/src/detail.tsx
 msgid "{hours, plural, one {not offered yet · available in about # hour} other {not offered yet · available in about # hours}}"
-msgstr "{hours, plural, one {暂未提供 → 约 # 小时后可用} other {暂未提供 → 约 # 小时后可用}}"
+msgstr "{hours, plural, one {暂未提供 · 约 # 小时后可用} other {暂未提供 · 约 # 小时后可用}}"
 
 #: ../../apps/launcher/src/detail.tsx
 msgid "{issues, plural, one {# has issues} other {# have issues}}"
@@ -477,6 +505,10 @@ msgstr "{name} 需要你自己的游戏副本才能运行。请选择包含游�
 msgid "{name} needs your own copy of the game to run. Choose the ROM, and Quiver checks it and puts it where {name} needs it."
 msgstr "{name} 需要你自己的游戏副本才能运行。请选择 ROM，Quiver 会检查它，并将其放到 {name} 所需的位置。"
 
+#: ../../apps/launcher/src/App.tsx
+msgid "{name} was played on this computer and on another one since your saves last synced, so there are two different sets of saves now. Choose which to continue from. The other set is kept as a backup on the app's Saves tab."
+msgstr ""
+
 #: ../../apps/launcher/src/library-tile.tsx
 msgid "{name}, {pulledLabel} was withdrawn"
 msgstr "{name}，{pulledLabel} 已撤回"
@@ -541,6 +573,15 @@ msgstr "{pulledLabel} 已撤回。"
 msgid "{pulledVersion} was withdrawn"
 msgstr "{pulledVersion} 已撤回"
 
+#: ../../apps/launcher/src/sync-folder-page.tsx
+msgid "{put, plural, one {The saves of # app were copied in. New backups follow after you play.} other {The saves of # apps were copied in. New backups follow after you play.}}"
+msgstr ""
+
+#. The memory of the computer a player tried an app on
+#: ../../apps/launcher/src/feedback.tsx
+msgid "{ram} GB RAM"
+msgstr "{ram} GB 内存"
+
 #: ../../apps/launcher/src/mods.tsx
 msgid "{rating, plural, one {{likes} like} other {{likes} likes}}"
 msgstr "{rating, plural, one {获赞 {likes} 次} other {获赞 {likes} 次}}"
@@ -599,6 +640,10 @@ msgstr "仅限 {systems}"
 msgid "{tagged, plural, one {The tags you gave # app} other {The tags you gave # apps}}"
 msgstr "{tagged, plural, other {你给 # 个应用加的标签}}"
 
+#: ../../apps/launcher/src/sync-folder-page.tsx
+msgid "{there, plural, one {This folder already has saves of # app. Quiver offers them when you start it here.} other {This folder already has saves of # apps. Quiver offers them when you start those apps here.}}"
+msgstr ""
+
 #: ../ui/src/index.tsx
 msgid "{total, plural, one {# player} other {# players}}"
 msgstr "{total, plural, one {# 位玩家} other {# 位玩家}}"
@@ -630,6 +675,14 @@ msgstr "{updateCount, plural, one {# 个模组有可用更新。} other {# 个�
 #: ../../apps/launcher/src/App.tsx
 msgid "{updateVersion} is available."
 msgstr "{updateVersion} 已可用。"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "{used} of {limit} used."
+msgstr "已用 {used}，共 {limit}。"
+
+#: ../../apps/launcher/src/cloud-saves-page.tsx
+msgid "{used} of {limit} used. Each app keeps its newest {keep} copies."
+msgstr "已用 {used}，共 {limit}。每个应用保留最新的 {keep} 个副本。"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "{verifiedVersion} · downloads can't be checked"
@@ -699,11 +752,11 @@ msgstr "{years, plural, one {# 年前游玩过} other {# 年前游玩过}}"
 
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "+ New playlist…"
-msgstr "+ 新建播放列表 →"
+msgstr "+ 新建播放列表…"
 
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "+ New tag…"
-msgstr "+ 新建标签 →"
+msgstr "+ 新建标签…"
 
 #: ../../apps/launcher/src/setup.tsx
 msgid "<0>Easy setup:</0> for apps that support it, you only provide your ROM or disc image, which Quiver finds in the folders you set up"
@@ -842,7 +895,7 @@ msgstr "添加主机"
 
 #: ../../apps/launcher/src/detail.tsx
 msgid "Add a console…"
-msgstr "添加主机 →"
+msgstr "添加主机…"
 
 #: ../../apps/launcher/src/own-copy-settings.tsx
 msgid "Add a folder for {console}"
@@ -863,7 +916,7 @@ msgstr "添加标签"
 
 #: ../../apps/launcher/src/detail.tsx
 msgid "Add a tag…"
-msgstr "添加标签 →"
+msgstr "添加标签…"
 
 #: ../../apps/launcher/src/library.tsx
 msgid "Add all"
@@ -888,7 +941,7 @@ msgstr "添加并获取"
 
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Add another folder…"
-msgstr "添加另一个文件夹 →"
+msgstr "添加另一个文件夹…"
 
 #: ../../apps/launcher/src/library.tsx
 msgid "Add apps from each app's menu. It also shows apps that match these filters:"
@@ -901,11 +954,11 @@ msgstr "向文件夹添加文件"
 
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Add files to folder…"
-msgstr "向文件夹添加文件 →"
+msgstr "向文件夹添加文件…"
 
 #: ../../apps/launcher/src/own-copy-settings.tsx
 msgid "Add folder…"
-msgstr "添加文件夹 →"
+msgstr "添加文件夹…"
 
 #: ../../apps/launcher/src/own-copy-settings.tsx
 msgid "Add folders for a console"
@@ -913,7 +966,7 @@ msgstr "为主机添加文件夹"
 
 #: ../../apps/launcher/src/own-copy-settings.tsx
 msgid "Add folders…"
-msgstr "添加文件夹 →"
+msgstr "添加文件夹…"
 
 #: ../../apps/launcher/src/library.tsx
 msgid "Add to my library"
@@ -933,11 +986,11 @@ msgstr "添加到 Steam"
 
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Add your {consoleName} games folder…"
-msgstr "添加你的 {consoleName} 游戏文件夹 →"
+msgstr "添加你的 {consoleName} 游戏文件夹…"
 
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Add your games folder…"
-msgstr "添加你的游戏文件夹 →"
+msgstr "添加你的游戏文件夹…"
 
 #. When the player added an app to their library, then a date
 #: ../../apps/launcher/src/library-sidebar.tsx
@@ -945,8 +998,8 @@ msgid "Added"
 msgstr "已添加"
 
 #: ../../apps/launcher/src/launch-options.tsx
-msgid "Added after the executable, or write %command% where the executable should go. NAME=value at the start sets an environment variable."
-msgstr "添加在可执行文件之后，或在可执行文件应在的位置写 %command%。开头的 NAME=value 用于设置环境变量。"
+msgid "Added after the program, or write %command% where the program should go. NAME=value at the start sets an environment variable."
+msgstr "添加在程序后面，或者在程序应放置的位置写入 %command%。在开头使用 NAME=value 设置环境变量。"
 
 #: ../../apps/launcher/src/custom.ts
 msgid "Added from {site}. Quiver hasn't checked this app."
@@ -954,7 +1007,7 @@ msgstr "已从 {site} 添加。Quiver 尚未检查此应用。"
 
 #: ../../apps/launcher/src/old-library.tsx
 msgid "Adding {done} of {total}…"
-msgstr "正在添加 {done}/{total} →"
+msgstr "正在添加 {done}/{total}…"
 
 #: ../../apps/launcher/src/old-library.tsx
 msgid "Adding apps"
@@ -967,6 +1020,11 @@ msgstr "添加不会移动任何内容：已安装的应用留在 Quiver Launche
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Advanced"
 msgstr "高级"
+
+#. Why a save backup was made
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "After playing"
+msgstr "游玩后"
 
 #. Browse card detail: AI-assisted or Mostly AI
 #: ../../apps/launcher/src/browse-cards.ts
@@ -1095,7 +1153,7 @@ msgstr "你的游戏库中另一个应用使用了名为 {folder} 的文件夹�
 
 #: ../../apps/launcher/src/launch-options.tsx
 msgid "Another Proton…"
-msgstr "另一个 Proton →"
+msgstr "另一个 Proton…"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/library.tsx
@@ -1146,7 +1204,13 @@ msgstr "应用详细信息"
 msgid "APP DETAILS"
 msgstr "应用详细信息"
 
+#. Browse card detail: the app's own small icon before its name, to tell apart apps for the same game
+#: ../../apps/launcher/src/browse-cards.ts
+msgid "App icon"
+msgstr "应用图标"
+
 #: ../../apps/launcher/src/card-menu.tsx
+#: ../../apps/launcher/src/cloud-saves-page.tsx
 msgid "App page"
 msgstr "应用页面"
 
@@ -1233,7 +1297,7 @@ msgstr "支持此功能的应用会将存档和设置保存在各自的文件夹
 
 #: ../../apps/launcher/src/repository-tokens.tsx
 msgid "Apps you add from a self-hosted forge, Codeberg, Bitbucket or a release feed use the token you save for that host. A token is kept in this computer's keychain and sent only to the host it belongs to."
-msgstr ""
+msgstr "从自建代码托管平台、Codeberg、Bitbucket 或发布源添加的应用，会使用你为该平台保存的令牌。令牌保存在此电脑的钥匙串中，只会发送给所属的托管平台。"
 
 #: ../../apps/launcher/src/github-token.tsx
 msgid "Apps you add from GitHub get their releases from GitHub itself, which allows this network 60 requests an hour, or 5,000 with a token. Apps from the catalog don't need one."
@@ -1313,13 +1377,27 @@ msgstr "返回“{searched}”的搜索结果"
 msgid "Back to top"
 msgstr "返回顶部"
 
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Back up now"
+msgstr "立即备份"
+
+#. Said after a save backup was made
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Backed up."
+msgstr "已备份。"
+
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Background music"
 msgstr "背景音乐"
 
 #: ../../apps/launcher/src/recovery.tsx
+#: ../../apps/launcher/src/saves-tab.tsx
 msgid "Backups"
 msgstr "备份"
+
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Backups can also go in a folder of your own, such as one in Dropbox, OneDrive or Syncthing, so your saves follow you to your other computers without an account. Choose it in Settings, under Cloud saves."
+msgstr ""
 
 #: ../../apps/launcher/src/custom-art.tsx
 msgid "Banner"
@@ -1356,6 +1434,21 @@ msgstr "依据项目 README，检查于 {date}"
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Be the first to say how it went."
 msgstr "来第一个分享你的体验吧。"
+
+#. Why a save backup was made: it holds what was there before another backup was put back
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Before a restore"
+msgstr "恢复前"
+
+#. Why a save backup was made
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Before an update"
+msgstr "更新前"
+
+#. Why a save backup was made
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Before uninstalling"
+msgstr "卸载前"
 
 #: ../../apps/launcher/src/game.tsx
 #: ../../apps/launcher/src/ways-to-play.tsx
@@ -1415,6 +1508,10 @@ msgstr "构建版本"
 msgid "Built with some AI assistance"
 msgstr "在 AI 的协助下构建"
 
+#: ../../apps/launcher/src/controls.tsx
+msgid "Buttons that close a game"
+msgstr "关闭游戏的按键"
+
 #. Who made a mod
 #: ../../apps/launcher/src/mods.tsx
 msgid "by {author}"
@@ -1438,6 +1535,7 @@ msgstr "无法添加：Quiver Launcher 不知道它的来源"
 
 #: ../../apps/launcher/src/app-files.tsx
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/cloud-saves-page.tsx
 #: ../../apps/launcher/src/correction.tsx
 #: ../../apps/launcher/src/detail.tsx
 #: ../../apps/launcher/src/discussions.tsx
@@ -1449,7 +1547,9 @@ msgstr "无法添加：Quiver Launcher 不知道它的来源"
 #: ../../apps/launcher/src/own-copy-setup.tsx
 #: ../../apps/launcher/src/own.tsx
 #: ../../apps/launcher/src/recovery.tsx
+#: ../../apps/launcher/src/saves-tab.tsx
 #: ../../apps/launcher/src/settings-page.tsx
+#: ../../apps/launcher/src/sync-folder-page.tsx
 #: ../../apps/launcher/src/tag-settings.tsx
 msgid "Cancel"
 msgstr "取消"
@@ -1489,6 +1589,11 @@ msgstr "轮播图"
 msgid "Catalog filters"
 msgstr "目录筛选条件"
 
+#. Settings section: the tags apps have from the catalog, which the player can hide
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "Catalog tags"
+msgstr "目录标签"
+
 #. Heading of a README's caution callout, as on GitHub
 #: ../ui/src/index.tsx
 msgctxt "README callout"
@@ -1496,7 +1601,9 @@ msgid "Caution"
 msgstr "注意"
 
 #. Button: choose another copy of the game
+#. Button: choose another sync folder
 #: ../../apps/launcher/src/own-copy-setup.tsx
+#: ../../apps/launcher/src/sync-folder-page.tsx
 msgid "Change"
 msgstr "更改"
 
@@ -1518,11 +1625,11 @@ msgstr "更改版本"
 
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Change version…"
-msgstr "更改版本 →"
+msgstr "更改版本…"
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Change…"
-msgstr "更改 →"
+msgstr "更改…"
 
 #: ../../apps/launcher/src/detail.tsx
 msgid "Changed on GitHub after this release finished its 48-hour wait."
@@ -1547,32 +1654,32 @@ msgstr "正在检查文件夹"
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Checking there's room…"
-msgstr "正在检查空间是否足够 →"
+msgstr "正在检查空间是否足够…"
 
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Checking your copy…"
-msgstr "正在检查你的副本 →"
+msgstr "正在检查你的副本…"
 
 #: ../../apps/launcher/src/github-token.tsx
 #: ../../apps/launcher/src/gitlab-token.tsx
 #: ../../apps/launcher/src/repository-tokens.tsx
 #: ../../apps/launcher/src/update.tsx
 msgid "Checking…"
-msgstr "正在检查 →"
+msgstr "正在检查…"
 
 #. placeholder {0}: sizeText(progress.done)
 #. placeholder {1}: sizeText(progress.total)
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Checking… {0} of {1}"
-msgstr "正在检查 → {0}/{1}"
+msgstr "正在检查… {0}/{1}"
 
 #: ../../apps/launcher/src/recovery.tsx
 msgid "Choose a backup…"
-msgstr "选择备份 →"
+msgstr "选择备份…"
 
 #: ../../apps/launcher/src/own-copy-settings.tsx
 msgid "Choose a console…"
-msgstr "选择主机 →"
+msgstr "选择主机…"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Choose a download"
@@ -1589,7 +1696,7 @@ msgstr "为 {label} 选择文件"
 #: ../../apps/launcher/src/custom-art.tsx
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Choose a file…"
-msgstr "选择文件 →"
+msgstr "选择文件…"
 
 #: ../../apps/launcher/src/store.tsx
 msgid "Choose a folder outside {path}, which has apps in it."
@@ -1612,7 +1719,7 @@ msgstr "选择你存放游戏副本的文件夹"
 #: ../../apps/launcher/src/old-library.tsx
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Choose a folder…"
-msgstr "选择文件夹 →"
+msgstr "选择文件夹…"
 
 #: ../../apps/launcher/src/account.tsx
 msgid "Choose a less common password."
@@ -1628,7 +1735,7 @@ msgstr "为游戏库背景选择图片"
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Choose a picture…"
-msgstr "选择图片 →"
+msgstr "选择图片…"
 
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Choose a platform"
@@ -1637,6 +1744,10 @@ msgstr "选择平台"
 #: ../../apps/launcher/src/own.tsx
 msgid "Choose a program (.exe) that starts the app."
 msgstr "选择一个用于启动应用的程序（.exe）。"
+
+#: ../../apps/launcher/src/feedback.tsx
+msgid "Choose a release"
+msgstr "选择版本"
 
 #: ../../apps/launcher/src/correction.tsx
 msgid "Choose a topic (optional)"
@@ -1664,7 +1775,7 @@ msgstr "选择 {name} 的版本或平台"
 
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Choose a version…"
-msgstr "选择版本 →"
+msgstr "选择版本…"
 
 #: ../../apps/launcher/src/own.tsx
 msgid "Choose an app that starts the app."
@@ -1676,11 +1787,11 @@ msgstr "选择 AppImage 或其他用于启动该应用的程序。"
 
 #: ../../apps/launcher/src/own.tsx
 msgid "Choose another program…"
-msgstr "选择其他程序 →"
+msgstr "选择其他程序…"
 
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Choose another…"
-msgstr "选择其他 →"
+msgstr "选择其他…"
 
 #: ../../apps/launcher/src/github-token.tsx
 msgid "Choose Create a token on GitHub, and sign in to GitHub."
@@ -1690,9 +1801,10 @@ msgstr "选择“在 GitHub 上创建令牌”，然后登录 GitHub。"
 msgid "Choose Create a token on GitLab, and sign in to GitLab."
 msgstr "选择“在 GitLab 上创建令牌”，然后登录 GitLab。"
 
-#: ../../apps/launcher/src/launch-options.tsx
-msgid "Choose executable…"
-msgstr "选择可执行文件…"
+#: ../../apps/launcher/src/saves-tab.tsx
+#: ../../apps/launcher/src/sync-folder-page.tsx
+msgid "Choose folder"
+msgstr "选择文件夹"
 
 #. Generate token is the name of GitHub's button, as GitHub shows it in English
 #. Generate token is the name of GitLab's button, as GitLab shows it in English
@@ -1702,8 +1814,8 @@ msgid "Choose Generate token, copy it, paste it above and choose Save token."
 msgstr "选择“生成令牌”，复制令牌并粘贴到上方，然后选择“保存令牌”。"
 
 #: ../../apps/launcher/src/App.tsx
-msgid "Choose its executable…"
-msgstr "选择它的可执行文件…"
+msgid "Choose its program…"
+msgstr "选择其程序…"
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Choose music to play in the background"
@@ -1711,11 +1823,15 @@ msgstr "选择要在后台播放的音乐"
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Choose music…"
-msgstr "选择音乐 →"
+msgstr "选择音乐…"
 
 #: ../../apps/launcher/src/old-library.tsx
 msgid "Choose my Quiver Launcher 3 folder…"
-msgstr "选择我的 Quiver Launcher 3 文件夹 →"
+msgstr "选择我的 Quiver Launcher 3 文件夹…"
+
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "Choose program…"
+msgstr "选择程序…"
 
 #: ../../apps/launcher/src/store.tsx
 msgid "Choose the folder {name} is installed in"
@@ -1731,7 +1847,11 @@ msgstr "选择用于启动应用的程序。"
 
 #: ../../apps/launcher/src/own.tsx
 msgid "Choose the program…"
-msgstr "选择程序 →"
+msgstr "选择程序…"
+
+#: ../../apps/launcher/src/feedback.tsx
+msgid "Choose the release you tried, or Not sure."
+msgstr "选择你尝试的版本，或选择“不确定”。"
 
 #: ../../apps/launcher/src/file-picker.tsx
 msgid "Choose this folder"
@@ -1741,6 +1861,10 @@ msgstr "选择此文件夹"
 #: ../../apps/launcher/src/gitlab-token.tsx
 msgid "Choose when it expires."
 msgstr "选择过期时间。"
+
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Choose where this app saves"
+msgstr "选择此应用的存档位置"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Choose where to install {app}"
@@ -1766,9 +1890,13 @@ msgstr "选择你存放 {consoleName} 游戏的位置"
 msgid "Choose your Quiver Launcher 3 folder"
 msgstr "选择你的 Quiver Launcher 3 文件夹"
 
+#: ../../apps/launcher/src/sync-folder-page.tsx
+msgid "Choose your sync folder"
+msgstr ""
+
 #: ../../apps/launcher/src/app-updates.tsx
 msgid "Choose…"
-msgstr "选择 →"
+msgstr "选择…"
 
 #: ../../apps/launcher/src/custom-art.tsx
 msgid "Clear {label}"
@@ -1799,6 +1927,10 @@ msgstr "关闭"
 msgid "Close {title}"
 msgstr "关闭 {title}"
 
+#: ../../apps/launcher/src/controls.tsx
+msgid "Close a game by holding buttons together for a second, for games with no way to quit"
+msgstr "同时按住按键一秒关闭游戏，适用于无法退出的游戏"
+
 #: ../../apps/launcher/src/library-sidebar.tsx
 msgid "Close filters"
 msgstr "关闭筛选条件"
@@ -1806,6 +1938,45 @@ msgstr "关闭筛选条件"
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Close to the system tray (Quiver Launcher keeps running and updating apps)"
 msgstr "关闭到系统托盘（Quiver Launcher 会继续运行并更新应用）"
+
+#. Heading on an app's Saves tab: the copies of its saves kept with the player's account
+#: ../../apps/launcher/src/cloud-saves-page.tsx
+#: ../../apps/launcher/src/saves-tab.tsx
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Cloud saves"
+msgstr "云存档"
+
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Cloud saves are for apps from Quiver's catalog. This app's backups stay on this computer."
+msgstr "云存档适用于 Quiver 目录中的应用。此应用的备份保留在这台电脑上。"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Cloud saves are off for {largestName}, and its copies were removed from your account."
+msgstr "已为 {largestName} 关闭云存档，并已从你的账号中移除其副本。"
+
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Cloud saves are paused for now, so nothing new is being sent. Backups stay on this computer."
+msgstr "云存档目前已暂停，不会发送新内容。备份保留在这台电脑上。"
+
+#: ../../apps/launcher/src/cloud-saves-page.tsx
+msgid "Cloud saves are paused for now, so nothing new is being sent. Your copies are safe, and backups carry on on this computer."
+msgstr "云存档目前已暂停，不会发送新内容。你的副本安全无虞，这台电脑上的备份照常进行。"
+
+#: ../../apps/launcher/src/cloud-saves-page.tsx
+msgid "Cloud saves are switched off for this app on its Saves tab."
+msgstr "此应用的云存档已在其“存档”标签页中关闭。"
+
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Cloud saves are switched off in Settings. Backups stay on this computer."
+msgstr "云存档已在设置中关闭。备份保留在这台电脑上。"
+
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Cloud saves aren't available yet. Backups stay on this computer."
+msgstr "云存档尚不可用。备份保留在这台电脑上。"
+
+#: ../../apps/launcher/src/cloud-saves-page.tsx
+msgid "Cloud saves used"
+msgstr "云存档已用空间"
 
 #: ../../apps/launcher/src/library.tsx
 msgid "Collapse all sections"
@@ -1875,17 +2046,33 @@ msgstr "手柄"
 msgid "Controllers"
 msgstr "手柄"
 
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Copied to your sync folder."
+msgstr ""
+
 #: ../../apps/launcher/src/library.tsx
 msgid "Copy link"
 msgstr "复制链接"
 
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Copy the newest backup there now"
+msgstr ""
+
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Copying {folder}… {percent}%"
-msgstr "正在复制 {folder} → {percent}%"
+msgstr "正在复制 {folder}… {percent}%"
 
 #: ../../apps/launcher/src/discussions.tsx
 msgid "Couldn't delete it. Try again."
 msgstr "无法删除。请重试。"
+
+#: ../../apps/launcher/src/store.tsx
+msgid "Couldn't get the saves in your sync folder. The app starts with the saves on this computer."
+msgstr ""
+
+#: ../../apps/launcher/src/store.tsx
+msgid "Couldn't get your cloud saves. The app starts with the saves on this computer."
+msgstr "无法获取你的云存档。应用将使用这台电脑上的存档启动。"
 
 #: ../../apps/launcher/src/library-sidebar.tsx
 msgid "Couldn't install"
@@ -1914,6 +2101,16 @@ msgstr "无法连接 quiverlauncher.com 以显示此播放列表。请检查网�
 msgid "Couldn't reach quiverlauncher.com. Check your connection and try again."
 msgstr "无法连接 quiverlauncher.com。请检查网络连接，然后重试。"
 
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Couldn't reach your cloud saves. Backups stay on this computer for now."
+msgstr "无法连接到你的云存档。备份暂时保留在这台电脑上。"
+
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/cloud-saves-page.tsx
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Couldn't reach your cloud saves. Check your connection and try again."
+msgstr "无法连接到你的云存档。请检查网络连接后重试。"
+
 #: ../../apps/launcher/src/github-token.tsx
 #: ../../apps/launcher/src/gitlab-token.tsx
 #: ../../apps/launcher/src/repository-tokens.tsx
@@ -1937,6 +2134,10 @@ msgstr "无法发送。请重试。"
 msgid "Couldn't send that. Try again."
 msgstr "无法发送。请重试。"
 
+#: ../../apps/launcher/src/cloud-saves-page.tsx
+msgid "Couldn't send them just now. Try again soon."
+msgstr "暂时无法发送。请稍后重试。"
+
 #: ../../apps/launcher/src/account.tsx
 msgid "Couldn't share this playlist. Try again."
 msgstr "无法共享此播放列表。请重试。"
@@ -1948,6 +2149,14 @@ msgstr "无法登录。请检查网络连接，然后重试。"
 #: ../../apps/launcher/src/library.tsx
 msgid "Couldn't stop sharing it. Try again."
 msgstr "无法停止共享。请重试。"
+
+#: ../../apps/launcher/src/sync-folder-page.tsx
+msgid "Couldn't use that folder. Choose another."
+msgstr ""
+
+#: ../../apps/launcher/src/store.tsx
+msgid "Couldn't write to your sync folder. Your backups are on this computer."
+msgstr ""
 
 #. Library card image: the wide library art
 #: ../../apps/launcher/src/custom-art.tsx
@@ -1965,7 +2174,7 @@ msgstr "崩溃、性能不佳、控制或功能失效，或者我不得不进行
 
 #: ../../apps/launcher/src/repository-tokens.tsx
 msgid "Create a token"
-msgstr ""
+msgstr "创建令牌"
 
 #: ../../apps/launcher/src/github-token.tsx
 msgid "Create a token on GitHub"
@@ -2061,7 +2270,7 @@ msgstr "详细信息"
 
 #: ../../apps/launcher/src/own.tsx
 msgid "Detect it"
-msgstr ""
+msgstr "自动检测"
 
 #. Tag after the name of an app's developer
 #. Tag on a reply from the app's verified developer
@@ -2135,6 +2344,10 @@ msgstr "不允许"
 msgid "Don't delete your Quiver Launcher 3 folder yet. Move them anytime in Settings › Apps folder."
 msgstr "暂时不要删除你的 Quiver Launcher 3 文件夹。随时可以在 设置 › 应用文件夹 中移动它们。"
 
+#: ../../apps/launcher/src/App.tsx
+msgid "Don't play yet"
+msgstr "暂不游玩"
+
 #. Closes a dialog
 #. Closes the thanks after a problem was reported
 #: ../../apps/launcher/src/announcements-ui.tsx
@@ -2183,7 +2396,7 @@ msgstr "正在下载 {percent}%"
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Downloading…"
-msgstr "正在下载 →"
+msgstr "正在下载…"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/downloads-page.tsx
@@ -2222,6 +2435,14 @@ msgstr "无论这里如何设置，每个应用都可以在自己的设置中选
 #: ../../apps/launcher/src/app-updates.tsx
 msgid "Each app can update by itself, ask first, or stay on its version, whatever this says, from its own settings."
 msgstr "无论这里如何设置，每个应用都可以在自己的设置中选择自动更新、先询问或保留在当前版本。"
+
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Each backup is also kept in {folder}, which holds the newest 5 of this app from all your computers."
+msgstr ""
+
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Each backup is also sent to your account, which keeps the newest {keep} of each app. {used} of {limit} used."
+msgstr "每个备份也会发送到你的账号，账号为每个应用保留最新的 {keep} 个。已用 {used}，共 {limit}。"
 
 #. Browse card detail: a chip on apps whose game files Quiver Launcher finds and puts in place
 #. Chip on apps whose game files Quiver Launcher finds and puts in place for the player
@@ -2286,7 +2507,7 @@ msgstr "为其文件夹输入名称。"
 
 #: ../../apps/launcher/src/store.tsx
 msgid "Enter a repository: owner/name, or its address on a forge."
-msgstr ""
+msgstr "输入代码仓库：owner/name，或它在代码托管平台上的地址。"
 
 #: ../../apps/launcher/src/own-copy-settings.tsx
 msgid "Every console"
@@ -2299,10 +2520,6 @@ msgstr "所有内容均为最新版本。"
 #: ../../apps/launcher/src/detail.tsx
 msgid "Evidence"
 msgstr "证据"
-
-#: ../../apps/launcher/src/launch-options.tsx
-msgid "Executable"
-msgstr "可执行文件"
 
 #: ../../apps/launcher/src/window-bar.tsx
 msgid "Exit full screen"
@@ -2429,13 +2646,44 @@ msgstr "在 {0} 中找到。以下内容会迁移过来："
 msgid "Found in {folder}"
 msgstr "在 {folder} 中找到"
 
+#: ../../apps/launcher/src/App.tsx
+msgid "Free up space"
+msgstr "腾出空间"
+
+#. Which computer a cloud save was made on
+#. Which computer a cloud save was made on
+#. Which computer a cloud save was made on
+#: ../../apps/launcher/src/cloud-saves-page.tsx
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "From {device}"
+msgstr "来自 {device}"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "From {device}, {cloudWhen}"
+msgstr "来自 {device}，{cloudWhen}"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "From {device}, {cloudWhen}. The saves here are backed up first."
+msgstr ""
+
 #: ../../apps/launcher/src/own.tsx
 msgid "From a git repository"
-msgstr ""
+msgstr "从 Git 代码仓库"
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "From Quiver Launcher 3. Keep this folder until you move its apps."
 msgstr "来自 Quiver Launcher 3。移动其中的应用之前，请保留此文件夹。"
+
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "From Quiver's catalog."
+msgstr "来自 Quiver 的目录。"
+
+#. Heading in an app's Tags menu, over the tags the catalog gave it
+#. Label on an app's page, over the tags the catalog gave it
+#: ../../apps/launcher/src/card-menu.tsx
+#: ../../apps/launcher/src/detail.tsx
+msgid "From the catalog"
+msgstr "来自目录"
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Full screen"
@@ -2481,11 +2729,11 @@ msgstr "获取 Quiver Launcher"
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Getting ready…"
-msgstr "正在准备 →"
+msgstr "正在准备…"
 
 #: ../../apps/launcher/src/repository-tokens.tsx
 msgid "git.example.com"
-msgstr ""
+msgstr "git.example.com"
 
 #: ../../apps/launcher/src/github-token.tsx
 msgid "GitHub didn't accept that token, so it wasn't saved. Check that you copied all of it."
@@ -2554,7 +2802,9 @@ msgstr "存在问题"
 msgid "Helps improve Quiver Launcher: which screens and features get used, and errors. Never your files or folders."
 msgstr "帮助改进 Quiver Launcher：了解哪些屏幕和功能被使用，以及发生的错误。绝不会收集你的文件或文件夹。"
 
+#. Beside a catalog tag the player hid on every app
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/tag-settings.tsx
 msgid "Hidden"
 msgstr "已隐藏"
 
@@ -2575,11 +2825,22 @@ msgstr "仅显示已隐藏的应用"
 msgid "Hidden apps shown"
 msgstr "显示已隐藏的应用"
 
+#. Button: hide a catalog tag on every app
 #. Hides a post from everyone
 #: ../../apps/launcher/src/discussions.tsx
 #: ../../apps/launcher/src/feedback.tsx
+#: ../../apps/launcher/src/tag-settings.tsx
 msgid "Hide"
 msgstr "隐藏"
+
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "Hide {name}"
+msgstr "隐藏 {name}"
+
+#. Button: hide every catalog tag on every app
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "Hide all"
+msgstr "全部隐藏"
 
 #: ../../apps/launcher/src/library.tsx
 msgid "Hide any AI use"
@@ -2625,6 +2886,14 @@ msgstr "隐藏主要由 AI 生成的应用"
 msgid "Hide password"
 msgstr "隐藏密码"
 
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "Hide tags the catalog adds from now on"
+msgstr "隐藏目录今后新增的标签"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Hide the catalog's tag {name} on this app"
+msgstr "在此应用上隐藏目录标签 {name}"
+
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Hide the other files"
 msgstr "隐藏其他文件"
@@ -2646,7 +2915,7 @@ msgstr "隐藏你对 {name} 的反馈"
 
 #: ../../apps/launcher/src/repository-tokens.tsx
 msgid "Host"
-msgstr ""
+msgstr "托管平台"
 
 #: ../../apps/launcher/src/app-updates.tsx
 msgid "How apps update"
@@ -2846,11 +3115,11 @@ msgstr "自动安装"
 
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Install latest ({latestVersion})…"
-msgstr "安装最新版本（{latestVersion}）→"
+msgstr "安装最新版本（{latestVersion}）…"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Install latest…"
-msgstr "安装最新版本 →"
+msgstr "安装最新版本…"
 
 #. placeholder {0}: asking.to
 #: ../../apps/launcher/src/settings-page.tsx
@@ -2864,7 +3133,7 @@ msgstr "安装 Windows 版本（Wine）"
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Install to…"
-msgstr "安装到 →"
+msgstr "安装到…"
 
 #. Setting: apps install their updates by themselves, without asking
 #: ../../apps/launcher/src/app-updates.tsx
@@ -2910,7 +3179,7 @@ msgstr "已安装 {installedVersion}"
 
 #: ../../apps/launcher/src/downloads-page.tsx
 msgid "Installed {version} · {when}"
-msgstr "已安装 {version} → {when}"
+msgstr "已安装 {version} · {when}"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/library-tile.tsx
@@ -2975,7 +3244,7 @@ msgstr "正在安装：请完成其设置窗口"
 #: ../../apps/launcher/src/card-menu.tsx
 #: ../../apps/launcher/src/mods.tsx
 msgid "Installing…"
-msgstr "正在安装 →"
+msgstr "正在安装…"
 
 #: ../../apps/launcher/src/own.tsx
 msgid "Installs from the repository's releases, and updates like other apps."
@@ -3027,8 +3296,8 @@ msgid "It ran, but I had issues"
 msgstr "它可以运行，但我遇到了一些问题"
 
 #: ../../apps/launcher/src/App.tsx
-msgid "It starts <0>{executable}</0>, which is outside its folder, so it stays where it is. Uninstall or delete that yourself if you don't want it any more."
-msgstr "它启动的是 <0>{executable}</0>，该文件在它的文件夹之外，因此会保留在原处。如果不再需要，请自行卸载或删除。"
+msgid "It starts <0>{program}</0>, which is outside its folder, so it stays where it is. Uninstall or delete that yourself if you don't want it any more."
+msgstr "它启动的是 <0>{program}</0>，该程序在它的文件夹之外，因此会保留在原处。如果不再需要，请自行卸载或删除。"
 
 #: ../../apps/launcher/src/own.tsx
 msgid "It starts where it is, and removing it from your library leaves it there."
@@ -3126,6 +3395,14 @@ msgstr "暂时留在原处"
 msgid "Keep this app's data in its folder (<0>portable.txt</0>)"
 msgstr "将此应用的数据保存在其文件夹中（<0>portable.txt</0>）"
 
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Keep this app's saves with my Quiver account"
+msgstr "将此应用的存档保存到我的 Quiver 账号"
+
+#: ../../apps/launcher/src/sync-folder-page.tsx
+msgid "Keep your save backups in a folder of your own too, such as one inside Dropbox, OneDrive, Google Drive or Syncthing. Choose the same folder on your other computers, and Quiver offers your newest saves when you start an app there. It needs no Quiver account, and works for apps you added yourself."
+msgstr ""
+
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Kept here from before."
 msgstr "从之前的位置保留在此处。"
@@ -3152,9 +3429,21 @@ msgstr "大"
 msgid "Large name"
 msgstr "名称较长"
 
+#: ../../apps/launcher/src/App.tsx
+msgid "Last backed up {hereWhen}. The saves in your sync folder stay there as a backup. These become your newest."
+msgstr ""
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Last backed up {hereWhen}. Your cloud saves stay in your account as a backup. These become your newest."
+msgstr ""
+
 #: ../../apps/launcher/src/library-sidebar.tsx
 msgid "Last played"
 msgstr "上次游玩"
+
+#: ../../apps/launcher/src/cloud-saves-page.tsx
+msgid "Last synced {date} from {lastDevice}"
+msgstr "上次同步：{date}，来自 {lastDevice}"
 
 #. Browse card detail: when the app's latest release came out
 #. Sort order for mods
@@ -3174,7 +3463,7 @@ msgstr "最新版本 {version}"
 
 #: ../../apps/launcher/src/own.tsx
 msgid "Latest release {version} · {date}"
-msgstr "最新版本 {version} → {date}"
+msgstr "最新版本 {version} · {date}"
 
 #: ../../apps/launcher/src/launch-options.tsx
 msgid "Launch flags"
@@ -3194,8 +3483,8 @@ msgid "Layout"
 msgstr "布局"
 
 #: ../../apps/launcher/src/github-token.tsx
-msgid "Leave every scope unticked: public releases need none."
-msgstr "所有权限范围都不要勾选：公开版本无需任何权限。"
+msgid "Leave every scope unticked: public releases need none. For a private repository, make a fine-grained token on GitHub instead, with read-only Contents access to that repository."
+msgstr "所有权限范围都不要勾选：公开版本无需任何权限。如果是私有仓库，请改为在 GitHub 上创建 fine-grained 令牌，并为该仓库授予 Contents 的只读权限。"
 
 #: ../../apps/launcher/src/gitlab-token.tsx
 msgid "Leave the read_api scope ticked: public releases need nothing more."
@@ -3295,7 +3584,7 @@ msgstr "正在加载讨论…"
 
 #: ../../apps/launcher/src/mods.tsx
 msgid "Loading mods…"
-msgstr "正在加载模组 →"
+msgstr "正在加载模组…"
 
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Loading player notes"
@@ -3309,10 +3598,14 @@ msgstr "正在加载版本"
 msgid "Loading the game"
 msgstr "正在加载游戏"
 
+#: ../../apps/launcher/src/cloud-saves-page.tsx
+msgid "Loading your cloud saves…"
+msgstr "正在加载你的云存档…"
+
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Locate existing install…"
-msgstr "定位现有安装 →"
+msgstr "定位现有安装…"
 
 #. Moderation action
 #: ../../apps/launcher/src/discussions.tsx
@@ -3334,7 +3627,7 @@ msgstr "标志地址"
 
 #: ../../apps/launcher/src/old-library.tsx
 msgid "Look in another folder…"
-msgstr "查看其他文件夹 →"
+msgstr "查看其他文件夹…"
 
 #: ../../apps/launcher/src/library.tsx
 #: ../../apps/launcher/src/own.tsx
@@ -3343,15 +3636,15 @@ msgstr "查找"
 
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Looking for programs…"
-msgstr "正在查找程序 →"
+msgstr "正在查找程序…"
 
 #: ../../apps/launcher/src/old-library.tsx
 msgid "Looking for Quiver Launcher 3…"
-msgstr "正在查找 Quiver Launcher 3 →"
+msgstr "正在查找 Quiver Launcher 3…"
 
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Looking in your game folders…"
-msgstr "正在查找你的游戏文件夹 →"
+msgstr "正在查找你的游戏文件夹…"
 
 #: ../../apps/launcher/src/store.tsx
 msgid "Looking it up took too long. Check your connection and try again."
@@ -3360,11 +3653,16 @@ msgstr "查找超时。请检查网络连接，然后重试。"
 #: ../../apps/launcher/src/library.tsx
 #: ../../apps/launcher/src/own.tsx
 msgid "Looking it up…"
-msgstr "正在查找 →"
+msgstr "正在查找…"
 
 #: ../../apps/launcher/src/detail.tsx
 msgid "Made by"
 msgstr "制作方"
+
+#. Why a save backup was made: the player pressed Back up now
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Made by you"
+msgstr "由你创建"
 
 #. Which releases an app gets: only the ones its developer didn't mark as pre-releases
 #: ../../apps/launcher/src/App.tsx
@@ -3477,7 +3775,7 @@ msgstr "更多播放列表"
 #. Picks a playlist that isn't among the tabs
 #: ../../apps/launcher/src/library.tsx
 msgid "More…"
-msgstr "更多 →"
+msgstr "更多…"
 
 #: ../../apps/launcher/src/setup.tsx
 msgid "Most apps need your own copy of a game, like a ROM or a disc image, and Quiver Launcher has Easy setup for some of them. Add folders for a console or two now, and add more in Settings anytime."
@@ -3533,7 +3831,7 @@ msgstr "现在移动"
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Move to…"
-msgstr "移动到 →"
+msgstr "移动到…"
 
 #. placeholder {0}: n - failed.length
 #: ../../apps/launcher/src/settings-page.tsx
@@ -3558,7 +3856,7 @@ msgstr "正在移动"
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Moving {folder}…"
-msgstr "正在移动 {folder} →"
+msgstr "正在移动 {folder}…"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Moving {percent}%"
@@ -3572,16 +3870,16 @@ msgstr "正在移动应用"
 #. placeholder {1}: sorting.total
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Moving apps into console folders… {0} of {1}"
-msgstr "正在将应用移至对应的主机文件夹 → {0}/{1}"
+msgstr "正在将应用移至对应的主机文件夹… {0}/{1}"
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Moving apps…"
-msgstr "正在移动应用 →"
+msgstr "正在移动应用…"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Moving…"
-msgstr "正在移动 →"
+msgstr "正在移动…"
 
 #. Library sort: by the app's name
 #. Library view option: which name the sidebar shows, the game's or the app's
@@ -3721,12 +4019,16 @@ msgstr "新建播放列表"
 
 #: ../../apps/launcher/src/library.tsx
 msgid "New playlist…"
-msgstr "新建播放列表 →"
+msgstr "新建播放列表…"
 
 #. On a featured app's slide: it has just had a release, of this version
 #: ../ui/src/discover.tsx
 msgid "New release: {version}"
 msgstr "新版本：{version}"
+
+#: ../../apps/launcher/src/sync-folder-page.tsx
+msgid "Newest from {device}, {date}"
+msgstr ""
 
 #. How apps update: to the newest release as soon as it's out, without waiting 48 hours
 #: ../../apps/launcher/src/app-updates.tsx
@@ -3780,6 +4082,10 @@ msgstr "此播放列表中还没有应用。可从每个应用的菜单中添加
 #: ../../apps/launcher/src/game.tsx
 msgid "No apps play this game yet."
 msgstr "目前没有应用可以游玩此游戏。"
+
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "No backups yet."
+msgstr "还没有备份。"
 
 #: ../../apps/launcher/src/controls.tsx
 msgid "No controllers detected. Connect one and it appears here."
@@ -3914,6 +4220,10 @@ msgstr "未安装"
 msgid "Not installed first"
 msgstr "未优先安装"
 
+#: ../../apps/launcher/src/sync-folder-page.tsx
+msgid "not installed on this computer"
+msgstr ""
+
 #: ../../apps/launcher/src/library.tsx
 msgid "Not installed only"
 msgstr "仅未安装"
@@ -3923,6 +4233,7 @@ msgid "Not installed yet"
 msgstr "尚未安装"
 
 #: ../../apps/launcher/src/app-updates.tsx
+#: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/downloads-page.tsx
 #: ../../apps/launcher/src/old-library.tsx
 #: ../../apps/launcher/src/own-copy-settings.tsx
@@ -3939,17 +4250,17 @@ msgstr "暂不提供"
 #. Follows “Version 1.2 is”
 #: ../../apps/launcher/src/detail.tsx
 msgid "not offered yet · available shortly"
-msgstr "暂不提供 → 即将可用"
+msgstr "暂不提供 · 即将可用"
 
 #. Follows “Version 1.2 is”
 #: ../../apps/launcher/src/detail.tsx
 msgid "not offered yet · being checked"
-msgstr "暂不提供 → 正在检查"
+msgstr "暂不提供 · 正在检查"
 
 #. Follows “Version 1.2 is”
 #: ../../apps/launcher/src/detail.tsx
 msgid "not offered yet · waiting for a maintainer"
-msgstr "暂不提供 → 等待维护者处理"
+msgstr "暂不提供 · 等待维护者处理"
 
 #: ../../apps/launcher/src/sidebar.ts
 msgid "Not played yet"
@@ -3960,10 +4271,19 @@ msgstr "尚未游玩"
 msgid "Not rated yet"
 msgstr "尚未评分"
 
+#. On PC specs only the app's developer and the player who shared them can see
+#: ../../apps/launcher/src/feedback.tsx
+msgid "Not shown to other players"
+msgstr "其他玩家不可见"
+
 #. Which release the player tested
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Not sure"
 msgstr "不确定"
+
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Not there yet. It's made when the app first saves."
+msgstr "还不存在。应用首次存档时会创建。"
 
 #. The player's note about how the app ran
 #: ../../apps/launcher/src/feedback.tsx
@@ -3976,6 +4296,14 @@ msgctxt "README callout"
 msgid "Note"
 msgstr "注意"
 
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Nothing changed since the last backup."
+msgstr "自上次备份以来没有变化。"
+
+#: ../../apps/launcher/src/sync-folder-page.tsx
+msgid "Nothing here yet. Backups appear after you play."
+msgstr ""
+
 #: ../../apps/launcher/src/library.tsx
 msgid "Nothing here."
 msgstr "这里没有内容。"
@@ -3983,6 +4311,18 @@ msgstr "这里没有内容。"
 #: ../../apps/launcher/src/library.tsx
 msgid "Nothing in this playlist."
 msgstr "此播放列表中没有内容。"
+
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Nothing in your account for this app yet."
+msgstr "你的账号中还没有此应用的存档。"
+
+#: ../../apps/launcher/src/cloud-saves-page.tsx
+msgid "Nothing in your account yet. Copies appear here after you play an app from the catalog."
+msgstr "你的账号中还没有内容。游玩目录中的应用后，副本会显示在这里。"
+
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Nothing in your sync folder for this app yet."
+msgstr ""
 
 #: ../../apps/launcher/src/downloads-page.tsx
 msgid "Nothing is downloading."
@@ -4062,6 +4402,8 @@ msgstr "打开应用"
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/card-menu.tsx
 #: ../../apps/launcher/src/library-tile.tsx
+#: ../../apps/launcher/src/saves-tab.tsx
+#: ../../apps/launcher/src/sync-folder-page.tsx
 msgid "Open folder"
 msgstr "打开文件夹"
 
@@ -4081,6 +4423,10 @@ msgstr "在其网站上打开"
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Open Quiver Launcher"
 msgstr "打开 Quiver Launcher"
+
+#: ../../apps/launcher/src/cloud-saves-page.tsx
+msgid "Open save folder"
+msgstr "打开存档文件夹"
 
 #: ../../apps/launcher/src/downloads-page.tsx
 #: ../../apps/launcher/src/update.tsx
@@ -4113,14 +4459,16 @@ msgstr "其他"
 msgid "Other files"
 msgstr "其他文件"
 
+#. A shelf on Browse's front page: apps for consoles no other shelf's maker made
 #: ../../apps/launcher/src/detail.tsx
+#: ../../apps/launcher/src/discover.tsx
 #: ../../apps/launcher/src/library.tsx
 msgid "Other platforms"
 msgstr "其他平台"
 
 #: ../../apps/launcher/src/repository-tokens.tsx
 msgid "Other repository tokens"
-msgstr ""
+msgstr "其他代码仓库令牌"
 
 #. Over the list of an app's versions, under Get's own button for its newest
 #: ../../apps/launcher/src/detail.tsx
@@ -4142,7 +4490,7 @@ msgstr "概览"
 
 #: ../../apps/launcher/src/own.tsx
 msgid "owner/name, or a repository address (github.com, gitlab.com, codeberg.org, …)"
-msgstr ""
+msgstr "owner/name，或代码仓库地址（github.com、gitlab.com、codeberg.org 等）"
 
 #. Controller hint: what the triggers do in a library in another order, jump a screen at a time
 #: ../../apps/launcher/src/spatial.ts
@@ -4160,6 +4508,11 @@ msgstr "密码的开头和结尾不能有空白字符。"
 #: ../../apps/launcher/src/library.tsx
 msgid "Paste the playlist's link, like quiverlauncher.com/lists/…"
 msgstr "粘贴播放列表链接，例如 quiverlauncher.com/lists/…"
+
+#. Before the computer a player tried an app on
+#: ../../apps/launcher/src/feedback.tsx
+msgid "PC specs:"
+msgstr "电脑配置："
 
 #: ../../apps/launcher/src/controls.tsx
 msgid "Pick a binding, then press the key or button to use for it."
@@ -4263,6 +4616,10 @@ msgstr "游玩时间"
 msgid "Play with"
 msgstr "使用以下方式游玩"
 
+#: ../../apps/launcher/src/App.tsx
+msgid "Play with the saves on this computer"
+msgstr ""
+
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Play without it"
 msgstr "不使用它继续游玩"
@@ -4313,6 +4670,11 @@ msgstr "此应用的播放列表"
 msgid "Port"
 msgstr "移植版"
 
+#. A shelf on Browse's front page: apps for handhelds (PSP, Vita, DS, 3DS, Game Boy)
+#: ../../apps/launcher/src/discover.tsx
+msgid "Portable systems"
+msgstr "掌机"
+
 #: ../../apps/launcher/src/custom-art.tsx
 msgid "Portrait, about 600×900. The library's cards and TV mode."
 msgstr "竖版，约 600 × 900。适用于游戏库卡片和电视模式。"
@@ -4340,11 +4702,11 @@ msgstr "预发布版本"
 
 #: ../../apps/launcher/src/controls.tsx
 msgid "Press a button…"
-msgstr "按下一个按钮 →"
+msgstr "按下一个按钮…"
 
 #: ../../apps/launcher/src/controls.tsx
 msgid "Press a key…"
-msgstr "按下一个按键 →"
+msgstr "按下一个按键…"
 
 #: ../../apps/launcher/src/controls.tsx
 msgid "Press what you want to use, or Esc to cancel."
@@ -4369,6 +4731,10 @@ msgstr "上一个字母或页面"
 msgid "Previous tab"
 msgstr "上一个标签页"
 
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "Program"
+msgstr "程序"
+
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/library.tsx
 msgid "Project type"
@@ -4380,7 +4746,7 @@ msgstr "将新应用放入对应主机的文件夹"
 
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Putting it in place…"
-msgstr "正在将其放置到位 →"
+msgstr "正在将其放置到位…"
 
 #. Controller action that presses the main button of the focused card or app's page, such as Get or Play
 #: ../../apps/launcher/src/spatial.ts
@@ -4391,6 +4757,10 @@ msgstr "快捷操作"
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Quit"
 msgstr "退出"
+
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Quiver backs up your saves after you play, before an update and before uninstalling. It keeps the newest 10 on this computer."
+msgstr "Quiver 会在游玩后、更新前和卸载前备份你的存档。此电脑上保留最新的 10 个。"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Quiver blocked {installedVersion}: {blockedWhy}"
@@ -4419,6 +4789,14 @@ msgstr "Quiver 阻止了此版本，因此不会关联其文件。安装前，�
 #: ../../apps/launcher/src/library-tile.tsx
 msgid "Quiver blocked this version"
 msgstr "Quiver 阻止了此版本"
+
+#: ../../apps/launcher/src/sync-folder-page.tsx
+msgid "Quiver can't find this folder right now. If it's on a drive, plug it in. Backups carry on on this computer and go in the folder once it's back."
+msgstr ""
+
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Quiver can't find this folder right now. If it's on a drive, plug it in. Backups carry on on this computer."
+msgstr ""
 
 #: ../../apps/launcher/src/music.ts
 msgid "Quiver can't play that file. Try an MP3 or OGG."
@@ -4454,11 +4832,15 @@ msgstr "Quiver 无法显示此图片。它可能已被移动或删除。"
 
 #: ../../apps/launcher/src/store.tsx
 msgid "Quiver couldn't tell what kind of forge {host} is. Choose its kind and try again."
-msgstr ""
+msgstr "Quiver 无法判断 {host} 是哪类代码托管平台。请选择它的类型后重试。"
 
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Quiver didn't find one in your game folders."
 msgstr "Quiver 在你的游戏文件夹中没有找到。"
+
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Quiver doesn't know where this app saves yet. Play it once, or choose the folder."
+msgstr "Quiver 还不知道此应用的存档位置。游玩一次，或选择文件夹。"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Quiver doesn't offer {name} for {app}: it may be for another system, or missed when the downloads were picked."
@@ -4475,6 +4857,22 @@ msgstr "Quiver 找到了你的 Quiver Launcher 3 游戏库。以下内容会迁�
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Quiver has no list of good copies for {name} to check this one against."
 msgstr "Quiver 没有 {name} 的已知正常副本列表可用于比对。"
+
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Quiver has stopped this account adding to its cloud saves. Backups stay on this computer."
+msgstr "Quiver 已停止此账号添加云存档。备份保留在这台电脑上。"
+
+#: ../../apps/launcher/src/cloud-saves-page.tsx
+msgid "Quiver has stopped this account adding to its cloud saves. You can still restore and remove the copies you have."
+msgstr "Quiver 已停止此账号添加云存档。你仍可恢复和移除已有的副本。"
+
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Quiver has switched cloud saves off for this app. Its backups stay on this computer."
+msgstr "Quiver 已为此应用关闭云存档。它的备份保留在这台电脑上。"
+
+#: ../../apps/launcher/src/cloud-saves-page.tsx
+msgid "Quiver has switched cloud saves off for this app. These copies stay until you remove them."
+msgstr "Quiver 已为此应用关闭云存档。这些副本会保留到你将其移除。"
 
 #: ../../apps/launcher/src/own.tsx
 msgid "Quiver hasn't checked this app."
@@ -4560,6 +4958,10 @@ msgstr "Quiver Launcher：前往你的游戏库"
 #: ../../apps/launcher/src/own.tsx
 msgid "Quiver makes a folder for it in {dir} and opens it. Put the app's files there; Play starts the first program in it."
 msgstr "Quiver 会在 {dir} 中为它创建文件夹并打开该文件夹。请将应用文件放入其中；按“游玩”会启动其中的第一个程序。"
+
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Quiver saw the app save here."
+msgstr "Quiver 发现应用在此处存档。"
 
 #. Tag after the name of someone who runs Quiver
 #: ../../apps/launcher/src/discussions.tsx
@@ -4678,7 +5080,7 @@ msgstr "重新安装 {installedVersion}"
 
 #: ../../apps/launcher/src/own.tsx
 msgid "Release feed"
-msgstr ""
+msgstr "发布源"
 
 #. Tab of an app's page
 #. Which of an app's releases it gets: main releases only, or pre-releases too
@@ -4701,8 +5103,10 @@ msgstr "重新加载"
 #. Button: no background music, or no background picture
 #. Button: no background music, or no background picture
 #. Removes a followed playlist from the library
+#: ../../apps/launcher/src/cloud-saves-page.tsx
 #: ../../apps/launcher/src/library.tsx
 #: ../../apps/launcher/src/own-copy-settings.tsx
+#: ../../apps/launcher/src/saves-tab.tsx
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Remove"
 msgstr "移除"
@@ -4715,9 +5119,21 @@ msgstr "要从 {count} 中移除“{tag}”吗？"
 msgid "Remove {name}"
 msgstr "移除 {name}"
 
+#: ../../apps/launcher/src/cloud-saves-page.tsx
+msgid "Remove all"
+msgstr "全部移除"
+
+#: ../../apps/launcher/src/cloud-saves-page.tsx
+msgid "Remove all copies"
+msgstr "移除所有副本"
+
 #: ../../apps/launcher/src/detail.tsx
 msgid "Remove console {name}"
 msgstr "移除主机 {name}"
+
+#: ../../apps/launcher/src/cloud-saves-page.tsx
+msgid "Remove every copy of {name} from your account? Saves on your computers aren't touched."
+msgstr "从你的账号中移除 {name} 的所有副本？你电脑上的存档不受影响。"
 
 #: ../../apps/launcher/src/library.tsx
 msgid "Remove filter {on}"
@@ -4731,6 +5147,15 @@ msgstr "从游戏库中移除"
 #: ../../apps/launcher/src/detail.tsx
 msgid "Remove tag {tag}"
 msgstr "移除标签 {tag}"
+
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Remove this backup"
+msgstr "移除此备份"
+
+#: ../../apps/launcher/src/cloud-saves-page.tsx
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Remove this copy from your account"
+msgstr "从你的账号中移除此副本"
 
 #: ../../apps/launcher/src/github-token.tsx
 #: ../../apps/launcher/src/gitlab-token.tsx
@@ -4752,7 +5177,7 @@ msgstr "从游戏库中移除后，其文件仍会保留在原处。"
 
 #: ../../apps/launcher/src/mods.tsx
 msgid "Removing…"
-msgstr "正在移除 →"
+msgstr "正在移除…"
 
 #. Button beside an app's name on its page: gives it a name of the player's own
 #. Button: rename one of the player's tags
@@ -4780,7 +5205,7 @@ msgstr "重命名文件夹"
 
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Rename folder…"
-msgstr "重命名文件夹 →"
+msgstr "重命名文件夹…"
 
 #. Menu item: gives an app in the library a name of the player's own
 #: ../../apps/launcher/src/card-menu.tsx
@@ -4821,10 +5246,17 @@ msgid "Reset bindings to defaults"
 msgstr "将按键绑定重置为默认值"
 
 #. Window button: un-maximize
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/cloud-saves-page.tsx
 #: ../../apps/launcher/src/recovery.tsx
+#: ../../apps/launcher/src/saves-tab.tsx
 #: ../../apps/launcher/src/window-bar.tsx
 msgid "Restore"
 msgstr "恢复"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Restore {name}'s saves to this folder?"
+msgstr ""
 
 #: ../../apps/launcher/src/recovery.tsx
 msgid "Restore a backup Quiver kept. The newest is first."
@@ -4837,6 +5269,28 @@ msgstr "恢复备份"
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Restore from backup"
 msgstr "从备份恢复"
+
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Restore this backup? Your saves now are backed up first."
+msgstr "恢复此备份？会先备份你当前的存档。"
+
+#: ../../apps/launcher/src/cloud-saves-page.tsx
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Restore this copy? Your saves now are backed up first."
+msgstr "恢复此副本？会先备份你当前的存档。"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Restore to this folder?"
+msgstr ""
+
+#. Said after a save backup was put back
+#. Said after a save backup was put back
+#. Said after a save backup was put back
+#. Said after a save backup was put back
+#: ../../apps/launcher/src/cloud-saves-page.tsx
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Restored."
+msgstr "已恢复。"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Results for “{typed}”"
@@ -4904,11 +5358,11 @@ msgstr "保存令牌"
 
 #: ../../apps/launcher/src/repository-tokens.tsx
 msgid "Saved."
-msgstr ""
+msgstr "已保存。"
 
 #: ../../apps/launcher/src/repository-tokens.tsx
 msgid "Saved. Requests to {clean} use your token now."
-msgstr ""
+msgstr "已保存。现在发往 {clean} 的请求会使用你的令牌。"
 
 #: ../../apps/launcher/src/github-token.tsx
 msgid "Saved. Requests to GitHub use your token now."
@@ -4918,6 +5372,13 @@ msgstr "已保存。现在，向 GitHub 发送请求时会使用你的令牌。"
 msgid "Saved. Requests to GitLab use your token now."
 msgstr "已保存。现在，向 GitLab 发送请求时会使用你的令牌。"
 
+#. Tab of an installed app's page: its save backups
+#. Tab of an installed app's page: its save backups
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Saves"
+msgstr "存档"
+
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Saves and settings come too. After that, you can delete your Quiver Launcher 3 folder."
 msgstr "存档和设置也会一起移动。之后你就可以删除 Quiver Launcher 3 文件夹。"
@@ -4925,7 +5386,7 @@ msgstr "存档和设置也会一起移动。之后你就可以删除 Quiver Laun
 #: ../../apps/launcher/src/feedback.tsx
 #: ../../apps/launcher/src/repository-tokens.tsx
 msgid "Saving…"
-msgstr "正在保存 →"
+msgstr "正在保存…"
 
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Say how {name} ran for you"
@@ -4934,6 +5395,10 @@ msgstr "分享你使用 {name} 的运行体验"
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Say how it ran for you"
 msgstr "分享你的运行体验"
+
+#: ../../apps/launcher/src/feedback.tsx
+msgid "Say what went wrong, so the developer and other players can make sense of it."
+msgstr "说明出了什么问题，方便开发者和其他玩家理解。"
 
 #: ../../apps/launcher/src/correction.tsx
 msgid "Say what's wrong or missing."
@@ -5050,6 +5515,10 @@ msgstr "查看游戏页面"
 msgid "See the report"
 msgstr "查看报告"
 
+#: ../../apps/launcher/src/App.tsx
+msgid "See what each app keeps in your account, and remove copies you don't need."
+msgstr "查看每个应用在你账号中保留的内容，并移除不需要的副本。"
+
 #: ../../apps/launcher/src/old-library.tsx
 msgid "See which apps"
 msgstr "查看哪些应用"
@@ -5066,13 +5535,26 @@ msgstr "选择"
 msgid "Send"
 msgstr "发送"
 
+#: ../../apps/launcher/src/cloud-saves-page.tsx
+msgid "Send saves now"
+msgstr "立即发送存档"
+
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Send the newest backup now"
+msgstr "立即发送最新备份"
+
 #: ../../apps/launcher/src/telemetry-ui.tsx
 msgid "Send usage data"
 msgstr "发送使用情况数据"
 
 #: ../../apps/launcher/src/correction.tsx
 msgid "Sending…"
-msgstr "正在发送 →"
+msgstr "正在发送…"
+
+#: ../../apps/launcher/src/cloud-saves-page.tsx
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Sent to your cloud saves."
+msgstr "已发送到你的云存档。"
 
 #: ../../apps/launcher/src/correction.tsx
 msgid "Sent with your account name, this launcher's version and your system, so maintainers can check it."
@@ -5136,7 +5618,7 @@ msgstr "共享播放列表"
 
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Share feedback…"
-msgstr "分享反馈 →"
+msgstr "分享反馈…"
 
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Share how it ran"
@@ -5154,6 +5636,7 @@ msgstr "共享播放列表链接"
 msgid "Shortcuts"
 msgstr "快捷方式"
 
+#. Button: show a hidden catalog tag again
 #. Controller hint: what Confirm does, scrolling the focused control into view
 #. Makes a hidden post visible again
 #. Picks which library tab or playlist the library shows, where the tabs don't fit
@@ -5161,10 +5644,12 @@ msgstr "快捷方式"
 #: ../../apps/launcher/src/discussions.tsx
 #: ../../apps/launcher/src/library.tsx
 #: ../../apps/launcher/src/spatial.ts
+#: ../../apps/launcher/src/tag-settings.tsx
 msgid "Show"
 msgstr "显示"
 
 #. A dot under the featured apps: shows that app's slide
+#: ../../apps/launcher/src/tag-settings.tsx
 #: ../ui/src/discover.tsx
 msgid "Show {name}"
 msgstr "显示 {name}"
@@ -5176,6 +5661,11 @@ msgstr "显示一张你自己的图片作为游戏库网格背景。“侧边栏
 #: ../../apps/launcher/src/announcements-ui.tsx
 msgid "Show again"
 msgstr "再次显示"
+
+#. Button: show every catalog tag again
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "Show all"
+msgstr "全部显示"
 
 #: ../../apps/launcher/src/library.tsx
 msgid "Show all apps"
@@ -5233,6 +5723,10 @@ msgstr "显示较少"
 msgid "Show more"
 msgstr "显示更多"
 
+#: ../../apps/launcher/src/feedback.tsx
+msgid "Show my PC specs to other players"
+msgstr "向其他玩家显示我的电脑配置"
+
 #: ../../apps/launcher/src/library-view.tsx
 msgid "Show names on cards"
 msgstr "在卡片上显示名称"
@@ -5257,6 +5751,10 @@ msgstr "显示密码"
 #: ../../apps/launcher/src/old-library.tsx
 msgid "Show Quiver where your Quiver Launcher 3 folder is, and your apps come over with the tags you gave them, your hidden apps, the pictures you chose and your tag filters. Anything already installed plays from where it is, so nothing downloads again, and nothing is moved or deleted."
 msgstr "告诉 Quiver 你的 Quiver Launcher 3 文件夹在哪里，你的应用就会连同你加的标签、隐藏的应用、选择的图片和标签筛选器一起迁移过来。已安装的内容从原位置运行，无需重新下载，也不会移动或删除任何内容。"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Show the catalog's tag {name} on this app"
+msgstr "在此应用上显示目录标签 {name}"
 
 #: ../../apps/launcher/src/game.tsx
 msgid "Show the full description"
@@ -5299,6 +5797,11 @@ msgstr "侧边栏宽度"
 #: ../../apps/launcher/src/setup.tsx
 msgid "Sign in"
 msgstr "登录"
+
+#: ../../apps/launcher/src/cloud-saves-page.tsx
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Sign in to keep your saves with your Quiver account, so they follow you to another computer."
+msgstr "登录后可将存档保存到你的 Quiver 账号，换一台电脑也能继续使用。"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Sign in to Quiver"
@@ -5403,6 +5906,10 @@ msgstr "排序模组"
 msgid "Source"
 msgstr "来源"
 
+#: ../../apps/launcher/src/cloud-saves-page.tsx
+msgid "Space used"
+msgstr "已用空间"
+
 #. Reason for reporting a post
 #: ../../apps/launcher/src/discussions.tsx
 msgid "Spam"
@@ -5453,7 +5960,7 @@ msgstr "正在启动"
 
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Starting {name}…"
-msgstr "正在启动 {name} →"
+msgstr "正在启动 {name}…"
 
 #: ../../apps/launcher/src/custom.ts
 msgid "Starts {path} on this computer."
@@ -5468,8 +5975,8 @@ msgid "Starts it where it is. Nothing is downloaded, moved or deleted."
 msgstr "从当前位置启动。不会下载、移动或删除任何内容。"
 
 #: ../../apps/launcher/src/launch-options.tsx
-msgid "Starts the executable Quiver finds in the app's folder. You can choose another, in that folder or anywhere else."
-msgstr "启动 Quiver 在应用文件夹中找到的可执行文件。你可以另选一个，可以在该文件夹中，也可以在其他任何位置。"
+msgid "Starts the program Quiver finds in its folder."
+msgstr "启动 Quiver 在其文件夹中找到的程序。"
 
 #: ../../apps/launcher/src/custom.ts
 msgid "Starts the program you put in its folder, {folder}."
@@ -5485,7 +5992,7 @@ msgstr "正在保留在 {installedLabel}"
 
 #: ../../apps/launcher/src/detail.tsx
 msgid "Steam is running Quiver, so it can't add games now. Close Steam and start Quiver on its own, then add it from there."
-msgstr ""
+msgstr "Quiver 是由 Steam 启动的，现在无法把游戏添加到 Steam。请关闭 Steam，单独启动 Quiver，再从那里添加。"
 
 #: ../../apps/launcher/src/setup.tsx
 msgid "Step {n} of {total}"
@@ -5496,6 +6003,10 @@ msgstr "第 {n} 步，共 {total} 步"
 msgid "still scanning its files."
 msgstr "仍在扫描其文件。"
 
+#: ../../apps/launcher/src/sync-folder-page.tsx
+msgid "Stop keeping backups in this folder? The backups in it stay there, and the ones on this computer aren't touched."
+msgstr ""
+
 #: ../../apps/launcher/src/own-copy-settings.tsx
 msgid "Stop looking in {folder} for {console}"
 msgstr "停止在 {folder} 中查找 {console}"
@@ -5503,6 +6014,12 @@ msgstr "停止在 {folder} 中查找 {console}"
 #: ../../apps/launcher/src/library.tsx
 msgid "Stop sharing"
 msgstr "停止共享"
+
+#. Button: no longer keep save backups in the sync folder
+#. Button: no longer keep save backups in the sync folder
+#: ../../apps/launcher/src/sync-folder-page.tsx
+msgid "Stop using"
+msgstr ""
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Submit a correction for a release file's platform"
@@ -5540,6 +6057,13 @@ msgstr "切换到 Linux 版本"
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Switch to the Windows version (Wine)"
 msgstr "切换到 Windows 版本（Wine）"
+
+#. Heading in Settings: a folder of the player's own that save backups are also kept in
+#. Heading on an app's Saves tab: the backups of its saves in the player's own synced folder
+#: ../../apps/launcher/src/saves-tab.tsx
+#: ../../apps/launcher/src/sync-folder-page.tsx
+msgid "Sync folder"
+msgstr ""
 
 #. Controller hint: what the shoulder buttons do where there are tabs, change tab
 #: ../../apps/launcher/src/spatial.ts
@@ -5603,11 +6127,11 @@ msgstr "谢谢！维护者会查看此问题。"
 
 #: ../../apps/launcher/src/store.tsx
 msgid "That address isn't a repository on {host}."
-msgstr ""
+msgstr "该地址不是 {host} 上的代码仓库。"
 
 #: ../../apps/launcher/src/discussions.tsx
 msgid "That didn't work. Try again."
-msgstr ""
+msgstr "操作失败，请重试。"
 
 #: ../../apps/launcher/src/store.tsx
 msgid "That folder doesn't have an installed app in it."
@@ -5658,6 +6182,10 @@ msgstr "{date} 版本"
 msgid "The {installedVersion} Quiver offers isn't the file you installed."
 msgstr "Quiver 提供的 {installedVersion} 并非你安装的文件。"
 
+#: ../../apps/launcher/src/feedback.tsx
+msgid "The app's developer sees them either way."
+msgstr "无论如何，应用的开发者都能看到。"
+
 #: ../../apps/launcher/src/detail.tsx
 msgid "The developer proved they make this app"
 msgstr "开发者已证明自己是此应用的作者"
@@ -5666,10 +6194,6 @@ msgstr "开发者已证明自己是此应用的作者"
 #: ../../apps/launcher/src/feedback.tsx
 msgid "The developer says {0} fixed this."
 msgstr "开发者表示 {0} 已修复此问题。"
-
-#: ../../apps/launcher/src/launch-options.tsx
-msgid "The executable itself"
-msgstr "可执行文件本身"
 
 #: ../../apps/launcher/src/recovery.tsx
 msgid "The file with your library is damaged."
@@ -5715,6 +6239,14 @@ msgstr "包含 Quiver Launcher 3 程序的文件夹。如果是便携版，就�
 msgid "The game asks for it when it starts. Quiver can check yours first."
 msgstr "游戏启动时会提示你提供此文件。Quiver 可以先检查你的副本。"
 
+#: ../../apps/launcher/src/sync-folder-page.tsx
+msgid "the newest 5 of each app are kept"
+msgstr ""
+
+#: ../../apps/launcher/src/App.tsx
+msgid "The newest backup of {name} is on this computer only, and so is each one after it until there's room. Quiver sends it by itself then."
+msgstr "{name} 的最新备份只在这台电脑上，在有空间之前，之后的每个备份也是如此。有空间后 Quiver 会自动发送。"
+
 #: ../../apps/launcher/src/game.tsx
 msgid "THE ORIGINAL GAME"
 msgstr "原版游戏"
@@ -5726,6 +6258,10 @@ msgstr "你在 {sent} 报告的问题已修复。谢谢！"
 #: ../../apps/launcher/src/announcements-ui.tsx
 msgid "The problem you reported with {app} was fixed. Thanks!"
 msgstr "你报告的 {app} 问题已修复。谢谢！"
+
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "The program itself"
+msgstr "程序本身"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "The programs Play offers are under Play with in the app's menu."
@@ -5743,6 +6279,26 @@ msgstr "此版本的其他文件。它们可能无法在你的电脑上运行。
 msgid "The saves and settings come over too."
 msgstr "存档和设置也会一并迁移。"
 
+#: ../../apps/launcher/src/App.tsx
+msgid "The saves in your sync folder stay there as a backup."
+msgstr ""
+
+#: ../../apps/launcher/src/App.tsx
+msgid "The saves in your sync folder stay there as a backup. These become your newest."
+msgstr ""
+
+#: ../../apps/launcher/src/App.tsx
+msgid "The saves in your sync folder were made with {madeWith} of this app, and this computer has {have}. An older version may not be able to load them. The ones you don't pick are kept as a backup on the app's Saves tab."
+msgstr ""
+
+#: ../../apps/launcher/src/App.tsx
+msgid "The saves in your sync folder were made with {madeWith} of this app, and this computer has {have}. An older version may not be able to load them. Update first, then play."
+msgstr ""
+
+#: ../../apps/launcher/src/App.tsx
+msgid "The saves in your sync folder would go in a folder Quiver hasn't kept this app's saves in on this computer. Only use them if this is where the app saves:"
+msgstr ""
+
 #: ../../apps/launcher/src/library.tsx
 msgid "The shared playlist is up to date."
 msgstr "共享播放列表已是最新版本。"
@@ -5751,9 +6307,21 @@ msgstr "共享播放列表已是最新版本。"
 msgid "The tags you gave your apps, including any brought over from Quiver Launcher 3. Renaming or deleting one changes it on every app that has it. The catalog's own tags aren't affected."
 msgstr "你给应用添加的标签，包括从 Quiver Launcher 3 带过来的。重命名或删除一个标签会改动所有带有它的应用。目录自带的标签不受影响。"
 
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "The tags your apps have from the catalog. A hidden tag is left off cards, the tag filter, search and playlists on this computer. To hide one on a single app, untick it in that app's Tags menu."
+msgstr "你的应用从目录获得的标签。隐藏的标签不会出现在这台电脑的卡片、标签筛选、搜索和播放列表中。要只在某个应用上隐藏，请在该应用的“标签”菜单中取消勾选。"
+
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Theme"
 msgstr "主题"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Then press Play, and the saves in your sync folder are put in place."
+msgstr ""
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Then press Play, and your cloud saves are put in place."
+msgstr ""
 
 #: ../../apps/launcher/src/recovery.tsx
 msgid "There are no backups to restore."
@@ -5771,9 +6339,21 @@ msgstr "这里还没有模组。"
 msgid "There are no releases yet. Check the upstream project for downloads."
 msgstr "还没有版本。请前往上游项目查找下载。"
 
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "These are the saves on this computer now."
+msgstr ""
+
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "These old copies moved safely, but some of their files were in use and stayed behind. You can delete them:"
 msgstr "这些旧副本已安全移动，但部分文件当时正在使用，因此仍留在原处。你可以删除它们："
+
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "These saves are too big for cloud saves ({max}). They're backed up on this computer only."
+msgstr "这些存档太大，无法使用云存档（{max}）。它们只备份在这台电脑上。"
+
+#: ../../apps/launcher/src/cloud-saves-page.tsx
+msgid "These saves are too big for cloud saves."
+msgstr "这些存档太大，无法使用云存档。"
 
 #: ../../apps/launcher/src/account.tsx
 msgid "This account is suspended."
@@ -5788,6 +6368,14 @@ msgstr "此应用会使用另一个应用的页面、插画和评价。文件仍
 msgid "This app has no approved release yet."
 msgstr "此应用尚无获批版本。"
 
+#: ../../apps/launcher/src/cloud-saves-page.tsx
+msgid "This app has no saves on this computer yet."
+msgstr "此应用在这台电脑上还没有存档。"
+
+#: ../../apps/launcher/src/cloud-saves-page.tsx
+msgid "This app isn't installed on this computer. Install it to restore a copy."
+msgstr "此应用未安装在这台电脑上。安装后即可恢复副本。"
+
 #: ../../apps/launcher/src/App.tsx
 msgid "This app may keep its saves in this folder. They'll be removed with it."
 msgstr "此应用可能会将存档保存在此文件夹中。卸载时，这些存档也会被删除。"
@@ -5798,7 +6386,7 @@ msgstr "此应用可能会无法找到存档和设置，因为它会在其他位
 
 #: ../../apps/launcher/src/own.tsx
 msgid "This app stays on this computer: account sync doesn't support this kind of host yet."
-msgstr ""
+msgstr "此应用只保留在这台电脑上：账号同步目前还不支持这类托管平台。"
 
 #: ../../apps/launcher/src/store.tsx
 msgid "This app's folder can't be moved."
@@ -5807,6 +6395,10 @@ msgstr "无法移动此应用的文件夹。"
 #: ../../apps/launcher/src/store.tsx
 msgid "This app's folder can't be renamed."
 msgstr "无法重命名此应用的文件夹。"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "This backup's saves were in a folder Quiver hasn't kept this app's saves in on this computer. Only restore it if this is where the app saves:"
+msgstr ""
 
 #: ../../apps/launcher/src/discussions.tsx
 msgid "This discussion is locked, so it takes no new comments."
@@ -5892,11 +6484,11 @@ msgstr "今天"
 
 #: ../../apps/launcher/src/repository-tokens.tsx
 msgid "Token"
-msgstr ""
+msgstr "令牌"
 
 #: ../../apps/launcher/src/repository-tokens.tsx
 msgid "Token for {host}"
-msgstr ""
+msgstr "{host} 的令牌"
 
 #: ../../apps/launcher/src/ways-to-play.tsx
 msgid "Too few reports"
@@ -5957,6 +6549,10 @@ msgstr "重试"
 #: ../../apps/launcher/src/telemetry-ui.tsx
 msgid "Turn off"
 msgstr "关闭"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Turn off cloud saves for {largestName}"
+msgstr "为 {largestName} 关闭云存档"
 
 #. Setting: the launcher's larger, full-screen look for a controller
 #: ../../apps/launcher/src/App.tsx
@@ -6071,11 +6667,11 @@ msgstr "有可用更新"
 
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Update early to {earlier}…"
-msgstr "提前更新到 {earlier} →"
+msgstr "提前更新到 {earlier}…"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Update early…"
-msgstr "提前更新 →"
+msgstr "提前更新…"
 
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Update notes"
@@ -6112,6 +6708,10 @@ msgid "Update to {updateLabel}"
 msgstr "更新到 {updateLabel}"
 
 #: ../../apps/launcher/src/App.tsx
+msgid "Update to {updateTo}"
+msgstr ""
+
+#: ../../apps/launcher/src/App.tsx
 msgid "Update to {updateVersion}"
 msgstr "更新到 {updateVersion}"
 
@@ -6135,7 +6735,7 @@ msgstr "更新于 {when}"
 
 #: ../../apps/launcher/src/downloads-page.tsx
 msgid "Updated to {version} · {when}"
-msgstr "已更新到 {version} → {when}"
+msgstr "已更新到 {version} · {when}"
 
 #. How an installed app gets new releases
 #: ../../apps/launcher/src/App.tsx
@@ -6175,16 +6775,16 @@ msgstr "正在更新 Quiver Launcher"
 
 #: ../../apps/launcher/src/update.tsx
 msgid "Updating to {version}… {done}% Quiver Launcher restarts when it's done."
-msgstr "正在更新到 {version} → {done}% 更新完成后，Quiver Launcher 会重新启动。"
+msgstr "正在更新到 {version}… {done}% 更新完成后，Quiver Launcher 会重新启动。"
 
 #: ../../apps/launcher/src/update.tsx
 msgid "Updating to {version}… Quiver Launcher restarts when it's done."
-msgstr "正在更新到 {version} → 更新完成后，Quiver Launcher 会重新启动。"
+msgstr "正在更新到 {version}… 更新完成后，Quiver Launcher 会重新启动。"
 
 #: ../../apps/launcher/src/downloads-page.tsx
 #: ../../apps/launcher/src/mods.tsx
 msgid "Updating…"
-msgstr "正在更新 →"
+msgstr "正在更新…"
 
 #: ../../apps/launcher/src/setup.tsx
 #: ../../apps/launcher/src/telemetry-ui.tsx
@@ -6202,6 +6802,14 @@ msgstr "至少输入 10 个字符。"
 #: ../../apps/launcher/src/controls.tsx
 msgid "Use controllers to move around Quiver"
 msgstr "使用手柄浏览 Quiver"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Use my cloud saves"
+msgstr "使用我的云存档"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Use my cloud saves anyway"
+msgstr ""
 
 #. Which releases an app gets: whatever Settings, Updates says, which is to include pre-releases
 #: ../../apps/launcher/src/App.tsx
@@ -6227,6 +6835,10 @@ msgstr "使用我的默认设置（提供它们）"
 msgid "Use no more than 100 characters."
 msgstr "最多输入 100 个字符。"
 
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Use Quiver's choice"
+msgstr "使用 Quiver 的选择"
+
 #: ../../apps/launcher/src/detail.tsx
 msgid "Use the catalog's consoles"
 msgstr "使用目录中的主机信息"
@@ -6238,6 +6850,14 @@ msgstr "使用目录中的名称"
 #: ../../apps/launcher/src/App.tsx
 msgid "Use the catalog's name and artwork"
 msgstr "使用目录中的名称和插画"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Use the saves in my sync folder"
+msgstr ""
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Use the saves in my sync folder anyway"
+msgstr ""
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Use the system's title bar (instead of Quiver's own window buttons)"
@@ -6259,6 +6879,12 @@ msgstr "已验证"
 msgid "Version {checkingVersion} is <0/>"
 msgstr "版本 {checkingVersion} 为 <0/>"
 
+#. The app's version when a save backup was made
+#. The app's version when a save backup was made
+#. The app's version when a save backup was made
+#. The app's version when a save backup was made
+#: ../../apps/launcher/src/cloud-saves-page.tsx
+#: ../../apps/launcher/src/saves-tab.tsx
 #: ../../apps/launcher/src/update.tsx
 msgid "Version {version}"
 msgstr "版本 {version}"
@@ -6279,7 +6905,7 @@ msgstr "在 {host} 上查看 {version}"
 #. placeholder {0}: providerName(source.provider, source.host)
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "View on {0}"
-msgstr ""
+msgstr "在 {0} 上查看"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/library.tsx
@@ -6374,6 +7000,10 @@ msgid "What players say"
 msgstr "玩家评价"
 
 #: ../../apps/launcher/src/feedback.tsx
+msgid "What went wrong, and when? What did you try to fix it?"
+msgstr "出了什么问题？在什么时候？你尝试过怎样解决？"
+
+#: ../../apps/launcher/src/feedback.tsx
 msgid "What worked well, and what didn't? Did you do anything to get it running or fix a problem?"
 msgstr "哪些方面运行良好，哪些不行？你是否做了什么设置来让它运行或解决问题？"
 
@@ -6421,7 +7051,11 @@ msgstr "你的游戏在哪里？"
 
 #: ../../apps/launcher/src/own.tsx
 msgid "Where it's hosted"
-msgstr ""
+msgstr "托管平台"
+
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Where saves are kept"
+msgstr "存档位置"
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Where your Quiver Launcher 3 apps are, and Quiver's apps folder"
@@ -6434,6 +7068,18 @@ msgstr "哪个应用？"
 #: ../../apps/launcher/src/App.tsx
 msgid "Which download?"
 msgstr "哪个下载项？"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Which saves of {name} do you want to keep?"
+msgstr "要保留 {name} 的哪份存档？"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Which saves of {name}?"
+msgstr "{name} 的哪份存档？"
+
+#: ../../apps/launcher/src/cloud-saves-page.tsx
+msgid "While you're signed in, backups of your saves are also kept with your Quiver account, so they follow you to another computer. Each app's Saves tab has its own switch."
+msgstr "登录期间，存档备份也会保存到你的 Quiver 账号，换一台电脑也能继续使用。每个应用的“存档”标签页都有单独的开关。"
 
 #: ../../apps/launcher/src/discussions.tsx
 msgid "Why are you reporting this?"
@@ -6489,6 +7135,10 @@ msgstr "你"
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "You added it from your own folder or program, and Quiver leaves those where you put them."
 msgstr "它是你从自己的文件夹或程序添加的，Quiver 会把这类应用留在你放置的位置。"
+
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "You chose this folder."
+msgstr "你选择了此文件夹。"
 
 #: ../../apps/launcher/src/detail.tsx
 msgid "You have it installed. If you're happy to accept the risk, you can keep using it; otherwise, remove it and install an available release instead."
@@ -6550,6 +7200,38 @@ msgstr "你的应用"
 #: ../../apps/launcher/src/old-library.tsx
 msgid "Your apps are in your library."
 msgstr "你的应用已在游戏库中。"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Your cloud saves are full"
+msgstr "你的云存档已满"
+
+#: ../../apps/launcher/src/cloud-saves-page.tsx
+msgid "Your cloud saves are full ({limit}). Remove copies to make room."
+msgstr "你的云存档已满（{limit}）。请移除副本以腾出空间。"
+
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Your cloud saves are full ({limit}). The newest backup is on this computer only. Remove copies here or from another app to make room."
+msgstr "你的云存档已满（{limit}）。最新备份只在这台电脑上。请移除这里或其他应用的副本以腾出空间。"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Your cloud saves stay in your account as a backup."
+msgstr ""
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Your cloud saves stay in your account as a backup. These become your newest."
+msgstr ""
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Your cloud saves were made with {madeWith} of this app, and this computer has {have}. An older version may not be able to load them. The ones you don't pick are kept as a backup on the app's Saves tab."
+msgstr ""
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Your cloud saves were made with {madeWith} of this app, and this computer has {have}. An older version may not be able to load them. Update first, then play."
+msgstr ""
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Your cloud saves would go in a folder Quiver hasn't kept this app's saves in on this computer. Only use them if this is where the app saves:"
+msgstr ""
 
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Your copies: {ready} of {total} set up"
@@ -6627,6 +7309,18 @@ msgstr "你提交的问题报告"
 #: ../../apps/launcher/src/setup.tsx
 msgid "Your Quiver Launcher 3 apps are in your library"
 msgstr "你在 Quiver Launcher 3 中的应用已加入游戏库"
+
+#: ../../apps/launcher/src/sync-folder-page.tsx
+msgid "Your save backups go here from now on, after you play."
+msgstr ""
+
+#: ../../apps/launcher/src/store.tsx
+msgid "Your saves from {device} were put in place from your sync folder. The saves that were here are backed up."
+msgstr ""
+
+#: ../../apps/launcher/src/store.tsx
+msgid "Your saves from {device} were put in place. The saves that were here are backed up."
+msgstr "已换上来自 {device} 的存档。原先在这里的存档已备份。"
 
 #: ../../apps/launcher/src/detail.tsx
 #: ../../apps/launcher/src/tag-settings.tsx

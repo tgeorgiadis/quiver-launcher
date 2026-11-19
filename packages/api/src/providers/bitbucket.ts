@@ -11,7 +11,7 @@ const API = "https://api.bitbucket.org/2.0";
 
 /** The version a download's name carries: "app-1.2.3-win64.zip" is 1.2.3. */
 export function bitbucketVersion(name: string): string {
-  const base = name.replace(/\.(zip|7z|tar\.gz|tgz|tar\.xz|txz|tar\.zst|tzst|tar\.bz2|tbz2?|tar|rar|appimage|flatpak|exe|apk|msi)$/i, "");
+  const base = name.replace(/\.(zip|7z|tar\.gz|tgz|tar\.xz|txz|tar\.zst|tzst|tar\.bz2|tbz2?|tar|rar|appimage|flatpak|exe|bat|cmd|apk|msi)$/i, "");
   const match = base.match(/(?:^|[-_.])v?(\d+(?:\.\d+){1,3}(?:[-_.]?(?:alpha|beta|rc|pre|dev)\d*)?)(?:[-_.]|$)/i);
   return match ? match[1] : base;
 }

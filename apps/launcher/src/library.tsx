@@ -21,7 +21,7 @@ import { jumpLetters, letterOf } from "./letters";
 import { LetterIndex } from "./letter-index";
 import { versionLabel } from "./versions";
 import { useAccount } from "./account";
-import { hasFilters, inCollection, matches, newKey, type AppFacts, type Collection } from "./sync";
+import { hasFilters, inCollection, matches, newKey, pickedOutside, type AppFacts, type Collection } from "./sync";
 import { isLocal, isOwn } from "./custom";
 import { withPictures, type Pictures } from "./custom-art";
 import { LIBRARY_SORTS, compareApps, isLibrarySort, type LibrarySort } from "./sort";
@@ -284,7 +284,7 @@ export function LibraryPage({
       })
     : [
         ...shown.flatMap((i) => (catalog[i.id] ? [{ entry: withOverrides(catalog[i.id], i.overrides), item: i }] : [])),
-        ...(collection?.apps ?? []).flatMap((id) => (!inLibrary.has(id) && catalog[id] ? [{ entry: catalog[id] }] : [])),
+        ...pickedOutside(collection, (id) => inLibrary.has(id), catalog).map((id) => ({ entry: catalog[id] })),
       ];
   // The player's own tags, to filter on as well as the catalog's.
   const ownTags = [...new Set(candidates.flatMap((c) => c.item?.overrides?.tags ?? []))];
@@ -360,6 +360,7 @@ export function LibraryPage({
       {editing && (
         <PlaylistEditor
           collection={editing}
+          picked={(editing.apps ?? []).filter((id) => inLibrary.has(id)).length + pickedOutside(editing, (id) => inLibrary.has(id), catalog).length}
           library={candidates.map((c) => c.entry)}
           ownTags={ownTags}
           on={sharedEntries}
@@ -398,7 +399,7 @@ export function LibraryPage({
       ...all.flatMap((i) =>
         catalog[i.id] && !hidden.has(i.id) && (ids.has(i.id) || (hasFilters(c) && matches(c, facts(catalog[i.id], i), makers))) ? [catalog[i.id]] : [],
       ),
-      ...[...ids].flatMap((id) => (!inLibrary.has(id) && catalog[id] ? [catalog[id]] : [])),
+      ...pickedOutside(c, (id) => inLibrary.has(id), catalog).map((id) => catalog[id]),
     ];
   }
   if (!all.length && !loose.length && !collections.length)
@@ -1543,12 +1544,15 @@ export function Dialog({ label, className, onClose, over, children }: { label: s
 /** Names a playlist and sets its filters. Without filters it holds only the apps picked for it. */
 function PlaylistEditor({
   collection,
+  picked,
   library,
   ownTags,
   on,
   onClose,
 }: {
   collection: Collection;
+  /** How many of the apps picked for it it shows: not one the player added and has since removed. */
+  picked: number;
   library: Entry[];
   ownTags: string[];
   /** The apps a playlist like this one holds. */
@@ -1565,7 +1569,6 @@ function PlaylistEditor({
   const platforms = platform === collection.platforms?.[0] ? collection.platforms : platform && [platform];
   const set = (key: keyof Filters) => (e: { target: { value: string } }) => setFilters({ ...filters, [key]: e.target.value || undefined });
   const many = (key: "consoles" | "projectTypes", picked: string[]) => setFilters({ ...filters, [key]: picked.length ? picked : undefined });
-  const picked = collection.apps?.length ?? 0;
   return (
     <Dialog label={isNew ? t`New playlist` : t`Edit playlist`} onClose={() => onClose()}>
       <form

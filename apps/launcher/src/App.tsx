@@ -1,12 +1,12 @@
 import { startTransition, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { ArrowLeft, ArrowUp, BookOpen, ChevronDown, CircleArrowDown, CircleCheck, CirclePlay, CircleUser, Compass, Disc3, Download, Eye, EyeOff, FolderInput, FolderOpen, FolderPen, FolderSearch, History, Info, MessagesSquare, LayoutGrid, Library, LogOut, PanelLeft, Mail, PackagePlus, Pencil, Pin, Play, Plus, Search, SettingsIcon, RotateCcw, ShieldAlert, ShieldCheck, ShieldX, SlidersHorizontal, Smile, Trash2, TriangleAlert, Tv, X } from "lucide-react";
+import { ArrowLeft, ArrowUp, BookOpen, Save, ChevronDown, Cloud, CircleArrowDown, CircleCheck, CirclePlay, CircleUser, Compass, Disc3, Download, Eye, EyeOff, FolderInput, FolderOpen, FolderPen, FolderSearch, FolderSync, History, Info, MessagesSquare, LayoutGrid, Library, LogOut, PanelLeft, Mail, PackagePlus, Pencil, Pin, Play, Plus, Search, SettingsIcon, RotateCcw, ShieldAlert, ShieldCheck, ShieldX, SlidersHorizontal, Smile, Trash2, TriangleAlert, Tv, X } from "lucide-react";
 import type { AppQuery, Asset, Entry, GameMatch, Os, Page, ProjectType } from "@quiverlauncher/api";
 import { msg, plural, t } from "@lingui/core/macro";
 import { Plural, Trans } from "@lingui/react/macro";
 import { i18n } from "@quiverlauncher/i18n";
 import type { MessageDescriptor } from "@lingui/core";
 import { Artwork, EntryCard, OS_NAMES, PlatformIcons, ReleaseBadge, SourcedImage, heroSources } from "@quiverlauncher/ui";
-import { PORTABLE_FILE, availableOn, canGet, catalogOs, declinedUpdate, earlyGetOffer, earlyOffer, filesAddable, hasUpdate, locatable, movable, noProgram, pulledVerified, renamable, rootOf, samePath, skipped, stillWaiting, tvModeOn, updateFor, updatesOf, useLauncher, type AppMove, type Choice } from "./store";
+import { PORTABLE_FILE, availableOn, canGet, catalogOs, declinedUpdate, earlyGetOffer, earlyOffer, filesAddable, folderNameOf, hasUpdate, locatable, movable, noProgram, pulledVerified, renamable, rootOf, samePath, skipped, stillWaiting, tvModeOn, updateFor, updatesOf, useLauncher, type AppMove, type Choice } from "./store";
 import { TabPrompt } from "./pad-hints";
 import { Dialog, FilterPill, LibraryPage, MultiPill, Popover, consoleOptions, filterLabel, pickedLabel, projectTypeOptions, withOverrides, type MultiOption } from "./library";
 import { BrowseCardOptions, useBrowseCards, useLibraryView, useSidebarFits } from "./library-view";
@@ -30,6 +30,7 @@ import { track, trackScreen } from "./telemetry";
 import { TelemetryNotice, useTelemetrySetup } from "./telemetry-ui";
 import { useAccount, type CatalogDefaults } from "./account";
 import { native } from "./native";
+import { sizeLabel } from "./downloads";
 import { correctionClient } from "./corrections";
 import { isCustom, isLocal, isOwn } from "./custom";
 import { ArtFields, artValues, artValuesOk, fromArtValues } from "./custom-art";
@@ -41,8 +42,12 @@ import { useTopBarFit } from "./top-bar-fit";
 import { ResizeEdges, WindowControls, moveWindow, movesByPage, resizeEdges, useWindowButtons } from "./window-bar";
 import { SettingsPage, useDiscordPresence, useTray } from "./settings-page";
 import { MANAGE_TAGS } from "./tag-settings";
+import { OPEN_APP } from "./cloud-saves-page";
 import { OldLibrary } from "./old-library";
 import { Setup, showsSetup } from "./setup";
+import { savesChanged, savesOf, savesOn } from "./saves";
+import type { CloudUsage } from "./cloud-saves";
+import { SavesTab } from "./saves-tab";
 import { FilePicker } from "./file-picker";
 import { BrowseMenu, fileName } from "./card-menu";
 import { browseShown, hiddenMatches, toggleHidden, type HiddenView } from "./browse-hidden";
@@ -60,7 +65,7 @@ type View =
   | { kind: "app"; entry: Entry; at?: PageAt }
   | { kind: "game"; game: GameLink }
   | { kind: "downloads" }
-  | { kind: "settings"; section?: "library" | "copies" | "updates" }
+  | { kind: "settings"; section?: "library" | "copies" | "cloud" | "updates" }
   | { kind: "community" }
   | { kind: "discussion"; id: string };
 const viewKey = (v: View) => (v.kind === "app" ? `app:${v.entry.id}` : v.kind === "game" ? `game:${v.game.slug}` : v.kind === "discussion" ? `discussion:${v.id}` : v.kind);
@@ -127,6 +132,12 @@ export function App() {
     window.addEventListener(MANAGE_TAGS, manage);
     return () => window.removeEventListener(MANAGE_TAGS, manage);
   }, [open]);
+  // Settings' Cloud saves lists apps, and each can ask for its page (cloud-saves-page.tsx).
+  useEffect(() => {
+    const page = (e: Event) => openApp((e as CustomEvent<Entry>).detail);
+    window.addEventListener(OPEN_APP, page);
+    return () => window.removeEventListener(OPEN_APP, page);
+  }, [openApp]);
   // Read from the stack as shown, not in setStack's updater, which React can run twice.
   const shown = useRef<View[]>([]);
   const goBack = useCallback(() => {
@@ -385,6 +396,9 @@ export function App() {
       <AddFilesPrompt />
       <ChangeVersion />
       <ProgramPrompt />
+      <SavesConflictPrompt />
+      <SavesPlacesPrompt />
+      <SavesFullPrompt onFreeUp={() => open({ kind: "settings", section: "cloud" })} />
       <OwnCopyPrompt />
       <Notice />
       {/* Over every dialog that asks for a file or a folder, in Steam's Game Mode. */}
@@ -465,7 +479,7 @@ function BrowsePage({
   kept: KeptBrowse | null;
   onKeep: (kept: KeptBrowse) => void;
 }) {
-  const { client, config, library, remember, consoles, consoleNames, settings, setSettings, jobs } = useLauncher();
+  const { client, config, library, remember, consoles, consoleNames, settings, setSettings, jobs, withShownTags } = useLauncher();
   const saved = useAccount().user?.catalogDefaults;
   // As in Quiver Launcher 3, apps already in the library stay out of Browse unless the player asks for them.
   const showOwned = Boolean(settings.browseShowsLibrary);
@@ -852,7 +866,7 @@ function BrowsePage({
             {entries.map((entry) => (
               <EntryCard
                 key={entry.id}
-                entry={entry}
+                entry={withShownTags(entry)}
                 {...looks.card(entry)}
                 // A download's progress, or what went wrong, shows over the art without hover.
                 className={jobs[entry.id] ? "busy" : undefined}
@@ -1179,7 +1193,7 @@ function Action({ entry, apart, reasonElsewhere }: { entry: Entry; apart?: boole
  * library's sidebar it has no way back, and shows the player's own play.
  */
 /** Each tab of an app's page's icon: outlined and grey, filled in the accent while it's open (app.css). */
-const TAB_ICONS = { overview: Info, media: CirclePlay, releases: CircleArrowDown, feedback: Smile, discussions: MessagesSquare, computer: SlidersHorizontal };
+const TAB_ICONS = { overview: Info, media: CirclePlay, releases: CircleArrowDown, feedback: Smile, discussions: MessagesSquare, computer: SlidersHorizontal, saves: Save };
 /** A tab of an app's page: which, its name, and a count beside it. */
 type PageTab = readonly [keyof typeof TAB_ICONS, string, string | undefined];
 
@@ -1224,7 +1238,7 @@ function AppPage({
   const releases = useReleases(entry, site);
   const { own, refresh } = useOwnFeedback(entry, site);
   const { user } = useAccount();
-  const [tab, setTab] = useState<"overview" | "media" | "releases" | "feedback" | "discussions" | "computer">(
+  const [tab, setTab] = useState<"overview" | "media" | "releases" | "feedback" | "discussions" | "computer" | "saves">(
     at && "releases" in at ? "releases" : at && "feedback" in at ? "feedback" : "overview",
   );
   // Another tab: its content keeps the last one's height until it has come (nothing loading in it, and no longer
@@ -1288,9 +1302,10 @@ function AppPage({
   const media = detail?.media ?? [];
   const overviewTab: PageTab = ["overview", t({ message: "Overview", comment: "Tab of an app's page" }), undefined];
   const computerTab: PageTab = ["computer", t({ message: "Manage", comment: "Tab of an app's page: its shortcuts, setup and place in the library" }), undefined];
+  const savesTab: PageTab[] = install && savesOn(config.os) ? [["saves", t({ message: "Saves", comment: "Tab of an installed app's page: its save backups" }), undefined]] : [];
   // One the player added has no site page, so only its README and what this computer has of it, each a tab as a
   // catalog app's are; a local app has no README, so no tabs.
-  const ownTabs: PageTab[] = [...(isLocal(entry.id) ? [] : [overviewTab]), ...(item || install ? [computerTab] : [])];
+  const ownTabs: PageTab[] = [...(isLocal(entry.id) ? [] : [overviewTab]), ...(item || install ? [computerTab] : []), ...savesTab];
   const siteTabs: PageTab[] = [
     overviewTab,
     ...(media.length ? [["media", t({ message: "Media", comment: "Tab of an app's page, with its videos" }), String(media.length)] as const] : []),
@@ -1298,6 +1313,7 @@ function AppPage({
     ["feedback", t`Player feedback`, String(said)],
     ["discussions", t({ message: "Discussions", comment: "Tab on an app's page: players' threads about it" }), threads === undefined ? undefined : threads >= 100 ? "100+" : String(threads)],
     ...(item || install ? [computerTab] : []),
+    ...savesTab,
   ];
   const tabs = site ? siteTabs : ownTabs.length > 1 ? ownTabs : [];
   const hero = entry.libraryArt?.hero || entry.libraryArt?.header;
@@ -1342,7 +1358,7 @@ function AppPage({
         <ModsButton entry={entry} />
         {install && foldersOn(config.os) && <LaunchOptionsButton id={entry.id} />}
         {filesAddable(install) && foldersOn(config.os) && !(job && !("error" in job)) && <AddFilesButton entry={entry} />}
-        {install?.installer === "msi" && !job && <ReinstallButton id={entry.id} />}
+        {install?.installer && !job && <ReinstallButton id={entry.id} />}
         {renamable(install) && foldersOn(config.os) && !(job && !("error" in job)) && (
           <button className="panel-action opens" onClick={() => askRename(entry)}>
             <FolderPen size={16} aria-hidden="true" /> <Trans>Rename folder</Trans>
@@ -1699,6 +1715,7 @@ function AppPage({
           {tab === "media" && <MediaTab videos={media} slug={entry.slug} />}
           {tab === "releases" && <ReleasesTab entry={entry} detail={detail} history={history} checking={checking} openVersion={at && "releases" in at ? at.releases : undefined} />}
           {(tabs.length ? tab === "computer" : true) && computer}
+          {tab === "saves" && savesTab.length > 0 && <SavesTab entry={entry} />}
           {tab === "discussions" && <DiscussionsTab entryId={entry.id} />}
           {tab === "feedback" && (
             <FeedbackTab
@@ -1752,7 +1769,7 @@ function UpdatesChoice({ id }: { id: string }) {
   const { installs, settings, setUpdates } = useLauncher();
   const install = installs[id];
   if (!install || install.local) return null;
-  const auto = !install.installer;
+  const auto = !install.installer && !install.setup;
   const installedVersion = versionLabel(install.version);
   const byDefault =
     settings.autoUpdates && auto
@@ -2113,6 +2130,247 @@ function Notice() {
   );
 }
 
+/** Play, for an app whose saves changed both here and in the account since they last matched: which the player keeps. */
+/**
+ * The account had no room for a backup: said once, with the two ways to make some. The backup is on this computer
+ * either way, and is sent by itself once there's room.
+ */
+function SavesFullPrompt({ onFreeUp }: { onFreeUp: () => void }) {
+  const { savesFull: id, closeSavesFull: close, catalog, installs, cloudCatchUp, setNotice } = useLauncher();
+  const account = useAccount();
+  const api = account.cloudSaves;
+  const [usage, setUsage] = useState<CloudUsage | null>(null);
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    setUsage(null);
+    if (id && api) api.usage().then(setUsage, () => {});
+  }, [id, Boolean(api)]); // eslint-disable-line react-hooks/exhaustive-deps
+  if (!id || !api) return null;
+  const name = catalog[id]?.projectName ?? "";
+  const used = usage ? sizeLabel(usage.used) : "";
+  const limit = usage ? sizeLabel(usage.limit) : "";
+  // The app keeping the most, when it's installed here: its switch is this computer's to set.
+  const [largest] = usage?.apps ?? [];
+  const largestInstall = largest && installs[largest.entryId];
+  const largestName = largest?.name ?? "";
+  const largestSize = largest ? sizeLabel(largest.size) : "";
+  const count = largest?.copies.length ?? 0;
+  const turnOff = () => {
+    if (!largest || !largestInstall) return;
+    setBusy(true);
+    native
+      .savesCloudOff(savesOf(largest.entryId, largestInstall, catalog[largest.entryId]), true)
+      .then(() => api.remove({ entryId: largest.entryId }))
+      .then(
+        () => {
+          savesChanged(largest.entryId);
+          cloudCatchUp();
+          setNotice(t`Cloud saves are off for ${largestName}, and its copies were removed from your account.`);
+        },
+        () => setNotice(t`Couldn't reach your cloud saves. Check your connection and try again.`, { stays: true }),
+      )
+      .finally(() => (setBusy(false), close()));
+  };
+  return (
+    <Dialog label={t`Your cloud saves are full`} onClose={close}>
+      <div className="detail-body program-prompt saves-full">
+        <h2>
+          <Cloud size={18} aria-hidden="true" /> <Trans>Your cloud saves are full</Trans>
+        </h2>
+        <p className="muted">
+          {usage ? t`${used} of ${limit} used.` : null} {t`The newest backup of ${name} is on this computer only, and so is each one after it until there's room. Quiver sends it by itself then.`}
+        </p>
+        <div className="choices">
+          <button autoFocus disabled={busy} onClick={() => (close(), onFreeUp())}>
+            <span>
+              <strong>
+                <Trans>Free up space</Trans>
+              </strong>
+              <small>
+                <Trans>See what each app keeps in your account, and remove copies you don&apos;t need.</Trans>
+              </small>
+            </span>
+          </button>
+          {largest && largestInstall && (
+            <button disabled={busy} onClick={turnOff}>
+              <span>
+                <strong>{t`Turn off cloud saves for ${largestName}`}</strong>
+                <small>
+                  {plural(count, {
+                    one: `It keeps the most. Its # copy (${largestSize}) is removed from your account. Its saves and backups on this computer stay.`,
+                    other: `It keeps the most. Its # copies (${largestSize}) are removed from your account. Its saves and backups on this computer stay.`,
+                  })}
+                </small>
+              </span>
+            </button>
+          )}
+        </div>
+        <div className="row">
+          <button disabled={busy} onClick={close}>
+            <Trans>Not now</Trans>
+          </button>
+        </div>
+      </div>
+    </Dialog>
+  );
+}
+
+function SavesConflictPrompt() {
+  const { savesConflict: conflict, catalog, installs, jobs, get } = useLauncher();
+  if (!conflict) return null;
+  // Saves from a newer version than the one installed: updating first is the way that can't go wrong, when there's an update.
+  const latest = catalog[conflict.entry.id];
+  const update = conflict.newer && latest && !jobs[conflict.entry.id] ? updateFor(latest, installs[conflict.entry.id]) : undefined;
+  const updateTo = versionLabel(update?.version);
+  const madeWith = versionLabel(conflict.newer?.cloud);
+  const have = versionLabel(conflict.newer?.here);
+  const name = conflict.entry.projectName;
+  const when = (at: number) => new Date(at).toLocaleString(i18n.locale, { dateStyle: "medium", timeStyle: "short" });
+  const { cloud, here } = conflict;
+  // The other saves are the account's, or the ones in the player's sync folder (sync-folder.ts).
+  const folder = conflict.from === "folder";
+  const device = cloud.device;
+  const cloudWhen = when(cloud.madeAt);
+  const hereWhen = here ? when(here.at) : "";
+  return (
+    <Dialog label={t`Which saves of ${name}?`} onClose={() => conflict.answer(null)}>
+      <div className="detail-body program-prompt saves-conflict">
+        <h2>
+          {folder ? <FolderSync size={18} aria-hidden="true" /> : <Cloud size={18} aria-hidden="true" />} {t`Which saves of ${name} do you want to keep?`}
+        </h2>
+        {conflict.places?.length ? (
+          <>
+            <p className="muted">
+              {folder ? (
+                <Trans>The saves in your sync folder would go in a folder Quiver hasn&apos;t kept this app&apos;s saves in on this computer. Only use them if this is where the app saves:</Trans>
+              ) : (
+                <Trans>Your cloud saves would go in a folder Quiver hasn&apos;t kept this app&apos;s saves in on this computer. Only use them if this is where the app saves:</Trans>
+              )}
+            </p>
+            <SavePlaces places={conflict.places} />
+          </>
+        ) : conflict.newer ? (
+          <p className="muted">
+            {folder
+              ? update
+                ? t`The saves in your sync folder were made with ${madeWith} of this app, and this computer has ${have}. An older version may not be able to load them. Update first, then play.`
+                : t`The saves in your sync folder were made with ${madeWith} of this app, and this computer has ${have}. An older version may not be able to load them. The ones you don't pick are kept as a backup on the app's Saves tab.`
+              : update
+                ? t`Your cloud saves were made with ${madeWith} of this app, and this computer has ${have}. An older version may not be able to load them. Update first, then play.`
+                : t`Your cloud saves were made with ${madeWith} of this app, and this computer has ${have}. An older version may not be able to load them. The ones you don't pick are kept as a backup on the app's Saves tab.`}
+          </p>
+        ) : (
+          <p className="muted">
+            {t`${name} was played on this computer and on another one since your saves last synced, so there are two different sets of saves now. Choose which to continue from. The other set is kept as a backup on the app's Saves tab.`}
+          </p>
+        )}
+        <div className="choices">
+          {update && latest && (
+            <button
+              autoFocus
+              className="saves-update"
+              onClick={() => {
+                // Nothing starts and the saves stay as they are: after the update, Play brings the other saves in.
+                conflict.answer(null);
+                void get(latest);
+              }}
+            >
+              <span>
+                <strong>{t`Update to ${updateTo}`}</strong>
+                <small>
+                  {folder ? <Trans>Then press Play, and the saves in your sync folder are put in place.</Trans> : <Trans>Then press Play, and your cloud saves are put in place.</Trans>}
+                </small>
+              </span>
+            </button>
+          )}
+          <button autoFocus={!update} onClick={() => conflict.answer("cloud")}>
+            <span>
+              <strong>
+                {folder ? (
+                  conflict.newer ? (
+                    <Trans>Use the saves in my sync folder anyway</Trans>
+                  ) : (
+                    <Trans>Use the saves in my sync folder</Trans>
+                  )
+                ) : conflict.newer ? (
+                  <Trans>Use my cloud saves anyway</Trans>
+                ) : (
+                  <Trans>Use my cloud saves</Trans>
+                )}
+              </strong>
+              <small>{conflict.newer ? t`From ${device}, ${cloudWhen}. The saves here are backed up first.` : t`From ${device}, ${cloudWhen}`}</small>
+            </span>
+          </button>
+          <button onClick={() => conflict.answer("here")}>
+            <span>
+              <strong>
+                <Trans>Play with the saves on this computer</Trans>
+              </strong>
+              <small>
+                {folder
+                  ? conflict.places?.length
+                    ? t`The saves in your sync folder stay there as a backup.`
+                    : here
+                      ? t`Last backed up ${hereWhen}. The saves in your sync folder stay there as a backup. These become your newest.`
+                      : t`The saves in your sync folder stay there as a backup. These become your newest.`
+                  : conflict.places?.length
+                    ? t`Your cloud saves stay in your account as a backup.`
+                    : here
+                      ? t`Last backed up ${hereWhen}. Your cloud saves stay in your account as a backup. These become your newest.`
+                      : t`Your cloud saves stay in your account as a backup. These become your newest.`}
+              </small>
+            </span>
+          </button>
+        </div>
+        <div className="row">
+          <button onClick={() => conflict.answer(null)}>
+            <Trans>Don&apos;t play yet</Trans>
+          </button>
+        </div>
+      </div>
+    </Dialog>
+  );
+}
+
+/** The folders a backup would be put in, as they are on this computer. */
+function SavePlaces({ places }: { places: { template: string; path: string }[] }) {
+  return (
+    <ul className="save-places">
+      {places.map((place) => (
+        <li key={place.template}>{place.path || place.template}</li>
+      ))}
+    </ul>
+  );
+}
+
+/** Restore, for a backup whose saves were in a folder this computer hasn't kept that app's saves in: the player sees the folder and says whether to go ahead. */
+function SavesPlacesPrompt() {
+  const { savesPlaces: asked } = useLauncher();
+  if (!asked) return null;
+  const name = asked.name;
+  return (
+    <Dialog label={t`Restore to this folder?`} onClose={() => asked.answer(false)}>
+      <div className="detail-body program-prompt saves-conflict">
+        <h2>
+          <Cloud size={18} aria-hidden="true" /> {t`Restore ${name}'s saves to this folder?`}
+        </h2>
+        <p className="muted">
+          <Trans>This backup&apos;s saves were in a folder Quiver hasn&apos;t kept this app&apos;s saves in on this computer. Only restore it if this is where the app saves:</Trans>
+        </p>
+        <SavePlaces places={asked.places} />
+        <div className="row">
+          <button onClick={() => asked.answer(false)}>
+            <Trans>Cancel</Trans>
+          </button>
+          <button className="primary" onClick={() => asked.answer(true)}>
+            <Trans>Restore</Trans>
+          </button>
+        </div>
+      </div>
+    </Dialog>
+  );
+}
+
 /** Play, for an app with more than one of its programs picked (its menu's Play with): which one starts. */
 function ProgramPrompt() {
   const { choosingProgram: id, chooseProgram, installs, catalog, play } = useLauncher();
@@ -2229,7 +2487,8 @@ function RenameFolderPrompt() {
   const [name, setName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const folder = renaming ? installs[renaming.id]?.folder : undefined;
+  const install = renaming ? installs[renaming.id] : undefined;
+  const folder = install && folderNameOf(install);
   useEffect(() => {
     setName(folder ?? "");
     setError(null);

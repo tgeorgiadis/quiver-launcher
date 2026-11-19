@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Entry } from "@quiverlauncher/api";
-import { sortPlan, withOwnConsoles, adoptedInstall, appRef, appsFolders, groupFolder, joinPath, rootOf, unsortedApps, folderClash, keptWhereTheyAre, ownedBy, bringsAlong, catalogMatch, declinedUpdate, earlyGet, earlyGetOffer, earlyKey, earlyOffer, earlyRelease, earlyUpdate, filesAddable, renamable, folderGone, forHereKey, hasUpdate, importedPlaylists, importedTags, markedInApps, retagged, withOldPictures, installFiles, keptInstall, locatable, looseInstalls, mayUpdate, movableApps, movedInside, noProgram, notOfferedYet, oncePerFolder, twinsOf, withCopiesIn, withTwins, playedRef, relocatedInstall, skipped, uniqueFiles, updateFor, mainRelease, onlyPrereleases, updatesOf, usableCatalog, wantsPrereleases, withEarlyFor, withMainRelease, withPrereleases, type ImportedApp, type LibraryItem } from "./store";
+import { sortPlan, withOwnConsoles, adoptedInstall, appRef, appsFolders, groupFolder, joinPath, rootOf, unsortedApps, folderClash, keptWhereTheyAre, ownedBy, bringsAlong, catalogMatch, declinedUpdate, earlyGet, earlyGetOffer, earlyKey, earlyOffer, earlyRelease, earlyUpdate, filesAddable, folderNameOf, renamable, folderGone, forHereKey, hasUpdate, importedPlaylists, importedTags, removedTags, withAllTags, markedInApps, retagged, withOldPictures, installFiles, keptInstall, locatable, looseInstalls, mayUpdate, movableApps, movedInside, noProgram, notOfferedYet, oncePerFolder, twinsOf, withCopiesIn, withTwins, playedRef, relocatedInstall, skipped, uniqueFiles, updateFor, mainRelease, onlyPrereleases, updatesOf, usableCatalog, wantsPrereleases, withEarlyFor, withMainRelease, withPrereleases, type ImportedApp, type LibraryItem } from "./store";
 import type { OldApp, OldFilter } from "./native";
 
 const entry = {
@@ -297,6 +297,8 @@ describe("the files in an app's folder", () => {
     expect(filesAddable(install)).toBe(true);
     expect(filesAddable({ ...install, program: "/games/a.exe" })).toBe(false);
     expect(filesAddable({ ...install, installer: "msi" })).toBe(false);
+    expect(filesAddable({ ...install, installer: "setup" })).toBe(false);
+    expect(filesAddable({ ...install, setup: true })).toBe(true);
   });
 });
 
@@ -371,6 +373,10 @@ describe("pre-releases", () => {
     expect(updatesOf({}, { updates: "auto" })).toBe("auto");
     expect(updatesOf({ autoUpdates: true }, { installer: "msi" })).toBeUndefined();
     expect(updatesOf({}, { updates: "auto", installer: "msi" })).toBeUndefined();
+    // A setup program's window waits for the player too, wherever it installed.
+    expect(updatesOf({ autoUpdates: true }, { installer: "setup" })).toBeUndefined();
+    expect(updatesOf({ autoUpdates: true }, { setup: true })).toBeUndefined();
+    expect(updatesOf({}, { updates: "pinned", setup: true })).toBe("pinned");
   });
 
   it("make the newest pre-release the app's update for a player who chose them", () => {
@@ -841,11 +847,36 @@ describe("renamable", () => {
     expect(renamable(base)).toBe(true);
     expect(renamable({ ...base, dir: "C:\\Quiver\\apps\\Xbox 360\\ArmyOfTwo", inApps: true, group: "Xbox 360" })).toBe(true);
   });
-  it("isn't a folder kept where it is, a program, or a Windows installer's", () => {
-    expect(renamable(undefined)).toBe(false);
-    expect(renamable({ ...base, dir: "D:\\Games\\ArmyOfTwo" })).toBe(false);
-    expect(renamable({ ...base, dir: "D:\\Old\\Apps\\ArmyOfTwo", inApps: true })).toBe(false);
-    expect(renamable({ ...base, dir: "C:\\Quiver\\apps\\Xbox 360\\Other", inApps: true, group: "Xbox 360" })).toBe(false);
-    expect(renamable({ ...base, installer: "msi" })).toBe(false);
+  it("is a folder kept where it is, located or 3.x's, whatever it's called (#455)", () => {
+    expect(renamable({ ...base, dir: "D:\\Games\\Army of Two" })).toBe(true);
+    expect(renamable({ ...base, dir: "D:\\Old\\Apps\\ArmyOfTwo", inApps: true })).toBe(true);
+    expect(renamable({ ...base, dir: "C:\\Quiver\\apps\\Xbox 360\\Other", inApps: true, group: "Xbox 360" })).toBe(true);
+    expect(folderNameOf({ ...base, dir: "D:\\Games\\Army of Two" })).toBe("Army of Two");
+    expect(folderNameOf(base)).toBe("ArmyOfTwo");
   });
+  it("isn't a program, the player's own files where they keep them, or a Windows installer's", () => {
+    expect(renamable(undefined)).toBe(false);
+    expect(renamable({ ...base, dir: "D:\\Games\\ArmyOfTwo", program: "game.exe" })).toBe(false);
+    expect(renamable({ ...base, dir: "D:\\Games\\Mine", local: true })).toBe(false);
+    expect(renamable({ ...base, installer: "msi" })).toBe(false);
+    expect(renamable({ ...base, installer: "setup" })).toBe(false);
+  });
+});
+
+describe("removedTags", () => {
+  const entry = { tags: ["recomp", "nintendo", "n64"] } as Parameters<typeof removedTags>[1];
+  const old = (tags: string[], catalogTags?: string[]) => ({ name: "Test Port", tags, catalogTags }) as Parameters<typeof removedTags>[0];
+  it("the catalog's tags a 3.x app no longer had, that the catalog still gives it", () => {
+    expect(removedTags(old(["N64", "mine"], ["recomp", "n64", "gone"]), entry)).toEqual(["recomp"]);
+  });
+  it("none from a 3.x that didn't keep the catalog's tags, or an app with them all", () => {
+    expect(removedTags(old(["mine"]), entry)).toEqual([]);
+    expect(removedTags(old(["recomp", "nintendo", "n64"], ["recomp", "nintendo", "n64"]), entry)).toEqual([]);
+  });
+});
+
+it("withAllTags gives an entry back the tags the player hid", () => {
+  const sent = { id: "a", tags: ["recomp", "nintendo"] } as Parameters<typeof withAllTags>[0];
+  expect(withAllTags(sent)).toBe(sent);
+  expect(withAllTags({ ...sent, tags: ["nintendo"], allTags: ["recomp", "nintendo"] })).toEqual(sent);
 });

@@ -41,6 +41,7 @@ and headings, as in English.
 | sign in / sign out | entrar / sair | |
 | account | conta | |
 | feedback | feedback | "Feedback de 3 jogadores" |
+| PC specs | especificações do PC | the computer a player tried an app on: system, processor, graphics card, memory |
 | player | jogador | prefer "você" where the English allows |
 | mod | mod (o mod, os mods) | |
 | launch options | opções de inicialização | |

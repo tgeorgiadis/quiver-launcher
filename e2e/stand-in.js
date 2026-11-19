@@ -38,6 +38,8 @@ export function standInForRust({ api, state = {}, config: more = {}, maximized =
   const answers = {
     open_url: ({ url }) => void window.__opened.push(url),
     config: () => config,
+    // The computer's PC specs (specs.rs), unless a test's config says otherwise (`pcSpecs`).
+    pc_specs: () => more.pcSpecs ?? { cpu: "AMD Ryzen 5 5600", gpu: "AMD Radeon RX 6600", ramGb: 16 },
     // Every apps folder is there, with room to spare.
     apps_folder_states: ({ paths }) => paths.map(() => ({ exists: true, free: 500e9 })),
     move_app: ({ to, folder }) => ({ dir: [to, folder].join("\\"), left: null }),
@@ -83,7 +85,13 @@ export function standInForRust({ api, state = {}, config: more = {}, maximized =
       window.__installs.get(id)?.reject("cancelled");
       window.__installs.delete(id);
     },
-    secret_get: () => null,
+    // An app's saves (saves-tab.tsx): none known and no backups; making and restoring them is the real app's to show.
+    saves_info: () => ({ places: [], from: "none", backups: [] }),
+    saves_choose: () => ({ places: [], from: "none", backups: [] }),
+    saves_to_report: () => ({ os: "linux", places: [] }),
+    saves_restore_plan: () => [],
+    // The keychain: a test's own `secrets`, such as a GitHub token; none else.
+    secret_get: ({ key }) => files.secrets?.[key] ?? null,
     // GitLab's request limit, as the real Rust side reads it: the page can't see these headers itself.
     gitlab_limit: async ({ url, token }) => {
       const response = await fetch(url, { headers: token ? { "PRIVATE-TOKEN": token } : {} });

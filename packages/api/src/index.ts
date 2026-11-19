@@ -17,6 +17,24 @@ export type InstallSettings = {
   mods?: ModSettings;
   /** What the player brings of their own, such as their copy of the game, and how the app gets it. */
   setupFiles?: SetupFile[];
+  /** Where the app keeps its saves, for the launcher's save backups. */
+  saves?: SaveSettings;
+};
+
+/** One place an app keeps saves: `path` under `root` (the app's folder, or one of the system's folders for apps' data). */
+export type SaveLocation = {
+  root: "app" | "data" | "config" | "localData" | "documents" | "home";
+  /** A folder, a file, or files matching one `*` in the last part ("saves/*.sav"). */
+  path: string;
+  /** The systems it applies to; every system when missing. */
+  os?: ("windows" | "linux" | "macos")[];
+  /** "settings": the app's settings rather than progress. */
+  kind?: "settings";
+};
+export type SaveSettings = {
+  locations: SaveLocation[];
+  /** Whether a save made on one system loads on another. Missing: nobody has checked. */
+  crossPlatform?: boolean;
 };
 
 /** A dump an app takes of the player's copy, as No-Intro, Redump or the app's own list gives it. */
@@ -97,7 +115,10 @@ export type Entry = {
   /** The version of its game it's based on: the PlayStation version, a Director's Cut. */
   basedOn?: BasedOn;
   libraryArt?: LibraryArt;
+  /** Its square icon: its own, else its game's. */
   artwork?: string;
+  /** `artwork` is its game's icon, as it has none of its own. */
+  artworkFromGame?: boolean;
   tags: string[];
   launcher: InstallSettings;
   projectType: ProjectType;
@@ -355,7 +376,17 @@ export type Feedback = {
   fixed?: { version: string; at: number };
   /** Its author said it's still broken after the developer's fix. */
   disputed?: boolean;
+  /**
+   * The computer it was tried on, as Quiver Launcher read it. Everyone gets them unless the author unticked them;
+   * the author, the app's developer and Quiver staff get them either way. Missing from older sites.
+   */
+  specs?: FeedbackSpecs;
+  /** With specs: whether everyone may see them. */
+  specsPublic?: boolean;
 };
+
+/** The PC specs sent with feedback: the system and its version ("Windows 11", "SteamOS 3.7.13"), processor, graphics card and memory in GB. */
+export type FeedbackSpecs = { osVersion?: string; cpu?: string; gpu?: string; ramGb?: number };
 
 /** A developer's answer to feedback on their app. */
 export type FeedbackReply = {
@@ -440,6 +471,17 @@ export type Readme = { markdown: string; rawBase?: string; htmlBase?: string };
  */
 export type DownloadProblem = { version: string; file: string; problem: "missing" | "mismatch" };
 
+/**
+ * Where Quiver Launcher saw an app keep its saves: the system, and each folder as a path under one of the
+ * system's folders ("data/Game/saves"). Nothing about the player or the computer.
+ */
+export type SaveLocationsReport = { os: "windows" | "linux" | "macos"; places: string[] };
+/**
+ * The catalog names programs that start an app, and the app's folder holds none of them: the programs it does
+ * hold, by their paths in the folder, for the version installed. Nothing about the player or the computer.
+ */
+export type StartProgramReport = { os: "windows" | "linux" | "macos"; version: string; programs: string[] };
+
 export { ApiError } from "./errors";
 
 export const DEFAULT_API = "https://api.quiverlauncher.com/api/v1";
@@ -496,6 +538,16 @@ export type Client = {
    * install, never retried. A 404 ApiError when the site doesn't offer that file.
    */
   downloadProblem(app: Pick<Entry, "slug" | "catalogId">, report: DownloadProblem): Promise<void>;
+  /**
+   * Tells the site where the launcher saw an app keep its saves, which it counts for the staff who list each app's
+   * save locations. A 404 ApiError when the site doesn't know the app or takes none of the places.
+   */
+  saveLocations(app: Pick<Entry, "slug" | "catalogId">, report: SaveLocationsReport): Promise<void>;
+  /**
+   * Tells the site that none of the programs the catalog names for an app is in its folder, so staff can be
+   * suggested the right one. A 404 ApiError when the site doesn't know the app.
+   */
+  startProgram(app: Pick<Entry, "slug" | "catalogId">, report: StartProgramReport): Promise<void>;
 };
 
 export function createClient(base: string = DEFAULT_API, options: ClientOptions = {}): Client {
@@ -637,6 +689,14 @@ export function createClient(base: string = DEFAULT_API, options: ClientOptions 
       const path = `${catalogId ? `/catalog-entries/${encodeURIComponent(catalogId)}` : app(slug)}/download-problem`;
       await answer(await request(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(report) }));
     },
+    async saveLocations({ slug, catalogId }, report) {
+      const path = `${catalogId ? `/catalog-entries/${encodeURIComponent(catalogId)}` : app(slug)}/save-locations`;
+      await answer(await request(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(report) }));
+    },
+    async startProgram({ slug, catalogId }, report) {
+      const path = `${catalogId ? `/catalog-entries/${encodeURIComponent(catalogId)}` : app(slug)}/start-program`;
+      await answer(await request(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(report) }));
+    },
   };
 }
 
@@ -659,6 +719,7 @@ export {
   detectProvider,
   feedProvider,
   giteaProvider,
+  githubAsset,
   githubProvider,
   githubRepository,
   gitlabProvider,
