@@ -4814,10 +4814,6 @@ msgstr "Quiver controlla che sia una copia accettata dal gioco."
 msgid "Quiver checks your copy, and puts it where the game reads it unless the game asks for it itself. It never downloads game files."
 msgstr "Quiver controlla la tua copia e la mette dove il gioco la legge, a meno che il gioco non la chieda da sé. Non scarica mai file di gioco."
 
-#: ../../apps/launcher/src/launch-options.tsx
-msgid "Quiver chose <0>{name}</0>. You can choose another executable to run instead."
-msgstr "Quiver ha scelto <0>{name}</0>. Puoi scegliere un altro eseguibile al suo posto."
-
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Quiver couldn't look it up in the catalog to find its console. Try again once you're online."
 msgstr "Quiver non è riuscito a cercarla nel catalogo per trovarne la console. Riprova quando sei online."
@@ -4983,6 +4979,14 @@ msgstr "Quiver aspetta 48 ore prima di proporre l'aggiornamento di un'app, così
 #: ../../apps/launcher/src/detail.tsx
 msgid "Quiver waits until each file has been out for 48 hours, so a hacked or malicious update can be caught before it reaches you."
 msgstr "Quiver attende che ogni file sia pubblicato da 48 ore, così un aggiornamento compromesso o dannoso può essere intercettato prima che ti raggiunga."
+
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "Quiver will launch <0>{executable}</0> when you press Play."
+msgstr "Quiver avvierà <0>{executable}</0> quando premi Gioca."
+
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "Quiver will launch <0>{name}</0> when you press Play. You can choose another executable to run instead."
+msgstr "Quiver avvierà <0>{name}</0> quando premi Gioca. Puoi scegliere un altro eseguibile al suo posto."
 
 #: ../../apps/launcher/src/detail.tsx
 msgid "Quiver won't install it."
@@ -5969,10 +5973,6 @@ msgstr "Avvio di {name}…"
 #: ../../apps/launcher/src/custom.ts
 msgid "Starts {path} on this computer."
 msgstr "Avvia {path} su questo computer."
-
-#: ../../apps/launcher/src/launch-options.tsx
-msgid "Starts <0>{executable}</0>"
-msgstr "Avvia <0>{executable}</0>"
 
 #: ../../apps/launcher/src/own.tsx
 msgid "Starts it where it is. Nothing is downloaded, moved or deleted."

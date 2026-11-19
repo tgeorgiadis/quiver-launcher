@@ -4814,10 +4814,6 @@ msgstr "Quiver vérifie que le jeu accepte cette copie."
 msgid "Quiver checks your copy, and puts it where the game reads it unless the game asks for it itself. It never downloads game files."
 msgstr "Quiver vérifie ta copie et la place là où le jeu la lit, sauf si le jeu la demande lui-même. Il ne télécharge jamais de fichiers de jeu."
 
-#: ../../apps/launcher/src/launch-options.tsx
-msgid "Quiver chose <0>{name}</0>. You can choose another executable to run instead."
-msgstr "Quiver a choisi <0>{name}</0>. Tu peux choisir un autre exécutable à la place."
-
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Quiver couldn't look it up in the catalog to find its console. Try again once you're online."
 msgstr "Quiver n'a pas pu la trouver dans le catalogue pour connaître sa console. Réessaie une fois en ligne."
@@ -4983,6 +4979,14 @@ msgstr "Quiver attend 48 heures avant de proposer la mise à jour d'une app, pou
 #: ../../apps/launcher/src/detail.tsx
 msgid "Quiver waits until each file has been out for 48 hours, so a hacked or malicious update can be caught before it reaches you."
 msgstr "Quiver attend que chaque fichier soit publié depuis 48 heures, pour qu'une mise à jour piratée ou malveillante puisse être repérée avant de vous parvenir."
+
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "Quiver will launch <0>{executable}</0> when you press Play."
+msgstr "Quiver lancera <0>{executable}</0> quand tu appuies sur Jouer."
+
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "Quiver will launch <0>{name}</0> when you press Play. You can choose another executable to run instead."
+msgstr "Quiver lancera <0>{name}</0> quand tu appuies sur Jouer. Tu peux choisir un autre exécutable à la place."
 
 #: ../../apps/launcher/src/detail.tsx
 msgid "Quiver won't install it."
@@ -5969,10 +5973,6 @@ msgstr "Lancement de {name}…"
 #: ../../apps/launcher/src/custom.ts
 msgid "Starts {path} on this computer."
 msgstr "Lance {path} sur cet ordinateur."
-
-#: ../../apps/launcher/src/launch-options.tsx
-msgid "Starts <0>{executable}</0>"
-msgstr "Lance <0>{executable}</0>"
 
 #: ../../apps/launcher/src/own.tsx
 msgid "Starts it where it is. Nothing is downloaded, moved or deleted."

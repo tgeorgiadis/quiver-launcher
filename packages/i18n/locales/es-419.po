@@ -4814,10 +4814,6 @@ msgstr "Quiver revisa que sea una copia que el juego acepta."
 msgid "Quiver checks your copy, and puts it where the game reads it unless the game asks for it itself. It never downloads game files."
 msgstr "Quiver revisa tu copia y la pone donde el juego la lee, salvo que el juego la pida por su cuenta. Nunca descarga archivos de juegos."
 
-#: ../../apps/launcher/src/launch-options.tsx
-msgid "Quiver chose <0>{name}</0>. You can choose another executable to run instead."
-msgstr "Quiver eligió <0>{name}</0>. Puedes elegir otro ejecutable en su lugar."
-
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Quiver couldn't look it up in the catalog to find its console. Try again once you're online."
 msgstr "Quiver no pudo buscarla en el catálogo para saber su consola. Vuelve a intentarlo cuando tengas conexión."
@@ -4983,6 +4979,14 @@ msgstr "Quiver espera 48 horas antes de ofrecer la actualización de una app, pa
 #: ../../apps/launcher/src/detail.tsx
 msgid "Quiver waits until each file has been out for 48 hours, so a hacked or malicious update can be caught before it reaches you."
 msgstr "Quiver espera a que cada archivo lleve 48 horas publicado, para que una actualización hackeada o maliciosa pueda detectarse antes de llegar a ti."
+
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "Quiver will launch <0>{executable}</0> when you press Play."
+msgstr "Quiver iniciará <0>{executable}</0> cuando presiones Jugar."
+
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "Quiver will launch <0>{name}</0> when you press Play. You can choose another executable to run instead."
+msgstr "Quiver iniciará <0>{name}</0> cuando presiones Jugar. Puedes elegir otro ejecutable en su lugar."
 
 #: ../../apps/launcher/src/detail.tsx
 msgid "Quiver won't install it."
@@ -5969,10 +5973,6 @@ msgstr "Iniciando {name}…"
 #: ../../apps/launcher/src/custom.ts
 msgid "Starts {path} on this computer."
 msgstr "Inicia {path} en esta computadora."
-
-#: ../../apps/launcher/src/launch-options.tsx
-msgid "Starts <0>{executable}</0>"
-msgstr "Inicia <0>{executable}</0>"
 
 #: ../../apps/launcher/src/own.tsx
 msgid "Starts it where it is. Nothing is downloaded, moved or deleted."

@@ -194,11 +194,11 @@ export function LaunchOptionsButton({ id }: { id: string }) {
         <p className="muted">
           {executable ? (
             <Trans>
-              Starts <code>{executable}</code>
+              Quiver will launch <code>{executable}</code> when you press Play.
             </Trans>
           ) : found ? (
             <Trans>
-              Quiver chose <code title={found}>{name}</code>. You can choose another executable to run instead.
+              Quiver will launch <code title={found}>{name}</code> when you press Play. You can choose another executable to run instead.
             </Trans>
           ) : found === null ? (
             t`Choose the executable you want Quiver to run. It can be in any folder or drive.`

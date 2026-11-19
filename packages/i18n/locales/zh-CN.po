@@ -4814,10 +4814,6 @@ msgstr "Quiver 会检查游戏是否接受此副本。"
 msgid "Quiver checks your copy, and puts it where the game reads it unless the game asks for it itself. It never downloads game files."
 msgstr "Quiver 会检查你的副本，并将其放到游戏读取的位置，除非游戏本身会提示你提供文件。Quiver 绝不会下载游戏文件。"
 
-#: ../../apps/launcher/src/launch-options.tsx
-msgid "Quiver chose <0>{name}</0>. You can choose another executable to run instead."
-msgstr "Quiver 选择了 <0>{name}</0>。你可以改选其他可执行文件。"
-
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Quiver couldn't look it up in the catalog to find its console. Try again once you're online."
 msgstr "Quiver 无法在目录中查到它的主机。请联网后再试。"
@@ -4983,6 +4979,14 @@ msgstr "Quiver 会等待 48 小时再提供应用更新，以便有时间撤回�
 #: ../../apps/launcher/src/detail.tsx
 msgid "Quiver waits until each file has been out for 48 hours, so a hacked or malicious update can be caught before it reaches you."
 msgstr "Quiver 会等到每个文件发布满 48 小时，以便在被篡改或带有恶意的更新到达你这里之前发现它。"
+
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "Quiver will launch <0>{executable}</0> when you press Play."
+msgstr "按下“游玩”时，Quiver 会启动 <0>{executable}</0>。"
+
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "Quiver will launch <0>{name}</0> when you press Play. You can choose another executable to run instead."
+msgstr "按下“游玩”时，Quiver 会启动 <0>{name}</0>。你可以改选其他可执行文件。"
 
 #: ../../apps/launcher/src/detail.tsx
 msgid "Quiver won't install it."
@@ -5969,10 +5973,6 @@ msgstr "正在启动 {name}…"
 #: ../../apps/launcher/src/custom.ts
 msgid "Starts {path} on this computer."
 msgstr "在此电脑上启动 {path}。"
-
-#: ../../apps/launcher/src/launch-options.tsx
-msgid "Starts <0>{executable}</0>"
-msgstr "启动 <0>{executable}</0>"
 
 #: ../../apps/launcher/src/own.tsx
 msgid "Starts it where it is. Nothing is downloaded, moved or deleted."
