@@ -3483,8 +3483,8 @@ msgid "Layout"
 msgstr "佈局"
 
 #: ../../apps/launcher/src/github-token.tsx
-msgid "Leave every scope unticked: public releases need none."
-msgstr "所有許可權範圍都不要勾選：公開版本無需任何許可權。"
+msgid "Leave every scope unticked: public releases need none. For a private repository, make a fine-grained token on GitHub instead, with read-only Contents access to that repository."
+msgstr "所有許可權範圍都不要勾選：公開版本無需任何許可權。如果是私有儲存庫，請改為在 GitHub 上建立 fine-grained 權杖，並為該儲存庫授予 Contents 的唯讀權限。"
 
 #: ../../apps/launcher/src/gitlab-token.tsx
 msgid "Leave the read_api scope ticked: public releases need nothing more."

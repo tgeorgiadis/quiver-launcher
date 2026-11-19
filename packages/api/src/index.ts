@@ -719,6 +719,7 @@ export {
   detectProvider,
   feedProvider,
   giteaProvider,
+  githubAsset,
   githubProvider,
   githubRepository,
   gitlabProvider,

@@ -3483,8 +3483,8 @@ msgid "Layout"
 msgstr "Layout"
 
 #: ../../apps/launcher/src/github-token.tsx
-msgid "Leave every scope unticked: public releases need none."
-msgstr "Deixe todos os escopos desmarcados: versões públicas não precisam de nenhum."
+msgid "Leave every scope unticked: public releases need none. For a private repository, make a fine-grained token on GitHub instead, with read-only Contents access to that repository."
+msgstr "Deixe todos os escopos desmarcados: versões públicas não precisam de nenhum. Para um repositório privado, crie em vez disso um token fine-grained no GitHub, com acesso somente leitura a Contents desse repositório."
 
 #: ../../apps/launcher/src/gitlab-token.tsx
 msgid "Leave the read_api scope ticked: public releases need nothing more."

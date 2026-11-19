@@ -90,7 +90,8 @@ export function standInForRust({ api, state = {}, config: more = {}, maximized =
     saves_choose: () => ({ places: [], from: "none", backups: [] }),
     saves_to_report: () => ({ os: "linux", places: [] }),
     saves_restore_plan: () => [],
-    secret_get: () => null,
+    // The keychain: a test's own `secrets`, such as a GitHub token; none else.
+    secret_get: ({ key }) => files.secrets?.[key] ?? null,
     // GitLab's request limit, as the real Rust side reads it: the page can't see these headers itself.
     gitlab_limit: async ({ url, token }) => {
       const response = await fetch(url, { headers: token ? { "PRIVATE-TOKEN": token } : {} });
