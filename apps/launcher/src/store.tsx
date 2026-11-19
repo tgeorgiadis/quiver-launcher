@@ -7,7 +7,7 @@
  */
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type Dispatch, type ReactNode, type SetStateAction } from "react";
 import { msg, plural, t } from "@lingui/core/macro";
-import { ApiError, createClient, createGithub, createGitlab, createProviders, githubRepository, parseRepository, toRef, type Asset, type Client, type Console, type Entry, type Github, type Gitlab, type Os, type HistoryRelease, type Release, type ReleaseScan, type ReleaseStatus, type UnverifiedRelease, type Verified, type Withdrawn, type Providers, type RepositoryRef } from "@quiverlauncher/api";
+import { ApiError, createClient, createGithub, createGitlab, createProviders, githubAsset, githubProvider, githubRepository, parseRepository, toRef, type Asset, type Client, type Console, type Entry, type Github, type Gitlab, type Os, type HistoryRelease, type Release, type ReleaseScan, type ReleaseStatus, type UnverifiedRelease, type Verified, type Withdrawn, type Providers, type RepositoryRef } from "@quiverlauncher/api";
 import type { HiddenApp } from "./browse-hidden";
 import { hideOnApp, shownTags, type HiddenTags } from "./catalog-tags";
 import { native, type Config, type SaveBackup, type LaunchOptions, type MovingApp, type OldApp, type OldFilter, type Progress, type StateProblem, type V3Library, type WindowsRunner } from "./native";
@@ -2233,9 +2233,16 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
           (made) => made && (savesChanged(entry.id), sendToCloud(entry.id, was, made)),
           () => {},
         );
+      // A GitHub repository's file through GitHub's API, with the player's token, which a private repository's needs.
+      // A token GitHub refuses (expired or revoked) falls back to the browser link, as before the token was saved.
+      // The token and API are the ones its releases were listed with: its host's.
+      const githubHost = custom?.provider === "github" ? (custom.host ?? "github.com") : undefined;
+      const hostToken = githubHost ? tokensNow.current[githubHost] : undefined;
+      const viaApi = githubHost && hostToken ? githubAsset(githubProvider.apiBase(githubHost), custom!.repository, asset.id) : undefined;
       const done = await native.install({
         id: entry.id,
-        url: asset.url,
+        url: viaApi ?? asset.url,
+        ...(viaApi && { githubToken: hostToken, fallbackUrl: asset.url }),
         filename: asset.filename,
         // A file still in its own wait is checked against what Quiver saw of it, as any other.
         checksum: asset.checksum ?? asset.unverifiedChecksum,

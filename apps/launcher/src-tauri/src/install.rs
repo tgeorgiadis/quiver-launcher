@@ -41,6 +41,15 @@ pub struct InstallRequest {
     pub preferred: Vec<String>,
     /// The program the app started with before an update.
     pub program: Option<String>,
+    /// The player's GitHub token, for a file of a GitHub repository asked for through GitHub's API: a private
+    /// repository's files come only that way. GitHub answers with a redirect to where the file is, which reqwest
+    /// follows without the token, as it leaves `Authorization` behind going to another host.
+    #[serde(default)]
+    pub github_token: Option<String>,
+    /// The file's browser link, tried without the token when GitHub refuses the token itself (expired or revoked):
+    /// a public repository's file still downloads that way, as it did before the token was saved.
+    #[serde(default)]
+    pub fallback_url: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -366,14 +375,20 @@ fn refused(status: reqwest::StatusCode, url: &reqwest::Url) -> String {
 
 /// Streams the file to disk, hashing as it goes; returns its SHA-256.
 async fn download(req: &InstallRequest, to: &Path, progress: &impl Fn(Progress)) -> Result<String, String> {
-    let response = reqwest::Client::builder()
-        .user_agent("QuiverLauncher/4")
-        .build()
-        .map_err(text)?
-        .get(&req.url)
-        .send()
-        .await
-        .map_err(|_| "The download failed. Check your connection and try again.".to_string())?;
+    let client = reqwest::Client::builder().user_agent("QuiverLauncher/4").build().map_err(text)?;
+    let failed = |_| "The download failed. Check your connection and try again.".to_string();
+    let token = req.github_token.as_deref().map(str::trim).filter(|t| !t.is_empty());
+    let mut request = client.get(&req.url);
+    if let Some(token) = token {
+        request = request.bearer_auth(token).header(reqwest::header::ACCEPT, "application/octet-stream");
+    }
+    let mut response = request.send().await.map_err(failed)?;
+    // GitHub refused the token itself: the browser link, without it, as before the token was saved.
+    if token.is_some() && response.status() == reqwest::StatusCode::UNAUTHORIZED {
+        if let Some(fallback) = &req.fallback_url {
+            response = client.get(fallback).send().await.map_err(failed)?;
+        }
+    }
     if response.status() == reqwest::StatusCode::NOT_FOUND {
         // Its developer deleted it, or the release, after the site last read it.
         return Err(MISSING.into());
@@ -1037,6 +1052,76 @@ fn unrar_into(_file: &Path, _out: &Path) -> Result<(), String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// A one-request HTTP server on this computer: what `answer` says to the request it gets, which goes to `seen`.
+    fn serve(answer: impl FnOnce(&str) -> String + Send + 'static) -> (u16, std::sync::mpsc::Receiver<String>) {
+        use std::io::{Read, Write};
+        let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+        let port = listener.local_addr().unwrap().port();
+        let (seen, heard) = std::sync::mpsc::channel();
+        std::thread::spawn(move || {
+            let (mut stream, _) = listener.accept().unwrap();
+            let mut buf = [0u8; 8192];
+            let n = stream.read(&mut buf).unwrap();
+            let request = String::from_utf8_lossy(&buf[..n]).to_lowercase();
+            stream.write_all(answer(&request).as_bytes()).unwrap();
+            seen.send(request).unwrap();
+        });
+        (port, heard)
+    }
+
+    fn fetch(url: String, github_token: Option<&str>, fallback_url: Option<String>) -> Result<String, String> {
+        let req = InstallRequest {
+            id: "github:quiver/private".into(),
+            url,
+            filename: "game.zip".into(),
+            checksum: None,
+            folder: "private".into(),
+            dir: None,
+            into: None,
+            files_to_add: vec![],
+            version: "v1.0.0".into(),
+            preferred: vec![],
+            program: None,
+            github_token: github_token.map(Into::into),
+            fallback_url,
+        };
+        let dir = tempfile::tempdir().unwrap();
+        tauri::async_runtime::block_on(download(&req, &dir.path().join("game.zip"), &|_| {}))
+    }
+
+    #[test]
+    fn a_private_repositorys_file_comes_through_githubs_api_with_the_token_which_its_redirect_leaves_behind() {
+        let (file_port, file_saw) = serve(|_| "HTTP/1.1 200 OK\r\nContent-Length: 5\r\nConnection: close\r\n\r\nhello".into());
+        // As GitHub's API: the file for the token, else as if there were no such repository.
+        let (api_port, api_saw) = serve(move |request| {
+            if request.contains("authorization: bearer secret") && request.contains("accept: application/octet-stream") {
+                format!("HTTP/1.1 302 Found\r\nLocation: http://localhost:{file_port}/file\r\nContent-Length: 0\r\nConnection: close\r\n\r\n")
+            } else {
+                "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\nConnection: close\r\n\r\n".into()
+            }
+        });
+        let sha = fetch(format!("http://127.0.0.1:{api_port}/repos/quiver/private/releases/assets/7"), Some(" secret "), None);
+        assert_eq!(sha.unwrap(), hex::encode(Sha256::digest(b"hello")));
+        assert!(api_saw.recv().unwrap().contains("authorization: bearer secret"));
+        assert!(!file_saw.recv().unwrap().contains("authorization"), "the token stays with GitHub's API");
+    }
+
+    #[test]
+    fn without_a_token_a_private_repositorys_file_is_missing() {
+        let (api_port, _) = serve(|_| "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\nConnection: close\r\n\r\n".into());
+        assert_eq!(fetch(format!("http://127.0.0.1:{api_port}/repos/quiver/private/releases/assets/7"), None, None), Err(MISSING.into()));
+    }
+
+    #[test]
+    fn a_token_github_refuses_falls_back_to_the_browser_link_without_it() {
+        let (file_port, file_saw) = serve(|_| "HTTP/1.1 200 OK\r\nContent-Length: 5\r\nConnection: close\r\n\r\nhello".into());
+        // As GitHub's API for an expired token: Bad credentials.
+        let (api_port, _) = serve(|_| "HTTP/1.1 401 Unauthorized\r\nContent-Length: 0\r\nConnection: close\r\n\r\n".into());
+        let sha = fetch(format!("http://127.0.0.1:{api_port}/repos/quiver/public/releases/assets/7"), Some("expired"), Some(format!("http://127.0.0.1:{file_port}/game.zip")));
+        assert_eq!(sha.unwrap(), hex::encode(Sha256::digest(b"hello")));
+        assert!(!file_saw.recv().unwrap().contains("authorization"), "the browser link goes without the token");
+    }
 
     #[test]
     fn a_refused_download_says_who_and_what_to_do_without_the_address() {
