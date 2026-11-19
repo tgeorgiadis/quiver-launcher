@@ -7,6 +7,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { plural, t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
+import { Pencil, Trash2 } from "lucide-react";
 import { Button } from "@quiverlauncher/ui/controls";
 import { tagLabel } from "@quiverlauncher/ui";
 import { useLauncher, type LibraryItem } from "./store";
@@ -279,11 +280,17 @@ function OwnTags({ focus }: { focus: boolean }) {
                     <strong>{tag}</strong> <span className="muted">{count}</span>
                   </span>
                   <span className="tag-actions">
-                    <Button variant="text" aria-label={t`Rename ${tag}`} onClick={() => setEditing({ tag, renaming: tag })}>
-                      <Trans comment="Button: rename one of the player's tags">Rename</Trans>
+                    <Button className="own-tag-button" aria-label={t`Rename ${tag}`} onClick={() => setEditing({ tag, renaming: tag })}>
+                      <Pencil size={14} aria-hidden="true" />
+                      <span className="own-tag-label">
+                        <Trans comment="Button: rename one of the player's tags">Rename</Trans>
+                      </span>
                     </Button>
-                    <Button variant="text" aria-label={t`Delete ${tag}`} onClick={() => setEditing({ tag, deleting: true })}>
-                      <Trans comment="Button: delete one of the player's tags from all their apps">Delete</Trans>
+                    <Button variant="danger" className="own-tag-button" aria-label={t`Delete ${tag}`} onClick={() => setEditing({ tag, deleting: true })}>
+                      <Trash2 size={14} aria-hidden="true" />
+                      <span className="own-tag-label">
+                        <Trans comment="Button: delete one of the player's tags from all their apps">Delete</Trans>
+                      </span>
                     </Button>
                   </span>
                 </li>

@@ -1921,12 +1921,15 @@ body:has(.overlay) .shell > main { overflow: hidden; scrollbar-gutter: stable; }
 .catalog-tags { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 4px 8px; }
 /* The player's own: a name and its count, then Rename and Delete, in two columns where they fit. */
 .own-tags { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 4px 16px; }
-.own-tags li { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 40px; padding: 2px 6px 2px 10px; border-radius: 8px; }
+.own-tags li { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 46px; padding: 4px 6px 4px 12px; border-radius: 8px; }
 .own-tags li:hover, .own-tags li:focus-within { background: var(--field-hover); }
 .own-tags .tag-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .own-tags .tag-name .muted { font-size: 12px; margin-left: 6px; }
 .own-tags .tag-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
 .own-tags .own-tag-ask { min-width: 0; }
+.own-tags .own-tag-button { gap: 6px; min-height: 32px; padding: 5px 12px; }
+/* On a narrow window the names need the room: the buttons are their icons (and their names, read out). */
+@media (max-width: 520px) { .own-tags .own-tag-label { display: none; } .own-tags .own-tag-button { padding: 5px 9px; } }
 .own-tags .tag-rename { display: flex; gap: 6px; width: 100%; }
 .own-tags .tag-rename input { flex: 1; min-width: 0; padding: 6px 10px; border: 1px solid var(--accent); border-radius: 7px; background: var(--panel); }
 .catalog-tag { display: flex; align-items: center; gap: 10px; min-height: 38px; padding: 6px 10px; border-radius: 8px; cursor: pointer; }
