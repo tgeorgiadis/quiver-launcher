@@ -519,13 +519,17 @@ export function appsFolders(installs: Record<string, Install>, appsDir: string):
   return [folders[0], ...folders.slice(1).sort((a, b) => a.path.localeCompare(b.path))];
 }
 
-/** Why `to` can't be a new default folder beside `folders`: one inside another would show its apps as an app's folder. */
+/**
+ * Why `to` can't be a new default folder: it's an installed app's own folder, or inside one, where new apps would
+ * install among that app's files. One inside another apps folder, or around one, is fine: each app there knows its own.
+ */
 export function folderClash(to: string, folders: AppsFolder[]): string | null {
   for (const f of folders) {
-    if (samePath(to, f.path)) continue;
-    const path = f.path;
-    if (within(to, path)) return t`Choose a folder outside ${path}, which has apps in it.`;
-    if (within(path, to)) return t`Choose a folder that doesn't have ${path} inside it.`;
+    for (const app of f.apps) {
+      const dir = app.dir ?? joinPath(f.path, app.folder);
+      const name = baseName(dir);
+      if (within(to, dir)) return t`Choose a folder outside ${name}, which is an app's own folder.`;
+    }
   }
   return null;
 }

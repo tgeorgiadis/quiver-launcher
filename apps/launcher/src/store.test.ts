@@ -683,13 +683,18 @@ describe("several apps folders", () => {
     expect(owned.b).toBe(within.b);
   });
 
-  it("refuses a new default inside another apps folder, or around one", () => {
+  it("takes a new default inside another apps folder, or around one, but not inside an app's own folder", () => {
     const folders = appsFolders(installs, "D:\\Games");
-    expect(folderClash("D:\\Games\\More", folders)).toContain("D:\\Games");
-    expect(folderClash("C:/", folders)).toContain("QuiverLauncher3");
+    expect(folderClash("D:\\Games\\Quiver", folders)).toBeNull();
+    expect(folderClash("C:/QuiverLauncher3/Apps/Quiver", folders)).toBeNull();
+    expect(folderClash("C:/", folders)).toBeNull();
     expect(folderClash("E:/Games", folders)).toBeNull();
     // An apps folder already in the list can become the default.
     expect(folderClash("C:/QuiverLauncher3/Apps", folders)).toBeNull();
+    // An app's own folder, or one inside it, in the default (however it's written) or kept in another.
+    expect(folderClash("d:/games/sm64", folders)).toContain("sm64");
+    expect(folderClash("D:\\Games\\sm64\\Mods", folders)).toContain("sm64");
+    expect(folderClash("C:\\QuiverLauncher3\\Apps\\Zelda64Recomp\\New", folders)).toContain("Zelda64Recomp");
   });
 });
 
