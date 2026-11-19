@@ -42,6 +42,8 @@ image = { version = "0.25", default-features = false, features = ["png", "jpeg",
 dirs = "6"
 crc32fast = "1"
 minisign-verify = "0.2"
+# Which processes are a game's, to close it from the controller (src/session.rs).
+sysinfo = { version = "0.39", default-features = false, features = ["system"] }
 base64 = "0.22"
 
 # Not built for Android: no trash there, and unrar's C++ doesn't build with the NDK.

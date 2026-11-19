@@ -1910,6 +1910,10 @@ msgstr "닫기"
 msgid "Close {title}"
 msgstr "{title} 닫기"
 
+#: ../../apps/launcher/src/controls.tsx
+msgid "Close a game by holding Start + Select for a second, for games with no way to quit"
+msgstr "Start + Select를 1초간 누르고 있으면 게임 닫기 (종료 방법이 없는 게임용)"
+
 #: ../../apps/launcher/src/library-sidebar.tsx
 msgid "Close filters"
 msgstr "필터 닫기"
