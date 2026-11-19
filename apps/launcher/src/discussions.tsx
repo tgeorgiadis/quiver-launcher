@@ -107,9 +107,11 @@ export const fns = {
 export type DiscussionNav = {
   openDiscussion: (id: string) => void;
   openCommunity: () => void;
+  /** An app's page, at its Discussions: from a discussion's app name. */
+  openApp: (entryId: string, slug?: string) => void;
   signIn: () => void;
 };
-const NavContext = createContext<DiscussionNav>({ openDiscussion: () => {}, openCommunity: () => {}, signIn: () => {} });
+const NavContext = createContext<DiscussionNav>({ openDiscussion: () => {}, openCommunity: () => {}, openApp: () => {}, signIn: () => {} });
 export const DiscussionNavProvider = NavContext.Provider;
 const useNav = () => useContext(NavContext);
 
@@ -651,11 +653,21 @@ function ThreadView({ thread }: { thread: Thread }) {
   const setLocked = useMutation(fns.setLocked);
   const setFollowing = useMutation(fns.setFollowing);
   const [error, setError] = useState("");
-  const place = thread.entry?.name ?? (thread.category ? i18n._(CATEGORY_LABELS[thread.category]) : t`Community`);
+  const { openApp } = useNav();
+  const entry = thread.entry;
+  const place = entry?.name ?? (thread.category ? i18n._(CATEGORY_LABELS[thread.category]) : t`Community`);
   const hidden = !!(thread.underReview || thread.moderatorHidden);
   return (
     <article className="discussion-thread">
-      <p className="eyebrow">{place}</p>
+      <p className="eyebrow">
+        {entry ? (
+          <button type="button" className="discussion-app-link" onClick={() => openApp(entry.id, entry.slug)}>
+            {place}
+          </button>
+        ) : (
+          place
+        )}
+      </p>
       <h1>{thread.title}</h1>
       {editing ? (
         <Composer editing={{ id: thread.id, title: thread.title, body: thread.body }} onClose={() => setEditing(false)} />

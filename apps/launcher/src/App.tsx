@@ -59,8 +59,8 @@ import { AppUpdatesNotice } from "./app-updates";
 
 type Tab = "library" | "browse";
 /** A page over the library or catalog: an app's, an original game's, Downloads or Settings. */
-/** Where an app's page opens: its Releases, with a version's notes open (Downloads' See changelog), or its Player feedback. */
-export type PageAt = { releases: string } | { feedback: true } | { readme: true };
+/** Where an app's page opens: its Releases, with a version's notes open (Downloads' See changelog), its Player feedback, or its Discussions (a discussion's app name). */
+export type PageAt = { releases: string } | { feedback: true } | { readme: true } | { discussions: true };
 type View =
   | { kind: "app"; entry: Entry; at?: PageAt }
   | { kind: "game"; game: GameLink }
@@ -81,7 +81,7 @@ export function App() {
   useUpdateCheck();
   useTray();
   useDiscordPresence();
-  const { library, client, settings, setSettings, config } = useLauncher();
+  const { library, client, settings, setSettings, config, catalog } = useLauncher();
   // TV mode, a larger look over the library and Browse: turned on, or by itself in Steam's Game Mode.
   const tv = tvModeOn(settings, config);
   const setTv = (on: boolean) => setSettings({ ...settings, tvMode: on ? "on" : "off" });
@@ -125,7 +125,18 @@ export function App() {
   const openSettings = useCallback(() => open({ kind: "settings" }), [open]);
   const openCommunity = useCallback(() => open({ kind: "community" }), [open]);
   const openDiscussion = useCallback((id: string) => open({ kind: "discussion", id }), [open]);
-  const discussionNav = useMemo(() => ({ openDiscussion, openCommunity, signIn: () => setSigningIn(true) }), [openDiscussion, openCommunity]);
+  // A discussion's app name opens that app's Discussions; an app not in the catalog loaded here is asked for by its slug.
+  const openAppDiscussions = useCallback(
+    async (entryId: string, slug?: string) => {
+      const entry = catalog[entryId] ?? (slug ? (await client.app(slug).catch(() => null))?.entry : undefined);
+      if (entry) openApp(entry, { discussions: true });
+    },
+    [catalog, client, openApp],
+  );
+  const discussionNav = useMemo(
+    () => ({ openDiscussion, openCommunity, openApp: openAppDiscussions, signIn: () => setSigningIn(true) }),
+    [openDiscussion, openCommunity, openAppDiscussions],
+  );
   // An app's Tags menu asks for the player's tags, in Settings' Library section (tag-settings.tsx).
   useEffect(() => {
     const manage = () => open({ kind: "settings", section: "library" });
@@ -1239,7 +1250,7 @@ function AppPage({
   const { own, refresh } = useOwnFeedback(entry, site);
   const { user } = useAccount();
   const [tab, setTab] = useState<"overview" | "media" | "releases" | "feedback" | "discussions" | "computer" | "saves">(
-    at && "releases" in at ? "releases" : at && "feedback" in at ? "feedback" : "overview",
+    at && "releases" in at ? "releases" : at && "feedback" in at ? "feedback" : at && "discussions" in at ? "discussions" : "overview",
   );
   // Another tab: its content keeps the last one's height until it has come (nothing loading in it, and no longer
   // changing size), so More like this, under it, doesn't come up into sight for a moment and go down again.
