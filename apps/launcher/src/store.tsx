@@ -247,6 +247,7 @@ type Launcher = {
   /** Downloads finished since the launcher started, newest first; not kept when it closes. */
   finished: Finished[];
   clearFinished: () => void;
+  /** Which file of a release to download, that an install asks the player, one at a time. */
   choice: Choice | null;
   /** What Quiver hasn't verified that an install asks the player about, one at a time. */
   asking: Asking | null;
@@ -1452,7 +1453,8 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
   // installs there too.
   const chosenFolder = useRef(new Map<string, string>());
   const [finished, setFinished] = useState<Finished[]>([]);
-  const [choice, setChoice] = useState<Choice | null>(null);
+  // Which file to download, asked one app at a time: Update all can come to several at once.
+  const [choices, setChoices] = useState<Choice[]>([]);
   // Asked one at a time, in turn: Update all can come to several.
   const [questions, setQuestions] = useState<Asking[]>([]);
   const [confirming, confirmUninstall] = useState<Confirming | null>(null);
@@ -1988,6 +1990,20 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     });
   }
 
+  /** Asks the player which file of a release to download, after any app asked about before it; null: they cancelled. */
+  function chooseFile(choice: Omit<Choice, "resolve">) {
+    return new Promise<Asset | null>((resolve) => {
+      const asked: Choice = {
+        ...choice,
+        resolve: (asset) => {
+          setChoices((c) => c.filter((x) => x !== asked));
+          resolve(asset);
+        },
+      };
+      setChoices((c) => [...c, asked]);
+    });
+  }
+
   /**
    * The newest release of an app with no verified one that isn't blocked, from
    * the site's history (the list Change version reads, a hundred at a time);
@@ -2189,8 +2205,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         if (!asset && !unapproved.length) throw new Problem(msg`This release has no download for your computer.`);
         const choices = asset ? [asset, ...others] : [];
         const all = [...approved, ...unapproved];
-        const picked = await new Promise<Asset | null>((resolve) => setChoice({ entry, version: release.version, assets: choices, all, unapproved: unapproved.map((a) => a.id), unmatched, resolve }));
-        setChoice(null);
+        const picked = await chooseFile({ entry, version: release.version, assets: choices, all, unapproved: unapproved.map((a) => a.id), unmatched });
         if (!picked) return stop("file_choice");
         asset = picked;
         // Told apart from every file it could have been, as Show all files may have offered any of them.
@@ -2641,7 +2656,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     jobs,
     finished,
     clearFinished: () => setFinished([]),
-    choice,
+    choice: choices[0] ?? null,
     asking: questions[0] ?? null,
     confirming,
     confirmUninstall,

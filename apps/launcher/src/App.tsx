@@ -2897,8 +2897,9 @@ function SuggestPlatform({ choice, files }: { choice: Choice; files: Asset[] }) 
  * first, and where a controller starts.
  */
 function UnverifiedPrompt() {
-  const { asking, installs } = useLauncher();
-  if (!asking) return null;
+  const { asking, choice, installs } = useLauncher();
+  // After a file choice already open for another app (Update all), not on top of it.
+  if (!asking || choice) return null;
   const { entry, file, reasons, scan, checkEndsAt, early, resolve } = asking;
   // Put in the sentences below by name.
   const release = versionLabel(asking.version);
