@@ -772,12 +772,21 @@ export const catalogOs = (os: Os) => (os === "linux" ? undefined : os);
 export const canGet = (entry: Entry, os: string) => availableOn(entry, os) && Boolean(entry.verified || entry.lastReleaseVersion);
 
 /**
- * How an app updates: its own choice, else the player's default (`Settings.autoUpdates`). Unset: it offers them. A
- * Windows installer's setup waits for the player, so it never updates by itself either way.
+ * Whether an install can update by itself. A Windows installer's setup waits for the player. A copy whose version
+ * Quiver doesn't know (3.x's 0.0.0, v3.rs: one the player unzipped and pointed Quiver at, or 3.x didn't know) has
+ * every release as its update, the one it already has, or an older one when it's newer than the verified release, so
+ * only the player can tell whether to take it. It has no release date, which an install from a release always has.
  */
-export const updatesOf = (settings: Pick<Settings, "autoUpdates">, install: Pick<Install, "updates" | "installer" | "setup"> | undefined): "auto" | "pinned" | undefined => {
+export const updatesByItself = (install: Partial<Pick<Install, "installer" | "setup" | "version" | "releasedAt">> | undefined) =>
+  !install?.installer && !install?.setup && !(bare(install?.version ?? "") === "0.0.0" && !install?.releasedAt);
+
+/**
+ * How an app updates: its own choice, else the player's default (`Settings.autoUpdates`). Unset: it offers them. One
+ * that can't update by itself (`updatesByItself`) offers them either way.
+ */
+export const updatesOf = (settings: Pick<Settings, "autoUpdates">, install: Partial<Pick<Install, "updates" | "installer" | "setup" | "version" | "releasedAt">> | undefined): "auto" | "pinned" | undefined => {
   const updates = install?.updates ?? (settings.autoUpdates ? "auto" : undefined);
-  return updates === "ask" || (updates === "auto" && (install?.installer || install?.setup)) ? undefined : updates;
+  return updates === "ask" || (updates === "auto" && !updatesByItself(install)) ? undefined : updates;
 };
 
 /** Whether an app gets pre-releases: its own choice, else the player's default. */

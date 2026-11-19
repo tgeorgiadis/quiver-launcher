@@ -364,7 +364,7 @@ describe("pre-releases", () => {
     expect(wantsPrereleases({}, { prereleases: "include" })).toBe(true);
   });
 
-  it("update as each app chose, else as the player's default, which is to offer them; an installer's never by itself", () => {
+  it("update as each app chose, else as the player's default, which is to offer them; an installer's, or a copy of a version Quiver doesn't know, never by itself", () => {
     expect(updatesOf({}, {})).toBeUndefined();
     expect(updatesOf({ autoUpdates: true }, {})).toBe("auto");
     expect(updatesOf({ autoUpdates: true }, undefined)).toBe("auto");
@@ -377,6 +377,13 @@ describe("pre-releases", () => {
     expect(updatesOf({ autoUpdates: true }, { installer: "setup" })).toBeUndefined();
     expect(updatesOf({ autoUpdates: true }, { setup: true })).toBeUndefined();
     expect(updatesOf({}, { updates: "pinned", setup: true })).toBe("pinned");
+    // A copy whose version Quiver doesn't know may already be the newest, or newer than the verified release.
+    expect(updatesOf({ autoUpdates: true }, { version: "0.0.0" })).toBeUndefined();
+    expect(updatesOf({}, { updates: "auto", version: "v0.0.0" })).toBeUndefined();
+    expect(updatesOf({}, { updates: "pinned", version: "0.0.0" })).toBe("pinned");
+    // Known: one 3.x knew the version of, and a release that really is 0.0.0, which has its date.
+    expect(updatesOf({ autoUpdates: true }, { version: "v0.2.0" })).toBe("auto");
+    expect(updatesOf({ autoUpdates: true }, { version: "0.0.0", releasedAt: 10 })).toBe("auto");
   });
 
   it("make the newest pre-release the app's update for a player who chose them", () => {
