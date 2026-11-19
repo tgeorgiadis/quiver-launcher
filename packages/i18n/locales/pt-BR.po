@@ -49,11 +49,6 @@ msgstr "{0, plural, one {# comentário} other {# comentários}}"
 msgid "{0, plural, one {# file} other {# files}}"
 msgstr "{0, plural, one {# arquivo} other {# arquivos}}"
 
-#. placeholder {0}: tags.length
-#: ../../apps/launcher/src/tag-settings.tsx
-msgid "{0, plural, one {# tag} other {# tags}}"
-msgstr "{0, plural, one {# tag} other {# tags}}"
-
 #. placeholder {0}: library.apps.length
 #: ../../apps/launcher/src/old-library.tsx
 msgid "{0, plural, one {If you already installed it somewhere else, show Quiver the folder.} other {If you already installed them somewhere else, show Quiver the folder.}}"
@@ -70,6 +65,11 @@ msgstr "{0, plural, one {Mover # app de {1} para {dir}?} other {Mover # apps de 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "{0, plural, one {Move # installed app into its console folder} other {Move # installed apps into their console folders}}"
 msgstr "{0, plural, one {Mover # app instalado para a pasta do console dele} other {Mover # apps instalados para as pastas dos consoles deles}}"
+
+#. placeholder {0}: own.length
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "{0, plural, one {of your tags} other {of your tags}}"
+msgstr "{0, plural, one {tag sua} other {tags suas}}"
 
 #. placeholder {0}: elsewhere.size
 #: ../../apps/launcher/src/library.tsx
@@ -547,8 +547,8 @@ msgid "{newest} is out. You have {yours}."
 msgstr "{newest} já saiu. Você tem a {yours}."
 
 #: ../../apps/launcher/src/tag-settings.tsx
-msgid "{off, plural, one {# hidden} other {# hidden}}"
-msgstr "{off, plural, one {# oculta} other {# ocultas}}"
+msgid "{off, plural, one {from the catalog, # hidden} other {from the catalog, # hidden}}"
+msgstr "{off, plural, one {do catálogo, # oculta} other {do catálogo, # ocultas}}"
 
 #: ../../apps/launcher/src/downloads-page.tsx
 msgid "{out} is out. You have {have}."
@@ -1081,11 +1081,6 @@ msgstr "Todos os apps"
 msgid "All consoles"
 msgstr "Todos os consoles"
 
-#. After how many catalog tags the library's apps have, when every one is hidden
-#: ../../apps/launcher/src/tag-settings.tsx
-msgid "all hidden"
-msgstr "todas ocultas"
-
 #. Menu item, last under Manage: opens the app's page at its Manage tab
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "All options…"
@@ -1103,11 +1098,6 @@ msgstr "Todas as plataformas"
 #: ../../apps/launcher/src/library.tsx
 msgid "All project types"
 msgstr "Todos os tipos de projeto"
-
-#. After how many catalog tags the library's apps have, when none is hidden
-#: ../../apps/launcher/src/tag-settings.tsx
-msgid "all showing"
-msgstr "todas visíveis"
 
 #: ../../apps/launcher/src/library.tsx
 msgid "All tags"
@@ -1538,7 +1528,7 @@ msgstr "Botões que fecham um jogo"
 msgid "by {author}"
 msgstr "por {author}"
 
-#. Sorts the catalog's tags by name
+#. Sorts tags by name
 #: ../../apps/launcher/src/tag-settings.tsx
 msgid "By name"
 msgstr "Por nome"
@@ -1615,7 +1605,6 @@ msgstr "carrossel"
 msgid "Catalog filters"
 msgstr "Filtros do catálogo"
 
-#. Settings section: the tags apps have from the catalog, which the player can hide
 #: ../../apps/launcher/src/tag-settings.tsx
 msgid "Catalog tags"
 msgstr "Tags do catálogo"
@@ -2705,10 +2694,17 @@ msgstr "Do Quiver Launcher 3. Mantenha esta pasta até mover os apps dela."
 msgid "From Quiver's catalog."
 msgstr "Do catálogo do Quiver."
 
+#. After how many catalog tags the library's apps have, when none is hidden
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "from the catalog"
+msgstr "do catálogo"
+
 #. Heading in an app's Tags menu, over the tags the catalog gave it
 #. Label on an app's page, over the tags the catalog gave it
+#. Tab: the tags apps have from the catalog
 #: ../../apps/launcher/src/card-menu.tsx
 #: ../../apps/launcher/src/detail.tsx
+#: ../../apps/launcher/src/tag-settings.tsx
 msgid "From the catalog"
 msgstr "Do catálogo"
 
@@ -3721,10 +3717,10 @@ msgstr "Cria uma pasta dentro da sua pasta de apps para colocar o app."
 msgid "Manage"
 msgstr "Gerenciar"
 
-#. Button: opens the list of the catalog's tags, to hide or show them
+#. Button: opens the window listing the player's tags and the catalog's
 #: ../../apps/launcher/src/tag-settings.tsx
-msgid "Manage catalog tags"
-msgstr "Gerenciar tags do catálogo"
+msgid "Manage tags"
+msgstr "Gerenciar tags"
 
 #. Menu item: rename or delete the player's tags, in Settings
 #: ../../apps/launcher/src/card-menu.tsx
@@ -3808,7 +3804,7 @@ msgstr ""
 msgid "More…"
 msgstr "Mais…"
 
-#. Sorts the catalog's tags, the ones on the most apps first
+#. Sorts tags, the ones on the most apps first
 #: ../../apps/launcher/src/tag-settings.tsx
 msgid "Most apps"
 msgstr "Mais apps"
@@ -6137,8 +6133,10 @@ msgstr "Tag"
 #. Browse card detail: the app's tags, such as Recomp or its console, over its name
 #. Menu item opening the player's tags for an app
 #. Menu item opening the player's tags for an app
+#. Settings section: the player's own tags and the catalog's
 #: ../../apps/launcher/src/browse-cards.ts
 #: ../../apps/launcher/src/card-menu.tsx
+#: ../../apps/launcher/src/tag-settings.tsx
 msgid "Tags"
 msgstr "Tags"
 
@@ -6365,10 +6363,6 @@ msgstr "A playlist compartilhada está atualizada."
 #: ../../apps/launcher/src/tag-settings.tsx
 msgid "The tags you gave your apps, including any brought over from Quiver Launcher 3. Renaming or deleting one changes it on every app that has it. The catalog's own tags aren't affected."
 msgstr "As tags que você deu aos seus apps, incluindo as trazidas do Quiver Launcher 3. Renomear ou excluir uma tag muda ela em todos os apps que a têm. As tags do catálogo não são afetadas."
-
-#: ../../apps/launcher/src/tag-settings.tsx
-msgid "The tags your apps have from the catalog. A hidden tag is left off cards, the tag filter, search and playlists on this computer. To hide one on a single app, untick it in that app's Tags menu."
-msgstr "As tags que seus apps têm do catálogo. Uma tag oculta fica fora dos cards, do filtro de tags, da busca e das playlists neste computador. Para ocultar uma em um só app, desmarque-a no menu Tags desse app."
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Theme"
@@ -6680,8 +6674,8 @@ msgid "Unpin and install {version}"
 msgstr "Desafixar e instalar a {version}"
 
 #: ../../apps/launcher/src/tag-settings.tsx
-msgid "Untick a tag to hide it on every app on this computer. Tick it to show it again."
-msgstr "Desmarque uma tag para ocultá-la em todos os apps deste computador. Marque-a para mostrá-la de novo."
+msgid "Untick a tag to hide it on every app on this computer. Tick it to show it again. To hide one on a single app, untick it in that app's Tags menu."
+msgstr "Desmarque uma tag para ocultá-la em todos os apps deste computador. Marque-a para mostrá-la de novo. Para ocultá-la em um só app, desmarque-a no menu Tags desse app."
 
 #. Goes to the folder around the one shown
 #: ../../apps/launcher/src/file-picker.tsx
@@ -7364,6 +7358,10 @@ msgstr "Sua biblioteca está vazia"
 msgid "Your library syncs across your devices, and you can review apps. Everything works without an account too."
 msgstr "Sua biblioteca sincroniza entre seus dispositivos, e você pode avaliar apps. Tudo funciona sem conta também."
 
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "Your own tags, which you can rename or delete on every app at once, and the tags your apps have from the catalog, which you can hide on this computer."
+msgstr "Suas próprias tags, que você pode renomear ou excluir em todos os apps de uma vez, e as tags que seus apps têm do catálogo, que você pode ocultar neste computador."
+
 #: ../../apps/launcher/src/library-sidebar.tsx
 msgid "Your play"
 msgstr "Sua atividade"
@@ -7389,6 +7387,7 @@ msgstr ""
 msgid "Your saves from {device} were put in place. The saves that were here are backed up."
 msgstr "Seus saves de {device} foram aplicados. Os que estavam aqui têm backup."
 
+#. Tab: the player's own tags
 #: ../../apps/launcher/src/detail.tsx
 #: ../../apps/launcher/src/tag-settings.tsx
 msgid "Your tags"

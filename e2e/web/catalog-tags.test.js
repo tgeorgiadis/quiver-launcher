@@ -37,14 +37,17 @@ const until = (check) => s.until(check);
 const openSettings = async () => {
   await page.locator(".topbar button[aria-label='Settings']").click();
   await page.locator(".settings-nav button", { hasText: "Library" }).first().click();
-  await page.getByRole("region", { name: "Catalog tags" }).waitFor();
+  await page.getByRole("region", { name: "Tags", exact: true }).waitFor();
 };
-const section = () => page.getByRole("region", { name: "Catalog tags" });
-const tagWindow = () => page.getByRole("dialog", { name: "Catalog tags" });
+const section = () => page.getByRole("region", { name: "Tags", exact: true });
+const tagWindow = () => page.getByRole("dialog", { name: "Manage tags" });
 const tagBox = (name) => tagWindow().getByRole("checkbox", { name: new RegExp(`^${name}\\b`) });
 const openTags = async () => {
-  await section().getByRole("button", { name: "Manage catalog tags" }).click();
+  await section().getByRole("button", { name: "Manage tags" }).click();
   await tagWindow().waitFor();
+  const tab = tagWindow().getByRole("tab", { name: /^From the catalog/ });
+  // It opens there when the player has no tags of their own.
+  if ((await tab.getAttribute("aria-selected")) !== "true") await tab.click();
 };
 const listed = () => tagWindow().locator(".catalog-tag-name").allInnerTexts();
 const toLibrary = async () => {
@@ -68,9 +71,9 @@ test("an app's Tags menu lists the catalog's tags, and unticking one takes it of
   await page.keyboard.press("Escape");
 });
 
-test("Settings sums the catalog's tags up, and their window hides one on every app, and shows it again", async () => {
+test("Settings sums the tags up, and the tags window's catalog tab hides one on every app, and shows it again", async () => {
   await openSettings();
-  assert.match(await section().locator(".catalog-tags-summary").innerText(), /2 tags\s+all showing/);
+  assert.match(await section().locator(".tags-summary").innerText(), /0\s+of your tags\s+2\s+from the catalog\s+Manage tags/);
   assert.equal(await section().locator("li").count(), 0, "the list isn't in Settings itself");
   await openTags();
   assert.deepEqual(await listed(), ["Nintendo", "Recomp"]);
@@ -80,7 +83,7 @@ test("Settings sums the catalog's tags up, and their window hides one on every a
   await tagWindow().locator(".catalog-tag.off", { hasText: "Recomp" }).waitFor();
   await page.keyboard.press("Escape");
   await tagWindow().waitFor({ state: "detached" });
-  assert.match(await section().locator(".catalog-tags-summary").innerText(), /2 tags\s+1 hidden/);
+  assert.match(await section().locator(".tags-summary").innerText(), /2\s+from the catalog, 1 hidden/);
   await toLibrary();
   assert.equal(await kinds("test-port"), "", "Nintendo unticked on it, Recomp hidden");
   assert.equal(await kinds("tampered-port"), "");

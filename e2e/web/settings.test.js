@@ -134,11 +134,14 @@ test("Downloads, and every section of Settings", async () => {
   }
 });
 
-test("the catalog's tags open in a window of their own, which a controller gets all around, ticks in and leaves", async () => {
+test("tags open in a window of their own, which a controller gets all around, both tabs, ticks in and leaves", async () => {
   assert.equal(await open('button[aria-label="Settings"]'), "page: Settings");
   await open('nav[aria-label="Settings sections"] button', { text: "Library" });
-  assert.equal(await open('section[aria-label="Catalog tags"] button', { text: "Manage catalog tags" }), "dialog: Catalog tags");
-  await everything("Catalog tags");
+  assert.equal(await open('section[aria-label="Tags"] button', { text: "Manage tags" }), "dialog: Manage tags");
+  await everything("Manage tags › Your tags");
+  await reach.pressOn(app, '[role="tab"]', "South", { text: "From the catalog" });
+  await s.until(() => app.execute(() => Boolean(document.querySelector('[role="dialog"] .catalog-tag'))));
+  await everything("Manage tags › From the catalog");
   const box = '[role="dialog"] .catalog-tag input';
   assert.equal(await app.execute((b) => document.querySelector(b).checked, box), true);
   assert.doesNotMatch(await reach.pressOn(app, box, "South"), /^not reached/);

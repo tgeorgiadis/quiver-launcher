@@ -1895,41 +1895,46 @@ body:has(.overlay) .shell > main { overflow: hidden; scrollbar-gutter: stable; }
 .snapshots li { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .recovery p { max-width: 520px; }
 
-/* The player's tags in Settings: each with how many apps have it, and renaming or deleting it. */
-.tag-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; max-width: 520px; }
-.tag-list li { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 36px; }
-.tag-list .tag-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.tag-list .tag-name .muted { font-size: 12px; margin-left: 6px; }
-.tag-list .tag-actions { display: flex; gap: 6px; flex-shrink: 0; }
-.tag-list .tag-actions { align-items: center; }
-/* The catalog's tags in Settings: how many, and the way into their own window. */
-.catalog-tags-summary { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; max-width: 520px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 9px; background: var(--panel); }
-.catalog-tags-summary .muted { margin-left: 6px; }
-/* Their window: its search, filters and buttons stay put, and the list scrolls under them in as many columns as fit. */
-.detail.choose.catalog-tags-window { display: flex; flex-direction: column; width: min(860px, 100%); height: min(760px, 100%); overflow: hidden; }
-.catalog-tags-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 18px 24px 0; }
-.catalog-tags-head h2 { font-size: 18px; }
-.catalog-tags-tools { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; padding: 10px 24px 14px; border-bottom: 1px solid var(--line); }
-.catalog-tags-find { display: flex; gap: 8px; }
-.catalog-tags-find input { flex: 1; min-width: 0; padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
-.catalog-tags-find input:focus { border-color: var(--accent); }
-.catalog-tags-find select { flex: none; min-width: 0; max-width: 45%; padding: 7px 10px; border: 1px solid var(--line); border-radius: 7px; background: var(--panel); }
-.catalog-tags-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
-.catalog-tags-bar .chip { padding: 4px 12px; background: none; font-size: 13px; font-weight: 400; }
-.catalog-tags-bar .chip.on { background: var(--chip-bg); color: var(--chip-fg); }
-.catalog-tags-bar .chip-count { margin-left: 4px; opacity: 0.7; font-size: 12px; }
-.catalog-tags-bulk { display: flex; gap: 8px; }
-.catalog-tags-list { flex: 1; min-height: 0; overflow-y: auto; padding: 12px 18px 18px; }
-.catalog-tags-list > p { padding: 12px 6px; }
-.catalog-tags-list ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 4px 8px; }
+/* Tags in Settings: how many, and the way into their own window. */
+.tags-summary { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; max-width: 560px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 9px; background: var(--panel); }
+.tags-summary-counts { display: flex; flex-wrap: wrap; gap: 4px 18px; }
+.tags-summary-counts .muted { margin-left: 4px; }
+/* Their window: its tabs, search, filters and buttons stay put, and the list scrolls under them. */
+.detail.choose.tags-window { display: flex; flex-direction: column; width: min(860px, 100%); height: min(760px, 100%); overflow: hidden; }
+.tags-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 18px 24px 0; }
+.tags-head h2 { font-size: 18px; }
+.tags-tabs { flex-shrink: 0; margin: 0; padding: 4px 12px 0; border-bottom: 1px solid var(--line); }
+.tags-tabs > button { padding: 12px 12px; background: none; border-radius: 0; font-size: 14px; }
+.tags-tabs .tab-count { margin-left: 6px; }
+.tags-tools { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; padding: 12px 24px 14px; border-bottom: 1px solid var(--line); }
+.tags-find { display: flex; gap: 8px; }
+.tags-find input { flex: 1; min-width: 0; padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
+.tags-find input:focus { border-color: var(--accent); }
+.tags-find select { flex: none; min-width: 0; max-width: 45%; padding: 7px 10px; border: 1px solid var(--line); border-radius: 7px; background: var(--panel); }
+.tags-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
+.tags-bar .chip { padding: 4px 12px; background: none; font-size: 13px; font-weight: 400; }
+.tags-bar .chip.on { background: var(--chip-bg); color: var(--chip-fg); }
+.tags-bar .chip-count { margin-left: 4px; opacity: 0.7; font-size: 12px; }
+.tags-bulk { display: flex; gap: 8px; }
+.tags-scroll { flex: 1; min-height: 0; overflow-y: auto; padding: 12px 18px 18px; }
+.tags-scroll > p { padding: 12px 6px; }
+.catalog-tags { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 4px 8px; }
+/* The player's own: a name and its count, then Rename and Delete, in two columns where they fit. */
+.own-tags { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 4px 16px; }
+.own-tags li { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 40px; padding: 2px 6px 2px 10px; border-radius: 8px; }
+.own-tags li:hover, .own-tags li:focus-within { background: var(--field-hover); }
+.own-tags .tag-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.own-tags .tag-name .muted { font-size: 12px; margin-left: 6px; }
+.own-tags .tag-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.own-tags .own-tag-ask { min-width: 0; }
+.own-tags .tag-rename { display: flex; gap: 6px; width: 100%; }
+.own-tags .tag-rename input { flex: 1; min-width: 0; padding: 6px 10px; border: 1px solid var(--accent); border-radius: 7px; background: var(--panel); }
 .catalog-tag { display: flex; align-items: center; gap: 10px; min-height: 38px; padding: 6px 10px; border-radius: 8px; cursor: pointer; }
 .catalog-tag:hover, .catalog-tag:focus-within { background: var(--field-hover); }
 .catalog-tag input { flex: none; }
 .catalog-tag-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
 .catalog-tag-count { flex: none; color: var(--muted); font-size: 12px; }
 .catalog-tag.off .catalog-tag-name { color: var(--muted); font-weight: 400; text-decoration: line-through; text-decoration-color: color-mix(in srgb, var(--muted) 60%, transparent); }
-.tag-rename { display: flex; gap: 6px; flex: 1; }
-.tag-rename input { flex: 1; min-width: 0; }
 
 /* A playlist's icon on its tab (one of its apps'), and choosing it. */
 .playlist-icon { display: inline-grid; width: 18px; height: 18px; margin: -2px 7px -2px -5px; overflow: hidden; border-radius: 5px; flex-shrink: 0; }
