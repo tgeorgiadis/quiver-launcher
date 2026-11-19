@@ -10,7 +10,7 @@ import { msg, plural, t } from "@lingui/core/macro";
 import { ApiError, createClient, createGithub, createGitlab, githubRepository, parseRepository, type Asset, type Client, type Console, type Entry, type Github, type Os, type HistoryRelease, type Release, type ReleaseScan, type UnverifiedRelease, type Withdrawn } from "@quiverlauncher/api";
 import { native, type Config, type LaunchOptions, type OldApp, type OldFilter, type Progress, type StateProblem, type V3Library, type WindowsRunner } from "./native";
 import { Recovery } from "./recovery";
-import { assetFilterFor, bestAssets, flatpakAsset, installable, installFormat, isFlatpakAsset, isMsi, pickedBefore } from "./assets";
+import { assetFilterFor, bestAssets, installPreference, type InstallPreference, type InstallFormat, type AssetSelection, flatpakAsset, installable, installFormat, isFlatpakAsset, isMsi, pickedBefore } from "./assets";
 import { cameAfter, fromSite, installedFile, insteadOf, newestUnblocked, sameChecksum, unverifiedFile, versionLabel, withdrawnAsBlocked } from "./versions";
 import { Problem, reasonOf, setTelemetryAppsDir, track } from "./telemetry";
 import { AccountProvider, useAccount } from "./account";
@@ -84,6 +84,8 @@ export type Install = {
   launch?: LaunchOptions;
   /** The file the player picked among several for this computer, as a filter (`assetFilterFor`): updates take it again. */
   pick?: string;
+  /** Actual package format, retained across updates independently of the global preference. */
+  format?: InstallFormat;
   /** The player declined migrating this install to Flatpak when one became available. */
   flatpakMigrationDismissed?: true;
 };
@@ -493,11 +495,10 @@ export type Settings = {
   setupDone?: boolean;
   /** Offer preview releases of Quiver Launcher too. */
   previewUpdates?: boolean;
-  /**
-   * Prefer a Flatpak release when installing an app for the first time and one suits this computer (Linux). Off by
-   * default so existing behaviour stays; a file the player picks, or a filter from a pick before, still wins.
-   */
+  /** Legacy checkbox, read only when preferredInstallFormat is absent. */
   preferFlatpak?: boolean;
+  /** Preferred format for new Linux installs; absent reads the legacy checkbox. */
+  preferredInstallFormat?: InstallPreference;
   /**
    * Offer to move an existing non-Flatpak install to Flatpak when a release has one (Linux). Off by default; never
    * migrates without the player confirming.
@@ -848,7 +849,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     const was = installs[entry.id];
     const from = was?.version;
     let version = chosen?.version ?? entry.verified?.version;
-    let format: string | undefined;
+    let format: InstallFormat | undefined;
     // Set when the player confirmed Flatpak migration (option or prompt), so the old file pick isn't reused.
     let migrating = migrate;
     // A release Quiver hasn't verified, or a file of one it has, that the player said to install.
@@ -861,15 +862,13 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     // The system whose build it runs: the player's choice, else the one installed, so an update keeps to Windows' build
     // through Wine. Switching drops the file picked for the other one.
     const platform = options.platform ?? (was?.wine ? "windows" : undefined);
-    // Prefer Flatpak for a new install when Settings says so, for an install that already is one, or when migrating.
-    // Never for an update of another format: that stays until the player migrates or picks a Flatpak themselves.
-    const preferFlatpak =
-      config.os === "linux" && (migrate || was?.installer === "flatpak" || (!was && Boolean(settings.preferFlatpak)));
-    const lastPick = migrate
-      ? undefined
-      : options.platform && was && options.platform !== (was.wine ? "windows" : config.os)
-        ? undefined
-        : was?.pick;
+    const switchingPlatform = Boolean(options.platform && was && options.platform !== (was.wine ? "windows" : config.os));
+    const retainedFormat: InstallFormat | undefined = config.os === "linux" && !migrate && !switchingPlatform
+      ? was?.format ?? (was?.installer === "flatpak" ? "flatpak" : undefined)
+      : undefined;
+    const preference = config.os === "linux" && !was ? installPreference(settings) : "automatic";
+    const lastPick = migrate || switchingPlatform ? undefined : was?.pick;
+    const selection: AssetSelection = { preference, format: migrate ? "flatpak" : retainedFormat, pick: lastPick };
     const noAnswer = () => new Problem(msg`Couldn't reach quiverlauncher.com. Check your connection and try again.`);
     const stop = () => {
       setJobs(({ [entry.id]: _, ...rest }) => rest);
@@ -905,12 +904,14 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       const clicked = options.asset ? release.assets.find((a) => a.filename === options.asset) : undefined;
       let candidates = clicked
         ? !kind || isMsi(clicked.filename) === (kind === "msi") ? [clicked] : []
-        : bestAssets(release.assets, config.os, config.arch, installSettings.releaseAssetFilter, kind, platform, preferFlatpak);
+        : bestAssets(release.assets, config.os, config.arch, installSettings.releaseAssetFilter, kind, platform, selection);
       // A file the player picked that a later release names differently: they pick again, even from one.
       const missed = !candidates.length && !clicked && Boolean(custom && installSettings.releaseAssetFilter);
-      if (missed) candidates = bestAssets(release.assets, config.os, config.arch, undefined, kind, platform, preferFlatpak);
+      if (missed) candidates = bestAssets(release.assets, config.os, config.arch, undefined, kind, platform, selection);
+      if (!clicked && selection.format && !candidates.length)
+        throw new Problem(msg`This release has no compatible download in the installed format. Choose another download explicitly to change formats.`);
       let [asset, ...others] = candidates;
-      if (!asset && kind && bestAssets(release.assets, config.os, config.arch, undefined, undefined, undefined, preferFlatpak).length)
+      if (!asset && kind && bestAssets(release.assets, config.os, config.arch).length)
         throw new Problem(
           kind === "msi"
             ? msg`This release has no Windows installer (MSI) to update it with. Uninstall it, then get it again to install this release's download.`
@@ -952,7 +953,9 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         const files = installable(release.assets, config.os).map((a) => a.filename);
         pick = files.length > 1 ? assetFilterFor(asset.filename, files) : undefined;
       } else if (again) asset = again;
-      else if (others.length || missed || unmatched) {
+      else if (others.length || missed || unmatched || (lastPick && !again)) {
+        // Background updates must not replace an unavailable or ambiguous remembered choice.
+        if (auto) return stop();
         const choices = [asset, ...others];
         const picked = await new Promise<Asset | null>((resolve) => setChoice({ entry, version: release.version, assets: choices, unmatched, resolve }));
         setChoice(null);
@@ -1014,7 +1017,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         const launch = old && Boolean(i[entry.id]?.wine) !== wine ? (old.command ? { command: old.command } : undefined) : old;
         // A Flatpak install clears a dismissed migration offer; another format drops the Flatpak marker.
         const installer = msi ? ({ installer: "msi" as const, ...(program ? { program } : {}) } as const) : flatpak ? ({ installer: "flatpak" as const } as const) : {};
-        return { ...i, [entry.id]: { dir: i[entry.id]?.dir, lastPlayed: i[entry.id]?.lastPlayed, ...(installedAt ? { installedAt } : {}), playTime: i[entry.id]?.playTime, ...(launch ? { launch } : {}), ...(updates ? { updates } : {}), ...(skip ? { skip } : {}), ...(unverified ? { unverified: true } : {}), ...(blocked ? { blocked } : {}), ...(checksum ? { checksum } : {}), ...(pick ? { pick } : {}), version: release.version, releasedAt: release.releasedAt, releaseId: release.id, folder, executables: msi ? [] : executables, ...installer, ...(wine ? { wine: true } : {}) } };
+        return { ...i, [entry.id]: { dir: i[entry.id]?.dir, lastPlayed: i[entry.id]?.lastPlayed, ...(installedAt ? { installedAt } : {}), playTime: i[entry.id]?.playTime, ...(launch ? { launch } : {}), ...(updates ? { updates } : {}), ...(skip ? { skip } : {}), ...(unverified ? { unverified: true } : {}), ...(blocked ? { blocked } : {}), ...(checksum ? { checksum } : {}), ...(pick ? { pick } : {}), format, version: release.version, releasedAt: release.releasedAt, releaseId: release.id, folder, executables: msi ? [] : executables, ...installer, ...(wine ? { wine: true } : {}) } };
       });
       setJobs(({ [entry.id]: _, ...rest }) => rest);
       setFinished((f) => [{ id: entry.id, version: release.version, update: Boolean(from), at: Date.now() }, ...f.filter((d) => d.id !== entry.id)]);

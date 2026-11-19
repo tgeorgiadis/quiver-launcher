@@ -46,13 +46,20 @@ export function installFormat(name: string) {
   return FORMATS.slice(0, 8).some((f) => f.test(name)) ? "archive" : "executable";
 }
 
-/**
- * When Flatpak is preferred, beat any architecture penalty for `unknown`
- * (common for `.flatpak` bundles with no arch in the name): `archRank` costs
- * `FORMATS.length` per step, so a `-1` bump still lost to an arch-matched AppImage.
- */
-const formatRank = (name: string, preferFlatpak?: boolean) =>
-  preferFlatpak && isFlatpakAsset(name) ? -(FORMATS.length + 1) : FORMATS.findIndex((f) => f.test(name));
+export type InstallPreference = "automatic" | "flatpak" | "appimage" | "archive";
+export type InstallFormat = ReturnType<typeof installFormat>;
+export type AssetSelection = {
+  preference?: InstallPreference;
+  /** An installed format is a constraint, not a fallback preference. */
+  format?: InstallFormat;
+  pick?: string;
+};
+
+/** Read the previous checkbox until the user chooses a format explicitly. */
+export const installPreference = (settings: { preferredInstallFormat?: InstallPreference; preferFlatpak?: boolean }): InstallPreference =>
+  settings.preferredInstallFormat ?? (settings.preferFlatpak ? "flatpak" : "automatic");
+
+const formatRank = (name: string) => FORMATS.findIndex((f) => f.test(name));
 
 /** How well a file's architecture suits this computer's, best 0; -1 when it can't run. */
 const archRank = (a: Asset, arch: string) =>
@@ -85,18 +92,30 @@ export const hasBuildFor = (assets: Asset[], os: Os, arch: string, platform: Os)
  * release has nothing for this platform. `kind` keeps an update to the kind
  * installed: a Windows installer ("msi"), or files Quiver unpacks ("files").
  * `platform` is the system whose build the player chose, tried first.
- * `preferFlatpak` puts a Flatpak bundle first when one suits this computer
- * (Settings, or an install that already is one); otherwise Flatpak stays after
- * AppImage, as before.
+ * Saved picks and installed formats are respected before ranking. A preference
+ * selects that format when available, otherwise the usual ranking applies.
  */
-export function bestAssets(assets: Asset[], os: Os, arch: string, filter?: string, kind?: "msi" | "files", platform?: Os, preferFlatpak?: boolean): Asset[] {
+export function bestAssets(assets: Asset[], os: Os, arch: string, filter?: string, kind?: "msi" | "files", platform?: Os, selection: AssetSelection = {}): Asset[] {
   const wanted = filter?.trim().toLowerCase();
   const usable = installable(assets, os).filter((a) => !kind || isMsi(a.filename) === (kind === "msi"));
   const forOs = osFallbacks(os, platform).map((o) => usable.filter((a) => a.os === o)).find((list) => list.length) ?? [];
-  const ranked = forOs
+  let candidates = forOs
     .filter((a) => !wanted || a.filename.toLowerCase().includes(wanted))
     .filter((a) => archRank(a, arch) >= 0)
-    .map((a) => ({ a, rank: archRank(a, arch) * FORMATS.length + formatRank(a.filename, preferFlatpak) }))
+    .filter((a) => !selection.format || installFormat(a.filename) === selection.format);
+  // Search all eligible files before ranking can discard a remembered choice.
+  // Missing or ambiguous picks go back to the player, without choosing a new variant.
+  const pick = selection.pick;
+  if (pick) {
+    const matches = candidates.filter((a) => a.filename.toLowerCase().includes(pick));
+    return matches.length ? matches : candidates;
+  }
+  if (os === "linux" && selection.preference && selection.preference !== "automatic") {
+    const preferred = candidates.filter((a) => installFormat(a.filename) === selection.preference);
+    if (preferred.length) candidates = preferred;
+  }
+  const ranked = candidates
+    .map((a) => ({ a, rank: archRank(a, arch) * FORMATS.length + formatRank(a.filename) }))
     .sort((x, y) => x.rank - y.rank);
   return ranked.filter((r) => r.rank === ranked[0].rank).map((r) => r.a);
 }
@@ -107,7 +126,7 @@ export function bestAssets(assets: Asset[], os: Os, arch: string, filter?: strin
  * none suits (wrong arch, filtered out, or the release has no Flatpak).
  */
 export function flatpakAsset(assets: Asset[], os: Os, arch: string, filter?: string, platform?: Os): Asset | undefined {
-  return bestAssets(assets, os, arch, filter, "files", platform, true).find((a) => isFlatpakAsset(a.filename));
+  return bestAssets(assets, os, arch, filter, "files", platform, { format: "flatpak" }).find((a) => isFlatpakAsset(a.filename));
 }
 
 /**

@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 import type { Asset } from "@quiverlauncher/api";
-import { assetFilterFor, bestAssets, flatpakAsset, hasBuildFor, installable, installFormat, isFlatpakAsset, pickedBefore, runsHere } from "./assets";
+import { assetFilterFor, bestAssets, installPreference, flatpakAsset, hasBuildFor, installable, installFormat, isFlatpakAsset, pickedBefore, runsHere } from "./assets";
 
 const asset = (filename: string, os: Asset["os"], architecture: Asset["architecture"] = "x64"): Asset => ({
   id: filename, url: `https://example.com/${filename}`, filename, os, architecture, format: "",
@@ -85,10 +85,10 @@ test("a Flatpak bundle installs on Linux, after an AppImage", () => {
 
 test("preferring Flatpak puts a Flatpak bundle first, and falls back when there isn't one", () => {
   const files = [asset("Game.flatpak", "linux"), asset("Game.AppImage", "linux"), asset("Game-linux.zip", "linux")];
-  expect(bestAssets(files, "linux", "x64", undefined, undefined, undefined, true).map((a) => a.filename)).toEqual(["Game.flatpak"]);
+  expect(bestAssets(files, "linux", "x64", undefined, undefined, undefined, { preference: "flatpak" }).map((a) => a.filename)).toEqual(["Game.flatpak"]);
   // A zip whose name says it holds a Flatpak counts as one, ahead of an AppImage.
   expect(
-    bestAssets([asset("Game-Flatpak.zip", "linux"), asset("Game.AppImage", "linux")], "linux", "x64", undefined, undefined, undefined, true).map((a) => a.filename),
+    bestAssets([asset("Game-Flatpak.zip", "linux"), asset("Game.AppImage", "linux")], "linux", "x64", undefined, undefined, undefined, { preference: "flatpak" }).map((a) => a.filename),
   ).toEqual(["Game-Flatpak.zip"]);
   // Echoes Unbound-style: Flatpak with unknown arch still beats an arch-matched AppImage when preferred.
   expect(
@@ -99,15 +99,15 @@ test("preferring Flatpak puts a Flatpak bundle first, and falls back when there 
       undefined,
       undefined,
       undefined,
-      true,
+      { preference: "flatpak" },
     ).map((a) => a.filename),
   ).toEqual(["MetroidPrime2Port.flatpak"]);
   // No Flatpak: the usual order (archives before AppImage) is unchanged.
-  expect(bestAssets([asset("Game.AppImage", "linux"), asset("Game-linux.zip", "linux")], "linux", "x64", undefined, undefined, undefined, true).map((a) => a.filename)).toEqual([
+  expect(bestAssets([asset("Game.AppImage", "linux"), asset("Game-linux.zip", "linux")], "linux", "x64", undefined, undefined, undefined, { preference: "flatpak" }).map((a) => a.filename)).toEqual([
     "Game-linux.zip",
   ]);
   // A catalog filter still wins over preferring Flatpak.
-  expect(bestAssets(files, "linux", "x64", "AppImage", undefined, undefined, true).map((a) => a.filename)).toEqual(["Game.AppImage"]);
+  expect(bestAssets(files, "linux", "x64", "AppImage", undefined, undefined, { preference: "flatpak" }).map((a) => a.filename)).toEqual(["Game.AppImage"]);
   expect(isFlatpakAsset("Game.flatpak")).toBe(true);
   expect(isFlatpakAsset("Game-Flatpak.zip")).toBe(true);
   expect(isFlatpakAsset("Game.AppImage")).toBe(false);
@@ -196,4 +196,52 @@ test("a release has the build the player chose to get when that's what installin
   expect(hasBuildFor([linux, unplaced], "linux", "x64", "windows")).toBe(false);
   // Windows Installer doesn't run through Wine.
   expect(hasBuildFor([linux, asset("Game-1.0-x64.msi", "windows")], "linux", "x64", "windows")).toBe(false);
+});
+
+test("new Linux install preferences select each format and keep automatic behavior", () => {
+  const files = [asset("Game-Flatpak.zip", "linux"), asset("Game.tar.gz", "linux"), asset("Game.AppImage", "linux")];
+  const select = (preference: "automatic" | "flatpak" | "appimage" | "archive") =>
+    bestAssets(files, "linux", "x64", undefined, undefined, undefined, { preference });
+  expect(select("automatic")).toEqual([files[0]]);
+  expect(select("flatpak")).toEqual([files[0]]);
+  expect(select("archive")).toEqual([files[1]]);
+  expect(select("appimage")).toEqual([files[2]]);
+});
+
+test("preferences fall back without overriding architecture, catalog filters or platform choices", () => {
+  const files = [asset("Game.zip", "linux"), asset("Game.AppImage", "linux", "arm64"), asset("Game.flatpak", "linux", "arm64"), asset("Game-win.zip", "windows")];
+  for (const preference of ["appimage", "flatpak", "archive"] as const) {
+    expect(bestAssets(files, "linux", "x64", undefined, undefined, undefined, { preference })).toEqual([files[0]]);
+    expect(bestAssets(files, "linux", "x64", undefined, undefined, "windows", { preference })).toEqual([files[3]]);
+  }
+  const compatible = [files[0], asset("Game.AppImage", "linux")];
+  expect(bestAssets(compatible, "linux", "x64", ".zip", undefined, undefined, { preference: "appimage" })).toEqual([files[0]]);
+  const windows = [asset("Game.zip", "windows"), asset("Game.AppImage", "windows")];
+  expect(bestAssets(windows, "windows", "x64", undefined, undefined, undefined, { preference: "appimage" })).toEqual([windows[0]]);
+});
+
+test("a remembered file wins before format and architecture ranking discard it", () => {
+  const files = [asset("Game-vulkan.zip", "linux"), asset("Game-opengl.AppImage", "linux", "unknown")];
+  expect(bestAssets(files, "linux", "x64", undefined, undefined, undefined, { preference: "archive", pick: "opengl" })).toEqual([files[1]]);
+  const ambiguous = [asset("Game-opengl.zip", "linux"), files[1]];
+  expect(bestAssets(ambiguous, "linux", "x64", undefined, undefined, undefined, { pick: "opengl" })).toEqual(ambiguous);
+  expect(bestAssets(files, "linux", "x64", undefined, undefined, undefined, { pick: "renamed" })).toEqual(files);
+});
+
+test("updates retain their recorded format regardless of the global preference and never fall back", () => {
+  const files = [asset("Game.zip", "linux"), asset("Game.AppImage", "linux"), asset("Game.flatpak", "linux")];
+  for (const format of ["archive", "appimage", "flatpak"] as const) {
+    for (const preference of ["automatic", "archive", "appimage", "flatpak"] as const) {
+      expect(bestAssets(files, "linux", "x64", undefined, "files", undefined, { format, preference })).toEqual(files.filter((a) => installFormat(a.filename) === format));
+    }
+    expect(bestAssets(files.filter((a) => installFormat(a.filename) !== format), "linux", "x64", undefined, "files", undefined, { format })).toEqual([]);
+  }
+});
+
+test("the legacy Flatpak checkbox is preserved until explicitly replaced, including Automatic", () => {
+  expect(installPreference({})).toBe("automatic");
+  expect(installPreference({ preferFlatpak: false })).toBe("automatic");
+  expect(installPreference({ preferFlatpak: true })).toBe("flatpak");
+  for (const preferredInstallFormat of ["automatic", "archive", "appimage", "flatpak"] as const)
+    expect(installPreference({ preferredInstallFormat, preferFlatpak: true })).toBe(preferredInstallFormat);
 });

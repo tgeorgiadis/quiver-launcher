@@ -8,52 +8,11 @@ msgstr ""
 "Language: en\n"
 
 #. Beside Launch options: the player changed them
-
 #: ../../apps/launcher/src/launch-options.tsx
 msgid "(changed)"
 msgstr "(changed)"
 
 #. placeholder {0}: elsewhere.size
-#: ../../apps/launcher/src/App.tsx
-msgid "Don't ask again for this app"
-msgstr "Don't ask again for this app"
-
-#: ../../apps/launcher/src/settings-page.tsx
-msgid "Flatpak"
-msgstr "Flatpak"
-
-#: ../../apps/launcher/src/settings-page.tsx
-msgid "If an app you installed as an AppImage or archive later publishes a Flatpak, Quiver asks before switching. It never migrates on its own. Your library entry, saves and settings stay."
-msgstr "If an app you installed as an AppImage or archive later publishes a Flatpak, Quiver asks before switching. It never migrates on its own. Your library entry, saves and settings stay."
-
-#: ../../apps/launcher/src/App.tsx
-msgid "Keep current format"
-msgstr "Keep current format"
-
-#: ../../apps/launcher/src/App.tsx
-msgid "Migrate to Flatpak"
-msgstr "Migrate to Flatpak"
-
-#: ../../apps/launcher/src/App.tsx
-msgid "Migrate to Flatpak?"
-msgstr "Migrate to Flatpak?"
-
-#: ../../apps/launcher/src/App.tsx
-msgid "Migrate {name} to Flatpak?"
-msgstr "Migrate {name} to Flatpak?"
-
-#: ../../apps/launcher/src/settings-page.tsx
-msgid "Offer migration to Flatpak when available"
-msgstr "Offer migration to Flatpak when available"
-
-#: ../../apps/launcher/src/settings-page.tsx
-msgid "Prefer Flatpak releases when available"
-msgstr "Prefer Flatpak releases when available"
-
-#: ../../apps/launcher/src/settings-page.tsx
-msgid "When you install an app for the first time, Quiver picks a Flatpak if the release has one that runs on this computer. You can still choose another download. Updates of apps you already have keep their current format."
-msgstr "When you install an app for the first time, Quiver picks a Flatpak if the release has one that runs on this computer. You can still choose another download. Updates of apps you already have keep their current format."
-
 #: ../../apps/launcher/src/library.tsx
 msgid "{0, plural, one {# app for other platforms isn't shown.} other {# apps for other platforms aren't shown.}}"
 msgstr "{0, plural, one {# app for other platforms isn't shown.} other {# apps for other platforms aren't shown.}}"
@@ -885,6 +844,10 @@ msgstr "Apps you add from GitHub get their releases from GitHub itself, which al
 msgid "Apps you don't have yet show with Get; nothing downloads until you press it."
 msgstr "Apps you don't have yet show with Get; nothing downloads until you press it."
 
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Archive"
+msgstr "Archive"
+
 #: ../../apps/launcher/src/App.tsx
 msgid "Artwork"
 msgstr "Artwork"
@@ -909,6 +872,10 @@ msgstr "Auto Update won't put {verifiedVersion} back. It installs the next new r
 #: ../../apps/launcher/src/launch-options.tsx
 msgid "Automatic"
 msgstr "Automatic"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Automatic (current behavior)"
+msgstr "Automatic (current behavior)"
 
 #: ../../apps/launcher/src/launch-options.tsx
 msgid "Automatic (no Proton or Wine found)"
@@ -1469,6 +1436,10 @@ msgstr "Dismiss all"
 msgid "Doesn't run"
 msgstr "Doesn't run"
 
+#: ../../apps/launcher/src/App.tsx
+msgid "Don't ask again for this app"
+msgstr "Don't ask again for this app"
+
 #. Closes a dialog
 #: ../../apps/launcher/src/announcements-ui.tsx
 #: ../../apps/launcher/src/library.tsx
@@ -1659,6 +1630,10 @@ msgstr "Folder name"
 #: ../../apps/launcher/src/own.tsx
 msgid "For an app the catalog doesn't have. It's yours alone; to add one for everyone, suggest it on quiverlauncher.com."
 msgstr "For an app the catalog doesn't have. It's yours alone; to add one for everyone, suggest it on quiverlauncher.com."
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "For new Linux installs, prefer this format when a compatible download is available; otherwise use the automatic selection. You can still choose another download. Changing this setting does not change existing installs."
+msgstr "For new Linux installs, prefer this format when a compatible download is available; otherwise use the automatic selection. You can still choose another download. Changing this setting does not change existing installs."
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Forgot your password?"
@@ -1871,6 +1846,10 @@ msgstr "Icon"
 #: ../../apps/launcher/src/library.tsx
 msgid "Icon on its tab"
 msgstr "Icon on its tab"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "If an app you installed as an AppImage or archive later publishes a Flatpak, Quiver asks before switching. It never migrates on its own. Your library entry, saves and settings stay."
+msgstr "If an app you installed as an AppImage or archive later publishes a Flatpak, Quiver asks before switching. It never migrates on its own. Your library entry, saves and settings stay."
 
 #: ../../apps/launcher/src/detail.tsx
 msgid "If you installed it and are happy to accept the risk, you can keep using it; otherwise, remove it and install a verified release instead."
@@ -2157,6 +2136,10 @@ msgstr "Just updated"
 msgid "Keep {keep}"
 msgstr "Keep {keep}"
 
+#: ../../apps/launcher/src/App.tsx
+msgid "Keep current format"
+msgstr "Keep current format"
+
 #: ../../apps/launcher/src/github-token.tsx
 msgid "Keep the token private. When it expires, make a new one and save it here."
 msgstr "Keep the token private. When it expires, make a new one and save it here."
@@ -2281,6 +2264,10 @@ msgstr "Link copied."
 msgid "Linux and Windows (this computer)"
 msgstr "Linux and Windows (this computer)"
 
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Linux installs"
+msgstr "Linux installs"
+
 #. Browse's platform filter on Linux: its own apps, not Windows' too
 #: ../../apps/launcher/src/App.tsx
 msgid "Linux only"
@@ -2374,6 +2361,18 @@ msgstr "Medium"
 #: ../../apps/launcher/src/spatial.ts
 msgid "Menu"
 msgstr "Menu"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Migrate {name} to Flatpak?"
+msgstr "Migrate {name} to Flatpak?"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Migrate to Flatpak"
+msgstr "Migrate to Flatpak"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Migrate to Flatpak?"
+msgstr "Migrate to Flatpak?"
 
 #. Window button
 #: ../../apps/launcher/src/window-bar.tsx
@@ -2792,6 +2791,10 @@ msgstr "Nothing to choose in this folder."
 msgid "Off"
 msgstr "Off"
 
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Offer migration to Flatpak when available"
+msgstr "Offer migration to Flatpak when available"
+
 #. Updates: offer new releases to install
 #: ../../apps/launcher/src/App.tsx
 msgid "Offer them"
@@ -3042,6 +3045,10 @@ msgstr "Port"
 #: ../../apps/launcher/src/detail.tsx
 msgid "Pre-release"
 msgstr "Pre-release"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Preferred Linux install format"
+msgstr "Preferred Linux install format"
 
 #: ../../apps/launcher/src/controls.tsx
 msgid "Press a button…"
@@ -4078,6 +4085,10 @@ msgstr "This page hit a problem"
 #: ../../apps/launcher/src/library.tsx
 msgid "This playlist isn't shared any more."
 msgstr "This playlist isn't shared any more."
+
+#: ../../apps/launcher/src/store.tsx
+msgid "This release has no compatible download in the installed format. Choose another download explicitly to change formats."
+msgstr "This release has no compatible download in the installed format. Choose another download explicitly to change formats."
 
 #: ../../apps/launcher/src/store.tsx
 msgid "This release has no download for your computer."

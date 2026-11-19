@@ -11,6 +11,7 @@ import { Trans } from "@lingui/react/macro";
 import { i18n, LANGUAGES, type Language } from "@quiverlauncher/i18n";
 import type { MessageDescriptor } from "@lingui/core";
 import { useLauncher } from "./store";
+import { installPreference, type InstallPreference } from "./assets";
 import { WHEEL_SPEEDS, pageArea } from "./spatial";
 import { native } from "./native";
 import { DEFAULT_MUSIC_VOLUME, musicProblem, watchMusicProblem } from "./music";
@@ -116,7 +117,7 @@ export function SettingsPage({ back, onBack, onRunSetup }: { back: string; onBac
               <>
                 <AppsFolder />
                 <WindowsRunnerSetting />
-                <FlatpakInstallSettings />
+                <LinuxInstallSettings />
               </>
             ) : section === "controllers" ? (
               <ControlSettings />
@@ -291,31 +292,29 @@ export function LanguageSetting() {
   );
 }
 
-/** How the library looks, as in its View menu, and Browse's cards; which platforms' apps it shows, importing a Quiver Launcher 3 one, and restoring a backup. */
-/**
- * How Linux installs pick Flatpak: prefer it for new installs, and optionally offer to move an existing install when
- * a release gains one. Off by default so older behaviour stays.
- */
-function FlatpakInstallSettings() {
+/** New Linux install preferences and independent, opt-in Flatpak migration. */
+function LinuxInstallSettings() {
   const { config, settings, setSettings } = useLauncher();
   if (config.os !== "linux") return null;
   return (
-    <section className="settings-section" aria-label={t`Flatpak`}>
-      <h3>
-        <Trans>Flatpak</Trans>
-      </h3>
-      <label className="toggle">
-        <input
-          type="checkbox"
-          checked={Boolean(settings.preferFlatpak)}
-          onChange={(e) => setSettings({ ...settings, preferFlatpak: e.target.checked || undefined })}
-        />
-        <Trans>Prefer Flatpak releases when available</Trans>
+    <section className="settings-section" aria-label={t`Linux installs`}>
+      <h3><Trans>Linux installs</Trans></h3>
+      <label className="panel-field">
+        <Trans>Preferred Linux install format</Trans>
+        <select
+          value={installPreference(settings)}
+          onChange={(e) => setSettings({ ...settings, preferredInstallFormat: e.target.value as InstallPreference, preferFlatpak: undefined })}
+        >
+          <option value="automatic"><Trans>Automatic (current behavior)</Trans></option>
+          <option value="flatpak">Flatpak</option>
+          <option value="appimage">AppImage</option>
+          <option value="archive"><Trans>Archive</Trans></option>
+        </select>
       </label>
       <p className="muted">
         <Trans>
-          When you install an app for the first time, Quiver picks a Flatpak if the release has one that runs on this
-          computer. You can still choose another download. Updates of apps you already have keep their current format.
+          For new Linux installs, prefer this format when a compatible download is available; otherwise use the
+          automatic selection. You can still choose another download. Changing this setting does not change existing installs.
         </Trans>
       </p>
       <label className="toggle">
