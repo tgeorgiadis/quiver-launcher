@@ -143,7 +143,7 @@ test("it's a form on the app's Manage tab too", async () => {
 });
 
 test("uninstalling says the saves may go when portable.txt is there, and not otherwise", async () => {
-  const warning = "This app may keep its saves in this folder.";
+  const warning = "This app may keep your saves in its folder.";
   const uninstall = async () => {
     await openSubmenu("Manage");
     await page.locator('.game-submenu [role="menuitem"]', { hasText: /^Uninstall$/ }).click();
