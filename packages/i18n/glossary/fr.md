@@ -34,6 +34,7 @@ before « : ; ! ? », and « » for quotes.
 | usage data | données d'utilisation | |
 | sign in / sign out / account | se connecter / se déconnecter / compte | |
 | feedback / player | avis / joueur | |
+| PC specs | configuration du PC | the computer a player tried an app on: system, processor, graphics card, memory |
 | mod | mod | |
 | launch options / launch flags | options de lancement / paramètres de lancement | |
 | backup (of the library) | sauvegarde | |

@@ -28,6 +28,7 @@ mod session;
 mod setup;
 mod shortcut;
 mod snapshots;
+mod specs;
 mod steam;
 mod sync_folder;
 #[cfg(windows)]
@@ -139,6 +140,13 @@ fn config(app: tauri::AppHandle, data: State<Data>) -> Config {
         steam_deck: device::steam_deck(|name| std::env::var(name).ok(), device::board_vendor()),
         package: update::package(),
     }
+}
+
+/// The computer's processor, graphics card and memory, for feedback (specs.rs). Read off the main thread: on Linux and
+/// macOS it reads files and runs sysctl.
+#[tauri::command(async)]
+fn pc_specs() -> specs::Specs {
+    specs::read()
 }
 
 /// The launcher's own JSON files: the library, installs and the catalog cache.
@@ -2411,6 +2419,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             session::close_combo,
             config,
+            pc_specs,
             cancel_install,
             read_state,
             write_state,

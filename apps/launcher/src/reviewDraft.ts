@@ -8,7 +8,14 @@
 import { OS_NAMES } from "@quiverlauncher/ui";
 import type { Feedback } from "@quiverlauncher/api";
 
-export type ReviewDraft = { result: Feedback["result"]; platform: string; releaseId: string; body: string };
+export type ReviewDraft = {
+  result: Feedback["result"];
+  platform: string;
+  releaseId: string;
+  body: string;
+  /** Whether other players see the PC specs, once the player changed it. */
+  specsPublic?: boolean;
+};
 /** The longest note the site accepts (reviews:save on the website). */
 export const NOTE_LIMIT = 500;
 /** The tested release when the player doesn't know which it was: shared as no release. */
@@ -34,7 +41,13 @@ export function readDraft(userId: string, entryId: string): ReviewDraft | null {
       localStorage.removeItem(key(userId, entryId));
       return null;
     }
-    return { result: d.result as Feedback["result"], platform: d.platform, releaseId: d.releaseId, body: d.body };
+    return {
+      result: d.result as Feedback["result"],
+      platform: d.platform,
+      releaseId: d.releaseId,
+      body: d.body,
+      ...(typeof d.specsPublic === "boolean" ? { specsPublic: d.specsPublic } : {}),
+    };
   } catch {
     return null;
   }

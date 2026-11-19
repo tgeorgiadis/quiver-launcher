@@ -33,6 +33,7 @@ Address the player as **tu**, friendly and plain. Sentence case.
 | usage data | dati di utilizzo | |
 | sign in / sign out / account | accedi / esci / account | |
 | feedback / player | feedback / giocatore | |
+| PC specs | specifiche del PC | the computer a player tried an app on: system, processor, graphics card, memory |
 | mod | mod | |
 | launch options / launch flags | opzioni di avvio / parametri di avvio | |
 | backup (of the library) | backup | |

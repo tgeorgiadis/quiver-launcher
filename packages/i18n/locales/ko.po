@@ -577,6 +577,11 @@ msgstr "{pulledVersion} 철회됨"
 msgid "{put, plural, one {The saves of # app were copied in. New backups follow after you play.} other {The saves of # apps were copied in. New backups follow after you play.}}"
 msgstr ""
 
+#. The memory of the computer a player tried an app on
+#: ../../apps/launcher/src/feedback.tsx
+msgid "{ram} GB RAM"
+msgstr "RAM {ram}GB"
+
 #: ../../apps/launcher/src/mods.tsx
 msgid "{rating, plural, one {{likes} like} other {{likes} likes}}"
 msgstr "{rating, plural, other {좋아요 {likes}개}}"
@@ -4266,6 +4271,11 @@ msgstr "아직 플레이 안 함"
 msgid "Not rated yet"
 msgstr "아직 평가 없음"
 
+#. On PC specs only the app's developer and the player who shared them can see
+#: ../../apps/launcher/src/feedback.tsx
+msgid "Not shown to other players"
+msgstr "다른 플레이어에게 표시되지 않음"
+
 #. Which release the player tested
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Not sure"
@@ -4498,6 +4508,11 @@ msgstr "비밀번호는 공백으로 시작하거나 끝날 수 없어요."
 #: ../../apps/launcher/src/library.tsx
 msgid "Paste the playlist's link, like quiverlauncher.com/lists/…"
 msgstr "재생 목록 링크를 붙여 넣으세요(예: quiverlauncher.com/lists/…)"
+
+#. Before the computer a player tried an app on
+#: ../../apps/launcher/src/feedback.tsx
+msgid "PC specs:"
+msgstr "PC 사양:"
 
 #: ../../apps/launcher/src/controls.tsx
 msgid "Pick a binding, then press the key or button to use for it."
@@ -5708,6 +5723,10 @@ msgstr "간략히 보기"
 msgid "Show more"
 msgstr "더 보기"
 
+#: ../../apps/launcher/src/feedback.tsx
+msgid "Show my PC specs to other players"
+msgstr "다른 플레이어에게 내 PC 사양 표시"
+
 #: ../../apps/launcher/src/library-view.tsx
 msgid "Show names on cards"
 msgstr "카드에 이름 표시"
@@ -6162,6 +6181,10 @@ msgstr "{date} 버전"
 #: ../../apps/launcher/src/App.tsx
 msgid "The {installedVersion} Quiver offers isn't the file you installed."
 msgstr "Quiver가 제공하는 {installedVersion}은(는) 설치한 파일과 달라요."
+
+#: ../../apps/launcher/src/feedback.tsx
+msgid "The app's developer sees them either way."
+msgstr "앱 개발자는 어느 쪽이든 볼 수 있습니다."
 
 #: ../../apps/launcher/src/detail.tsx
 msgid "The developer proved they make this app"

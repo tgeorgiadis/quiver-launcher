@@ -577,6 +577,11 @@ msgstr "{pulledVersion} foi retirada"
 msgid "{put, plural, one {The saves of # app were copied in. New backups follow after you play.} other {The saves of # apps were copied in. New backups follow after you play.}}"
 msgstr ""
 
+#. The memory of the computer a player tried an app on
+#: ../../apps/launcher/src/feedback.tsx
+msgid "{ram} GB RAM"
+msgstr "{ram} GB de RAM"
+
 #: ../../apps/launcher/src/mods.tsx
 msgid "{rating, plural, one {{likes} like} other {{likes} likes}}"
 msgstr "{rating, plural, one {{likes} curtida} other {{likes} curtidas}}"
@@ -4266,6 +4271,11 @@ msgstr "Ainda não jogado"
 msgid "Not rated yet"
 msgstr "Ainda sem avaliações"
 
+#. On PC specs only the app's developer and the player who shared them can see
+#: ../../apps/launcher/src/feedback.tsx
+msgid "Not shown to other players"
+msgstr "Não aparece para outros jogadores"
+
 #. Which release the player tested
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Not sure"
@@ -4498,6 +4508,11 @@ msgstr "A senha não pode começar nem terminar com espaço."
 #: ../../apps/launcher/src/library.tsx
 msgid "Paste the playlist's link, like quiverlauncher.com/lists/…"
 msgstr "Cole o link da playlist, como quiverlauncher.com/lists/…"
+
+#. Before the computer a player tried an app on
+#: ../../apps/launcher/src/feedback.tsx
+msgid "PC specs:"
+msgstr "Especificações do PC:"
 
 #: ../../apps/launcher/src/controls.tsx
 msgid "Pick a binding, then press the key or button to use for it."
@@ -5708,6 +5723,10 @@ msgstr "Mostrar menos"
 msgid "Show more"
 msgstr "Mostrar mais"
 
+#: ../../apps/launcher/src/feedback.tsx
+msgid "Show my PC specs to other players"
+msgstr "Mostrar as especificações do meu PC para outros jogadores"
+
 #: ../../apps/launcher/src/library-view.tsx
 msgid "Show names on cards"
 msgstr "Mostrar nomes nos cards"
@@ -6162,6 +6181,10 @@ msgstr "a versão de {date}"
 #: ../../apps/launcher/src/App.tsx
 msgid "The {installedVersion} Quiver offers isn't the file you installed."
 msgstr "A {installedVersion} que o Quiver oferece não é o arquivo que você instalou."
+
+#: ../../apps/launcher/src/feedback.tsx
+msgid "The app's developer sees them either way."
+msgstr "O desenvolvedor do app as vê de qualquer forma."
 
 #: ../../apps/launcher/src/detail.tsx
 msgid "The developer proved they make this app"

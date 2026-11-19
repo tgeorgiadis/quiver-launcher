@@ -952,6 +952,12 @@ button.download { width: 100%; text-align: left; }
 .review-reply p { white-space: pre-wrap; margin: 6px 0 0; font-size: 13px; color: var(--text-3); overflow-wrap: anywhere; }
 .fixed-note { display: flex; align-items: center; gap: 6px; margin: 12px 0 0; font-size: 12px; color: var(--green); }
 .fixed-note.disputed { color: var(--caution); }
+.review-specs { display: flex; align-items: flex-start; gap: 8px; margin: 12px 0 0; font-size: 12px; color: var(--muted); }
+.review-specs > svg { flex: none; margin-top: 2px; }
+.review-specs .chip { margin-left: 8px; }
+.review-specs-choice { display: grid; gap: 4px; margin: 4px 0 16px; }
+.review-specs-choice .review-specs { margin: 0; }
+.review-specs-choice small { font-size: 12px; color: var(--muted); }
 .fixed-reviews > summary { cursor: pointer; margin: 4px 0 14px; color: var(--text-4); font-size: 13px; }
 .developer-badges { display: inline-flex; flex-wrap: wrap; gap: 6px; margin-left: 6px; vertical-align: 1px; }
 .trusted-badge, .verified-developer-badge { display: inline-flex; align-items: center; gap: 4px; padding: 1px 7px; border-radius: 999px; font-size: 10px; font-weight: 600; white-space: nowrap; }

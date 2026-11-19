@@ -13,7 +13,10 @@ const RELEASE = "release_test-port_1.0.0";
 
 /** Test Port's Player feedback tab, signed in, with its form open. */
 async function form(installs) {
-  const s = await openApp({ state: { library: [{ id: ID, slug: "test-port", addedAt: 1 }], installs }, config: { os: "linux" } });
+  const s = await openApp({
+    state: { library: [{ id: ID, slug: "test-port", addedAt: 1 }], installs },
+    config: { os: "linux", osVersion: "steamos 3.7.13", pcSpecs: { cpu: "AMD Custom APU 0405", gpu: "AMD Custom GPU 0405", ramGb: 14.5 } },
+  });
   const { page } = s;
   await page.locator('article[data-slug="test-port"] .card-open').first().click();
   await page.getByRole("tab", { name: /Player feedback/ }).click();
@@ -50,6 +53,9 @@ test(`an "It didn't run" answer needs a note, and the installed release is the o
       { result: sent.result, body: sent.body, platform: sent.platform, entryReleaseId: sent.entryReleaseId },
       { result: "broken", body: "It closes at the title screen.", platform: "linux", entryReleaseId: RELEASE },
     );
+    // This computer's PC specs go with it, shown to other players.
+    assert.deepEqual(sent.specs, { osVersion: "SteamOS 3.7.13", cpu: "AMD Custom APU 0405", gpu: "AMD Custom GPU 0405", ramGb: 14.5 });
+    assert.equal(sent.specsPublic, true);
     assert.deepEqual(s.errors, []);
   } finally {
     await s.close();
@@ -72,6 +78,33 @@ test(`not installed, the release is picked, or Not sure, before it's shared; an 
     const [sent] = s.api.reviews;
     assert.equal(sent.result, "runs");
     assert.equal(sent.entryReleaseId, undefined, "Not sure names no release");
+    assert.deepEqual(s.errors, []);
+  } finally {
+    await s.close();
+  }
+});
+
+test("PC specs can be kept from other players, and aren't sent for feedback on another platform", async () => {
+  const s = await form({ [ID]: { version: "1.0.0", releaseId: RELEASE, folder: "test-port", executables: [] } });
+  try {
+    const { page, editor } = s;
+    const box = editor.getByRole("checkbox", { name: "Show my PC specs to other players" });
+    assert.ok(await box.isChecked(), "shown, to start with");
+    await editor.locator(".review-specs").filter({ hasText: "SteamOS 3.7.13 · AMD Custom APU 0405 · AMD Custom GPU 0405 · 14.5 GB RAM" }).waitFor();
+    await box.uncheck();
+    await editor.getByRole("button", { name: "Share", exact: true }).click();
+    await editor.waitFor({ state: "detached" });
+    assert.equal(s.api.reviews[0].specsPublic, false);
+    assert.ok(s.api.reviews[0].specs, "the developer still gets them");
+
+    // On Windows, feedback says nothing of this Linux computer: no specs, and no box.
+    await page.getByRole("button", { name: /Update your notes/ }).click();
+    const again = page.locator(".review-editor");
+    await again.locator("select").first().selectOption("windows");
+    assert.equal(await again.getByRole("checkbox").count(), 0);
+    await again.getByRole("button", { name: "Update notes" }).click();
+    await again.waitFor({ state: "detached" });
+    assert.equal(s.api.reviews.at(-1).specs, undefined);
     assert.deepEqual(s.errors, []);
   } finally {
     await s.close();

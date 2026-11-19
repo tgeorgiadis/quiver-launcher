@@ -81,6 +81,8 @@ export type Config = {
   /** How this copy was installed, for usage data (update.rs). Missing from an older build. */
   package?: string;
 };
+/** The hardware specs.rs reads. */
+export type PcSpecs = { cpu: string | null; gpu: string | null; ramGb: number | null };
 /** A repository host's answer, fetched by the Rust side for hosts that don't send CORS headers. */
 export type ProviderHttpResponse = { status: number; headers: Record<string, string>; body: string };
 export type Progress = {
@@ -290,6 +292,8 @@ export const native = {
   /** Whether holding these buttons together closes the game being played (unset: Start + Select). */
   closeCombo: (on: boolean, buttons?: string[]) => invoke<void>("close_combo", { on, buttons: buttons ?? null }),
   config: () => invoke<Config>("config"),
+  /** The processor, graphics card and memory, for feedback (specs.rs); what can't be read is null. Missing from an older build, which rejects. */
+  pcSpecs: () => invoke<PcSpecs>("pc_specs"),
   readState: <T>(name: StateFile) => invoke<T | null>("read_state", { name }),
   writeState: (name: StateFile, value: unknown) => invoke<void>("write_state", { name, value }),
   stateProblems: () => invoke<StateProblem[]>("state_problems"),

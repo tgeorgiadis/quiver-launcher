@@ -12,7 +12,7 @@ import { useSignInWithEmailPassword } from "@convex-dev/auth/methods/email-passw
 import { msg, t } from "@lingui/core/macro";
 import type { MessageDescriptor } from "@lingui/core";
 import { i18n } from "@quiverlauncher/i18n";
-import type { Feedback, Os } from "@quiverlauncher/api";
+import type { Feedback, FeedbackSpecs, Os } from "@quiverlauncher/api";
 import { native, type Config } from "./native";
 import type { Change, Collection, ServerCollection, ServerItem } from "./sync";
 import type { CorrectionTopic } from "./corrections";
@@ -24,6 +24,10 @@ export type ReviewInput = {
   body?: string;
   platform: Exclude<Os, "unknown">;
   entryReleaseId?: string;
+  /** This computer's PC specs, when it's the platform tried. Left out, the site keeps the ones sent before. */
+  specs?: FeedbackSpecs;
+  /** Whether other players see the specs; the app's developer does either way. Left out, the earlier choice stays. */
+  specsPublic?: boolean;
 };
 
 export type CorrectionInput = {
