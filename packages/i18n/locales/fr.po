@@ -1699,12 +1699,8 @@ msgid "Choose a file…"
 msgstr "Choisir un fichier…"
 
 #: ../../apps/launcher/src/store.tsx
-msgid "Choose a folder outside {path}, which has apps in it."
-msgstr "Choisissez un dossier en dehors de {path}, qui contient des apps."
-
-#: ../../apps/launcher/src/store.tsx
-msgid "Choose a folder that doesn't have {path} inside it."
-msgstr "Choisissez un dossier qui ne contient pas {path}."
+msgid "Choose a folder outside {name}, which is an app's own folder."
+msgstr "Choisis un dossier en dehors de {name}, qui est le dossier d'une app."
 
 #: ../../apps/launcher/src/old-library.tsx
 msgid "Choose a folder to look in"

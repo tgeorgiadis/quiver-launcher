@@ -1699,12 +1699,8 @@ msgid "Choose a file…"
 msgstr "파일 선택…"
 
 #: ../../apps/launcher/src/store.tsx
-msgid "Choose a folder outside {path}, which has apps in it."
-msgstr "앱이 있는 {path} 밖의 폴더를 골라 주세요."
-
-#: ../../apps/launcher/src/store.tsx
-msgid "Choose a folder that doesn't have {path} inside it."
-msgstr "{path}이(가) 들어 있지 않은 폴더를 골라 주세요."
+msgid "Choose a folder outside {name}, which is an app's own folder."
+msgstr "앱 자체 폴더인 {name} 바깥의 폴더를 선택하세요."
 
 #: ../../apps/launcher/src/old-library.tsx
 msgid "Choose a folder to look in"

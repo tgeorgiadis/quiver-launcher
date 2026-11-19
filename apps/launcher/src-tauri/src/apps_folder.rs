@@ -131,8 +131,9 @@ pub fn refuse(from: &Path, to: &Path, apps: &[App]) -> Option<String> {
     if staying && elsewhere(apps, to).next().is_none() {
         return Some("Apps are already installed there.".into());
     }
-    if !staying && resolved(to).starts_with(resolved(from)) {
-        return Some("Choose a folder outside the apps folder.".into());
+    // A folder inside the apps folder is fine (its apps move in one level down), but never inside one app's own.
+    if let Some(app) = apps.iter().filter(|a| a.dir.is_none()).find(|a| resolved(to).starts_with(resolved(&from.join(&a.folder)))) {
+        return Some(format!("Choose a folder outside {}'s folder.", app.folder));
     }
     if let Some((app, _)) = elsewhere(apps, to).find(|(_, dir)| resolved(to).starts_with(resolved(dir))) {
         return Some(format!("Choose a folder outside {}'s folder.", app.folder));
@@ -659,6 +660,21 @@ mod tests {
         assert_eq!(done.inside, ["a"]);
     }
 
+    #[test]
+    fn moves_the_apps_into_a_folder_inside_the_apps_folder() {
+        let data = tempfile::tempdir().unwrap();
+        let from = current(data.path());
+        fs::create_dir_all(from.join("Game")).unwrap();
+        fs::write(from.join("Game/game.exe"), "game").unwrap();
+        let to = from.join("Quiver");
+        let done = move_apps(data.path(), &from, &to, &[app("a", "Game")], |_| {}, |_| {}).unwrap();
+        assert_eq!(fs::read_to_string(to.join("Game/game.exe")).unwrap(), "game");
+        assert!(!from.join("Game").exists());
+        assert_eq!(current(data.path()), to);
+        assert_eq!(done.inside, ["a"]);
+        assert!(done.failed.is_empty());
+    }
+
     fn app(id: &str, folder: &str) -> App {
         App { id: id.into(), folder: folder.into(), dir: None, group: None }
     }
@@ -854,12 +870,15 @@ mod tests {
         fs::create_dir_all(from.join("Game")).unwrap();
         let folders = [app("g", "Game")];
         assert!(refuse(&from, &from, &folders).is_some());
-        assert!(refuse(&from, &from.join("More"), &folders).is_some());
+        // A folder inside the apps folder is fine, but not one inside an app's own folder.
+        assert!(refuse(&from, &from.join("More"), &folders).is_none());
+        assert!(refuse(&from, &from.join("Game"), &folders).unwrap().contains("Game"));
+        assert!(refuse(&from, &from.join("Game/More"), &folders).unwrap().contains("Game"));
         // Named another way (here through a link) while the new folder doesn't exist yet.
         #[cfg(unix)]
         {
             std::os::unix::fs::symlink(root.path(), root.path().join("link")).unwrap();
-            assert!(refuse(&from, &root.path().join("link/apps/More"), &folders).is_some());
+            assert!(refuse(&from, &root.path().join("link/apps/Game/More"), &folders).is_some());
         }
         assert!(refuse(&from, Path::new("relative"), &folders).is_some());
         let to = root.path().join("Games");
@@ -973,8 +992,11 @@ mod tests {
         assert!(done.inside.is_empty() && done.failed.is_empty());
         assert_eq!(current(data.path()), to);
         assert!(from.join("Game").is_dir());
-        // Not one inside the folder it was.
-        assert!(move_apps(data.path(), &to, &to.join("More"), &[], |_| {}, |_| {}).is_err());
+        // One inside the folder it was too, its apps staying where they are around it.
+        fs::create_dir_all(to.join("Kept")).unwrap();
+        move_apps(data.path(), &to, &to.join("More"), &[], |_| {}, |_| {}).unwrap();
+        assert_eq!(current(data.path()), to.join("More"));
+        assert!(to.join("Kept").is_dir());
     }
 
     #[test]

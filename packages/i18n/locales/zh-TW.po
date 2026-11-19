@@ -1699,12 +1699,8 @@ msgid "Choose a file…"
 msgstr "選擇檔案 →"
 
 #: ../../apps/launcher/src/store.tsx
-msgid "Choose a folder outside {path}, which has apps in it."
-msgstr "選擇一個不在 {path} 內、且包含應用程式的資料夾。"
-
-#: ../../apps/launcher/src/store.tsx
-msgid "Choose a folder that doesn't have {path} inside it."
-msgstr "選擇一個不包含 {path} 的資料夾。"
+msgid "Choose a folder outside {name}, which is an app's own folder."
+msgstr "請選擇 {name} 以外的資料夾，它是某個應用程式自己的資料夾。"
 
 #: ../../apps/launcher/src/old-library.tsx
 msgid "Choose a folder to look in"
