@@ -9,12 +9,12 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 import { useMutation, usePaginatedQuery, useQuery } from "convex/react";
 import { makeFunctionReference, type FunctionReference } from "convex/server";
 import { ConvexError } from "convex/values";
-import { ArrowLeft, Bell, BellOff, Eye, EyeOff, Flag, Lock, LockOpen, MessageSquare, MessagesSquare, Pencil, Pin, PinOff, Search } from "lucide-react";
+import { ArrowLeft, Bell, ChevronRight, BellOff, Eye, EyeOff, Flag, Lock, LockOpen, MessageSquare, MessagesSquare, Pencil, Pin, PinOff, Search } from "lucide-react";
 import { msg, plural, t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import type { MessageDescriptor } from "@lingui/core";
 import { i18n } from "@quiverlauncher/i18n";
-import { fullDate, relativeTime } from "@quiverlauncher/ui";
+import { Artwork, SourcedImage, fullDate, heroSources, iconSources, relativeTime } from "@quiverlauncher/ui";
 import { useAccount, useLive } from "./account";
 import { ErrorBoundary } from "./boundary";
 import { isOwn } from "./custom";
@@ -46,7 +46,8 @@ export type Summary = Author &
     id: string;
     title: string;
     /** `consoles`, `icon` and `capsule` come in lists across apps: Recent, Following and search there. */
-    entry?: { id: string; name: string; slug?: string; consoles?: string[]; icon?: string; capsule?: string };
+    /** `hero` (its banner) comes only on a discussion's own page. */
+    entry?: { id: string; name: string; slug?: string; consoles?: string[]; icon?: string; capsule?: string; hero?: string };
     category?: Category;
     comments: number;
     createdAt: number;
@@ -659,15 +660,7 @@ function ThreadView({ thread }: { thread: Thread }) {
   const hidden = !!(thread.underReview || thread.moderatorHidden);
   return (
     <article className="discussion-thread">
-      <p className="eyebrow">
-        {entry ? (
-          <button type="button" className="discussion-app-link" onClick={() => openApp(entry.id, entry.slug)}>
-            {place}
-          </button>
-        ) : (
-          place
-        )}
-      </p>
+      {entry ? <DiscussionApp entry={entry} onOpen={() => openApp(entry.id, entry.slug)} /> : <p className="eyebrow">{place}</p>}
       <h1>{thread.title}</h1>
       {editing ? (
         <Composer editing={{ id: thread.id, title: thread.title, body: thread.body }} onClose={() => setEditing(false)} />
@@ -1136,5 +1129,29 @@ function NewComments({ className = "downloads-count" }: { className?: string }) 
     <span className={className} aria-label={plural(count, { one: "# discussion with new comments", other: "# discussions with new comments" })}>
       {count >= 50 ? "50+" : count}
     </span>
+  );
+}
+
+/**
+ * The app a discussion is about, over its title: a strip of its banner, its icon, name and consoles, opening its
+ * page. The site sends the art; an app in the catalog here fills in what an older site leaves out.
+ */
+function DiscussionApp({ entry, onOpen }: { entry: NonNullable<Summary["entry"]>; onOpen: () => void }) {
+  const { catalog, consoleNames } = useLauncher();
+  const known = catalog[entry.id];
+  const icon = entry.icon ?? known?.artwork;
+  const hero = entry.hero ?? (known?.libraryArt?.hero || known?.libraryArt?.header);
+  const consoles = [...new Set((entry.consoles ?? known?.consoles ?? []).map((c) => consoleNames[c] ?? c.toUpperCase()))];
+  const [broken, setBroken] = useState(false);
+  return (
+    <button type="button" className={`discussion-app${hero && !broken ? " has-art" : ""}`} onClick={onOpen}>
+      {hero && !broken && <SourcedImage key={hero} className="discussion-app-art" sources={heroSources(hero)} alt="" priority onFail={() => setBroken(true)} />}
+      <Artwork className="discussion-app-icon" src={icon} sources={icon ? iconSources(icon) : undefined} name={entry.name} priority />
+      <span className="discussion-app-text">
+        <span className="discussion-app-name">{entry.name}</span>
+        {consoles.length > 0 && <span className="discussion-app-consoles">{consoles.join(", ")}</span>}
+      </span>
+      <ChevronRight size={20} aria-hidden="true" className="discussion-app-go" />
+    </button>
   );
 }
