@@ -1,0 +1,36 @@
+# Ubuntu's packages for a CI job, through apt-install.sh, with what it downloaded kept in GitHub's cache: the package
+# lists and the packages. A run that finds all it needs there installs from them and doesn't wait on Ubuntu's mirror at
+# all. They're kept for each Ubuntu release and list of packages, whichever image of it the runner has. A run that had
+# to download saves them again, a download that stalled included, so the next run carries on from there; the newest
+# save is the one restored.
+name: Ubuntu packages
+description: Install Ubuntu packages, kept in GitHub's cache between runs
+inputs:
+  packages:
+    description: The packages, and any apt-get install options, as for apt-install.sh
+    required: true
+runs:
+  using: composite
+  steps:
+    - id: key
+      shell: bash
+      env: { PACKAGES: "${{ inputs.packages }}" }
+      run: echo "prefix=apt-$ImageOS-$(printf %s "$PACKAGES" | sha256sum | cut -c1-16)-" >> "$GITHUB_OUTPUT"
+    - uses: actions/cache/restore@v4
+      with:
+        path: ~/.cache/apt
+        key: "${{ steps.key.outputs.prefix }}${{ github.run_id }}"
+        restore-keys: "${{ steps.key.outputs.prefix }}"
+    - id: install
+      shell: bash
+      env: { PACKAGES: "${{ inputs.packages }}" }
+      # $PACKAGES unquoted: one word each.
+      run: |
+        rm -f ~/.cache/apt/.downloaded
+        status=0
+        APT_CACHE=~/.cache/apt "$GITHUB_WORKSPACE/.github/apt-install.sh" $PACKAGES || status=$?
+        if [ -e ~/.cache/apt/.downloaded ]; then echo "save=true" >> "$GITHUB_OUTPUT"; fi
+        exit "$status"
+    - if: always() && steps.install.outputs.save == 'true'
+      uses: actions/cache/save@v4
+      with: { path: ~/.cache/apt, key: "${{ steps.key.outputs.prefix }}${{ github.run_id }}-${{ github.run_attempt }}" }
