@@ -46,6 +46,18 @@
 .discussion-count.full { color: var(--caution); }
 
 .discussion-thread .eyebrow { margin: 0 0 4px; }
+.discussion-app { position: relative; isolation: isolate; display: flex; align-items: center; gap: 12px; width: 100%; min-height: 112px; margin: 0 0 16px; padding: 24px; overflow: hidden; border: 1px solid var(--line); border-radius: 12px; background: radial-gradient(120% 90% at 20% 0%, var(--backdrop-1) 0%, var(--backdrop-2) 55%, var(--bg) 100%); color: var(--fg); font: inherit; text-align: left; cursor: pointer; }
+.discussion-app::after { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(90deg, color-mix(in srgb, var(--bg) 80%, transparent) 0%, color-mix(in srgb, var(--bg) 40%, transparent) 50%, transparent 100%); }
+.discussion-app-art { position: absolute; inset: 0; z-index: -2; width: 100%; height: 100%; object-fit: cover; object-position: center 35%; opacity: 0.9; transition: transform 0.3s ease; }
+.discussion-app:hover .discussion-app-art { transform: scale(1.03); }
+.discussion-app:focus-visible { outline: 2px solid var(--link); outline-offset: 2px; }
+.discussion-app-icon { flex: none; width: 64px; height: 64px; border-radius: 8px; overflow: hidden; }
+.discussion-app-icon img { object-fit: cover; filter: none; }
+.discussion-app-text { display: flex; flex: 1; flex-direction: column; gap: 2px; min-width: 0; }
+.discussion-app-name { font-size: 18px; font-weight: 600; overflow-wrap: anywhere; }
+.discussion-app-consoles { color: var(--muted); font-size: 13px; }
+.discussion-app-go { flex: none; box-sizing: content-box; padding: 6px; border-radius: 999px; background: color-mix(in srgb, var(--panel) 85%, transparent); color: var(--muted); }
+.discussion-app:hover .discussion-app-go { color: var(--fg); }
 .discussion-thread h1 { margin: 0 0 16px; font-size: 22px; line-height: 1.2; overflow-wrap: anywhere; }
 .discussion-post { padding: 16px; }
 .discussion-post-head { display: flex; align-items: center; gap: 12px; }
