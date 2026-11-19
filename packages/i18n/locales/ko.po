@@ -66,6 +66,11 @@ msgstr "{0, plural, other {{1}의 앱 #개를 {dir}(으)로 옮길까요?}}"
 msgid "{0, plural, one {Move # installed app into its console folder} other {Move # installed apps into their console folders}}"
 msgstr "{0, plural, other {설치된 앱 #개를 콘솔 폴더로 옮기기}}"
 
+#. placeholder {0}: own.length
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "{0, plural, one {of your tags} other {of your tags}}"
+msgstr "{0, plural, other {내 태그}}"
+
 #. placeholder {0}: elsewhere.size
 #: ../../apps/launcher/src/library.tsx
 msgid "{0, plural, one {Platforms: # app hidden} other {Platforms: # apps hidden}}"
@@ -540,6 +545,10 @@ msgstr "{newerLabel} 아직 제공 안 함: 나온 지 48시간 미만"
 #: ../../apps/launcher/src/downloads-page.tsx
 msgid "{newest} is out. You have {yours}."
 msgstr "{newest}이(가) 나왔어요. 지금 버전: {yours}."
+
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "{off, plural, one {from the catalog, # hidden} other {from the catalog, # hidden}}"
+msgstr "{off, plural, other {카탈로그 태그, #개 숨김}}"
 
 #: ../../apps/launcher/src/downloads-page.tsx
 msgid "{out} is out. You have {have}."
@@ -1039,12 +1048,14 @@ msgid "AI-assisted"
 msgstr "AI 보조"
 
 #. Library tab: every app in the library
+#. Lists every catalog tag
 #. Shows mods from every site
 #. Shows videos of every kind
 #. The library's platform menu while it shows every platform's apps
 #: ../../apps/launcher/src/library.tsx
 #: ../../apps/launcher/src/media.tsx
 #: ../../apps/launcher/src/mods.tsx
+#: ../../apps/launcher/src/tag-settings.tsx
 msgid "All"
 msgstr "전체"
 
@@ -1513,6 +1524,11 @@ msgstr "게임을 닫는 버튼"
 msgid "by {author}"
 msgstr "제작: {author}"
 
+#. Sorts tags by name
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "By name"
+msgstr "이름순"
+
 #: ../../apps/launcher/src/game.tsx
 msgid "Called {title} in {region}"
 msgstr "{region} 이름: {title}"
@@ -1585,7 +1601,6 @@ msgstr "캐러셀"
 msgid "Catalog filters"
 msgstr "카탈로그 필터"
 
-#. Settings section: the tags apps have from the catalog, which the player can hide
 #: ../../apps/launcher/src/tag-settings.tsx
 msgid "Catalog tags"
 msgstr "카탈로그 태그"
@@ -1914,6 +1929,7 @@ msgstr "검색어 지우기"
 #: ../../apps/launcher/src/detail.tsx
 #: ../../apps/launcher/src/mods.tsx
 #: ../../apps/launcher/src/own-copy-setup.tsx
+#: ../../apps/launcher/src/tag-settings.tsx
 #: ../../apps/launcher/src/window-bar.tsx
 msgid "Close"
 msgstr "닫기"
@@ -2509,6 +2525,10 @@ msgstr ""
 msgid "Every console"
 msgstr "모든 콘솔"
 
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "Every tag is hidden."
+msgstr "모든 태그가 숨겨져 있습니다."
+
 #: ../../apps/launcher/src/downloads-page.tsx
 msgid "Everything is up to date."
 msgstr "모두 최신 상태예요."
@@ -2678,10 +2698,17 @@ msgstr "Quiver Launcher 3에서 가져옴. 앱을 옮기기 전까지 이 폴더
 msgid "From Quiver's catalog."
 msgstr "Quiver 카탈로그에서 가져왔습니다."
 
+#. After how many catalog tags the library's apps have, when none is hidden
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "from the catalog"
+msgstr "카탈로그 태그"
+
 #. Heading in an app's Tags menu, over the tags the catalog gave it
 #. Label on an app's page, over the tags the catalog gave it
+#. Tab: the tags apps have from the catalog
 #: ../../apps/launcher/src/card-menu.tsx
 #: ../../apps/launcher/src/detail.tsx
+#: ../../apps/launcher/src/tag-settings.tsx
 msgid "From the catalog"
 msgstr "카탈로그에서"
 
@@ -2802,7 +2829,7 @@ msgstr "문제 있음"
 msgid "Helps improve Quiver Launcher: which screens and features get used, and errors. Never your files or folders."
 msgstr "Quiver Launcher 개선에 도움이 돼요. 어떤 화면과 기능이 쓰이는지, 어떤 오류가 생기는지 보내요. 파일이나 폴더는 절대 보내지 않아요."
 
-#. Beside a catalog tag the player hid on every app
+#. Lists the catalog tags hidden on every app
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/tag-settings.tsx
 msgid "Hidden"
@@ -2825,17 +2852,11 @@ msgstr "숨긴 앱만"
 msgid "Hidden apps shown"
 msgstr "숨긴 앱 표시 중"
 
-#. Button: hide a catalog tag on every app
 #. Hides a post from everyone
 #: ../../apps/launcher/src/discussions.tsx
 #: ../../apps/launcher/src/feedback.tsx
-#: ../../apps/launcher/src/tag-settings.tsx
 msgid "Hide"
 msgstr "숨기기"
-
-#: ../../apps/launcher/src/tag-settings.tsx
-msgid "Hide {name}"
-msgstr "{name} 숨기기"
 
 #. Button: hide every catalog tag on every app
 #: ../../apps/launcher/src/tag-settings.tsx
@@ -2908,6 +2929,11 @@ msgstr "단계 숨기기"
 #: ../../apps/launcher/src/library.tsx
 msgid "Hide them"
 msgstr "숨기기"
+
+#. Button: hide every catalog tag the search or filter lists
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "Hide these"
+msgstr "이 태그 숨기기"
 
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Hide your feedback for {name}"
@@ -3691,6 +3717,11 @@ msgstr "앱 폴더 안에 앱을 넣을 폴더를 만들어요."
 msgid "Manage"
 msgstr "관리"
 
+#. Button: opens the window listing the player's tags and the catalog's
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "Manage tags"
+msgstr "태그 관리"
+
 #. Menu item: rename or delete the player's tags, in Settings
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Manage tags…"
@@ -3772,6 +3803,11 @@ msgstr ""
 #: ../../apps/launcher/src/library.tsx
 msgid "More…"
 msgstr "더 보기…"
+
+#. Sorts tags, the ones on the most apps first
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "Most apps"
+msgstr "앱 많은 순"
 
 #: ../../apps/launcher/src/setup.tsx
 msgid "Most apps need your own copy of a game, like a ROM or a disc image, and Quiver Launcher has Easy setup for some of them. Add folders for a console or two now, and add more in Settings anytime."
@@ -4143,6 +4179,14 @@ msgstr "버전을 찾지 못했어요."
 #: ../../apps/launcher/src/ways-to-play.tsx
 msgid "No reports yet"
 msgstr "아직 보고 없음"
+
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "No tags are hidden."
+msgstr "숨긴 태그가 없습니다."
+
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "No tags match your search."
+msgstr "검색과 일치하는 태그가 없습니다."
 
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Nobody has said yet. Be the first."
@@ -5450,6 +5494,10 @@ msgstr "모드 검색"
 msgid "Search ports, games and tools"
 msgstr "포트, 게임, 도구 검색"
 
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "Search tags"
+msgstr "태그 검색"
+
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/own.tsx
 msgid "Search the catalog"
@@ -5640,7 +5688,6 @@ msgstr "공유 재생 목록 링크"
 msgid "Shortcuts"
 msgstr "바로 가기"
 
-#. Button: show a hidden catalog tag again
 #. Controller hint: what Confirm does, scrolling the focused control into view
 #. Makes a hidden post visible again
 #. Picks which library tab or playlist the library shows, where the tabs don't fit
@@ -5648,12 +5695,10 @@ msgstr "바로 가기"
 #: ../../apps/launcher/src/discussions.tsx
 #: ../../apps/launcher/src/library.tsx
 #: ../../apps/launcher/src/spatial.ts
-#: ../../apps/launcher/src/tag-settings.tsx
 msgid "Show"
 msgstr "보기"
 
 #. A dot under the featured apps: shows that app's slide
-#: ../../apps/launcher/src/tag-settings.tsx
 #: ../ui/src/discover.tsx
 msgid "Show {name}"
 msgstr "{name} 보기"
@@ -5777,6 +5822,11 @@ msgstr "라이브러리를 사이드바와 함께 보기"
 msgid "Show them"
 msgstr "보기"
 
+#. Button: show again every catalog tag the search or filter lists
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "Show these"
+msgstr "이 태그 표시"
+
 #: ../../apps/launcher/src/media.tsx
 msgid "Show videos"
 msgstr "동영상 보기"
@@ -5784,6 +5834,11 @@ msgstr "동영상 보기"
 #: ../../apps/launcher/src/controls.tsx
 msgid "Show what the buttons do along the bottom while a controller is connected"
 msgstr "컨트롤러가 연결되어 있으면 화면 하단에 버튼 기능 표시"
+
+#. Lists the catalog tags that show
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "Showing"
+msgstr "표시됨"
 
 #. Library layout: a list of names down the left
 #: ../../apps/launcher/src/view.ts
@@ -5904,6 +5959,10 @@ msgstr "정렬"
 #: ../../apps/launcher/src/mods.tsx
 msgid "Sort mods"
 msgstr "모드 정렬"
+
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "Sort tags"
+msgstr "태그 정렬"
 
 #. Where an app's code is: a link to its repository
 #: ../../apps/launcher/src/detail.tsx
@@ -6074,8 +6133,10 @@ msgstr "태그"
 #. Browse card detail: the app's tags, such as Recomp or its console, over its name
 #. Menu item opening the player's tags for an app
 #. Menu item opening the player's tags for an app
+#. Settings section: the player's own tags and the catalog's
 #: ../../apps/launcher/src/browse-cards.ts
 #: ../../apps/launcher/src/card-menu.tsx
+#: ../../apps/launcher/src/tag-settings.tsx
 msgid "Tags"
 msgstr "태그"
 
@@ -6298,10 +6359,6 @@ msgstr "공유 재생 목록이 최신 상태예요."
 #: ../../apps/launcher/src/tag-settings.tsx
 msgid "The tags you gave your apps, including any brought over from Quiver Launcher 3. Renaming or deleting one changes it on every app that has it. The catalog's own tags aren't affected."
 msgstr "앱에 붙인 태그입니다. Quiver Launcher 3에서 가져온 태그도 포함됩니다. 이름을 바꾸거나 삭제하면 그 태그가 있는 모든 앱에 적용됩니다. 카탈로그의 태그는 바뀌지 않습니다."
-
-#: ../../apps/launcher/src/tag-settings.tsx
-msgid "The tags your apps have from the catalog. A hidden tag is left off cards, the tag filter, search and playlists on this computer. To hide one on a single app, untick it in that app's Tags menu."
-msgstr "앱이 카탈로그에서 받은 태그입니다. 숨긴 태그는 이 컴퓨터의 카드, 태그 필터, 검색, 재생 목록에서 빠집니다. 한 앱에서만 숨기려면 그 앱의 태그 메뉴에서 선택을 해제하세요."
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Theme"
@@ -6619,6 +6676,10 @@ msgstr "고정 해제 후 {version}(으)로 다운그레이드"
 #: ../../apps/launcher/src/versions.ts
 msgid "Unpin and install {version}"
 msgstr "고정 해제 후 {version} 설치"
+
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "Untick a tag to hide it on every app on this computer. Tick it to show it again. To hide one on a single app, untick it in that app's Tags menu."
+msgstr "태그 체크를 해제하면 이 컴퓨터의 모든 앱에서 숨겨집니다. 다시 체크하면 다시 표시됩니다. 한 앱에서만 숨기려면 그 앱의 태그 메뉴에서 체크를 해제하세요."
 
 #. Goes to the folder around the one shown
 #: ../../apps/launcher/src/file-picker.tsx
@@ -7077,6 +7138,10 @@ msgstr "{name}의 어떤 세이브를 유지할까요?"
 msgid "Which saves of {name}?"
 msgstr "{name}의 어떤 세이브?"
 
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "Which tags"
+msgstr "표시할 태그"
+
 #: ../../apps/launcher/src/cloud-saves-page.tsx
 msgid "While you're signed in, backups of your saves are also kept with your Quiver account, so they follow you to another computer. Each app's Saves tab has its own switch."
 msgstr "로그인한 동안에는 세이브 백업이 Quiver 계정에도 보관되어 다른 컴퓨터에서도 이어서 쓸 수 있습니다. 앱마다 세이브 탭에 별도의 스위치가 있습니다."
@@ -7297,6 +7362,10 @@ msgstr "라이브러리가 비어 있어요"
 msgid "Your library syncs across your devices, and you can review apps. Everything works without an account too."
 msgstr "라이브러리가 모든 기기에서 동기화되고, 앱 리뷰도 남길 수 있어요. 계정이 없어도 모든 기능을 쓸 수 있어요."
 
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "Your own tags, which you can rename or delete on every app at once, and the tags your apps have from the catalog, which you can hide on this computer."
+msgstr "모든 앱에서 한 번에 이름을 바꾸거나 삭제할 수 있는 내 태그와, 이 컴퓨터에서 숨길 수 있는 카탈로그의 태그입니다."
+
 #: ../../apps/launcher/src/library-sidebar.tsx
 msgid "Your play"
 msgstr "내 플레이"
@@ -7322,6 +7391,7 @@ msgstr ""
 msgid "Your saves from {device} were put in place. The saves that were here are backed up."
 msgstr "{device}의 세이브를 적용했습니다. 여기 있던 세이브는 백업되었습니다."
 
+#. Tab: the player's own tags
 #: ../../apps/launcher/src/detail.tsx
 #: ../../apps/launcher/src/tag-settings.tsx
 msgid "Your tags"

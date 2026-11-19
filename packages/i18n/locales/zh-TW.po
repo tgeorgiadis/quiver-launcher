@@ -66,6 +66,11 @@ msgstr "{0, plural, one {要將 {1} 中的 # 個應用程式移至 {dir} 嗎？}
 msgid "{0, plural, one {Move # installed app into its console folder} other {Move # installed apps into their console folders}}"
 msgstr "{0, plural, one {將 # 個已安裝的應用程式移至對應的主機資料夾} other {將 # 個已安裝的應用程式移至對應的主機資料夾}}"
 
+#. placeholder {0}: own.length
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "{0, plural, one {of your tags} other {of your tags}}"
+msgstr "{0, plural, other {個我的標籤}}"
+
 #. placeholder {0}: elsewhere.size
 #: ../../apps/launcher/src/library.tsx
 msgid "{0, plural, one {Platforms: # app hidden} other {Platforms: # apps hidden}}"
@@ -540,6 +545,10 @@ msgstr "{newerLabel} 暫未提供：釋出還不到 48 小時"
 #: ../../apps/launcher/src/downloads-page.tsx
 msgid "{newest} is out. You have {yours}."
 msgstr "{newest} 已釋出。你擁有的是 {yours}。"
+
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "{off, plural, one {from the catalog, # hidden} other {from the catalog, # hidden}}"
+msgstr "{off, plural, other {個目錄標籤，# 個已隱藏}}"
 
 #: ../../apps/launcher/src/downloads-page.tsx
 msgid "{out} is out. You have {have}."
@@ -1039,12 +1048,14 @@ msgid "AI-assisted"
 msgstr "AI 輔助"
 
 #. Library tab: every app in the library
+#. Lists every catalog tag
 #. Shows mods from every site
 #. Shows videos of every kind
 #. The library's platform menu while it shows every platform's apps
 #: ../../apps/launcher/src/library.tsx
 #: ../../apps/launcher/src/media.tsx
 #: ../../apps/launcher/src/mods.tsx
+#: ../../apps/launcher/src/tag-settings.tsx
 msgid "All"
 msgstr "全部"
 
@@ -1513,6 +1524,11 @@ msgstr "關閉遊戲的按鍵"
 msgid "by {author}"
 msgstr "作者：{author}"
 
+#. Sorts tags by name
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "By name"
+msgstr "依名稱"
+
 #: ../../apps/launcher/src/game.tsx
 msgid "Called {title} in {region}"
 msgstr "在 {region} 稱為 {title}"
@@ -1585,7 +1601,6 @@ msgstr "輪播圖"
 msgid "Catalog filters"
 msgstr "目錄篩選條件"
 
-#. Settings section: the tags apps have from the catalog, which the player can hide
 #: ../../apps/launcher/src/tag-settings.tsx
 msgid "Catalog tags"
 msgstr "目錄標籤"
@@ -1914,6 +1929,7 @@ msgstr "清除搜尋內容"
 #: ../../apps/launcher/src/detail.tsx
 #: ../../apps/launcher/src/mods.tsx
 #: ../../apps/launcher/src/own-copy-setup.tsx
+#: ../../apps/launcher/src/tag-settings.tsx
 #: ../../apps/launcher/src/window-bar.tsx
 msgid "Close"
 msgstr "關閉"
@@ -2509,6 +2525,10 @@ msgstr ""
 msgid "Every console"
 msgstr "所有主機"
 
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "Every tag is hidden."
+msgstr "所有標籤都已隱藏。"
+
 #: ../../apps/launcher/src/downloads-page.tsx
 msgid "Everything is up to date."
 msgstr "所有內容均為最新版本。"
@@ -2678,10 +2698,17 @@ msgstr "來自 Quiver Launcher 3。移動其中的應用程式之前，請保留
 msgid "From Quiver's catalog."
 msgstr "來自 Quiver 的目錄。"
 
+#. After how many catalog tags the library's apps have, when none is hidden
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "from the catalog"
+msgstr "個目錄標籤"
+
 #. Heading in an app's Tags menu, over the tags the catalog gave it
 #. Label on an app's page, over the tags the catalog gave it
+#. Tab: the tags apps have from the catalog
 #: ../../apps/launcher/src/card-menu.tsx
 #: ../../apps/launcher/src/detail.tsx
+#: ../../apps/launcher/src/tag-settings.tsx
 msgid "From the catalog"
 msgstr "來自目錄"
 
@@ -2802,7 +2829,7 @@ msgstr "存在問題"
 msgid "Helps improve Quiver Launcher: which screens and features get used, and errors. Never your files or folders."
 msgstr "幫助改進 Quiver Launcher：瞭解哪些螢幕和功能被使用，以及發生的錯誤。絕不會收集你的檔案或資料夾。"
 
-#. Beside a catalog tag the player hid on every app
+#. Lists the catalog tags hidden on every app
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/tag-settings.tsx
 msgid "Hidden"
@@ -2825,17 +2852,11 @@ msgstr "僅顯示已隱藏的應用程式"
 msgid "Hidden apps shown"
 msgstr "顯示已隱藏的應用程式"
 
-#. Button: hide a catalog tag on every app
 #. Hides a post from everyone
 #: ../../apps/launcher/src/discussions.tsx
 #: ../../apps/launcher/src/feedback.tsx
-#: ../../apps/launcher/src/tag-settings.tsx
 msgid "Hide"
 msgstr "隱藏"
-
-#: ../../apps/launcher/src/tag-settings.tsx
-msgid "Hide {name}"
-msgstr "隱藏 {name}"
 
 #. Button: hide every catalog tag on every app
 #: ../../apps/launcher/src/tag-settings.tsx
@@ -2908,6 +2929,11 @@ msgstr "隱藏步驟"
 #: ../../apps/launcher/src/library.tsx
 msgid "Hide them"
 msgstr "隱藏它們"
+
+#. Button: hide every catalog tag the search or filter lists
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "Hide these"
+msgstr "隱藏這些"
 
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Hide your feedback for {name}"
@@ -3691,6 +3717,11 @@ msgstr "在你的應用程式資料夾中建立一個資料夾，用於存放該
 msgid "Manage"
 msgstr "管理"
 
+#. Button: opens the window listing the player's tags and the catalog's
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "Manage tags"
+msgstr "管理標籤"
+
 #. Menu item: rename or delete the player's tags, in Settings
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Manage tags…"
@@ -3772,6 +3803,11 @@ msgstr "更多播放清單"
 #: ../../apps/launcher/src/library.tsx
 msgid "More…"
 msgstr "更多 →"
+
+#. Sorts tags, the ones on the most apps first
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "Most apps"
+msgstr "應用程式最多"
 
 #: ../../apps/launcher/src/setup.tsx
 msgid "Most apps need your own copy of a game, like a ROM or a disc image, and Quiver Launcher has Easy setup for some of them. Add folders for a console or two now, and add more in Settings anytime."
@@ -4143,6 +4179,14 @@ msgstr "未找到版本。"
 #: ../../apps/launcher/src/ways-to-play.tsx
 msgid "No reports yet"
 msgstr "尚無回報"
+
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "No tags are hidden."
+msgstr "沒有隱藏的標籤。"
+
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "No tags match your search."
+msgstr "沒有符合搜尋的標籤。"
 
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Nobody has said yet. Be the first."
@@ -5450,6 +5494,10 @@ msgstr "搜尋模組"
 msgid "Search ports, games and tools"
 msgstr "搜尋移植版、遊戲和工具"
 
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "Search tags"
+msgstr "搜尋標籤"
+
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/own.tsx
 msgid "Search the catalog"
@@ -5640,7 +5688,6 @@ msgstr "共享播放清單連結"
 msgid "Shortcuts"
 msgstr "快捷方式"
 
-#. Button: show a hidden catalog tag again
 #. Controller hint: what Confirm does, scrolling the focused control into view
 #. Makes a hidden post visible again
 #. Picks which library tab or playlist the library shows, where the tabs don't fit
@@ -5648,12 +5695,10 @@ msgstr "快捷方式"
 #: ../../apps/launcher/src/discussions.tsx
 #: ../../apps/launcher/src/library.tsx
 #: ../../apps/launcher/src/spatial.ts
-#: ../../apps/launcher/src/tag-settings.tsx
 msgid "Show"
 msgstr "顯示"
 
 #. A dot under the featured apps: shows that app's slide
-#: ../../apps/launcher/src/tag-settings.tsx
 #: ../ui/src/discover.tsx
 msgid "Show {name}"
 msgstr "顯示 {name}"
@@ -5777,6 +5822,11 @@ msgstr "以帶側邊欄的方式顯示遊戲庫"
 msgid "Show them"
 msgstr "顯示它們"
 
+#. Button: show again every catalog tag the search or filter lists
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "Show these"
+msgstr "顯示這些"
+
 #: ../../apps/launcher/src/media.tsx
 msgid "Show videos"
 msgstr "顯示影片"
@@ -5784,6 +5834,11 @@ msgstr "顯示影片"
 #: ../../apps/launcher/src/controls.tsx
 msgid "Show what the buttons do along the bottom while a controller is connected"
 msgstr "連線遊戲控制器時，在螢幕底部顯示各個按鈕的功能"
+
+#. Lists the catalog tags that show
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "Showing"
+msgstr "顯示中"
 
 #. Library layout: a list of names down the left
 #: ../../apps/launcher/src/view.ts
@@ -5904,6 +5959,10 @@ msgstr "排序"
 #: ../../apps/launcher/src/mods.tsx
 msgid "Sort mods"
 msgstr "排序模組"
+
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "Sort tags"
+msgstr "排序標籤"
 
 #. Where an app's code is: a link to its repository
 #: ../../apps/launcher/src/detail.tsx
@@ -6074,8 +6133,10 @@ msgstr "標籤"
 #. Browse card detail: the app's tags, such as Recomp or its console, over its name
 #. Menu item opening the player's tags for an app
 #. Menu item opening the player's tags for an app
+#. Settings section: the player's own tags and the catalog's
 #: ../../apps/launcher/src/browse-cards.ts
 #: ../../apps/launcher/src/card-menu.tsx
+#: ../../apps/launcher/src/tag-settings.tsx
 msgid "Tags"
 msgstr "標籤"
 
@@ -6298,10 +6359,6 @@ msgstr "共享播放清單已是最新版本。"
 #: ../../apps/launcher/src/tag-settings.tsx
 msgid "The tags you gave your apps, including any brought over from Quiver Launcher 3. Renaming or deleting one changes it on every app that has it. The catalog's own tags aren't affected."
 msgstr "你為應用程式加上的標籤，包括從 Quiver Launcher 3 帶過來的。重新命名或刪除標籤，會改動所有帶有它的應用程式。目錄本身的標籤不受影響。"
-
-#: ../../apps/launcher/src/tag-settings.tsx
-msgid "The tags your apps have from the catalog. A hidden tag is left off cards, the tag filter, search and playlists on this computer. To hide one on a single app, untick it in that app's Tags menu."
-msgstr "你的應用程式從目錄取得的標籤。隱藏的標籤不會出現在這台電腦的卡片、標籤篩選、搜尋和播放清單中。若只要在某個應用程式上隱藏，請在該應用程式的「標籤」選單中取消勾選。"
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Theme"
@@ -6619,6 +6676,10 @@ msgstr "取消固定並降級到 {version}"
 #: ../../apps/launcher/src/versions.ts
 msgid "Unpin and install {version}"
 msgstr "取消固定並安裝 {version}"
+
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "Untick a tag to hide it on every app on this computer. Tick it to show it again. To hide one on a single app, untick it in that app's Tags menu."
+msgstr "取消勾選標籤即可在這台電腦的所有應用程式上隱藏它。重新勾選即可再次顯示。若只想在一個應用程式上隱藏，請在該應用程式的標籤選單中取消勾選。"
 
 #. Goes to the folder around the one shown
 #: ../../apps/launcher/src/file-picker.tsx
@@ -7077,6 +7138,10 @@ msgstr "要保留 {name} 的哪份存檔？"
 msgid "Which saves of {name}?"
 msgstr "{name} 的哪份存檔？"
 
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "Which tags"
+msgstr "哪些標籤"
+
 #: ../../apps/launcher/src/cloud-saves-page.tsx
 msgid "While you're signed in, backups of your saves are also kept with your Quiver account, so they follow you to another computer. Each app's Saves tab has its own switch."
 msgstr "登入期間，存檔備份也會保存到你的 Quiver 帳號，換一部電腦也能繼續使用。每個應用程式的「存檔」分頁都有各自的開關。"
@@ -7297,6 +7362,10 @@ msgstr "你的遊戲庫為空"
 msgid "Your library syncs across your devices, and you can review apps. Everything works without an account too."
 msgstr "你的遊戲庫會在各裝置間同步，你也可以評價應用程式。不登入帳戶也能使用所有功能。"
 
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "Your own tags, which you can rename or delete on every app at once, and the tags your apps have from the catalog, which you can hide on this computer."
+msgstr "你自己的標籤可以在所有應用程式上一次重新命名或刪除；應用程式來自目錄的標籤可以在這台電腦上隱藏。"
+
 #: ../../apps/launcher/src/library-sidebar.tsx
 msgid "Your play"
 msgstr "你的遊玩記錄"
@@ -7322,6 +7391,7 @@ msgstr ""
 msgid "Your saves from {device} were put in place. The saves that were here are backed up."
 msgstr "已換上來自 {device} 的存檔。原本在這裡的存檔已備份。"
 
+#. Tab: the player's own tags
 #: ../../apps/launcher/src/detail.tsx
 #: ../../apps/launcher/src/tag-settings.tsx
 msgid "Your tags"
