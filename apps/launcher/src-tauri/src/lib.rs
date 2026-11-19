@@ -1270,10 +1270,11 @@ fn create_app_folder(data: State<Data>, name: String) -> Result<String, String> 
     Ok(name)
 }
 
-/// Renames an installed app's folder, and its Proton prefix with it: one at the
-/// top of the apps folder, or `dir`, where it is (its console's folder, say),
-/// whose own name is `from`. Not while the launcher has it running: its files
-/// are in use.
+/// Renames an installed app's folder, and its Proton prefix (named `from`, the
+/// folder name the launcher keeps for it) with it: one at the top of the apps
+/// folder, or `dir`, where it is (its console's folder, or a folder the player
+/// located), whatever that's called. Not while the launcher has it running: its
+/// files are in use.
 #[tauri::command]
 fn rename_app_folder(data: State<Data>, running: State<Running>, id: String, from: String, to: String, dir: Option<String>) -> Result<(), String> {
     if running.has(&id) {
@@ -1281,17 +1282,12 @@ fn rename_app_folder(data: State<Data>, running: State<Running>, id: String, fro
     }
     let from = install::plain_name(&from)?;
     let to = install::plain_name(&to)?;
-    let parent = match dir {
-        None => data.apps(),
-        Some(dir) => {
-            let dir = PathBuf::from(dir);
-            match (dir.parent(), dir.file_name()) {
-                (Some(parent), Some(name)) if name == from => parent.to_path_buf(),
-                _ => return Err("This app's folder can't be renamed.".into()),
-            }
-        }
+    // One kept elsewhere (a console folder, or one the player located) is renamed where it is, whatever it's called.
+    let old = match dir {
+        None => data.apps().join(from),
+        Some(dir) => PathBuf::from(dir),
     };
-    apps_folder::rename(&parent, &data.0.join("proton"), from, to)
+    apps_folder::rename(&old, &data.0.join("proton"), from, to)
 }
 
 /// Those of `names` that are files in an installed app's folder.
