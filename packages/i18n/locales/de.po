@@ -49,6 +49,11 @@ msgstr "{0, plural, one {# Kommentar} other {# Kommentare}}"
 msgid "{0, plural, one {# file} other {# files}}"
 msgstr "{0, plural, one {# Datei} other {# Dateien}}"
 
+#. placeholder {0}: tags.length
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "{0, plural, one {# tag} other {# tags}}"
+msgstr "{0, plural, one {# Tag} other {# Tags}}"
+
 #. placeholder {0}: library.apps.length
 #: ../../apps/launcher/src/old-library.tsx
 msgid "{0, plural, one {If you already installed it somewhere else, show Quiver the folder.} other {If you already installed them somewhere else, show Quiver the folder.}}"
@@ -540,6 +545,10 @@ msgstr "{newerLabel} noch nicht angeboten: weniger als 48 Stunden alt"
 #: ../../apps/launcher/src/downloads-page.tsx
 msgid "{newest} is out. You have {yours}."
 msgstr "{newest} ist erschienen. Du hast {yours}."
+
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "{off, plural, one {# hidden} other {# hidden}}"
+msgstr "{off, plural, one {# ausgeblendet} other {# ausgeblendet}}"
 
 #: ../../apps/launcher/src/downloads-page.tsx
 msgid "{out} is out. You have {have}."
@@ -1043,12 +1052,14 @@ msgid "AI-assisted"
 msgstr "KI-gestützt"
 
 #. Library tab: every app in the library
+#. Lists every catalog tag
 #. Shows mods from every site
 #. Shows videos of every kind
 #. The library's platform menu while it shows every platform's apps
 #: ../../apps/launcher/src/library.tsx
 #: ../../apps/launcher/src/media.tsx
 #: ../../apps/launcher/src/mods.tsx
+#: ../../apps/launcher/src/tag-settings.tsx
 msgid "All"
 msgstr "Alle"
 
@@ -1070,6 +1081,11 @@ msgstr "Alle Apps"
 msgid "All consoles"
 msgstr "Alle Konsolen"
 
+#. After how many catalog tags the library's apps have, when every one is hidden
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "all hidden"
+msgstr "alle ausgeblendet"
+
 #. Menu item, last under Manage: opens the app's page at its Manage tab
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "All options…"
@@ -1087,6 +1103,11 @@ msgstr "Alle Plattformen"
 #: ../../apps/launcher/src/library.tsx
 msgid "All project types"
 msgstr "Alle Projekttypen"
+
+#. After how many catalog tags the library's apps have, when none is hidden
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "all showing"
+msgstr "alle sichtbar"
 
 #: ../../apps/launcher/src/library.tsx
 msgid "All tags"
@@ -1517,6 +1538,11 @@ msgstr "Tasten, die ein Spiel beenden"
 msgid "by {author}"
 msgstr "von {author}"
 
+#. Sorts the catalog's tags by name
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "By name"
+msgstr "Nach Name"
+
 #: ../../apps/launcher/src/game.tsx
 msgid "Called {title} in {region}"
 msgstr "Bekannt als {title} ({region})"
@@ -1914,6 +1940,7 @@ msgstr "Suche löschen"
 #: ../../apps/launcher/src/detail.tsx
 #: ../../apps/launcher/src/mods.tsx
 #: ../../apps/launcher/src/own-copy-setup.tsx
+#: ../../apps/launcher/src/tag-settings.tsx
 #: ../../apps/launcher/src/window-bar.tsx
 msgid "Close"
 msgstr "Schließen"
@@ -2509,6 +2536,10 @@ msgstr ""
 msgid "Every console"
 msgstr "Jede Konsole"
 
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "Every tag is hidden."
+msgstr "Alle Tags sind ausgeblendet."
+
 #: ../../apps/launcher/src/downloads-page.tsx
 msgid "Everything is up to date."
 msgstr "Alles ist auf dem neuesten Stand."
@@ -2798,7 +2829,7 @@ msgstr "Hat Probleme"
 msgid "Helps improve Quiver Launcher: which screens and features get used, and errors. Never your files or folders."
 msgstr "Hilft, Quiver Launcher zu verbessern: welche Bildschirme und Funktionen genutzt werden, und Fehler. Niemals deine Dateien oder Ordner."
 
-#. Beside a catalog tag the player hid on every app
+#. Lists the catalog tags hidden on every app
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/tag-settings.tsx
 msgid "Hidden"
@@ -2821,17 +2852,11 @@ msgstr "Nur ausgeblendete Apps"
 msgid "Hidden apps shown"
 msgstr "Ausgeblendete Apps sichtbar"
 
-#. Button: hide a catalog tag on every app
 #. Hides a post from everyone
 #: ../../apps/launcher/src/discussions.tsx
 #: ../../apps/launcher/src/feedback.tsx
-#: ../../apps/launcher/src/tag-settings.tsx
 msgid "Hide"
 msgstr "Ausblenden"
-
-#: ../../apps/launcher/src/tag-settings.tsx
-msgid "Hide {name}"
-msgstr "{name} ausblenden"
 
 #. Button: hide every catalog tag on every app
 #: ../../apps/launcher/src/tag-settings.tsx
@@ -2904,6 +2929,11 @@ msgstr "Schritte ausblenden"
 #: ../../apps/launcher/src/library.tsx
 msgid "Hide them"
 msgstr "Ausblenden"
+
+#. Button: hide every catalog tag the search or filter lists
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "Hide these"
+msgstr "Diese ausblenden"
 
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Hide your feedback for {name}"
@@ -3691,6 +3721,11 @@ msgstr "Erstellt in deinem App-Ordner einen Ordner, in den du die App legst."
 msgid "Manage"
 msgstr "Verwalten"
 
+#. Button: opens the list of the catalog's tags, to hide or show them
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "Manage catalog tags"
+msgstr "Katalog-Tags verwalten"
+
 #. Menu item: rename or delete the player's tags, in Settings
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Manage tags…"
@@ -3772,6 +3807,11 @@ msgstr ""
 #: ../../apps/launcher/src/library.tsx
 msgid "More…"
 msgstr "Mehr…"
+
+#. Sorts the catalog's tags, the ones on the most apps first
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "Most apps"
+msgstr "Meiste Apps"
 
 #: ../../apps/launcher/src/setup.tsx
 msgid "Most apps need your own copy of a game, like a ROM or a disc image, and Quiver Launcher has Easy setup for some of them. Add folders for a console or two now, and add more in Settings anytime."
@@ -4143,6 +4183,14 @@ msgstr "Keine Versionen gefunden."
 #: ../../apps/launcher/src/ways-to-play.tsx
 msgid "No reports yet"
 msgstr "Noch keine Berichte"
+
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "No tags are hidden."
+msgstr "Keine Tags ausgeblendet."
+
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "No tags match your search."
+msgstr "Keine Tags passen zu deiner Suche."
 
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Nobody has said yet. Be the first."
@@ -5442,6 +5490,10 @@ msgstr "Mods durchsuchen"
 msgid "Search ports, games and tools"
 msgstr "Ports, Spiele und Tools suchen"
 
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "Search tags"
+msgstr "Tags suchen"
+
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/own.tsx
 msgid "Search the catalog"
@@ -5632,7 +5684,6 @@ msgstr "Link zur geteilten Playlist"
 msgid "Shortcuts"
 msgstr "Verknüpfungen"
 
-#. Button: show a hidden catalog tag again
 #. Controller hint: what Confirm does, scrolling the focused control into view
 #. Makes a hidden post visible again
 #. Picks which library tab or playlist the library shows, where the tabs don't fit
@@ -5640,12 +5691,10 @@ msgstr "Verknüpfungen"
 #: ../../apps/launcher/src/discussions.tsx
 #: ../../apps/launcher/src/library.tsx
 #: ../../apps/launcher/src/spatial.ts
-#: ../../apps/launcher/src/tag-settings.tsx
 msgid "Show"
 msgstr "Anzeigen"
 
 #. A dot under the featured apps: shows that app's slide
-#: ../../apps/launcher/src/tag-settings.tsx
 #: ../ui/src/discover.tsx
 msgid "Show {name}"
 msgstr "{name} zeigen"
@@ -5769,6 +5818,11 @@ msgstr "Bibliothek mit Seitenleiste anzeigen"
 msgid "Show them"
 msgstr "Anzeigen"
 
+#. Button: show again every catalog tag the search or filter lists
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "Show these"
+msgstr "Diese einblenden"
+
 #: ../../apps/launcher/src/media.tsx
 msgid "Show videos"
 msgstr "Videos anzeigen"
@@ -5776,6 +5830,11 @@ msgstr "Videos anzeigen"
 #: ../../apps/launcher/src/controls.tsx
 msgid "Show what the buttons do along the bottom while a controller is connected"
 msgstr "Unten anzeigen, was die Knöpfe tun, solange ein Controller verbunden ist"
+
+#. Lists the catalog tags that show
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "Showing"
+msgstr "Sichtbar"
 
 #. Library layout: a list of names down the left
 #: ../../apps/launcher/src/view.ts
@@ -5896,6 +5955,10 @@ msgstr "Sortieren"
 #: ../../apps/launcher/src/mods.tsx
 msgid "Sort mods"
 msgstr "Mods sortieren"
+
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "Sort tags"
+msgstr "Tags sortieren"
 
 #. Where an app's code is: a link to its repository
 #: ../../apps/launcher/src/detail.tsx
@@ -6616,6 +6679,10 @@ msgstr "Lösen und auf {version} zurückstufen"
 msgid "Unpin and install {version}"
 msgstr "Lösen und {version} installieren"
 
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "Untick a tag to hide it on every app on this computer. Tick it to show it again."
+msgstr "Entferne den Haken bei einem Tag, um ihn auf diesem Computer bei allen Apps auszublenden. Setze ihn, um ihn wieder anzuzeigen."
+
 #. Goes to the folder around the one shown
 #: ../../apps/launcher/src/file-picker.tsx
 msgid "Up"
@@ -7072,6 +7139,10 @@ msgstr "Welche Spielstände von {name} möchtest du behalten?"
 #: ../../apps/launcher/src/App.tsx
 msgid "Which saves of {name}?"
 msgstr "Welche Spielstände von {name}?"
+
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "Which tags"
+msgstr "Welche Tags"
 
 #: ../../apps/launcher/src/cloud-saves-page.tsx
 msgid "While you're signed in, backups of your saves are also kept with your Quiver account, so they follow you to another computer. Each app's Saves tab has its own switch."

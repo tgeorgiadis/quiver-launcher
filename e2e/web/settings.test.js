@@ -134,6 +134,20 @@ test("Downloads, and every section of Settings", async () => {
   }
 });
 
+test("the catalog's tags open in a window of their own, which a controller gets all around, ticks in and leaves", async () => {
+  assert.equal(await open('button[aria-label="Settings"]'), "page: Settings");
+  await open('nav[aria-label="Settings sections"] button', { text: "Library" });
+  assert.equal(await open('section[aria-label="Catalog tags"] button', { text: "Manage catalog tags" }), "dialog: Catalog tags");
+  await everything("Catalog tags");
+  const box = '[role="dialog"] .catalog-tag input';
+  assert.equal(await app.execute((b) => document.querySelector(b).checked, box), true);
+  assert.doesNotMatch(await reach.pressOn(app, box, "South"), /^not reached/);
+  await s.until(() => app.execute((b) => !document.querySelector(b).checked, box));
+  await reach.press(app, "South");
+  await s.until(() => app.execute((b) => document.querySelector(b).checked, box));
+  assert.equal(await back(), "page: Settings");
+});
+
 test("a controller rebinds a control with its own buttons", async () => {
   const binding = 'button[aria-label="Confirm / Select: controller"]';
   assert.equal(await open('button[aria-label="Settings"]'), "page: Settings");

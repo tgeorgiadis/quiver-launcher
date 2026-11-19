@@ -1902,7 +1902,32 @@ body:has(.overlay) .shell > main { overflow: hidden; scrollbar-gutter: stable; }
 .tag-list .tag-name .muted { font-size: 12px; margin-left: 6px; }
 .tag-list .tag-actions { display: flex; gap: 6px; flex-shrink: 0; }
 .tag-list .tag-actions { align-items: center; }
-.tag-all { display: flex; gap: 8px; margin: 10px 0 6px; }
+/* The catalog's tags in Settings: how many, and the way into their own window. */
+.catalog-tags-summary { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; max-width: 520px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 9px; background: var(--panel); }
+.catalog-tags-summary .muted { margin-left: 6px; }
+/* Their window: its search, filters and buttons stay put, and the list scrolls under them in as many columns as fit. */
+.detail.choose.catalog-tags-window { display: flex; flex-direction: column; width: min(860px, 100%); height: min(760px, 100%); overflow: hidden; }
+.catalog-tags-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 18px 24px 0; }
+.catalog-tags-head h2 { font-size: 18px; }
+.catalog-tags-tools { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; padding: 10px 24px 14px; border-bottom: 1px solid var(--line); }
+.catalog-tags-find { display: flex; gap: 8px; }
+.catalog-tags-find input { flex: 1; min-width: 0; padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
+.catalog-tags-find input:focus { border-color: var(--accent); }
+.catalog-tags-find select { flex: none; min-width: 0; max-width: 45%; padding: 7px 10px; border: 1px solid var(--line); border-radius: 7px; background: var(--panel); }
+.catalog-tags-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
+.catalog-tags-bar .chip { padding: 4px 12px; background: none; font-size: 13px; font-weight: 400; }
+.catalog-tags-bar .chip.on { background: var(--chip-bg); color: var(--chip-fg); }
+.catalog-tags-bar .chip-count { margin-left: 4px; opacity: 0.7; font-size: 12px; }
+.catalog-tags-bulk { display: flex; gap: 8px; }
+.catalog-tags-list { flex: 1; min-height: 0; overflow-y: auto; padding: 12px 18px 18px; }
+.catalog-tags-list > p { padding: 12px 6px; }
+.catalog-tags-list ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 4px 8px; }
+.catalog-tag { display: flex; align-items: center; gap: 10px; min-height: 38px; padding: 6px 10px; border-radius: 8px; cursor: pointer; }
+.catalog-tag:hover, .catalog-tag:focus-within { background: var(--field-hover); }
+.catalog-tag input { flex: none; }
+.catalog-tag-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.catalog-tag-count { flex: none; color: var(--muted); font-size: 12px; }
+.catalog-tag.off .catalog-tag-name { color: var(--muted); font-weight: 400; text-decoration: line-through; text-decoration-color: color-mix(in srgb, var(--muted) 60%, transparent); }
 .tag-rename { display: flex; gap: 6px; flex: 1; }
 .tag-rename input { flex: 1; min-width: 0; }
 

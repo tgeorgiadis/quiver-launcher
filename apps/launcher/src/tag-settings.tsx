@@ -3,13 +3,14 @@
  * renaming or deleting one across the library. Tags from the catalog aren't here: they're the catalog's, not the
  * player's, and nothing here changes them: they're hidden or shown below (CatalogTags).
  */
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { plural, t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import { Button } from "@quiverlauncher/ui/controls";
 import { tagLabel } from "@quiverlauncher/ui";
 import { useLauncher, type LibraryItem } from "./store";
-import { catalogTagCounts, hiddenEverywhere, hideAllEverywhere, hideEverywhere, hideNewTags } from "./catalog-tags";
+import { catalogTagCounts, hiddenEverywhere, hideAllEverywhere, hideEverywhere, hideNewTags, listedTags, type TagFilter, type TagSort } from "./catalog-tags";
+import { Dialog } from "./library";
 
 /** Asks for Settings' Library section, where the player's tags are: the app (App.tsx) opens it. */
 export const MANAGE_TAGS = "quiver-manage-tags";
@@ -141,23 +142,32 @@ export function TagSettings() {
   );
 }
 
+/** The catalog's tags on the library's apps, each once with how many apps have it, by the name each shows under. */
+function useCatalogTags() {
+  const { library, catalog, settings, consoleNames } = useLauncher();
+  const hidden = settings.hiddenTags;
+  return useMemo(() => {
+    const isConsole = (tag: string) => Object.hasOwn(consoleNames, tag);
+    const apps = library.flatMap((i) => (!i.removed && catalog[i.id] ? [{ tags: catalog[i.id].allTags ?? catalog[i.id].tags }] : []));
+    const tags = catalogTagCounts(apps, isConsole, hidden?.everywhere).sort((a, b) => tagLabel(a.tag).localeCompare(tagLabel(b.tag), undefined, { sensitivity: "base" }));
+    // Every tag the catalog is known to have here, the library's or not: the ones that aren't new.
+    const known = () => [...Object.values(catalog).flatMap((e) => e.allTags ?? e.tags), ...tags.map((x) => x.tag)].filter((tag) => !isConsole(tag));
+    return { tags, known };
+  }, [library, catalog, consoleNames, hidden?.everywhere]);
+}
+
 /**
- * The catalog's tags on the library's apps, to hide on every app or show again, and whether the ones the catalog adds
- * later are hidden as they come. One app's are unticked on the app (its Tags menu, or its page).
+ * The catalog's tags in Settings: how many the library's apps have and how many are hidden, whether the ones the
+ * catalog adds later are hidden as they come, and the way into the list of them all (CatalogTagsDialog), which is
+ * long. One app's are unticked on the app (its Tags menu, or its page).
  */
 export function CatalogTagSettings() {
-  const { library, catalog, settings, setSettings, consoleNames } = useLauncher();
+  const { settings, setSettings } = useLauncher();
   const hidden = settings.hiddenTags;
-  const isConsole = (tag: string) => Object.hasOwn(consoleNames, tag);
-  const apps = library.flatMap((i) => (!i.removed && catalog[i.id] ? [{ tags: catalog[i.id].allTags ?? catalog[i.id].tags }] : []));
-  // By the name each shows under.
-  const tags = catalogTagCounts(apps, isConsole, hidden?.everywhere).sort((a, b) => tagLabel(a.tag).localeCompare(tagLabel(b.tag), undefined, { sensitivity: "base" }));
-  // Every tag the catalog is known to have here, the library's or not: the ones that aren't new.
-  const known = () => [...Object.values(catalog).flatMap((e) => e.allTags ?? e.tags), ...tags.map((x) => x.tag)].filter((tag) => !isConsole(tag));
+  const { tags, known } = useCatalogTags();
+  const [open, setOpen] = useState(false);
   if (!tags.length && !hidden?.hideNew) return null;
-  const all = tags.map((x) => x.tag);
-  const anyShown = all.some((tag) => !hiddenEverywhere(hidden, tag));
-  const anyHidden = all.some((tag) => hiddenEverywhere(hidden, tag));
+  const off = tags.filter(({ tag }) => hiddenEverywhere(hidden, tag)).length;
   return (
     <section className="settings-section" aria-label={t`Catalog tags`}>
       <h3>
@@ -166,45 +176,129 @@ export function CatalogTagSettings() {
       <p className="muted">
         <Trans>The tags your apps have from the catalog. A hidden tag is left off cards, the tag filter, search and playlists on this computer. To hide one on a single app, untick it in that app's Tags menu.</Trans>
       </p>
+      {tags.length > 0 && (
+        <div className="catalog-tags-summary">
+          <span role="status">
+            <strong>{plural(tags.length, { one: "# tag", other: "# tags" })}</strong>{" "}
+            <span className="muted">
+              {off === 0
+                ? t({ message: "all showing", comment: "After how many catalog tags the library's apps have, when none is hidden" })
+                : off === tags.length
+                  ? t({ message: "all hidden", comment: "After how many catalog tags the library's apps have, when every one is hidden" })
+                  : plural(off, { one: "# hidden", other: "# hidden" })}
+            </span>
+          </span>
+          <Button variant="main" onClick={() => setOpen(true)}>
+            <Trans comment="Button: opens the list of the catalog's tags, to hide or show them">Manage catalog tags</Trans>
+          </Button>
+        </div>
+      )}
       <label className="toggle">
         <input type="checkbox" checked={Boolean(hidden?.hideNew)} onChange={(e) => setSettings((s) => ({ ...s, hiddenTags: hideNewTags(s.hiddenTags, e.target.checked, known()) }))} />
         <Trans>Hide tags the catalog adds from now on</Trans>
       </label>
-      {tags.length > 0 && (
-        <>
-          <p className="tag-all">
-            <Button disabled={!anyShown} onClick={() => setSettings((s) => ({ ...s, hiddenTags: hideAllEverywhere(s.hiddenTags, all, true) }))}>
-              <Trans comment="Button: hide every catalog tag on every app">Hide all</Trans>
+      {open && <CatalogTagsDialog onClose={() => setOpen(false)} />}
+    </section>
+  );
+}
+
+/**
+ * Every catalog tag on the library's apps, in a window of its own: ticked shows it, unticked hides it on every app.
+ * Searched by name, narrowed to those showing or hidden, by name or by how many apps have them, and hidden or shown
+ * all at once, as many as are listed. A controller moves through it as a grid; Confirm ticks.
+ */
+export function CatalogTagsDialog({ onClose }: { onClose: () => void }) {
+  const { settings, setSettings, config } = useLauncher();
+  const hidden = settings.hiddenTags;
+  const { tags } = useCatalogTags();
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState<TagFilter>("all");
+  const [sort, setSort] = useState<TagSort>("name");
+  // Which are hidden as the list was last searched or filtered: a tag ticked or unticked stays in the list it was in
+  // (Hidden, say) until then, rather than going from under the pointer or the controller's focus.
+  const [asListed, setAsListed] = useState(hidden);
+  const relist = () => setAsListed(hidden);
+  const listed = listedTags(tags, asListed, { search, filter, sort, label: tagLabel });
+  const off = tags.filter(({ tag }) => hiddenEverywhere(hidden, tag)).length;
+  const counts: Record<TagFilter, number> = { all: tags.length, shown: tags.length - off, hidden: off };
+  const names = listed.map((x) => x.tag);
+  const anyShown = names.some((tag) => !hiddenEverywhere(hidden, tag));
+  const anyHidden = names.some((tag) => hiddenEverywhere(hidden, tag));
+  // All of them, or only those listed, as the buttons say.
+  const narrowed = Boolean(search.trim()) || filter !== "all";
+  const setAll = (hide: boolean) => setSettings((s) => ({ ...s, hiddenTags: hideAllEverywhere(s.hiddenTags, names, hide) }));
+  const searchField = useRef<HTMLInputElement>(null);
+  // Typing finds a tag at once, but not on a phone, whose keyboard would cover the list.
+  useEffect(() => {
+    if (config.os !== "android" && config.os !== "ios") searchField.current?.focus({ preventScroll: true });
+  }, [config.os]);
+  const FILTERS: [TagFilter, string][] = [
+    ["all", t({ message: "All", comment: "Lists every catalog tag" })],
+    ["shown", t({ message: "Showing", comment: "Lists the catalog tags that show" })],
+    ["hidden", t({ message: "Hidden", comment: "Lists the catalog tags hidden on every app" })],
+  ];
+  return (
+    <Dialog label={t`Catalog tags`} className="catalog-tags-window" onClose={onClose}>
+      <div className="catalog-tags-head">
+        <h2>
+          <Trans>Catalog tags</Trans>
+        </h2>
+        <Button onClick={onClose}>
+          <Trans>Close</Trans>
+        </Button>
+      </div>
+      <div className="catalog-tags-tools">
+        <p className="muted">
+          <Trans>Untick a tag to hide it on every app on this computer. Tick it to show it again.</Trans>
+        </p>
+        <div className="catalog-tags-find">
+          <input ref={searchField} type="search" placeholder={t`Search tags`} aria-label={t`Search tags`} value={search} onChange={(e) => (setSearch(e.target.value), relist())} />
+          <select aria-label={t`Sort tags`} value={sort} onChange={(e) => setSort(e.target.value as TagSort)}>
+            <option value="name">{t({ message: "By name", comment: "Sorts the catalog's tags by name" })}</option>
+            <option value="apps">{t({ message: "Most apps", comment: "Sorts the catalog's tags, the ones on the most apps first" })}</option>
+          </select>
+        </div>
+        <div className="catalog-tags-bar">
+          <div className="chips" role="group" aria-label={t`Which tags`}>
+            {FILTERS.map(([key, label]) => (
+              <button key={key} type="button" className={`chip${filter === key ? " on" : ""}`} aria-pressed={filter === key} onClick={() => (setFilter(key), relist())}>
+                {label} <span className="chip-count">{counts[key]}</span>
+              </button>
+            ))}
+          </div>
+          <div className="catalog-tags-bulk">
+            <Button disabled={!anyHidden} onClick={() => setAll(false)}>
+              {narrowed ? <Trans comment="Button: show again every catalog tag the search or filter lists">Show these</Trans> : <Trans comment="Button: show every catalog tag again">Show all</Trans>}
             </Button>
-            <Button disabled={!anyHidden} onClick={() => setSettings((s) => ({ ...s, hiddenTags: hideAllEverywhere(s.hiddenTags, all, false) }))}>
-              <Trans comment="Button: show every catalog tag again">Show all</Trans>
+            <Button disabled={!anyShown} onClick={() => setAll(true)}>
+              {narrowed ? <Trans comment="Button: hide every catalog tag the search or filter lists">Hide these</Trans> : <Trans comment="Button: hide every catalog tag on every app">Hide all</Trans>}
             </Button>
-          </p>
-          <ul className="tag-list" aria-label={t`Catalog tags`}>
-            {tags.map(({ tag, apps: n }) => {
-              const off = hiddenEverywhere(hidden, tag);
+          </div>
+        </div>
+      </div>
+      <div className="catalog-tags-list">
+        {listed.length ? (
+          <ul aria-label={t`Catalog tags`}>
+            {listed.map(({ tag, apps: n }) => {
+              const shown = !hiddenEverywhere(hidden, tag);
               const name = tagLabel(tag);
               return (
                 <li key={tag}>
-                  <span className={off ? "tag-name muted" : "tag-name"}>
-                    <strong>{name}</strong> <span className="muted">{plural(n, { one: "# app", other: "# apps" })}</span>
-                  </span>
-                  <span className="tag-actions">
-                    {off && (
-                      <span className="muted">
-                        <Trans comment="Beside a catalog tag the player hid on every app">Hidden</Trans>
-                      </span>
-                    )}
-                    <Button variant="text" aria-label={off ? t`Show ${name}` : t`Hide ${name}`} onClick={() => setSettings((s) => ({ ...s, hiddenTags: hideEverywhere(s.hiddenTags, tag, !off) }))}>
-                      {off ? <Trans comment="Button: show a hidden catalog tag again">Show</Trans> : <Trans comment="Button: hide a catalog tag on every app">Hide</Trans>}
-                    </Button>
-                  </span>
+                  <label className={shown ? "catalog-tag" : "catalog-tag off"}>
+                    <input type="checkbox" checked={shown} onChange={(e) => setSettings((s) => ({ ...s, hiddenTags: hideEverywhere(s.hiddenTags, tag, !e.target.checked) }))} />
+                    <span className="catalog-tag-name">{name}</span>
+                    <span className="catalog-tag-count">{plural(n, { one: "# app", other: "# apps" })}</span>
+                  </label>
                 </li>
               );
             })}
           </ul>
-        </>
-      )}
-    </section>
+        ) : (
+          <p className="muted" role="status">
+            {search.trim() ? <Trans>No tags match your search.</Trans> : filter === "hidden" ? <Trans>No tags are hidden.</Trans> : <Trans>Every tag is hidden.</Trans>}
+          </p>
+        )}
+      </div>
+    </Dialog>
   );
 }
