@@ -1853,10 +1853,6 @@ msgstr "选择程序…"
 msgid "Choose the release you tried, or Not sure."
 msgstr "选择你尝试的版本，或选择“不确定”。"
 
-#: ../../apps/launcher/src/feedback.tsx
-msgid "Choose the release you tried, or Not sure."
-msgstr "选择你尝试的版本，或选择“不确定”。"
-
 #: ../../apps/launcher/src/file-picker.tsx
 msgid "Choose this folder"
 msgstr "选择此文件夹"
