@@ -34,6 +34,7 @@ launchers do. Sentence case, with nouns capitalised as German needs.
 | usage data | Nutzungsdaten | |
 | sign in / sign out / account | anmelden / abmelden / Konto | |
 | feedback / player | Feedback / Spieler | |
+| PC specs | PC-Spezifikationen | the computer a player tried an app on: system, processor, graphics card, memory |
 | mod | Mod (die Mod, die Mods) | |
 | launch options / launch flags | Startoptionen / Startparameter | |
 | backup (of the library) | Sicherung | |

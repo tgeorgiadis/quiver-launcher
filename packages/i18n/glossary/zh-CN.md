@@ -35,6 +35,7 @@
 | usage data | 使用情况数据 | |
 | sign in / sign out / account | 登录 / 退出登录 / 账号 | |
 | feedback / player | 反馈 / 玩家 | 直接对玩家说话时优先用“你” |
+| PC specs | 电脑配置 | the computer a player tried an app on: system, processor, graphics card, memory |
 | mod | 模组 | |
 | launch options / launch flags | 启动选项 / 启动参数 | 选项是配置；参数是传给程序的命令行内容 |
 | backup (of the library) | 备份 | |

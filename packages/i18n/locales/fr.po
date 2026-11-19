@@ -577,6 +577,11 @@ msgstr "{pulledVersion} a été retirée"
 msgid "{put, plural, one {The saves of # app were copied in. New backups follow after you play.} other {The saves of # apps were copied in. New backups follow after you play.}}"
 msgstr ""
 
+#. The memory of the computer a player tried an app on
+#: ../../apps/launcher/src/feedback.tsx
+msgid "{ram} GB RAM"
+msgstr "{ram} Go de RAM"
+
 #: ../../apps/launcher/src/mods.tsx
 msgid "{rating, plural, one {{likes} like} other {{likes} likes}}"
 msgstr "{rating, plural, one {{likes} j'aime} other {{likes} j'aime}}"
@@ -4258,6 +4263,11 @@ msgstr "Pas encore joué"
 msgid "Not rated yet"
 msgstr "Pas encore noté"
 
+#. On PC specs only the app's developer and the player who shared them can see
+#: ../../apps/launcher/src/feedback.tsx
+msgid "Not shown to other players"
+msgstr "Non visible des autres joueurs"
+
 #. Which release the player tested
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Not sure"
@@ -4490,6 +4500,11 @@ msgstr "Le mot de passe ne peut ni commencer ni finir par un espace."
 #: ../../apps/launcher/src/library.tsx
 msgid "Paste the playlist's link, like quiverlauncher.com/lists/…"
 msgstr "Collez le lien de la playlist, comme quiverlauncher.com/lists/…"
+
+#. Before the computer a player tried an app on
+#: ../../apps/launcher/src/feedback.tsx
+msgid "PC specs:"
+msgstr "Configuration du PC :"
 
 #: ../../apps/launcher/src/controls.tsx
 msgid "Pick a binding, then press the key or button to use for it."
@@ -5700,6 +5715,10 @@ msgstr "Afficher moins"
 msgid "Show more"
 msgstr "Afficher plus"
 
+#: ../../apps/launcher/src/feedback.tsx
+msgid "Show my PC specs to other players"
+msgstr "Montrer la configuration de mon PC aux autres joueurs"
+
 #: ../../apps/launcher/src/library-view.tsx
 msgid "Show names on cards"
 msgstr "Afficher les noms sur les cartes"
@@ -6154,6 +6173,10 @@ msgstr "la version du {date}"
 #: ../../apps/launcher/src/App.tsx
 msgid "The {installedVersion} Quiver offers isn't the file you installed."
 msgstr "La {installedVersion} proposée par Quiver n'est pas le fichier que vous avez installé."
+
+#: ../../apps/launcher/src/feedback.tsx
+msgid "The app's developer sees them either way."
+msgstr "Le développeur de l’app la voit dans tous les cas."
 
 #: ../../apps/launcher/src/detail.tsx
 msgid "The developer proved they make this app"

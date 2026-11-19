@@ -376,7 +376,17 @@ export type Feedback = {
   fixed?: { version: string; at: number };
   /** Its author said it's still broken after the developer's fix. */
   disputed?: boolean;
+  /**
+   * The computer it was tried on, as Quiver Launcher read it. Everyone gets them unless the author unticked them;
+   * the author, the app's developer and Quiver staff get them either way. Missing from older sites.
+   */
+  specs?: FeedbackSpecs;
+  /** With specs: whether everyone may see them. */
+  specsPublic?: boolean;
 };
+
+/** The PC specs sent with feedback: the system and its version ("Windows 11", "SteamOS 3.7.13"), processor, graphics card and memory in GB. */
+export type FeedbackSpecs = { osVersion?: string; cpu?: string; gpu?: string; ramGb?: number };
 
 /** A developer's answer to feedback on their app. */
 export type FeedbackReply = {

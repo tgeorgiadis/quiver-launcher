@@ -577,6 +577,11 @@ msgstr "{pulledVersion} 已撤回"
 msgid "{put, plural, one {The saves of # app were copied in. New backups follow after you play.} other {The saves of # apps were copied in. New backups follow after you play.}}"
 msgstr ""
 
+#. The memory of the computer a player tried an app on
+#: ../../apps/launcher/src/feedback.tsx
+msgid "{ram} GB RAM"
+msgstr "{ram} GB 内存"
+
 #: ../../apps/launcher/src/mods.tsx
 msgid "{rating, plural, one {{likes} like} other {{likes} likes}}"
 msgstr "{rating, plural, one {获赞 {likes} 次} other {获赞 {likes} 次}}"
@@ -4258,6 +4263,11 @@ msgstr "尚未游玩"
 msgid "Not rated yet"
 msgstr "尚未评分"
 
+#. On PC specs only the app's developer and the player who shared them can see
+#: ../../apps/launcher/src/feedback.tsx
+msgid "Not shown to other players"
+msgstr "其他玩家不可见"
+
 #. Which release the player tested
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Not sure"
@@ -4490,6 +4500,11 @@ msgstr "密码的开头和结尾不能有空白字符。"
 #: ../../apps/launcher/src/library.tsx
 msgid "Paste the playlist's link, like quiverlauncher.com/lists/…"
 msgstr "粘贴播放列表链接，例如 quiverlauncher.com/lists/…"
+
+#. Before the computer a player tried an app on
+#: ../../apps/launcher/src/feedback.tsx
+msgid "PC specs:"
+msgstr "电脑配置："
 
 #: ../../apps/launcher/src/controls.tsx
 msgid "Pick a binding, then press the key or button to use for it."
@@ -5700,6 +5715,10 @@ msgstr "显示较少"
 msgid "Show more"
 msgstr "显示更多"
 
+#: ../../apps/launcher/src/feedback.tsx
+msgid "Show my PC specs to other players"
+msgstr "向其他玩家显示我的电脑配置"
+
 #: ../../apps/launcher/src/library-view.tsx
 msgid "Show names on cards"
 msgstr "在卡片上显示名称"
@@ -6154,6 +6173,10 @@ msgstr "{date} 版本"
 #: ../../apps/launcher/src/App.tsx
 msgid "The {installedVersion} Quiver offers isn't the file you installed."
 msgstr "Quiver 提供的 {installedVersion} 并非你安装的文件。"
+
+#: ../../apps/launcher/src/feedback.tsx
+msgid "The app's developer sees them either way."
+msgstr "无论如何，应用的开发者都能看到。"
 
 #: ../../apps/launcher/src/detail.tsx
 msgid "The developer proved they make this app"
