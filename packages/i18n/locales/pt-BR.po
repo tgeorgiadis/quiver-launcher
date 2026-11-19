@@ -1740,6 +1740,10 @@ msgstr "Escolha uma plataforma"
 msgid "Choose a program (.exe) that starts the app."
 msgstr "Escolha um programa (.exe) que inicia o app."
 
+#: ../../apps/launcher/src/feedback.tsx
+msgid "Choose a release"
+msgstr "Escolha uma versão"
+
 #: ../../apps/launcher/src/correction.tsx
 msgid "Choose a topic (optional)"
 msgstr "Escolha um tema (opcional)"
@@ -1839,6 +1843,10 @@ msgstr "Escolha o programa que inicia o app."
 #: ../../apps/launcher/src/own.tsx
 msgid "Choose the program…"
 msgstr "Escolher o programa…"
+
+#: ../../apps/launcher/src/feedback.tsx
+msgid "Choose the release you tried, or Not sure."
+msgstr "Escolha a versão que você testou, ou “Não sei”."
 
 #: ../../apps/launcher/src/file-picker.tsx
 msgid "Choose this folder"
@@ -5373,6 +5381,10 @@ msgstr "Conte como {name} rodou para você"
 msgid "Say how it ran for you"
 msgstr "Conte como rodou para você"
 
+#: ../../apps/launcher/src/feedback.tsx
+msgid "Say what went wrong, so the developer and other players can make sense of it."
+msgstr "Diga o que deu errado, para que o desenvolvedor e outros jogadores possam entender."
+
 #: ../../apps/launcher/src/correction.tsx
 msgid "Say what's wrong or missing."
 msgstr "Diga o que está errado ou faltando."
@@ -6963,6 +6975,10 @@ msgstr "O que os jogadores dizem"
 #: ../../apps/launcher/src/browse-cards.ts
 msgid "What players say"
 msgstr "O que os jogadores dizem"
+
+#: ../../apps/launcher/src/feedback.tsx
+msgid "What went wrong, and when? What did you try to fix it?"
+msgstr "O que deu errado, e quando? O que você tentou para resolver?"
 
 #: ../../apps/launcher/src/feedback.tsx
 msgid "What worked well, and what didn't? Did you do anything to get it running or fix a problem?"

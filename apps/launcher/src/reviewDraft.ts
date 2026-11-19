@@ -2,7 +2,8 @@
  * Unsent player feedback, kept for each account and app so it survives
  * switching tabs, leaving the app page or restarting the launcher. It's
  * removed once the feedback is shared or the form is cancelled, and
- * forgotten after 30 days.
+ * forgotten after 30 days. It also says what the form needs before it can
+ * be shared.
  */
 import { OS_NAMES } from "@quiverlauncher/ui";
 import type { Feedback } from "@quiverlauncher/api";
@@ -10,6 +11,8 @@ import type { Feedback } from "@quiverlauncher/api";
 export type ReviewDraft = { result: Feedback["result"]; platform: string; releaseId: string; body: string };
 /** The longest note the site accepts (reviews:save on the website). */
 export const NOTE_LIMIT = 500;
+/** The tested release when the player doesn't know which it was: shared as no release. */
+export const NOT_SURE = "not-sure";
 const KEEP_FOR = 30 * 24 * 60 * 60 * 1000;
 const RESULTS: readonly string[] = ["runs", "issues", "broken"];
 const key = (userId: string, entryId: string) => `quiver-review-draft:${userId}:${entryId}`;
@@ -51,4 +54,16 @@ export function clearDraft(userId: string, entryId: string) {
   } catch {
     // Nothing was kept.
   }
+}
+
+/**
+ * What the feedback still needs before it can be shared, so a report can be made sense of: the platform; the release,
+ * or Not sure, picked on purpose, when the app has releases to pick from; and for anything but "runs", a note on what
+ * went wrong.
+ */
+export function missing({ result, platform, releaseId, body }: ReviewDraft, hasReleases: boolean): "platform" | "release" | "note" | null {
+  if (!platform) return "platform";
+  if (hasReleases && !releaseId) return "release";
+  if (result !== "runs" && !body.trim()) return "note";
+  return null;
 }

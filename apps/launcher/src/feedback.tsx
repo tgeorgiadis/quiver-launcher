@@ -13,7 +13,7 @@ import type { Entry, Feedback, Release } from "@quiverlauncher/api";
 import { OS_NAMES, Score, fullDate } from "@quiverlauncher/ui";
 import { useLauncher } from "./store";
 import { useAccount } from "./account";
-import { NOTE_LIMIT, clearDraft, readDraft, saveDraft } from "./reviewDraft";
+import { NOTE_LIMIT, NOT_SURE, clearDraft, missing, readDraft, saveDraft } from "./reviewDraft";
 import { moveFocus } from "./spatial";
 
 export type Result = Feedback["result"];
@@ -339,6 +339,9 @@ const CHOICES: [Result, MessageDescriptor, MessageDescriptor][] = [
 /**
  * The website's form: how it went, where, which release, and a note. Saving
  * again replaces what the player said before. The app needn't be installed.
+ * The release starts on the installed one; otherwise the player picks one, or
+ * Not sure, so a report never lacks it only because nobody looked. Anything
+ * but "It worked well" needs a note saying what went wrong.
  */
 function ReviewEditor({
   userId,
@@ -382,8 +385,12 @@ function ReviewEditor({
     setResult(picked ?? existing.result);
     setBody(existing.body);
     if (existing.platform && existing.platform !== "unknown") setPlatform(existing.platform);
-    setReleaseId(existing.entryReleaseId ?? "");
+    setReleaseId(existing.entryReleaseId ?? NOT_SURE);
   }, [existing]); // eslint-disable-line react-hooks/exhaustive-deps
+  // The installed release, once the releases it's among have loaded.
+  useEffect(() => {
+    if (!changed && !existing && !releaseId && installed && releases.some((r) => r.id === installed)) setReleaseId(installed);
+  }, [releases]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (changed) saveDraft(userId, entry.id, { result, platform, releaseId, body });
   }, [changed, userId, entry.id, result, platform, releaseId, body]);
@@ -407,7 +414,15 @@ function ReviewEditor({
       className="review-editor panel"
       onSubmit={(e) => {
         e.preventDefault();
-        if (!platform) return setMessage(t`Choose the platform you tried.`);
+        const needs = missing({ result, platform, releaseId, body }, releases.length > 0);
+        if (needs)
+          return setMessage(
+            {
+              platform: t`Choose the platform you tried.`,
+              release: t`Choose the release you tried, or Not sure.`,
+              note: t`Say what went wrong, so the developer and other players can make sense of it.`,
+            }[needs],
+          );
         setBusy(true);
         setMessage("");
         review({
@@ -415,7 +430,7 @@ function ReviewEditor({
           result,
           body: body.trim(),
           platform: platform as Exclude<typeof config.os, "unknown">,
-          ...(releaseId ? { entryReleaseId: releaseId } : {}),
+          ...(releaseId && releaseId !== NOT_SURE ? { entryReleaseId: releaseId } : {}),
         }).then(() => {
           clearDraft(userId, entry.id);
           onSaved();
@@ -457,8 +472,9 @@ function ReviewEditor({
         </label>
         <label className="field">
           <Trans>Tested release</Trans>
-          <select value={releaseId} onChange={(e) => edit(setReleaseId)(e.target.value)}>
-            <option value="">{t({ message: "Not sure", comment: "Which release the player tested" })}</option>
+          <select required={releases.length > 0} value={releaseId} onChange={(e) => edit(setReleaseId)(e.target.value)}>
+            <option value="">{t`Choose a release`}</option>
+            <option value={NOT_SURE}>{t({ message: "Not sure", comment: "Which release the player tested" })}</option>
             {releases.map((r) => (
               <option key={r.id} value={r.id}>
                 {r.version}
@@ -471,10 +487,15 @@ function ReviewEditor({
         <Trans comment="The player's note about how the app ran">Note</Trans>
         <textarea
           maxLength={NOTE_LIMIT}
+          required={result !== "runs"}
           rows={4}
           value={body}
           aria-describedby="review-note-count"
-          placeholder={t`What worked well, and what didn't? Did you do anything to get it running or fix a problem?`}
+          placeholder={
+            result === "runs"
+              ? t`What worked well, and what didn't? Did you do anything to get it running or fix a problem?`
+              : t`What went wrong, and when? What did you try to fix it?`
+          }
           onChange={(e) => edit(setBody)(e.target.value)}
         />
       </label>

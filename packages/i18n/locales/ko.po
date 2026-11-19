@@ -1740,6 +1740,10 @@ msgstr "플랫폼 선택"
 msgid "Choose a program (.exe) that starts the app."
 msgstr "앱을 실행하는 프로그램(.exe)을 선택하세요."
 
+#: ../../apps/launcher/src/feedback.tsx
+msgid "Choose a release"
+msgstr "버전 선택"
+
 #: ../../apps/launcher/src/correction.tsx
 msgid "Choose a topic (optional)"
 msgstr "주제 선택(선택 사항)"
@@ -1839,6 +1843,10 @@ msgstr "앱을 실행하는 프로그램을 선택하세요."
 #: ../../apps/launcher/src/own.tsx
 msgid "Choose the program…"
 msgstr "프로그램 선택…"
+
+#: ../../apps/launcher/src/feedback.tsx
+msgid "Choose the release you tried, or Not sure."
+msgstr "사용해 본 버전을 선택하거나 '모름'을 선택하세요."
 
 #: ../../apps/launcher/src/file-picker.tsx
 msgid "Choose this folder"
@@ -5373,6 +5381,10 @@ msgstr "{name} 실행 후기 남기기"
 msgid "Say how it ran for you"
 msgstr "실행 후기 남기기"
 
+#: ../../apps/launcher/src/feedback.tsx
+msgid "Say what went wrong, so the developer and other players can make sense of it."
+msgstr "개발자와 다른 플레이어가 이해할 수 있도록 무엇이 잘못되었는지 알려 주세요."
+
 #: ../../apps/launcher/src/correction.tsx
 msgid "Say what's wrong or missing."
 msgstr "무엇이 잘못되었거나 빠졌는지 알려 주세요."
@@ -6963,6 +6975,10 @@ msgstr "플레이어 평가"
 #: ../../apps/launcher/src/browse-cards.ts
 msgid "What players say"
 msgstr "플레이어 평가"
+
+#: ../../apps/launcher/src/feedback.tsx
+msgid "What went wrong, and when? What did you try to fix it?"
+msgstr "무엇이 언제 잘못되었나요? 해결하려고 무엇을 시도했나요?"
 
 #: ../../apps/launcher/src/feedback.tsx
 msgid "What worked well, and what didn't? Did you do anything to get it running or fix a problem?"

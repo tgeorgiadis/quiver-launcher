@@ -1739,6 +1739,10 @@ msgstr "Choose a platform"
 msgid "Choose a program (.exe) that starts the app."
 msgstr "Choose a program (.exe) that starts the app."
 
+#: ../../apps/launcher/src/feedback.tsx
+msgid "Choose a release"
+msgstr "Choose a release"
+
 #: ../../apps/launcher/src/correction.tsx
 msgid "Choose a topic (optional)"
 msgstr "Choose a topic (optional)"
@@ -1838,6 +1842,10 @@ msgstr "Choose the program that starts the app."
 #: ../../apps/launcher/src/own.tsx
 msgid "Choose the program…"
 msgstr "Choose the program…"
+
+#: ../../apps/launcher/src/feedback.tsx
+msgid "Choose the release you tried, or Not sure."
+msgstr "Choose the release you tried, or Not sure."
 
 #: ../../apps/launcher/src/file-picker.tsx
 msgid "Choose this folder"
@@ -5372,6 +5380,10 @@ msgstr "Say how {name} ran for you"
 msgid "Say how it ran for you"
 msgstr "Say how it ran for you"
 
+#: ../../apps/launcher/src/feedback.tsx
+msgid "Say what went wrong, so the developer and other players can make sense of it."
+msgstr "Say what went wrong, so the developer and other players can make sense of it."
+
 #: ../../apps/launcher/src/correction.tsx
 msgid "Say what's wrong or missing."
 msgstr "Say what's wrong or missing."
@@ -6962,6 +6974,10 @@ msgstr "What players said"
 #: ../../apps/launcher/src/browse-cards.ts
 msgid "What players say"
 msgstr "What players say"
+
+#: ../../apps/launcher/src/feedback.tsx
+msgid "What went wrong, and when? What did you try to fix it?"
+msgstr "What went wrong, and when? What did you try to fix it?"
 
 #: ../../apps/launcher/src/feedback.tsx
 msgid "What worked well, and what didn't? Did you do anything to get it running or fix a problem?"
