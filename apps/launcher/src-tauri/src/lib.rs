@@ -298,7 +298,7 @@ fn target(data: &Data, folder: &str, dir: Option<String>, preferred: &[String], 
                 return Err(if anywhere {
                     launch::program_gone(&exe)
                 } else {
-                    format!("{chosen} isn't in the app's folder any more. Choose its program again in Launch options.")
+                    format!("Can't find {chosen} in the app's folder. Choose the executable again in Launch options.")
                 });
             }
             let windows = exe.extension().is_some_and(|e| e.eq_ignore_ascii_case("exe") || e.eq_ignore_ascii_case("bat"));
@@ -313,7 +313,7 @@ fn target(data: &Data, folder: &str, dir: Option<String>, preferred: &[String], 
                 }
                 // A Windows installer's program: the player can choose it again, or run the installer again.
                 if app_dir(data, folder, dir).is_ok_and(|d| msi::installed(&d) || setup::elsewhere(&d)) {
-                    return Err(format!("The program isn't at {program} any more. Choose it again in Launch options, or run its installer again."));
+                    return Err(format!("Can't find the executable at {program}. Choose it again in Launch options, or run the installer again."));
                 }
                 return Err(format!("The program isn't at {program} any more. Remove this app and add it again from where it is now."));
             }
@@ -1319,7 +1319,7 @@ async fn pick_program(app: tauri::AppHandle, window: tauri::WebviewWindow, dir: 
         "macos" => Some(("Apps", &["app"])),
         _ => None,
     };
-    let path = picker::choose(&app, &window, picker::Want::File, "Choose the program that starts the app", dir.as_deref().map(Path::new), filter).await?;
+    let path = picker::choose(&app, &window, picker::Want::File, "Choose the executable that starts the app", dir.as_deref().map(Path::new), filter).await?;
     Some(path.to_string_lossy().into())
 }
 
@@ -1502,6 +1502,22 @@ fn asset_url(name: &str, release: &update::Release) -> Option<String> {
     release.assets.iter().find(|a| a.name == name).map(|a| a.browser_download_url.clone())
 }
 
+/// The executable Play starts when the player hasn't chosen one, as `target`
+/// finds it, for Launch options to name: relative to the app's folder when
+/// it's inside, else its full path (one a setup script installed). None when
+/// there's none, or it isn't a file Quiver picks (a Windows installer's or a
+/// Flatpak's).
+#[tauri::command]
+fn found_program(data: State<'_, Data>, folder: String, dir: Option<String>, preferred: Vec<String>, wine: bool) -> Option<String> {
+    let dir = app_dir(&data, &folder, dir).ok().filter(|d| d.is_dir())?;
+    if msi::installed(&dir) || setup::elsewhere(&dir) || flatpak::installed(&dir).is_some() {
+        return None;
+    }
+    let exe = install::find_executable(&dir, &preferred, if wine { "windows" } else { OS }).or_else(|| (OS == "linux" && !wine).then(|| install::find_executable(&dir, &preferred, "windows")).flatten())?;
+    let exe = if cfg!(windows) && script::installs(&dir, &exe) { script::installed(&dir).unwrap_or(exe) } else { exe };
+    Some(exe.strip_prefix(&dir).unwrap_or(&exe).to_string_lossy().into_owned())
+}
+
 /// The programs in an installed app's folder, relative to it, for the player
 /// to pick which ones Play starts.
 #[tauri::command]
@@ -1544,7 +1560,7 @@ async fn pick_executable(app: tauri::AppHandle, window: tauri::WebviewWindow, fo
     };
     let picked = match std::env::var_os("QUIVER_PICK") {
         Some(path) => Some(PathBuf::from(path)),
-        None => picker::choose(&app, &window, picker::Want::File, "Choose the program that starts the app", Some(&root), None).await,
+        None => picker::choose(&app, &window, picker::Want::File, "Choose the executable that starts the app", Some(&root), None).await,
     };
     let Some(picked) = picked else { return Ok(None) };
     if program.is_some() {
@@ -2507,6 +2523,7 @@ pub fn run() {
             steam_keyboard,
             pick_executable,
             list_programs,
+            found_program,
             find_copies,
             pick_copy,
             check_copy,

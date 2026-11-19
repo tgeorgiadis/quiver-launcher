@@ -1034,7 +1034,7 @@ function Action({ entry, apart, reasonElsewhere }: { entry: Entry; apart?: boole
                 )
               }
             >
-              <Trans>Choose its program…</Trans>
+              <Trans>Choose its executable…</Trans>
             </button>
           )}
           {/* A local app has nothing to download: Try again plays it again. */}
@@ -2434,7 +2434,7 @@ function UninstallPrompt() {
   // Out of the library too: said only when it's in there.
   const leaves = confirming.remove && library.some((i) => i.id === entry.id);
   const close = () => confirmUninstall(null);
-  const program = going?.launch?.executable && outsideFolder(going.launch.executable, going.program) ? going.launch.executable : undefined;
+  const executable = going?.launch?.executable && outsideFolder(going.launch.executable, going.program) ? going.launch.executable : undefined;
   return (
     <Dialog label={t`Uninstall ${name}`} onClose={close}>
       <div className="detail-body uninstall-prompt">
@@ -2450,15 +2450,15 @@ function UninstallPrompt() {
         </p>
         {portable && (
           <p>
-            <Trans>This app may keep its saves in this folder. They&apos;ll be removed with it.</Trans>
+            <Trans>This app may keep your saves in its folder. They&apos;ll go to the trash too.</Trans>
           </p>
         )}
         {/* What it starts is somewhere else (Launch options): only its folder goes, so the player knows that stays. */}
-        {program && (
+        {executable && (
           <p>
             <Trans>
-              It starts <code>{program}</code>, which is outside its folder, so it stays where it is. Uninstall or delete that yourself if you don&apos;t
-              want it any more.
+              It starts <code>{executable}</code>. That file is outside the app&apos;s folder, so it won&apos;t be deleted. You can delete it yourself if you
+              don&apos;t need it.
             </Trans>
           </p>
         )}
