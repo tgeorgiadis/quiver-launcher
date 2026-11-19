@@ -267,6 +267,15 @@ mod tests {
         assert_eq!(gb(16303540 * 1024), 15.5);
     }
 
+    /// What this computer says, to check by hand: `cargo test --lib specs::tests::this_computer -- --ignored --nocapture`.
+    #[test]
+    #[ignore]
+    fn this_computer() {
+        let specs = read();
+        println!("{specs:?}");
+        assert!(specs.cpu.is_some() && specs.ram_gb.is_some());
+    }
+
     #[test]
     fn names_lose_their_trademark_signs() {
         assert_eq!(tidy("Intel(R) Core(TM) i5-8400 CPU @ 2.80GHz  "), "Intel Core i5-8400 CPU @ 2.80GHz");
