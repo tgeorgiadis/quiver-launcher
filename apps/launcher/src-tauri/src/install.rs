@@ -528,6 +528,11 @@ fn unpack(file: &Path, name: &str, out: &Path) -> Result<(), String> {
         for i in 0..archive.len() {
             let mut entry = archive.by_index(i).map_err(text)?;
             let Some(inside) = enclosed(entry.name()) else { continue };
+            // A zip made with the Mac's Compress keeps each file's Finder details in `__MACOSX`, which no app needs and
+            // which keeps a lone wrapper folder from being hoisted.
+            if inside.starts_with("__MACOSX") {
+                continue;
+            }
             let path = out.join(&inside);
             // A Mac app's frameworks link `Versions/Current`; as a copy, its signature no longer verifies.
             #[cfg(unix)]
@@ -552,10 +557,11 @@ fn unpack(file: &Path, name: &str, out: &Path) -> Result<(), String> {
             }
         }
         // Made last, so no entry is written through a link. Only links that point down from their own folder, as a
-        // framework's do: a chain of links with `..` can lead out of `out` even when each one seems to stay inside.
+        // framework's do: a chain of links with `..` can lead out of `out` even when each one seems to stay inside,
+        // and one to `.` makes a folder that holds itself.
         #[cfg(unix)]
         for (inside, target) in links {
-            let down = !target.is_empty() && !target.starts_with('/') && !target.contains('\0') && !target.split('/').any(|p| p == "..");
+            let down = !target.is_empty() && !target.starts_with('/') && !target.contains('\0') && !target.split('/').any(|p| p == ".." || p == ".");
             let path = out.join(&inside);
             if !down || fs::symlink_metadata(&path).is_ok() {
                 continue;
@@ -1624,6 +1630,9 @@ mod tests {
                     w.start_file(format!("{top}{name}"), zip::write::SimpleFileOptions::default().unix_permissions(0o755)).unwrap();
                     io::Write::write_all(&mut w, b"game").unwrap();
                 }
+                // As the Mac's Compress makes it.
+                w.start_file(format!("__MACOSX/{top}Game.app/Contents/._Info.plist"), zip::write::SimpleFileOptions::default()).unwrap();
+                io::Write::write_all(&mut w, b"finder").unwrap();
                 w.finish().unwrap().into_inner()
             };
             let file = dir.path().join("Game.zip");
@@ -1632,6 +1641,7 @@ mod tests {
             extract(&file, "Game.zip", &out).unwrap();
             flatten(&out).unwrap();
             assert!(out.join("Game.app/Contents/MacOS/game").is_file(), "{top}");
+            assert!(!out.join("__MACOSX").exists(), "{top}");
             assert_eq!(find_executable(&out, &[], "macos"), Some(out.join("Game.app")), "{top}");
         }
     }
@@ -1652,6 +1662,8 @@ mod tests {
             w.add_symlink("Game.app/Contents/Frameworks/up", "..", options).unwrap();
             w.add_symlink("Game.app/Contents/out", "Frameworks/up/../../..", options).unwrap();
             w.add_symlink("Game.app/etc", "/etc", options).unwrap();
+            // A folder that holds itself.
+            w.add_symlink("Game.app/Contents/self", "./", options).unwrap();
             // A link to where a later file goes isn't written through.
             w.add_symlink("Game.app/data", "Contents", options).unwrap();
             w.start_file("Game.app/data/save.bin", options).unwrap();
@@ -1665,7 +1677,7 @@ mod tests {
         let link = |p: &str| fs::symlink_metadata(out.join(p)).is_ok_and(|m| m.file_type().is_symlink());
         assert!(link(&format!("{framework}/Versions/Current")) && link(&format!("{framework}/Engine")));
         assert_eq!(fs::read(out.join(format!("{framework}/Engine"))).unwrap(), b"engine");
-        for refused in ["Game.app/Contents/Frameworks/up", "Game.app/Contents/out", "Game.app/etc"] {
+        for refused in ["Game.app/Contents/Frameworks/up", "Game.app/Contents/out", "Game.app/etc", "Game.app/Contents/self"] {
             assert!(fs::symlink_metadata(out.join(refused)).is_err(), "{refused}");
         }
         assert!(!link("Game.app/data") && out.join("Game.app/data/save.bin").is_file());
