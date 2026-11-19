@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Entry } from "@quiverlauncher/api";
-import { adoptedInstall, appRef, bringsAlong, catalogMatch, declinedUpdate, filesAddable, folderGone, forHereKey, hasUpdate, importedPlaylists, importedTags, installFiles, keptInstall, locatable, looseInstalls, mayUpdate, noProgram, playedRef, relocatedInstall, skipped, uniqueFiles, updateFor, type ImportedApp, type LibraryItem } from "./store";
+import { sortPlan, withOwnConsoles, adoptedInstall, appRef, appsFolders, groupFolder, joinPath, rootOf, unsortedApps, folderClash, keptWhereTheyAre, ownedBy, bringsAlong, catalogMatch, declinedUpdate, earlyGet, earlyGetOffer, earlyKey, earlyOffer, earlyRelease, earlyUpdate, filesAddable, folderNameOf, renamable, folderGone, forHereKey, hasUpdate, importedPlaylists, importedTags, removedTags, withAllTags, markedInApps, retagged, withOldPictures, installFiles, keptInstall, locatable, looseInstalls, mayUpdate, movableApps, movedInside, noProgram, notOfferedYet, oncePerFolder, twinsOf, withCopiesIn, withTwins, playedRef, relocatedInstall, skipped, uniqueFiles, updateFor, mainRelease, onlyPrereleases, updatesOf, usableCatalog, wantsPrereleases, withEarlyFor, withMainRelease, withPrereleases, type ImportedApp, type LibraryItem } from "./store";
 import type { OldApp, OldFilter } from "./native";
 
 const entry = {
@@ -93,6 +93,15 @@ describe("catalogMatch", () => {
     expect(catalogMatch(old, ids)?.id).toBe("sapphire");
     expect(catalogMatch({ ...old, catalogId: "gone" }, ids)?.id).toBe("sapphire");
     expect(catalogMatch({ name: "Other", provider: "github", repository: "someone/other" }, ids)).toBeUndefined();
+  });
+
+  it("finds the catalog's app under the repository's name now, when it moved since 3.x knew it", () => {
+    const listed = new Map([["github:2ship2harkinian/2ship2harkinian", { id: "2ship" }]]);
+    const moved = { name: "The Legend of Zelda: Majora's Mask", provider: "github", repository: "harbourmasters/2ship2harkinian" };
+    expect(catalogMatch(moved, listed)).toBeUndefined();
+    expect(catalogMatch(moved, listed, "2Ship2Harkinian/2ship2harkinian")?.id).toBe("2ship");
+    // Its old name, when the catalog still lists it so, wins.
+    expect(catalogMatch(old, ids, "someone/else")?.id).toBe("sapphire");
   });
 });
 
@@ -242,8 +251,17 @@ describe("bringsAlong", () => {
       app({ repository: undefined, tags: ["mine"], hidden: true }),
     ];
     const filters = [{ name: "N64", tags: ["n64"], all: false, exclude: [], excludeAll: false }];
-    expect(bringsAlong({ apps, filters })).toEqual({ tagged: 2, filters: 1, hidden: 1 });
-    expect(bringsAlong({ apps: [app()] })).toEqual({ tagged: 0, filters: 0, hidden: 0 });
+    expect(bringsAlong({ apps, filters })).toEqual({ tagged: 2, filters: 1, hidden: 1, pictures: 0, left: 1 });
+    expect(bringsAlong({ apps: [app()] })).toEqual({ tagged: 0, filters: 0, hidden: 0, pictures: 0, left: 0 });
+  });
+
+  it("counts the pictures the player chose, not an entry's address, and only for apps that come over", () => {
+    const apps = [
+      app({ icon: "C:\\QL3\\Cache\\CustomIcons\\TestPort_custom.png" }),
+      app({ icon: "https://example.com/port.png" }),
+      app({ repository: undefined, icon: "/ql3/Cache/CustomIcons/Other_custom.png" }),
+    ];
+    expect(bringsAlong({ apps })).toMatchObject({ pictures: 1, left: 1 });
   });
 });
 
@@ -279,6 +297,8 @@ describe("the files in an app's folder", () => {
     expect(filesAddable(install)).toBe(true);
     expect(filesAddable({ ...install, program: "/games/a.exe" })).toBe(false);
     expect(filesAddable({ ...install, installer: "msi" })).toBe(false);
+    expect(filesAddable({ ...install, installer: "setup" })).toBe(false);
+    expect(filesAddable({ ...install, setup: true })).toBe(true);
   });
 });
 
@@ -331,6 +351,176 @@ describe("an update for this computer", () => {
   });
 });
 
+describe("pre-releases", () => {
+  const main = { version: "v1.2.0", releasedAt: 20, prerelease: false, pinned: true };
+  const beta = { version: "v1.3.0-beta.1", releasedAt: 30, prerelease: true, pinned: true };
+  const listed = { verified: main, verifiedPrerelease: beta } as unknown as Entry;
+  const install = { version: "v1.2.0", releasedAt: 20, folder: "Port", executables: [] };
+
+  it("are each app's own choice, else the player's default, which is main releases", () => {
+    expect(wantsPrereleases({}, {})).toBe(false);
+    expect(wantsPrereleases({ prereleases: true }, undefined)).toBe(true);
+    expect(wantsPrereleases({ prereleases: true }, { prereleases: "main" })).toBe(false);
+    expect(wantsPrereleases({}, { prereleases: "include" })).toBe(true);
+  });
+
+  it("update as each app chose, else as the player's default, which is to offer them; an installer's never by itself", () => {
+    expect(updatesOf({}, {})).toBeUndefined();
+    expect(updatesOf({ autoUpdates: true }, {})).toBe("auto");
+    expect(updatesOf({ autoUpdates: true }, undefined)).toBe("auto");
+    expect(updatesOf({ autoUpdates: true }, { updates: "ask" })).toBeUndefined();
+    expect(updatesOf({ autoUpdates: true }, { updates: "pinned" })).toBe("pinned");
+    expect(updatesOf({}, { updates: "auto" })).toBe("auto");
+    expect(updatesOf({ autoUpdates: true }, { installer: "msi" })).toBeUndefined();
+    expect(updatesOf({}, { updates: "auto", installer: "msi" })).toBeUndefined();
+    // A setup program's window waits for the player too, wherever it installed.
+    expect(updatesOf({ autoUpdates: true }, { installer: "setup" })).toBeUndefined();
+    expect(updatesOf({ autoUpdates: true }, { setup: true })).toBeUndefined();
+    expect(updatesOf({}, { updates: "pinned", setup: true })).toBe("pinned");
+  });
+
+  it("make the newest pre-release the app's update for a player who chose them", () => {
+    const chosen = withPrereleases(listed, true);
+    expect(chosen.verified).toEqual(beta);
+    expect(mayUpdate(chosen, install)).toBe(true);
+    expect(mainRelease(chosen)).toEqual(main);
+    // Without the choice, there's nothing newer than what's installed.
+    expect(mayUpdate(withPrereleases(listed, false), install)).toBe(false);
+  });
+
+  it("come off again as the entry is kept, and aren't applied twice", () => {
+    const chosen = withPrereleases(listed, true);
+    expect(withMainRelease(chosen)).toEqual(listed);
+    expect(withPrereleases(chosen, true)).toEqual(chosen);
+    expect(withPrereleases(chosen, false)).toEqual(listed);
+  });
+
+  it("are every player's for a project that only publishes them", () => {
+    const nightly = { verified: beta } as unknown as Entry;
+    expect(onlyPrereleases(nightly)).toBe(true);
+    expect(onlyPrereleases(listed)).toBe(false);
+    expect(onlyPrereleases(withPrereleases(listed, true))).toBe(false);
+    expect(withPrereleases(nightly, true)).toEqual(nightly);
+  });
+});
+
+describe("Newest right away: an update Quiver hasn't verified yet", () => {
+  const verified = { version: "v1.2.0", releasedAt: 20 };
+  const newest = { version: "v1.3.0", releasedAt: 30 };
+  const listed = { verified, lastReleaseVersion: "v1.3.0", lastReleaseAt: 30 } as unknown as Entry;
+  const install = { version: "v1.2.0", releasedAt: 20, folder: "Port", executables: [] };
+  const waiting = (release?: { version: string; releasedAt: number }, on = install) => ({ ...listed, early: { of: earlyKey(listed, on)!, ...(release ? { release } : {}) } });
+  const found = (release?: { version: string; releasedAt: number }, on = install) => ({ ...listed, early: { ...waiting(release, on).early, now: true as const } });
+
+  it("isn't looked up when the newest release is the one installed, or the verified one", () => {
+    expect(earlyKey(listed, install)).toBe("1.3.0:own:files");
+    expect(earlyKey(listed, { ...install, version: "1.3.0" })).toBeUndefined();
+    expect(earlyKey({ ...listed, lastReleaseVersion: "1.2.0" }, { ...install, version: "v1.1.0" })).toBeUndefined();
+    expect(earlyKey({ ...listed, lastReleaseVersion: undefined }, install)).toBeUndefined();
+    expect(earlyKey(listed, { ...install, local: true } as typeof install)).toBeUndefined();
+  });
+
+  it("isn't offered until the site's history says there's one, which only happens with the setting on", () => {
+    expect(updateFor(listed, install)).toBeUndefined();
+    expect(hasUpdate(listed, install)).toBe(false);
+    expect(hasUpdate(found(), install)).toBe(false);
+  });
+
+  it("is offered ahead of the verified release, with none verified to update to, too", () => {
+    expect(updateFor(found(newest), install)).toEqual(newest);
+    expect(hasUpdate(found(newest), install)).toBe(true);
+    const older = { ...install, version: "v1.1.0", releasedAt: 10 };
+    const both = { ...found(newest, older), forHere: { of: forHereKey(verified, older), release: verified } };
+    expect(updateFor(both, older)).toEqual(newest);
+    const none = { ...found(newest), verified: undefined } as unknown as Entry;
+    expect(updateFor(none, install)).toEqual(newest);
+  });
+
+  it("shows on a card as not offered yet, until the history has nothing of it for this computer", () => {
+    expect(notOfferedYet(listed, undefined)).toBe("v1.3.0");
+    expect(notOfferedYet(listed, install)).toBe("v1.3.0");
+    expect(notOfferedYet(waiting(newest), install)).toBe("v1.3.0");
+    // Only a macOS build, say: looked up, and nothing found.
+    expect(notOfferedYet(waiting(), install)).toBeUndefined();
+    expect(notOfferedYet(found(), install)).toBeUndefined();
+    // A newer release upstream since hasn't been looked up.
+    expect(notOfferedYet({ ...waiting(), lastReleaseVersion: "v1.4.0" }, install)).toBe("v1.4.0");
+    expect(notOfferedYet({ ...listed, lastReleaseVersion: "1.2.0" }, install)).toBeUndefined();
+    expect(notOfferedYet({ ...listed, lastReleaseAt: 10 }, install)).toBeUndefined();
+  });
+
+  it("is what Install takes for an app not installed yet, with the setting on", () => {
+    const of = earlyKey(listed, undefined)!;
+    expect(of).toBe("1.3.0:own:files");
+    expect(earlyGet({ ...listed, early: { of, release: newest, now: true } })).toEqual(newest);
+    // Waiting 48 hours, not looked up yet, or nothing for this computer: the verified one.
+    expect(earlyGet({ ...listed, early: { of, release: newest } })).toBeUndefined();
+    expect(earlyGet(listed)).toBeUndefined();
+    expect(earlyGet({ ...listed, early: { of, now: true } })).toBeUndefined();
+    expect(earlyGet({ ...listed, early: { of, release: newest, now: true }, withdrawn: [{ version: "1.3.0", reason: "" }] } as unknown as Entry)).toBeUndefined();
+    // Never an update, or an early one to ask for, of an app that isn't installed.
+    expect(hasUpdate({ ...listed, early: { of, release: newest, now: true } }, undefined)).toBe(false);
+    expect(earlyOffer({ ...listed, early: { of, release: newest } }, undefined)).toBeUndefined();
+    // Waiting 48 hours, it's what Install latest offers; never with the setting on, or once it's installed.
+    expect(earlyGetOffer({ ...listed, early: { of, release: newest } }, undefined)).toEqual(newest);
+    expect(earlyGetOffer({ ...listed, early: { of, release: newest, now: true } }, undefined)).toBeUndefined();
+    expect(earlyGetOffer({ ...listed, early: { of, release: newest } }, install)).toBeUndefined();
+    expect(earlyGetOffer({ ...listed, early: { of } }, undefined)).toBeUndefined();
+  });
+
+  it("is looked up again for a newer release upstream, or another build", () => {
+    const stale = found(newest);
+    expect(earlyUpdate({ ...stale, lastReleaseVersion: "v1.4.0" }, install)).toBeUndefined();
+    expect(earlyUpdate(stale, { ...install, wine: true } as typeof install)).toBeUndefined();
+  });
+
+  it("is never one that was withdrawn, or older than what's installed", () => {
+    const pulled = { ...found(newest), withdrawn: [{ version: "1.3.0", reason: "Broken saves" }] } as unknown as Entry;
+    expect(updateFor(pulled, install)).toBeUndefined();
+    expect(earlyUpdate(found(newest), { ...install, version: "v1.3.1", releasedAt: 31 })).toBeUndefined();
+  });
+
+  it("waiting 48 hours, is never the update, only what the player can ask for early; not for a pinned app", () => {
+    expect(updateFor(waiting(newest), install)).toBeUndefined();
+    expect(hasUpdate(waiting(newest), install)).toBe(false);
+    expect(earlyRelease(waiting(newest), install)).toEqual(newest);
+    expect(earlyOffer(waiting(newest), install)).toEqual(newest);
+    expect(earlyOffer(waiting(newest), { ...install, updates: "pinned" as const })).toBeUndefined();
+    expect(earlyOffer(waiting(newest), { ...install, updates: "auto" as const })).toEqual(newest);
+    // Right away it's the update itself, so there's nothing more to offer.
+    expect(earlyOffer(found(newest), install)).toBeUndefined();
+    const pulled = { ...waiting(newest), withdrawn: [{ version: "1.3.0", reason: "Broken saves" }] } as unknown as Entry;
+    expect(earlyOffer(pulled, install)).toBeUndefined();
+  });
+
+  it("keeps to what the player said of the app: pinned, skipped or gone back from", () => {
+    expect(hasUpdate(found(newest), { ...install, updates: "pinned" as const })).toBe(false);
+    expect(hasUpdate(found(newest), { ...install, declined: "1.3.0" })).toBe(false);
+    expect(skipped(found(newest), { ...install, skip: "v1.3.0" })).toBe(true);
+  });
+
+  it("isn't one any more once Quiver verified it, as a main release or a pre-release", () => {
+    // 1.3.0 verified as a pre-release since it was looked up: an app on main releases has no update.
+    const pre = { ...found(newest), verifiedPrerelease: { ...newest, prerelease: true } } as unknown as Entry;
+    expect(updateFor(pre, install)).toBeUndefined();
+    expect(hasUpdate(pre, install)).toBe(false);
+    expect(earlyOffer({ ...waiting(newest), verifiedPrerelease: newest } as unknown as Entry, install)).toBeUndefined();
+    expect(earlyGet({ ...listed, early: { of: earlyKey(listed, undefined)!, release: newest, now: true }, verifiedPrerelease: newest } as unknown as Entry)).toBeUndefined();
+    // Verified as its newest main release: the verified update, as any.
+    expect(earlyRelease({ ...found(newest), verified: { ...newest, prerelease: false, pinned: true } }, install)).toBeUndefined();
+  });
+
+  it("is looked up again once the app's choice of pre-releases changes", () => {
+    const main = found(newest);
+    expect(withEarlyFor(main, false)).toBe(main);
+    expect(withEarlyFor(main, true).early).toBeUndefined();
+    const withPre = { ...main, early: { ...main.early, pre: true as const } };
+    expect(withEarlyFor(withPre, true)).toBe(withPre);
+    expect(withEarlyFor(withPre, false).early).toBeUndefined();
+    expect(withEarlyFor(listed, true)).toBe(listed);
+  });
+});
+
 describe("naming an app being played in usage data", () => {
   it("gives a catalog app's version", () => {
     expect(playedRef(appRef("port", "test-port"), "v1.2.0")).toEqual({ slug: "test-port", source: "catalog", version: "v1.2.0" });
@@ -340,4 +530,353 @@ describe("naming an app being played in usage data", () => {
     expect(playedRef(appRef("github:someone/private-port", "private-port"), "my-tag")).toEqual({ slug: null, source: "custom", version: null });
     expect(playedRef(appRef("local:abc", "my-game"), "1")).toEqual({ slug: null, source: "local", version: null });
   });
+});
+
+describe("moving the apps folder", () => {
+  const base = { version: "1.0.0", executables: [] };
+  const installs = {
+    here: { ...base, folder: "sm64" },
+    v3: { ...base, folder: "zelda", dir: "C:/QuiverLauncher3/Apps/Zelda64Recomp", inApps: true as const },
+    // Put on a drive of its own on purpose: in 3.x, or with Locate existing install.
+    placed: { ...base, folder: "mario", dir: "E:/Fast SSD/Mario" },
+    own:{ ...base, folder: "mine", dir: "D:/Games/Mine", local: true as const, program: "D:/Games/Mine/mine.exe" },
+    msi: { ...base, folder: "msi", dir: "C:/Program Files/Thing", installer: "msi" as const, program: "C:/Program Files/Thing/thing.exe" },
+  };
+
+  it("takes the apps folder's apps, and offers to bring in Quiver 3's, never one placed on purpose, the player's own or an installer's", () => {
+    expect(movableApps(installs)).toEqual({
+      inside: [{ id: "here", folder: "sm64" }],
+      elsewhere: [{ id: "v3", folder: "zelda", dir: "C:/QuiverLauncher3/Apps/Zelda64Recomp" }],
+      placed: 1,
+    });
+  });
+
+  it("drops the old folder once an app is in the apps folder under its own name, keeping the rest", () => {
+    expect(movedInside({ ...installs.v3, lastPlayed: 5 })).toEqual({ ...base, folder: "zelda", lastPlayed: 5 });
+  });
+
+  it("knows a 3.x app in 3.x's apps folder can come along, and one 3.x kept in a folder of its own can't", () => {
+    const entry = { slug: "zelda", launcher: { folderName: "zelda" } } as unknown as Parameters<typeof adoptedInstall>[1];
+    const old = { name: "Zelda", provider: "github", dir: "C:/Q3/Apps/Zelda", version: "1.0.0" };
+    expect(adoptedInstall({ ...old, inApps: true }, entry, "windows")?.inApps).toBe(true);
+    expect(adoptedInstall(old, entry, "windows")?.inApps).toBeUndefined();
+    // Brought over again by a launcher that knows, the same copy learns it.
+    expect(keptInstall({ ...base, folder: "zelda", dir: old.dir }, { ...base, folder: "zelda", dir: old.dir, inApps: true }).inApps).toBe(true);
+  });
+
+  it("marks 3.x's apps-folder installs that came over before it knew, and no other", () => {
+    const { v3: _, ...rest } = installs;
+    const before = { ...rest, v3: { ...base, folder: "zelda", dir: "C:/QuiverLauncher3/Apps/Zelda64Recomp" } };
+    const old = [
+      { name: "Zelda", provider: "github", dir: "C:/QuiverLauncher3/Apps/Zelda64Recomp", version: "1.0.0", inApps: true },
+      { name: "Mario", provider: "github", dir: "E:/Fast SSD/Mario", version: "1.0.0" },
+    ];
+    const after = markedInApps(before, old);
+    expect(after.v3.inApps).toBe(true);
+    expect(after.placed).toBe(before.placed);
+    expect(markedInApps(after, old)).toBe(after);
+  });
+
+  it("marks an install in any of 3.x's apps folders, though the library brought over doesn't list it", () => {
+    const { v3: _, ...rest } = installs;
+    const before = { ...rest, v3: { ...base, folder: "Emerald", dir: "/home/deck/.local/share/QuiverLauncher/Apps/Emerald" } };
+    const after = markedInApps(before, [], ["/home/deck/.local/share/QuiverLauncher/Apps"]);
+    expect(after.v3.inApps).toBe(true);
+    // One the player placed elsewhere stays theirs.
+    expect(after.placed).toBe(before.placed);
+    expect(markedInApps(before, [], ["/home/deck/Downloads/quiver current/Apps"])).toBe(before);
+  });
+});
+
+describe("two library entries in one folder", () => {
+  const base = { version: "1.0.0", executables: [] };
+  const shared = "/home/deck/Downloads/quiver current/Apps/YuGiOh-Recompiled";
+  const installs = {
+    old: { ...base, folder: "YuGiOh-Recompiled", dir: shared, inApps: true as const },
+    renamed: { ...base, folder: "YuGiOhRecomp", dir: shared, inApps: true as const },
+    other: { ...base, folder: "Banjo", dir: "/home/deck/Downloads/quiver current/Apps/Banjo", inApps: true as const },
+  };
+  const appsDir = "/home/deck/apps";
+
+  it("finds the others in an install's folder", () => {
+    expect(twinsOf(installs, "old", appsDir)).toEqual(["renamed"]);
+    expect(twinsOf(installs, "other", appsDir)).toEqual([]);
+    // The default folder's own, by their folder there.
+    expect(twinsOf({ a: { ...base, folder: "Game" }, b: { ...base, folder: "Game" }, c: { ...base, folder: "Other" } }, "a", appsDir)).toEqual(["b"]);
+  });
+
+  it("moves a shared folder once, and the others go where it went", () => {
+    const { apps, twins } = oncePerFolder(
+      Object.keys(installs).map((id) => ({ id })),
+      installs,
+      appsDir,
+    );
+    expect(apps.map((a) => a.id)).toEqual(["old", "other"]);
+    expect(twins.get("old")).toEqual(["renamed"]);
+    // Into the default under the first's own name: it's one of the folder's own, and the other has its path.
+    const moved = withTwins({ ...installs, old: movedInside(installs.old) }, "old", ["renamed"], appsDir);
+    expect(moved.renamed).toEqual({ ...base, folder: "YuGiOhRecomp", dir: "/home/deck/apps/YuGiOh-Recompiled", inApps: true });
+    // Into a console folder: the other's there too, and in it.
+    const grouped = withTwins({ ...installs, old: { ...installs.old, dir: "/home/deck/apps/Ports/PS1/YuGiOh-Recompiled", group: "Ports/PS1" } }, "old", ["renamed"], appsDir);
+    expect(grouped.renamed).toEqual({ ...base, folder: "YuGiOhRecomp", dir: "/home/deck/apps/Ports/PS1/YuGiOh-Recompiled", inApps: true, group: "Ports/PS1" });
+    // One with the same folder name is the default folder's own too.
+    const same = withTwins({ a: { ...base, folder: "Game" }, b: { ...base, folder: "Game", dir: "/x/Game", inApps: true as const } }, "a", ["b"], appsDir);
+    expect(same.b).toEqual({ ...base, folder: "Game" });
+    // To a folder of the player's: no longer in an apps folder.
+    expect(withTwins({ ...installs, old: { ...base, folder: "YuGiOh-Recompiled", dir: "/mnt/sd/YuGiOh-Recompiled" } }, "old", ["renamed"], appsDir).renamed).toEqual({
+      ...base,
+      folder: "YuGiOhRecomp",
+      dir: "/mnt/sd/YuGiOh-Recompiled",
+    });
+  });
+
+  it("knows a copy put in the app's folder where the folder went", () => {
+    const install = { ...base, folder: "Game", copies: { rom: { path: "D:/Roms/game.z64", placed: "C:\\Apps\\Game\\data\\baserom.z64", at: 1 }, disc: { path: "D:/Roms/disc.iso", at: 1 } } };
+    const moved = withCopiesIn(install, "c:/Apps/Game", "E:\\Ports\\N64\\Game");
+    expect(moved.copies?.rom.placed).toBe("E:\\Ports\\N64\\Game\\data\\baserom.z64");
+    expect(moved.copies?.disc).toBe(install.copies.disc);
+    // One placed in the system's folders stays where it is.
+    const outside = { ...base, folder: "Game", copies: { rom: { path: "/roms/a.z64", placed: "/home/deck/.local/share/game/a.z64", at: 1 } } };
+    expect(withCopiesIn(outside, "/apps/Game", "/sd/Game").copies?.rom.placed).toBe("/home/deck/.local/share/game/a.z64");
+  });
+
+  it("sorts a shared folder into its console folder once", () => {
+    const catalog = { a: { id: "a", projectType: "port", consoles: ["n64"] }, b: { id: "b", projectType: "port", consoles: ["n64"] } } as const;
+    const sorted = unsortedApps({ a: { ...base, folder: "Game" }, b: { ...base, folder: "Game" } }, appsDir, catalog as never);
+    expect(sorted.map((a) => a.id)).toEqual(["a"]);
+  });
+});
+
+describe("several apps folders", () => {
+  const base = { version: "1.0.0", executables: [] };
+  const installs = {
+    here: { ...base, folder: "sm64" },
+    zelda: { ...base, folder: "zelda", dir: "C:/QuiverLauncher3/Apps/Zelda64Recomp", inApps: true as const },
+    // The same folder written the Windows way, as a move records it.
+    mario: { ...base, folder: "mario", dir: "C:\\QuiverLauncher3\\Apps\\mario", inApps: true as const },
+    placed: { ...base, folder: "kart", dir: "E:/Fast SSD/Kart" },
+    msi: { ...base, folder: "msi", dir: "C:/Program Files/Thing", installer: "msi" as const, program: "C:/Program Files/Thing/thing.exe" },
+  };
+
+  it("lists the default first, then each folder apps are kept in, never one chosen for a single app", () => {
+    const folders = appsFolders(installs, "D:\\Games");
+    expect(folders.map((f) => [f.path, f.default, f.apps.map((a) => a.id)])).toEqual([
+      ["D:\\Games", true, ["here"]],
+      ["C:/QuiverLauncher3/Apps", false, ["zelda", "mario"]],
+    ]);
+  });
+
+  it("keeps the default's apps where they are before another folder becomes the default", () => {
+    const kept = keptWhereTheyAre(installs, "D:\\Games\\");
+    expect(kept.here).toEqual({ ...installs.here, dir: "D:\\Games\\sm64", inApps: true });
+    expect(kept.zelda).toBe(installs.zelda);
+    expect(appsFolders(kept, "E:\\New").map((f) => f.path)).toEqual(["E:\\New", "C:/QuiverLauncher3/Apps", "D:\\Games"]);
+  });
+
+  it("gives the new default back the apps in it under their own name, and keeps one under another name where it is", () => {
+    const within = {
+      a: { ...base, folder: "zelda", dir: "E:\\New\\zelda", inApps: true as const },
+      b: { ...base, folder: "kart", dir: "E:\\New\\kart 2", inApps: true as const },
+    };
+    const owned = ownedBy(within, "e:/new/");
+    expect(owned.a).toEqual({ ...base, folder: "zelda" });
+    expect(owned.b).toBe(within.b);
+  });
+
+  it("refuses a new default inside another apps folder, or around one", () => {
+    const folders = appsFolders(installs, "D:\\Games");
+    expect(folderClash("D:\\Games\\More", folders)).toContain("D:\\Games");
+    expect(folderClash("C:/", folders)).toContain("QuiverLauncher3");
+    expect(folderClash("E:/Games", folders)).toBeNull();
+    // An apps folder already in the list can become the default.
+    expect(folderClash("C:/QuiverLauncher3/Apps", folders)).toBeNull();
+  });
+});
+
+describe("grouping new apps by console", () => {
+  const app = (projectType: string, consoles: string[] = [], basedOn?: string) => ({ id: "k1", projectType, consoles, ...(basedOn ? { basedOn: { console: basedOn } } : {}) }) as unknown as Entry;
+
+  it("puts each kind of app in its folder, a port in its console's by its short name", () => {
+    expect(groupFolder(app("emulator", ["n64", "gcn"]))).toBe("Emulators");
+    expect(groupFolder(app("tool", ["n64"]))).toBe("Tools");
+    expect(groupFolder(app("game", ["pc"]))).toBe("Games");
+    expect(groupFolder(app("port", ["n64"]))).toBe("Ports/N64");
+    expect(groupFolder(app("port", ["og xbox"]))).toBe("Ports/Xbox");
+    // The version it plays decides, over the consoles its games came out on.
+    expect(groupFolder(app("port", ["ps1", "n64"], "ps1"))).toBe("Ports/PS1");
+    expect(groupFolder(app("port", ["ps1", "n64"]))).toBe("Ports/Multi-console");
+    expect(groupFolder(app("port"))).toBe("Ports/Other");
+    // One the list doesn't know yet goes by the catalog's name for it, made a folder name.
+    expect(groupFolder(app("port", ["neo"]), { neo: "Neo Geo: AES" })).toMatch(/^Ports\/[^:/]+$/);
+    expect(groupFolder({ ...app("port", ["n64"]), id: "local:abc" })).toBeUndefined();
+  });
+
+  it("counts an app in a console folder in its apps folder, not as a folder of its own", () => {
+    const base = { version: "1.0.0", executables: [] };
+    const installs = {
+      plain: { ...base, folder: "sm64" },
+      grouped: { ...base, folder: "Zelda", dir: joinPath(joinPath("D:/Games", "Ports/N64"), "Zelda"), inApps: true as const, group: "Ports/N64" },
+      other: { ...base, folder: "Kart", dir: "E:/More/Emulators/Kart", inApps: true as const, group: "Emulators" },
+    };
+    expect(installs.grouped.dir).toBe("D:/Games/Ports/N64/Zelda");
+    expect(joinPath("D:\\Games", "Ports/N64")).toBe("D:\\Games\\Ports\\N64");
+    expect(rootOf(installs.other)).toBe("E:/More");
+    expect(rootOf(installs.grouped)).toBe("D:/Games");
+    expect(appsFolders(installs, "D:/Games").map((f) => [f.path, f.apps.map((a) => a.id)])).toEqual([
+      ["D:/Games", ["plain", "grouped"]],
+      ["E:/More", ["other"]],
+    ]);
+    // A move takes it with its console folder.
+    expect(movableApps(installs).elsewhere.find((a) => a.id === "grouped")?.group).toBe("Ports/N64");
+  });
+
+  it("lists the installed apps at the top of the default apps folder for sorting, none kept anywhere else", () => {
+    const base = { version: "1.0.0", executables: [] };
+    const port = (id: string) => ({ ...app("port", ["n64"]), id });
+    const installs = {
+      plain: { ...base, folder: "sm64" },
+      kept: { ...base, folder: "Kart", dir: "E:/More/Kart", inApps: true as const },
+      sorted: { ...base, folder: "Zelda", dir: "D:/Games/N64/Zelda", inApps: true as const, group: "N64" },
+      chosen: { ...base, folder: "Own", dir: "F:/Mine/Own" },
+      msi: { ...base, folder: "Setup", installer: "msi" as const },
+      gone: { ...base, folder: "Gone" },
+      "local:x": { ...base, folder: "Local", local: true as const },
+    };
+    const catalog = { plain: port("plain"), kept: port("kept"), sorted: port("sorted"), chosen: port("chosen"), msi: port("msi") };
+    expect(unsortedApps(installs, "D:/Games", catalog)).toEqual([
+      { id: "plain", folder: "sm64", to: "D:/Games" },
+    ]);
+  });
+});
+
+describe("sortPlan", () => {
+  const base = { version: "1.0.0", executables: [] };
+  const port = (id: string, consoles?: string[]) => ({ id, projectType: "port" as const, consoles });
+
+  it("moves an app the player added from a repository into the console they gave it, and says why the others stay", () => {
+    const installs = {
+      cat: { ...base, folder: "sm64" },
+      "github:a/recomp": { ...base, folder: "recomp" },
+      "github:a/bare": { ...base, folder: "bare" },
+      "github:a/picked": { ...base, folder: "picked" },
+      "local:x": { ...base, folder: "Mine", local: true as const },
+      setup: { ...base, folder: "Setup", installer: "msi" as const },
+      gone: { ...base, folder: "Gone" },
+    };
+    const catalog = {
+      cat: port("cat", ["n64"]),
+      "github:a/recomp": port("github:a/recomp", ["ps2"]),
+      "github:a/bare": port("github:a/bare"),
+      "github:a/picked": port("github:a/picked"),
+      "local:x": port("local:x", ["pc"]),
+      setup: port("setup", ["pc"]),
+    };
+    const plan = sortPlan(installs, "D:/Games", catalog as never, {}, { "github:a/picked": ["gcn"] });
+    expect(plan.moves.map((a) => a.id)).toEqual(["cat", "github:a/recomp", "github:a/picked"]);
+    expect(plan.stays).toEqual([
+      { id: "github:a/bare", folder: "bare", why: "noConsole" },
+      { id: "local:x", folder: "Mine", why: "own" },
+      { id: "setup", folder: "Setup", why: "installer" },
+      { id: "gone", folder: "Gone", why: "unknown" },
+    ]);
+  });
+
+  it("doesn't list as staying an app whose folder moves with another", () => {
+    const installs = { a: { ...base, folder: "Game" }, "github:b/c": { ...base, folder: "game" } };
+    const plan = sortPlan(installs, "D:/Games", { a: port("a", ["n64"]), "github:b/c": port("github:b/c") } as never);
+    expect(plan.moves.map((a) => a.id)).toEqual(["a"]);
+    expect(plan.stays).toEqual([]);
+  });
+
+  it("goes by the consoles the player chose over the catalog's and its Based on", () => {
+    const entry = { ...port("a", ["n64"]), basedOn: { console: "n64" } };
+    expect(groupFolder(withOwnConsoles(entry as never, ["ps1"]))).toBe("Ports/PS1");
+    expect(withOwnConsoles(entry, undefined)).toBe(entry);
+  });
+});
+
+describe("usableCatalog", () => {
+  const whole = { id: "a", games: [], tags: [] } as unknown as Entry;
+  it("keeps the same object when every entry is whole", () => {
+    const saved = { a: whole };
+    expect(usableCatalog(saved)).toBe(saved);
+  });
+  it("drops an entry saved from an answer with no app in it, so it's asked for again", () => {
+    // What beta.4 saved for an app with no slug: the page's withdrawn and what was looked up, and nothing else.
+    const broken = { withdrawn: undefined, forHere: { of: "1.0:own:files" } } as unknown as Entry;
+    expect(usableCatalog({ a: whole, b: broken, c: null as unknown as Entry })).toEqual({ a: whole });
+  });
+});
+
+describe("retagged", () => {
+  const item = (id: string, tags?: string[], account?: string): LibraryItem => ({ id, slug: id, addedAt: 0, overrides: tags ? { tags } : undefined, account });
+  it("renames a tag on every app that has it, whatever its case, once on an app with the new name already", () => {
+    const library = [item("a", ["PS3", "mine"], "u1"), item("b", ["ps3", "ps 3"]), item("c", ["other"])];
+    const [a, b, c] = retagged(library, "ps3", " ps 3 ");
+    expect(a.overrides?.tags).toEqual(["ps 3", "mine"]);
+    expect(a.pending?.tags).toBe(true);
+    expect(b.overrides?.tags).toEqual(["ps 3"]);
+    expect(b.pending).toBeUndefined();
+    expect(c).toBe(library[2]);
+  });
+  it("takes a tag off them all without a new name", () => {
+    const [a, b] = retagged([item("a", ["gog"]), item("b", ["GOG", "mine"])], "gog");
+    expect(a.overrides?.tags).toBeUndefined();
+    expect(b.overrides?.tags).toEqual(["mine"]);
+  });
+});
+
+describe("withOldPictures", () => {
+  const item = (overrides?: LibraryItem["overrides"]): LibraryItem => ({ id: "a", slug: "a", addedAt: 0, overrides });
+  it("fills each kind of picture the app has none of the player's for", () => {
+    const old = { icon: "file:icon-1.png", box: "file:box-1.jpg", cover: "file:cover-1.jpg" };
+    expect(withOldPictures(item(), old).overrides?.pictures).toEqual(old);
+    expect(withOldPictures(item({ pictures: { icon: "file:mine.png" } }), old).overrides?.pictures).toEqual({ ...old, icon: "file:mine.png" });
+    // A cover from the account's address counts as the player's.
+    expect(withOldPictures(item({ cover: "https://x.test/c.png" }), { cover: "file:cover-1.jpg" }).overrides?.pictures).toBeUndefined();
+  });
+  it("leaves an app with all of them as it is", () => {
+    const had = item({ pictures: { icon: "file:mine.png" } });
+    expect(withOldPictures(had, { icon: "file:icon-1.png" })).toBe(had);
+  });
+});
+
+describe("renamable", () => {
+  const base = { version: "1.0", folder: "ArmyOfTwo", executables: [] };
+  it("is an app at the top of the apps folder, or in its console's folder there", () => {
+    expect(renamable(base)).toBe(true);
+    expect(renamable({ ...base, dir: "C:\\Quiver\\apps\\Xbox 360\\ArmyOfTwo", inApps: true, group: "Xbox 360" })).toBe(true);
+  });
+  it("is a folder kept where it is, located or 3.x's, whatever it's called (#455)", () => {
+    expect(renamable({ ...base, dir: "D:\\Games\\Army of Two" })).toBe(true);
+    expect(renamable({ ...base, dir: "D:\\Old\\Apps\\ArmyOfTwo", inApps: true })).toBe(true);
+    expect(renamable({ ...base, dir: "C:\\Quiver\\apps\\Xbox 360\\Other", inApps: true, group: "Xbox 360" })).toBe(true);
+    expect(folderNameOf({ ...base, dir: "D:\\Games\\Army of Two" })).toBe("Army of Two");
+    expect(folderNameOf(base)).toBe("ArmyOfTwo");
+  });
+  it("isn't a program, the player's own files where they keep them, or a Windows installer's", () => {
+    expect(renamable(undefined)).toBe(false);
+    expect(renamable({ ...base, dir: "D:\\Games\\ArmyOfTwo", program: "game.exe" })).toBe(false);
+    expect(renamable({ ...base, dir: "D:\\Games\\Mine", local: true })).toBe(false);
+    expect(renamable({ ...base, installer: "msi" })).toBe(false);
+    expect(renamable({ ...base, installer: "setup" })).toBe(false);
+  });
+});
+
+describe("removedTags", () => {
+  const entry = { tags: ["recomp", "nintendo", "n64"] } as Parameters<typeof removedTags>[1];
+  const old = (tags: string[], catalogTags?: string[]) => ({ name: "Test Port", tags, catalogTags }) as Parameters<typeof removedTags>[0];
+  it("the catalog's tags a 3.x app no longer had, that the catalog still gives it", () => {
+    expect(removedTags(old(["N64", "mine"], ["recomp", "n64", "gone"]), entry)).toEqual(["recomp"]);
+  });
+  it("none from a 3.x that didn't keep the catalog's tags, or an app with them all", () => {
+    expect(removedTags(old(["mine"]), entry)).toEqual([]);
+    expect(removedTags(old(["recomp", "nintendo", "n64"], ["recomp", "nintendo", "n64"]), entry)).toEqual([]);
+  });
+});
+
+it("withAllTags gives an entry back the tags the player hid", () => {
+  const sent = { id: "a", tags: ["recomp", "nintendo"] } as Parameters<typeof withAllTags>[0];
+  expect(withAllTags(sent)).toBe(sent);
+  expect(withAllTags({ ...sent, tags: ["nintendo"], allTags: ["recomp", "nintendo"] })).toEqual(sent);
 });

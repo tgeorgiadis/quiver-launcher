@@ -51,6 +51,9 @@ test("up and down go by way of Search and Play, wherever they start across the s
   assert.equal(await focusedSelector(app), "card");
   await reach.press(app, "DPadUp");
   assert.equal(await focusedSelector(app), "search");
+  // Up from Search, on its row under the tabs and tools: the sort, not the tab over it.
+  await reach.press(app, "DPadUp");
+  assert.equal(await app.execute(() => document.activeElement?.getAttribute("aria-label")), "Sort");
   // From the far end of the top bar, down: Play too, not past it, or whatever's under that button.
   await reach.pressOn(app, ".topbar button[aria-label='Settings']", "DPadDown");
   const notices = await app.execute(() => document.querySelectorAll(".banner-stack button").length);
@@ -109,10 +112,36 @@ test("the library's sidebar layout", async () => {
   await reach.press(app, "South");
   await back();
   await everything("the sidebar layout");
-  // Down from Play stays in the app's pane, to its tabs, rather than going to the sidebar beside it.
+  // Down from Play stays in the app's pane, to its tabs, rather than going to the sidebar beside it. Which tab depends
+  // on how wide the centred row is: the one under Play.
   await app.execute(() => [...document.querySelectorAll(".app-actions button")].find((b) => b.innerText.trim() === "Play").focus());
   await reach.press(app, "DPadDown");
-  assert.equal(await reach.focused(app), 'button "Overview" in App sections');
+  assert.match(await reach.focused(app), /^button ".+" in App sections$/);
+});
+
+test("the library's sidebar rows line up: one icon size and one name column", async () => {
+  // A catalog app with a game (two names) beside one the player added (one name): the two used to have icons of different sizes.
+  const mixed = {
+    library: [...state.library, { id: "local:mine", slug: "", addedAt: Date.now() - 2 * 86400_000, local: { kind: "program", path: "/games/Test.exe", name: "Test" } }],
+    installs: state.installs,
+  };
+  const s2 = await openApp({ state: { ...mixed, settings: { library: { layout: "sidebar" } } }, height: 700 });
+  try {
+    // Both rows: the catalog app's shows once the catalog has loaded, a moment after the player's own.
+    await s2.page.locator(".sidebar-row").nth(1).waitFor();
+    const rows = await s2.page.evaluate(() =>
+      [...document.querySelectorAll(".sidebar-row")].map((row) => {
+        const icon = row.querySelector(".sidebar-icon")?.getBoundingClientRect();
+        const names = row.querySelector(".sidebar-names")?.getBoundingClientRect();
+        return { lines: row.getAttribute("data-lines"), icon: icon && `${icon.width}x${icon.height}`, left: names?.left };
+      }),
+    );
+    assert.deepEqual(rows.map((r) => r.lines).sort(), ["1", "2"], "a row with one name and one with two");
+    assert.equal(new Set(rows.map((r) => r.icon)).size, 1, `every row's icon is the same size (${rows.map((r) => r.icon).join(", ")})`);
+    assert.equal(new Set(rows.map((r) => r.left)).size, 1, `every row's name starts at the same place (${rows.map((r) => r.left).join(", ")})`);
+  } finally {
+    await s2.close();
+  }
 });
 
 test("A on a dropdown opens its options: the d-pad goes through them, A picks one, and B closes them and goes no further", async () => {

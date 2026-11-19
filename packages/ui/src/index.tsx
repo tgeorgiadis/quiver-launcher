@@ -5,7 +5,7 @@
  * `@quiverlauncher/ui/markdown`, kept apart because it's large.
  */
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
-import { ArrowUpRight, Clock, Gamepad2, ShieldAlert, ShieldCheck, ShieldX, type LucideIcon } from "lucide-react";
+import { ArrowUpRight, Clock, Gamepad2, PackageX, ShieldAlert, ShieldCheck, ShieldX, WandSparkles, type LucideIcon } from "lucide-react";
 import type { IconType } from "react-icons";
 import { FaAndroid, FaApple, FaLinux, FaWindows } from "react-icons/fa6";
 import { SiIos } from "react-icons/si";
@@ -173,6 +173,8 @@ const SPECIAL: Record<string, string> = {
   x360: "X360", xmen: "X-Men", yugioh: "Yu-Gi-Oh!", pokemon: "Pokémon", initiald: "Initial D", naomi2: "NAOMI 2",
   gbarecomp: "GBARecomp", psxrecomp: "PSXRecomp", rexglue: "ReXGlue", einhander: "Einhänder", dantes: "Dante's",
   soulcalibur: "SoulCalibur", "co-op": "Co-op",
+  // What a player installs is the source port; a decomp is the code it's built from.
+  decomp: "Source port", decompilation: "Source port",
 };
 const SMALL = new Set(["a", "an", "and", "in", "of", "on", "the", "to", "vs"]);
 
@@ -217,7 +219,7 @@ export const fullDate = (time: number) =>
 
 /**
  * One-line text that truncates with an ellipsis, then scrolls back and forth
- * while its card is hovered or focused, from a moment after: not on each card
+ * while its card (or, outside one, its button or link) is hovered or focused, from a moment after: not on each card
  * a controller passes on its way down a long grid, where starting and stopping
  * its animation had WebKit rebuild the page's layers with every step. `children` shows styled content in
  * place of `text`, which is then only its plain-text version for the tooltip.
@@ -226,11 +228,14 @@ export function ScrollingText({
   text,
   children,
   speed = 18,
+  onCut,
 }: {
   text: string;
   children?: ReactNode;
   /** Pixels a second; a long row of chips reads better faster than text. */
   speed?: number;
+  /** Told whether it's cut short, when that changes: to say it in full somewhere else too. */
+  onCut?: (cut: boolean) => void;
 }) {
   const outer = useRef<HTMLSpanElement>(null);
   const inner = useRef<HTMLSpanElement>(null);
@@ -244,8 +249,11 @@ export function ScrollingText({
     if (outer.current) observer.observe(outer.current);
     return () => observer.disconnect();
   }, [text, children]);
+  const cut = shift > 0;
+  useEffect(() => onCut?.(cut), [cut, onCut]);
   useEffect(() => {
-    const host = outer.current?.closest(".entry-card");
+    // Its card; or, outside a card (a game a search matched), the button or link it's in.
+    const host = outer.current?.closest(".entry-card") ?? outer.current?.closest("button, a");
     if (!host || !shift) return;
     let timer: ReturnType<typeof setTimeout> | undefined;
     const start = () => {
@@ -338,12 +346,30 @@ export function AiChip({ level }: { level?: Entry["aiLevel"] }) {
   );
 }
 
+/**
+ * Easy setup: the app lists the game files it needs, so Quiver Launcher finds the player's copy of the game and puts it
+ * where the app needs it, in place of following the project's README.
+ */
+export const hasEasySetup = (entry: { launcher?: { setupFiles?: readonly unknown[] } }) => Boolean(entry.launcher?.setupFiles?.length);
+
+/** A small chip saying an app has Easy setup. */
+export function EasySetupChip() {
+  return (
+    <span className="ai-chip easy-chip" title={t`Easy setup: Quiver Launcher finds your copy of the game and puts it where the app needs it.`}>
+      <WandSparkles size={10} aria-hidden="true" />
+      {t({ message: "Easy setup", comment: "Chip on apps whose game files Quiver Launcher finds and puts in place for the player" })}
+    </span>
+  );
+}
+
 /** What a catalog card shows of an app: an `Entry`, or the site's own catalog row. */
 export type CardEntry = {
   projectName: string;
   tags: readonly string[];
   supportedOS: readonly string[];
   aiLevel?: Entry["aiLevel"];
+  /** Its launcher setup: the game files it lists make it Easy setup. */
+  launcher?: { setupFiles?: readonly unknown[] };
   games: readonly { id: string; title: string }[];
   recommended: number;
   reportIssues: number;
@@ -353,7 +379,37 @@ export type CardEntry = {
   lastReleaseVersion?: string;
   libraryArt?: LibraryArt;
   artwork?: string;
+  /** `artwork` is its game's icon, not the app's own. */
+  artworkFromGame?: boolean;
 };
+
+/**
+ * The app's own icon, if it has one: its game's, which the catalog gives an app with none, is the same for every way
+ * to play that game, so it tells none of them apart.
+ */
+export const ownIcon = (entry: Pick<CardEntry, "artwork" | "artworkFromGame">) => (entry.artwork && !entry.artworkFromGame ? entry.artwork : undefined);
+
+/**
+ * A small icon, as beside a card's name: a resized copy, else the picture itself. An icon is often 512 pixels or more,
+ * or a Windows .ico of several sizes, for a picture shown at 18.
+ */
+export function iconSources(url: string): ImageSource[] {
+  return resizable(url) ? [{ src: resized(url, 48), srcSet: `${resized(url, 48)} 1x, ${resized(url, 96)} 2x` }, { src: url }] : [{ src: url }];
+}
+
+/**
+ * The app's own icon beside its name, so apps for the same game, with the same box art, tell apart at a glance. Gone if
+ * it can't be loaded. Give it a `key` of its `src`, so another app's icon in its place is tried afresh.
+ */
+export function TitleIcon({ src }: { src: string }) {
+  const [failed, setFailed] = useState(false);
+  if (failed) return null;
+  return (
+    <span className="card-icon" aria-hidden="true">
+      <SourcedImage sources={iconSources(src)} alt="" onFail={() => setFailed(true)} />
+    </span>
+  );
+}
 
 /** When its latest release came out ("Updated 3 days ago"), or that there's been none for a year or ever. */
 export function ReleaseAge({ entry }: { entry: CardEntry }) {
@@ -382,15 +438,21 @@ export function ReleaseAge({ entry }: { entry: CardEntry }) {
  * down, stopped, or flagged, so it's never installed).
  */
 export type ReleaseState = "verified" | "unverified" | "blocked";
+/** What a release's badge says: its state, or "empty" for one that isn't offered because it has nothing to install. */
+export type ReleaseBadgeState = ReleaseState | "empty";
+/** The badge for a release: "No files" in place of "Not offered" when it has none to install, which no wait changes. */
+export const badgeState = (release: { state: ReleaseState; assets: unknown[] }): ReleaseBadgeState =>
+  release.state === "unverified" && release.assets.length === 0 ? "empty" : release.state;
 // Put in the language when shown, not here, where the module loads before any is picked.
-const RELEASE_STATES: Record<ReleaseState, { icon: LucideIcon; label: MessageDescriptor; title: MessageDescriptor }> = {
-  verified: { icon: ShieldCheck, label: msg({ message: "Verified", comment: "A release Quiver checked" }), title: msg`Its files have each been out for 48 hours, a maintainer checked any that VirusTotal flagged, and Quiver Launcher checks every download against the file Quiver verified.` },
-  unverified: { icon: ShieldAlert, label: msg({ message: "Unverified", comment: "A release Quiver hasn't checked" }), title: msg`Quiver hasn't verified this release` },
+const RELEASE_STATES: Record<ReleaseBadgeState, { icon: LucideIcon; label: MessageDescriptor; title: MessageDescriptor }> = {
+  verified: { icon: ShieldCheck, label: msg({ message: "Available", comment: "A release Quiver Launcher offers: its files have been out for 48 hours" }), title: msg`Its files have each been out for 48 hours, which gives time to spot and withdraw a bad upload, and Quiver Launcher checks that every download hasn't changed since its release came out.` },
+  unverified: { icon: ShieldAlert, label: msg({ message: "Not offered", comment: "A release Quiver Launcher doesn't offer by itself, such as one still in its 48-hour wait" }), title: msg`Quiver Launcher doesn't offer this release by itself` },
   blocked: { icon: ShieldX, label: msg({ message: "Blocked", comment: "A release Quiver won't install" }), title: msg`Quiver won't install this release` },
+  empty: { icon: PackageX, label: msg({ message: "No files", comment: "A release with no files Quiver Launcher can install, such as one with only source code" }), title: msg`This release has no files Quiver Launcher can install` },
 };
 
-/** A release's state, green, orange or red, with its shield. */
-export function ReleaseBadge({ state, label, title }: { state: ReleaseState; label?: ReactNode; title?: string }) {
+/** A release's state, green, orange or red, with its shield; grey, with a crossed box, for one with no files. */
+export function ReleaseBadge({ state, label, title }: { state: ReleaseBadgeState; label?: ReactNode; title?: string }) {
   const { icon: Icon, ...words } = RELEASE_STATES[state];
   return (
     <span className={`release-badge ${state}`} title={title ?? i18n._(words.title)}>
@@ -430,11 +492,11 @@ export type CardLook = "box" | "wide";
 
 /**
  * A card's details, each shown or not (the launcher's Settings): its games, its kinds (its tags, as Quiver Launcher 3's
- * cards had over the name), what players said, when it was last updated, the platforms and the AI label, and New on an
- * app added lately.
+ * cards had over the name), what players said, when it was last updated, the platforms, the AI label, Easy setup, and New
+ * on an app added lately. And the app's own icon beside its name (`ownIcon`).
  */
-export type CardDetail = "subtitle" | "kinds" | "rating" | "updated" | "platforms" | "ai" | "new";
-export const CARD_DETAILS: readonly CardDetail[] = ["subtitle", "kinds", "rating", "updated", "platforms", "ai", "new"];
+export type CardDetail = "icon" | "subtitle" | "kinds" | "rating" | "updated" | "platforms" | "ai" | "setup" | "new";
+export const CARD_DETAILS: readonly CardDetail[] = ["icon", "subtitle", "kinds", "rating", "updated", "platforms", "ai", "setup", "new"];
 
 /** A box-art card's picture: the capsule; wide art shown whole over a blurred copy of itself; or the icon. */
 function BoxArt({ entry, sources, name }: { entry: CardEntry; sources?: readonly ImageSource[]; name: string }) {
@@ -496,17 +558,26 @@ export function EntryCardContent({
    */
   status?: ReactNode;
   /**
-   * The details it shows, each on or off. Unset, all of them, but for New on a box: a shelf of the newest says it, where
-   * a badge on every recent box was noise.
+   * The details it shows, each on or off. Unset (the website's cards), all of them, but for New on a box: a shelf of the
+   * newest says it, where a badge on every recent box was noise.
    */
   details?: readonly CardDetail[];
 }) {
   const wide = Boolean(entry.libraryArt?.header || entry.libraryArt?.capsule);
+  // The name cut short: its tooltip over the picture too, which a mouse is on more often than the name.
+  const [cut, setCut] = useState(false);
   // A heading isn't phrasing content, so it can't sit in a span.
   const Body = Title === "span" ? "span" : "div";
   const kinds = entry.tags.slice(0, 2).map((tag) => consoleName?.(tag) ?? tagLabel(tag));
   const shelf = status !== undefined;
   const shows = (detail: CardDetail) => (details ? details.includes(detail) : look === "wide" || detail !== "new");
+  const icon = shows("icon") ? ownIcon(entry) : undefined;
+  const title = (
+    <Title className={icon ? "card-title with-icon" : "card-title"}>
+      {icon && <TitleIcon key={icon} src={icon} />}
+      <ScrollingText text={entry.projectName} onCut={setCut} />
+    </Title>
+  );
   const score = <Score runs={entry.recommended} issues={entry.reportIssues} broken={entry.reportBroken} scroll />;
   const fresh = !badge && !shelf && shows("new") && isNew(entry.addedAt);
   const newBadge = <span className="cover-badge">{t({ message: "New", comment: "Badge on an app added to the catalog lately" })}</span>;
@@ -523,16 +594,23 @@ export function EntryCardContent({
   if (look === "box") {
     const games = shows("subtitle") && entry.games.map((game) => game.title).join(", ");
     const ai = shows("ai") && entry.aiLevel && entry.aiLevel !== "none";
+    const easy = shows("setup") && hasEasySetup(entry);
     const os = shows("platforms") ? entry.supportedOS.filter((id) => Object.hasOwn(OS_ICONS, id)) : [];
     return (
       <>
-        <span className="card-cover">
+        <span className="card-cover" title={cut ? entry.projectName : undefined}>
           {artwork ?? <BoxArt entry={entry} sources={coverSources} name={entry.projectName} />}
           {badge ? <span className="cover-badge">{badge}</span> : fresh && newBadge}
-          {!shelf && (ai || os.length > 0) && (
+          {/* The platforms in the corner the badge leaves, so the foot of the art is the chips' alone. */}
+          {!shelf && os.length > 0 && (
+            <span className="cover-platforms">
+              <PlatformIcons os={os} />
+            </span>
+          )}
+          {!shelf && (ai || easy) && (
             <span className="cover-strip">
+              {easy && <EasySetupChip />}
               {ai && <AiChip level={entry.aiLevel} />}
-              {os.length > 0 && <PlatformIcons os={os} />}
             </span>
           )}
         </span>
@@ -542,9 +620,7 @@ export function EntryCardContent({
               <ScrollingText text={kinds.join(" · ")} />
             </span>
           )}
-          <Title className="card-title">
-            <ScrollingText text={entry.projectName} />
-          </Title>
+          {title}
           {games && (
             <span className="card-subtitle">
               <ScrollingText text={games} />
@@ -557,7 +633,7 @@ export function EntryCardContent({
   }
   return (
     <>
-      <span className="card-cover">
+      <span className="card-cover" title={cut ? entry.projectName : undefined}>
         {artwork ?? <Artwork src={coverOf(entry)} sources={coverSources} name={entry.projectName} className={wide ? "cover-photo" : ""} />}
         {badge ? <span className="cover-badge">{badge}</span> : fresh && newBadge}
         <span className="card-arrow">
@@ -567,9 +643,7 @@ export function EntryCardContent({
       <Body className="card-body">
         {shelf ? (
           <>
-            <Title className="card-title">
-              <ScrollingText text={entry.projectName} />
-            </Title>
+            {title}
             <span className="card-status">{status}</span>
           </>
         ) : (
@@ -580,12 +654,11 @@ export function EntryCardContent({
                   <ScrollingText text={kinds.join(" · ")} />
                 </span>
               )}
+              {shows("setup") && hasEasySetup(entry) && <EasySetupChip />}
               {shows("ai") && <AiChip level={entry.aiLevel} />}
               {shows("platforms") && <PlatformIcons os={entry.supportedOS} />}
             </span>
-            <Title className="card-title">
-              <ScrollingText text={entry.projectName} />
-            </Title>
+            {title}
             {shows("subtitle") && entry.games.length > 0 && (
               <span className="based-on">
                 <span className="based-on-label">{t({ message: "Based on", comment: "Before the game(s) an app is made from" })}</span>

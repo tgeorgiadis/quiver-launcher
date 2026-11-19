@@ -9,6 +9,8 @@ import { openApp, stop } from "./app.js";
 const PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M/wHwAEBgIApD5fRAAAAABJRU5ErkJggg==", "base64");
 const LOCAL = "local:mine";
 const CUSTOM = "github:quiver/test-port";
+/** Added from its repository's old name: it has moved to quiver/test-port since, which GitHub's releases say (`movedTo`). */
+const MOVED = "github:oldowner/test-port";
 
 const state = {
   settings: {},
@@ -17,6 +19,7 @@ const state = {
     { id: "entry_test-remake", slug: "test-remake", addedAt: 3 },
     { id: LOCAL, slug: "", addedAt: 2, local: { kind: "program", path: "/games/Test.exe", name: "Test" } },
     { id: CUSTOM, slug: "", addedAt: 1, custom: { provider: "github", repository: "quiver/test-port", name: "My Port" } },
+    { id: MOVED, slug: "", addedAt: 0, custom: { provider: "github", repository: "oldowner/test-port", name: "Moved Port" } },
   ],
   installs: { [LOCAL]: { local: true, version: "", dir: "/games/", folder: "Test.exe", executables: [], program: "/games/Test.exe" } },
 };
@@ -27,12 +30,21 @@ before(async () => {
   ({ page } = s);
   await page.route("https://art.example/**", (route) => route.fulfill({ contentType: "image/png", body: PNG }));
   await page.route("**/cdn-cgi/image/**", (route) => route.fulfill({ contentType: "image/png", body: PNG }));
+  // GitHub still answers to the moved repository's old name, with its releases' pages under the new one.
+  await page.route("https://api.github.com/repos/oldowner/test-port/releases?**", (route) =>
+    route.fulfill({
+      headers: { "Access-Control-Allow-Origin": "*" },
+      json: [{ tag_name: "v1.0.0", draft: false, prerelease: false, published_at: "2025-06-01T00:00:00Z", html_url: "https://github.com/quiver/test-port/releases/tag/v1.0.0", assets: [] }],
+    }),
+  );
 });
 
 beforeEach(async () => {
   await page.unroute(FEED);
   await page.reload();
   await page.locator(".topbar").waitFor();
+  // A reload stops what the page before was still fetching, which WebKit reports as errors: the last test's, not this one's.
+  s.errors.length = 0;
 });
 
 after(async () => {
@@ -43,7 +55,7 @@ after(async () => {
 const card = (name) => page.locator("article").filter({ has: page.getByRole("button", { name, exact: true }) });
 /** The side panel: its own tab on a catalog app's page. */
 const toPanel = async () => {
-  const tab = page.getByRole("tab", { name: /On this computer/ });
+  const tab = page.getByRole("tab", { name: /Manage/ });
   await page.locator(".app-page h1").waitFor();
   if (await tab.count()) await tab.click();
   await page.locator(".app-panel").waitFor();
@@ -96,6 +108,25 @@ test("a repository the catalog lists is marked on its card, and its page offers 
   await page.locator('article [data-copy="listed"]').first().waitFor();
   await openPage("My Port");
   await page.getByRole("button", { name: "Switch to the catalog's" }).waitFor();
+});
+
+test("a repository moved to another owner since it was added still finds the catalog's app, under its name now", async () => {
+  await openPage("Moved Port");
+  await page.getByRole("button", { name: "Switch to the catalog's" }).waitFor();
+});
+
+test("an app the player added keeps its README and Manage as tabs of their own", async () => {
+  await card("My Port").getByRole("button", { name: "My Port", exact: true }).click();
+  await page.locator(".app-page h1").waitFor();
+  const tabs = page.locator('[aria-label="App sections"] [role="tab"]');
+  await tabs.first().waitFor();
+  assert.deepEqual(await tabs.allInnerTexts(), ["Overview", "Manage"]);
+  // Opened at its README; its setup waits on the other tab.
+  await page.locator(".readme").waitFor();
+  assert.equal(await page.locator(".computer-panel").count(), 0);
+  await page.getByRole("tab", { name: "Manage" }).click();
+  await page.locator(".computer-panel").waitFor();
+  assert.equal(await page.locator(".readme").count(), 0);
 });
 
 test("a repository with several catalog apps asks which, rather than offering the last", async () => {

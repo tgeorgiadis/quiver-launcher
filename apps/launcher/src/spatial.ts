@@ -325,6 +325,12 @@ function landing(direction: Direction, current: HTMLElement, best: HTMLElement, 
   const list = best.closest(".settings-nav, .library-sidebar");
   if (list && !list.contains(current) && !(vertical && best.closest(".sidebar-top"))) return among(list.querySelector<HTMLElement>("[aria-current]")) ?? best;
   if (!vertical) return best;
+  // Up from the library's search, on its row under the tabs and tools: the sort, the tools' first, rather than
+  // whichever tab is over the search. Not while a search orders by relevance, when the sort waits.
+  if (direction === "up" && current.closest(".library-bar .search-row")) {
+    const sort = among(document.querySelector<HTMLElement>(".library-sort select"));
+    if (sort) return sort;
+  }
   const play = among(document.querySelector<HTMLElement>(".continue-play"));
   if (play && !current.closest(".continue-action")) {
     const [from, over, to] = [current, play, best].map((el) => el.getBoundingClientRect());

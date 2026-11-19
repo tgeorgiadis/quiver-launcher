@@ -1,25 +1,28 @@
-import { startTransition, useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
-import { ArrowLeft, ArrowUp, BookOpen, ChevronDown, CircleArrowDown, CirclePlay, CircleUser, Compass, Download, Eye, EyeOff, FolderOpen, FolderPen, FolderSearch, History, Info, LayoutGrid, Library, LogOut, Monitor, PanelLeft, Mail, PackagePlus, Pencil, Pin, Play, Plus, Search, SettingsIcon, RotateCcw, ShieldAlert, ShieldCheck, ShieldX, SlidersHorizontal, Smile, Trash2, Tv, X } from "lucide-react";
-import type { AppQuery, Entry, GameMatch, Os, Page, ProjectType } from "@quiverlauncher/api";
+import { startTransition, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { ArrowLeft, ArrowUp, BookOpen, Save, ChevronDown, Cloud, CircleArrowDown, CircleCheck, CirclePlay, CircleUser, Compass, Disc3, Download, Eye, EyeOff, FolderInput, FolderOpen, FolderPen, FolderSearch, FolderSync, History, Info, MessagesSquare, LayoutGrid, Library, LogOut, PanelLeft, Mail, PackagePlus, Pencil, Pin, Play, Plus, Search, SettingsIcon, RotateCcw, ShieldAlert, ShieldCheck, ShieldX, SlidersHorizontal, Smile, Trash2, TriangleAlert, Tv, X } from "lucide-react";
+import type { AppQuery, Asset, Entry, GameMatch, Os, Page, ProjectType } from "@quiverlauncher/api";
 import { msg, plural, t } from "@lingui/core/macro";
 import { Plural, Trans } from "@lingui/react/macro";
 import { i18n } from "@quiverlauncher/i18n";
 import type { MessageDescriptor } from "@lingui/core";
 import { Artwork, EntryCard, OS_NAMES, PlatformIcons, ReleaseBadge, SourcedImage, heroSources } from "@quiverlauncher/ui";
-import { PORTABLE_FILE, availableOn, canGet, catalogOs, declinedUpdate, filesAddable, hasUpdate, locatable, noProgram, pulledVerified, renamable, skipped, tvModeOn, updateFor, useLauncher } from "./store";
+import { PORTABLE_FILE, availableOn, canGet, catalogOs, declinedUpdate, earlyGetOffer, earlyOffer, filesAddable, folderNameOf, hasUpdate, locatable, movable, noProgram, pulledVerified, renamable, rootOf, samePath, skipped, stillWaiting, tvModeOn, updateFor, updatesOf, useLauncher, type AppMove, type Choice } from "./store";
 import { TabPrompt } from "./pad-hints";
-import { Dialog, FilterPill, LibraryPage, Popover, filterLabel, withOverrides } from "./library";
+import { Dialog, FilterPill, LibraryPage, MultiPill, Popover, consoleOptions, filterLabel, pickedLabel, projectTypeOptions, withOverrides, type MultiOption } from "./library";
 import { BrowseCardOptions, useBrowseCards, useLibraryView, useSidebarFits } from "./library-view";
 import { DownloadsButton, DownloadsPage, DownloadsStrip, SidebarDownloads } from "./downloads-page";
 import { VersionsDialog, PanelFormHead, ProjectDetails, Readme, ReleasesTab, RepositoryLink, Shortcuts, Consoles, Tags, Versions, checkingOf, foldersOn, hoursFrom, scanText, useAppDetail, useListed, useReleaseHistory, useReleases } from "./detail";
 import { UpdateBanner, useUpdateCheck } from "./update";
 import { useAnnouncementsCheck } from "./announcements";
 import { AnnouncementBanner, AnnouncementsButton, AnnouncementsDialog, useTidyDismissals } from "./announcements-ui";
-import { LaunchOptionsButton } from "./launch-options";
+import { LaunchOptionsButton, outsideFolder } from "./launch-options";
 import { AddFilesButton, AddFilesDialogBody } from "./app-files";
 import { versionLabel, wayOffLabel } from "./versions";
 import { FeedbackBox, FeedbackTab, useOwnFeedback, type Intent } from "./feedback";
+import { CommunityButton, CommunityPage, DiscussionNavProvider, DiscussionPage, DiscussionsTab, useDiscussionCount } from "./discussions";
+import { CorrectionStatusPanel, ReportProblem } from "./correction";
 import { GamePage, GamesSection, gameVersionLabel, type GameLink } from "./game";
+import { WaysToPlay } from "./ways-to-play";
 import { Discover, MoreLikeThis } from "./discover";
 import { ErrorBoundary } from "./boundary";
 import { FORWARD, pageArea, toTop } from "./spatial";
@@ -27,29 +30,45 @@ import { track, trackScreen } from "./telemetry";
 import { TelemetryNotice, useTelemetrySetup } from "./telemetry-ui";
 import { useAccount, type CatalogDefaults } from "./account";
 import { native } from "./native";
-import { isLocal, isOwn } from "./custom";
+import { sizeLabel } from "./downloads";
+import { correctionClient } from "./corrections";
+import { isCustom, isLocal, isOwn } from "./custom";
 import { ArtFields, artValues, artValuesOk, fromArtValues } from "./custom-art";
 import { AddApp, ChangeGame, LinkToCatalog } from "./own";
 import { ModsButton } from "./mods";
 import { MediaTab } from "./media";
 import { PlayStats } from "./library-sidebar";
 import { useTopBarFit } from "./top-bar-fit";
-import { WindowControls, moveWindow, useWindowButtons } from "./window-bar";
+import { ResizeEdges, WindowControls, moveWindow, movesByPage, resizeEdges, useWindowButtons } from "./window-bar";
 import { SettingsPage, useDiscordPresence, useTray } from "./settings-page";
+import { MANAGE_TAGS } from "./tag-settings";
+import { OPEN_APP } from "./cloud-saves-page";
 import { OldLibrary } from "./old-library";
 import { Setup, showsSetup } from "./setup";
+import { savesChanged, savesOf, savesOn } from "./saves";
+import type { CloudUsage } from "./cloud-saves";
+import { SavesTab } from "./saves-tab";
 import { FilePicker } from "./file-picker";
 import { BrowseMenu, fileName } from "./card-menu";
 import { browseShown, hiddenMatches, toggleHidden, type HiddenView } from "./browse-hidden";
 import { closesOutside } from "./overlay";
-import { OwnCopyPanel, OwnCopyPrompt } from "./own-copy-setup";
+import { OwnCopyChips, OwnCopyPrompt } from "./own-copy-setup";
+import { copiesNeeded } from "./own-copy";
+import { GameCopiesNotice } from "./own-copy-settings";
+import { AppUpdatesNotice } from "./app-updates";
 
 type Tab = "library" | "browse";
 /** A page over the library or catalog: an app's, an original game's, Downloads or Settings. */
 /** Where an app's page opens: its Releases, with a version's notes open (Downloads' See changelog), or its Player feedback. */
 export type PageAt = { releases: string } | { feedback: true } | { readme: true };
-type View = { kind: "app"; entry: Entry; at?: PageAt } | { kind: "game"; game: GameLink } | { kind: "downloads" } | { kind: "settings" };
-const viewKey = (v: View) => (v.kind === "app" ? `app:${v.entry.id}` : v.kind === "game" ? `game:${v.game.slug}` : v.kind);
+type View =
+  | { kind: "app"; entry: Entry; at?: PageAt }
+  | { kind: "game"; game: GameLink }
+  | { kind: "downloads" }
+  | { kind: "settings"; section?: "library" | "copies" | "cloud" | "updates" }
+  | { kind: "community" }
+  | { kind: "discussion"; id: string };
+const viewKey = (v: View) => (v.kind === "app" ? `app:${v.entry.id}` : v.kind === "game" ? `game:${v.game.slug}` : v.kind === "discussion" ? `discussion:${v.id}` : v.kind);
 const shorten = (text: string) => (text.length > 40 ? `${text.slice(0, 39).trimEnd()}…` : text);
 /** "v1.2" for "1.2" or "v1.2": releases are tagged either way. */
 /** "v1.2" and "1.2" are the same release. */
@@ -104,6 +123,21 @@ export function App() {
   const openGame = useCallback((game: GameLink) => open({ kind: "game", game }), [open]);
   const openDownloads = useCallback(() => open({ kind: "downloads" }), [open]);
   const openSettings = useCallback(() => open({ kind: "settings" }), [open]);
+  const openCommunity = useCallback(() => open({ kind: "community" }), [open]);
+  const openDiscussion = useCallback((id: string) => open({ kind: "discussion", id }), [open]);
+  const discussionNav = useMemo(() => ({ openDiscussion, openCommunity, signIn: () => setSigningIn(true) }), [openDiscussion, openCommunity]);
+  // An app's Tags menu asks for the player's tags, in Settings' Library section (tag-settings.tsx).
+  useEffect(() => {
+    const manage = () => open({ kind: "settings", section: "library" });
+    window.addEventListener(MANAGE_TAGS, manage);
+    return () => window.removeEventListener(MANAGE_TAGS, manage);
+  }, [open]);
+  // Settings' Cloud saves lists apps, and each can ask for its page (cloud-saves-page.tsx).
+  useEffect(() => {
+    const page = (e: Event) => openApp((e as CustomEvent<Entry>).detail);
+    window.addEventListener(OPEN_APP, page);
+    return () => window.removeEventListener(OPEN_APP, page);
+  }, [openApp]);
   // Read from the stack as shown, not in setStack's updater, which React can run twice.
   const shown = useRef<View[]>([]);
   const goBack = useCallback(() => {
@@ -167,7 +201,19 @@ export function App() {
   /** What Back on the page at `i` returns to. */
   const backFrom = (i: number) => {
     const below = stack[i - 1];
-    return !below ? listName : below.kind === "app" ? below.entry.projectName : below.kind === "game" ? (below.game.title ?? t`Back`) : below.kind === "downloads" ? t`Downloads` : t`Settings`;
+    return !below
+      ? listName
+      : below.kind === "app"
+        ? below.entry.projectName
+        : below.kind === "game"
+          ? (below.game.title ?? t`Back`)
+          : below.kind === "downloads"
+            ? t`Downloads`
+            : below.kind === "community"
+              ? t`Community`
+              : below.kind === "discussion"
+                ? t`Back`
+                : t`Settings`;
   };
   // The Sidebar layout's foot says how downloads are going, in place of the strip.
   const { view: libraryView, set: setLibraryView } = useLibraryView();
@@ -175,13 +221,16 @@ export function App() {
   const sidebarFits = useSidebarFits();
   const strip = !(tab === "library" && libraryView.layout === "sidebar" && sidebarFits);
   const action = (entry: Entry) => <Action entry={entry} />;
+  const downloadAction = (entry: Entry) => <Action entry={entry} reasonElsewhere />;
   // Without the system's title bar, the top bar's empty space moves the window.
   const { buttons, maximized } = useWindowButtons();
   const topBar = useRef<HTMLElement>(null);
   useTopBarFit(topBar);
   return (
+    <DiscussionNavProvider value={discussionNav}>
     <div className={tv ? "shell tv-mode" : "shell"}>
-      <header ref={topBar} className={buttons === "none" ? "topbar" : "topbar with-window-controls"} onMouseDown={buttons === "window" ? moveWindow : undefined}>
+      {resizeEdges(config.os, buttons, maximized) && <ResizeEdges />}
+      <header ref={topBar} className={buttons === "none" ? "topbar" : "topbar with-window-controls"} onMouseDown={buttons === "window" ? (e) => moveWindow(e, movesByPage(config.x11, maximized)) : undefined}>
         {/* As on the website; it goes to the library. For a mouse: the Library tab beside it does the same for the d-pad and Tab. */}
         <button className="brand" tabIndex={-1} aria-label={t`Quiver Launcher: go to your library`} onClick={() => switchTab("library")}>
           <img src="/quiver-icon-96.png" alt="" width="34" height="34" />
@@ -225,9 +274,10 @@ export function App() {
             <Tv size={19} />
           </button>
         )}
+        <CommunityButton open={top?.kind === "community"} onOpen={openCommunity} />
         <AnnouncementsButton onOpen={() => setAnnouncementsOpen(true)} />
         <DownloadsButton open={top?.kind === "downloads"} onOpen={openDownloads} />
-        <button className={`icon settings-button${top?.kind === "settings" ? " active" : ""}`} aria-label={t`Settings`} aria-current={top?.kind === "settings" ? "page" : undefined} onClick={openSettings}>
+        <button className={`icon settings-button${top?.kind === "settings" ? " active" : ""}`} aria-label={t`Settings`} title={t`Settings`} aria-current={top?.kind === "settings" ? "page" : undefined} onClick={openSettings}>
           <SettingsIcon size={19} />
         </button>
         <WindowControls buttons={buttons} maximized={maximized} />
@@ -261,9 +311,13 @@ export function App() {
                 {view.kind === "app" ? (
                   <AppPage entry={view.entry} at={view.at} tv={tv} back={backFrom(i)} onClose={goBack} onOpenGame={openGame} onOpenApp={openApp} onSignIn={() => setSigningIn(true)} />
                 ) : view.kind === "downloads" ? (
-                  <DownloadsPage back={backFrom(i)} onBack={goBack} onOpen={openApp} action={action} />
+                  <DownloadsPage back={backFrom(i)} onBack={goBack} onOpen={openApp} action={downloadAction} />
                 ) : view.kind === "settings" ? (
-                  <SettingsPage back={backFrom(i)} onBack={goBack} onRunSetup={() => setSettingUp(true)} />
+                  <SettingsPage back={backFrom(i)} onBack={goBack} onRunSetup={() => setSettingUp(true)} start={view.section} />
+                ) : view.kind === "community" ? (
+                  <CommunityPage back={backFrom(i)} onBack={goBack} />
+                ) : view.kind === "discussion" ? (
+                  <DiscussionPage id={view.id} back={backFrom(i)} onBack={goBack} />
                 ) : (
                   <GamePage game={view.game} back={backFrom(i)} onBack={goBack} onOpenApp={openApp} action={action} />
                 )}
@@ -293,8 +347,12 @@ export function App() {
                 covered.current[0] = { y: 0, focus: null };
               }}
             />
+            {/* Once, for a player set up before Game copies: where their ROMs and disc images are. */}
+            <GameCopiesNotice onOpen={() => open({ kind: "settings", section: "copies" })} />
+            {/* Once, for a player set up before there was a choice: how apps update. */}
+            <AppUpdatesNotice onOpen={() => open({ kind: "settings", section: "updates" })} />
             {/* Across the window under the top bar in the Sidebar layout, edge to edge. */}
-            <AnnouncementBanner edge={!strip} onOpen={() => setAnnouncementsOpen(true)} />
+            <AnnouncementBanner edge={!strip} onOpen={() => setAnnouncementsOpen(true)} onOpenApp={openApp} />
           </div>
           {tab === "library" ? (
             <LibraryPage
@@ -333,14 +391,20 @@ export function App() {
       <UnverifiedPrompt />
       <UninstallPrompt />
       <RenameFolderPrompt />
+      <RenamePrompt />
+      <PlaceAppPrompt />
       <AddFilesPrompt />
       <ChangeVersion />
       <ProgramPrompt />
+      <SavesConflictPrompt />
+      <SavesPlacesPrompt />
+      <SavesFullPrompt onFreeUp={() => open({ kind: "settings", section: "cloud" })} />
       <OwnCopyPrompt />
       <Notice />
       {/* Over every dialog that asks for a file or a folder, in Steam's Game Mode. */}
       <FilePicker />
     </div>
+    </DiscussionNavProvider>
   );
 }
 
@@ -415,7 +479,7 @@ function BrowsePage({
   kept: KeptBrowse | null;
   onKeep: (kept: KeptBrowse) => void;
 }) {
-  const { client, config, library, remember, consoles, consoleNames, settings, setSettings, jobs } = useLauncher();
+  const { client, config, library, remember, consoles, consoleNames, settings, setSettings, jobs, withShownTags } = useLauncher();
   const saved = useAccount().user?.catalogDefaults;
   // As in Quiver Launcher 3, apps already in the library stay out of Browse unless the player asks for them.
   const showOwned = Boolean(settings.browseShowsLibrary);
@@ -452,11 +516,12 @@ function BrowsePage({
   // default" on the website), but the platform starts at what this computer
   // runs ("here"), since only those apps can be installed here.
   const fromSaved = (d?: CatalogDefaults): BrowseFilters => ({
-    os: "here",
+    platforms: ["here"],
     sort: SORTS.find((s) => s === d?.sort) ?? "added",
     projectTypes: d?.projectTypes?.filter((t): t is ProjectType => t in PROJECT_TYPES).slice(0, 4),
-    console: d?.console,
+    consoles: d?.console ? [d.console] : undefined,
     ai: d?.ai === "no-generated" || d?.ai === "no-ai" ? d.ai : undefined,
+    setup: d?.setup === "easy" ? "easy" : undefined,
   });
   const [filters, setFilters] = useState(() => kept?.filters ?? fromSaved(saved));
   // The account can load after Browse opens: its saved filters apply until the player picks their own.
@@ -479,13 +544,17 @@ function BrowsePage({
   // Only the newest request's answer is shown: an older one can arrive after it.
   const latest = useRef(0);
 
+  // The platforms to ask the catalog for: "here" as catalogOs has it, which on Linux is every one (its apps and
+  // Windows' run there), narrowed to what runs here once they come (`runs`).
+  const askedOs = filters.platforms?.map((p) => (p === "here" ? catalogOs(config.os) : p));
+  const platforms = askedOs?.some((p) => !p) ? undefined : [...new Set(askedOs as Os[])];
   function load(cursor?: string | null) {
     const request = ++latest.current;
     setLoading(true);
     setError(null);
     client
       // A search orders by relevance.
-      .apps({ ...filters, os: filters.os === "here" ? catalogOs(config.os) : filters.os, search: query, sort: searching ? undefined : filters.sort, cursor })
+      .apps({ ...filters, platforms, search: query, sort: searching ? undefined : filters.sort, cursor })
       .then((page) => {
         if (request !== latest.current) return;
         remember(page.items);
@@ -533,10 +602,12 @@ function BrowsePage({
     track("search_no_results", { query_length: typed.length, results: 0, games: games.length, filtered });
   }, [query, loading, error, gamesFor, pages, games]); // eslint-disable-line react-hooks/exhaustive-deps
   const set = (key: keyof typeof filters) => (e: { target: { value: string } }) => choose({ ...filters, [key]: e.target.value || undefined });
-  const brands = [...new Set(consoles.map((c) => c.brand))];
+  const makers = Object.fromEntries(consoles.map((c) => [c.id, c.brand]));
   const [filtersOpen, setFiltersOpen] = useState(false);
-  // How many filters differ from the defaults: any platform but what this computer runs counts.
-  const filtering = [filters.projectTypes?.length, filters.console, filters.ai, filters.os !== "here"].filter(Boolean).length;
+  // Only what this computer runs: the platforms' default.
+  const here = filters.platforms?.length === 1 && filters.platforms[0] === "here";
+  // How many filters differ from the defaults: any platforms but what this computer runs count.
+  const filtering = [filters.projectTypes?.length, filters.consoles?.length, filters.ai, filters.setup, !here].filter(Boolean).length;
   // An order the player picked (the sort, or a shelf's See all): the whole list in it, in place of the front page, as a
   // search or a filter has it; its pill goes back to the front page.
   const [sorted, setSorted] = useState(kept?.sorted ?? false);
@@ -548,13 +619,37 @@ function BrowsePage({
     ({ added: t`Recently added`, updated: t`Recently updated`, rating: t`Top rated`, name: t`Name A–Z` })[sort ?? "added"];
   // Apps in your library shown, a choice kept from before: on the Filters button's count, not a row of its own.
   const filterCount = filtering + (showOwned ? 1 : 0) + (hiddenView !== "hide" ? 1 : 0);
-  const types = filters.projectTypes ?? [];
+  // What each filter of several choices has picked, as its pill reads: unset while it's none.
+  const consolesOn = pickedLabel("console", filters.consoles, consoleNames);
+  const typesOn = pickedLabel("projectType", filters.projectTypes, consoleNames);
   /** A filter's pill: `on` names it while it differs from the default, and removing it goes back to the default. */
-  const pill = (key: "os" | "console" | "projectTypes" | "ai", on: string | undefined, select: ReactNode) =>
+  const pill = (key: "ai" | "setup", on: string | undefined, select: ReactNode) =>
     !on && !filtersOpen ? null : (
-      <FilterPill key={key} on={on} onClear={() => choose({ ...filters, [key]: key === "os" ? "here" : undefined })}>
+      <FilterPill key={key} on={on} onClear={() => choose({ ...filters, [key]: undefined })}>
         {select}
       </FilterPill>
+    );
+  /** A filter of several choices, as the website's: removing it goes back to the default, `none` picked when it's unset. */
+  const list = <K extends "platforms" | "consoles" | "projectTypes">(
+    key: K,
+    label: string,
+    text: string,
+    on: string | undefined,
+    options: MultiOption[],
+    { none, max }: { none?: BrowseFilters[K]; max?: number } = {},
+  ) =>
+    !on && !filtersOpen ? null : (
+      <MultiPill
+        key={key}
+        label={label}
+        text={text}
+        on={on}
+        onClear={() => choose({ ...filters, [key]: none })}
+        options={options}
+        picked={filters[key] ?? []}
+        onChange={(picked) => choose({ ...filters, [key]: picked.length || none ? picked : undefined })}
+        max={max}
+      />
     );
 
   // Linux's own alone, beside what it runs: "Linux only".
@@ -565,10 +660,12 @@ function BrowsePage({
     config.os === "linux"
       ? t({ message: "Linux and Windows (this computer)", comment: "Browse's platform filter on Linux: the apps it runs, its own and Windows' through Proton" })
       : t`${name} (this computer)`;
+  const platformsOn = filters.platforms?.length ? filters.platforms.map((p) => (p === "here" ? hereLabel : osChoice(p))).join(", ") : undefined;
   const inLibrary = new Set(library.map((i) => i.id));
   // What this computer runs, where the catalog was asked for more (Linux's and Windows' apps: catalogOs).
-  const matching = only ? (hiddenApps ?? []).filter((e) => hidden.has(e.id) && hiddenMatches(e, query, filters) && (!filters.os || filters.os === "here" || e.supportedOS.includes(filters.os))) : pages.flatMap((p) => p.items);
-  const all = matching.filter((e) => filters.os !== "here" || availableOn(e, config.os));
+  const runs = (e: Entry) => !filters.platforms?.length || filters.platforms.some((p) => (p === "here" ? availableOn(e, config.os) : e.supportedOS.includes(p)));
+  const matching = only ? (hiddenApps ?? []).filter((e) => hidden.has(e.id) && hiddenMatches(e, query, filters, makers)) : pages.flatMap((p) => p.items);
+  const all = matching.filter(runs);
   const shown = (o: { showOwned?: boolean; view?: HiddenView }) => browseShown(all, { owned, showOwned, hidden, view: hiddenView, ...o });
   const entries = shown({});
   // What the notes under the list offer to show: apps in the library, and hidden ones.
@@ -581,24 +678,9 @@ function BrowsePage({
   const typed = search.trim();
   return (
     <>
-      {/* As the library's: the search, then sort, Filters and Submit an app, all one height. */}
+      {/* The search in the row's middle, as large as the library's; sort, Filters and Submit an app at its end. */}
+      <div className="browse-head">
       <div className="browse-bar">
-        <label className="search browse-search">
-          <Search size={15} />
-          <input
-            // Not on a phone, where the focus brings up the keyboard over the page each time Browse opens.
-            autoFocus={config.os !== "android" && config.os !== "ios"}
-            aria-label={t`Search the catalog`}
-            placeholder={t`Search ports, games and tools`}
-            value={search}
-            onChange={(e) => onSearch(e.target.value)}
-          />
-          {search && (
-            <button type="button" className="search-clear" aria-label={t`Clear search`} onClick={() => onSearch("")}>
-              <X size={13} />
-            </button>
-          )}
-        </label>
         <div className="browse-tools page-tools">
           <span className="quiet-select">
             <select
@@ -638,6 +720,26 @@ function BrowsePage({
             <PackagePlus size={15} aria-hidden="true" /> <span><Trans>Submit an app</Trans></span>
           </button>
         </div>
+        {/* The search on a row of its own under the tools, centred and larger, as the library's. */}
+        <div className="search-row">
+          <label className="search browse-search">
+            <Search size={17} />
+            <input
+              // Not on a phone, where the focus brings up the keyboard over the page each time Browse opens.
+              autoFocus={config.os !== "android" && config.os !== "ios"}
+              aria-label={t`Search the catalog`}
+              placeholder={t`Search ports, games and tools`}
+              value={search}
+              onChange={(e) => onSearch(e.target.value)}
+            />
+            {search && (
+              <button type="button" className="search-clear" aria-label={t`Clear search`} onClick={() => onSearch("")}>
+                <X size={14} />
+              </button>
+            )}
+          </label>
+        </div>
+      </div>
       </div>
       {/*
         Filters: pills to pick from while open; the ones that differ from the defaults stay, each removable, while it's
@@ -650,65 +752,22 @@ function BrowsePage({
               <span className="pill-label">{sortName(filters.sort)}</span>
             </FilterPill>
           )}
-          {pill(
-            "os",
-            filters.os === "here" ? undefined : filters.os ? osChoice(filters.os) : t`All platforms`,
-            <select aria-label={t`Platform`} value={filters.os ?? ""} onChange={set("os")}>
-              {/* What it runs: on Linux, Linux's apps and Windows' (through Proton), as the library shows them. */}
-              <option value="here">{hereLabel}</option>
-              <option value="">{t`All platforms`}</option>
-              {Object.keys(OS_NAMES)
+          {/* What it runs ("here"): on Linux, Linux's apps and Windows' (through Proton), as the library shows them. None ticked is every platform. */}
+          {list(
+            "platforms",
+            t`Platform`,
+            here ? hereLabel : (platformsOn ?? t`All platforms`),
+            here ? undefined : (platformsOn ?? t`All platforms`),
+            [
+              { value: "here", label: hereLabel },
+              ...Object.keys(OS_NAMES)
                 .filter((id) => id !== config.os || config.os === "linux")
-                .map((id) => (
-                  <option key={id} value={id}>
-                    {osChoice(id as Os)}
-                  </option>
-                ))}
-            </select>,
+                .map((id) => ({ value: id, label: osChoice(id as Os) })),
+            ],
+            { none: ["here"] },
           )}
-          {pill(
-            "console",
-            filters.console && filterLabel("console", filters.console, consoleNames),
-            <select aria-label={t`Console`} value={filters.console ?? ""} onChange={set("console")}>
-              <option value="">{t`Any console`}</option>
-              {brands.map((brand) => (
-                <optgroup key={brand} label={brand === "OtherPlatforms" ? t`Other platforms` : brand}>
-                  <option value={`maker:${brand}`}>
-                    {brand === "OtherPlatforms" ? t`All other platforms` : t({ message: `All ${brand}`, comment: "Every console a maker made, as in All Nintendo" })}
-                  </option>
-                  {consoles
-                    .filter((c) => c.brand === brand)
-                    .map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                      </option>
-                    ))}
-                </optgroup>
-              ))}
-            </select>,
-          )}
-          {pill(
-            "projectTypes",
-            types.length ? types.map((t) => filterLabel("projectType", t, consoleNames)).join(", ") : undefined,
-            <select
-              aria-label={t`Project type`}
-              value={types.length > 1 ? "several" : (types[0] ?? "")}
-              onChange={(e) => choose({ ...filters, projectTypes: e.target.value ? [e.target.value as ProjectType] : undefined })}
-            >
-              <option value="">{t`Any project type`}</option>
-              {/* Several kinds come only from filters saved on the website. */}
-              {types.length > 1 && (
-                <option value="several" disabled>
-                  {types.map((type) => i18n._(PROJECT_TYPES[type])).join(", ")}
-                </option>
-              )}
-              {Object.entries(PROJECT_TYPES).map(([id, name]) => (
-                <option key={id} value={id}>
-                  {i18n._(name)}
-                </option>
-              ))}
-            </select>,
-          )}
+          {list("consoles", t`Console`, consolesOn ?? t`Any console`, consolesOn, consoleOptions(consoles, consoleNames), { max: MAX_SYSTEMS })}
+          {list("projectTypes", t`Project type`, typesOn ?? t`Any project type`, typesOn, projectTypeOptions())}
           {pill(
             "ai",
             filters.ai && filterLabel("ai", filters.ai, consoleNames),
@@ -716,6 +775,19 @@ function BrowsePage({
               <option value="">{t`Any AI use`}</option>
               <option value="no-generated">{t`Hide mostly AI-generated apps`}</option>
               <option value="no-ai">{t`Hide apps with any AI use`}</option>
+            </select>,
+          )}
+          {pill(
+            "setup",
+            filters.setup && t`Easy setup`,
+            <select
+              aria-label={t`Setup`}
+              title={t`Easy setup: Quiver Launcher finds your copy of the game and puts it where the app needs it.`}
+              value={filters.setup ?? ""}
+              onChange={set("setup")}
+            >
+              <option value="">{t`Any setup`}</option>
+              <option value="easy">{t`Easy setup only`}</option>
             </select>,
           )}
           {/* Up here with the filters, not under the list, which loads more as it's reached. */}
@@ -746,7 +818,7 @@ function BrowsePage({
           )}
           {filtering > 0 && (
             <span className="filter-actions">
-              <button type="button" className="text-button" onClick={() => choose({ os: "here", sort: filters.sort })}>
+              <button type="button" className="text-button" onClick={() => choose({ platforms: ["here"], sort: filters.sort })}>
                 <Trans>Clear all</Trans>
               </button>
             </span>
@@ -794,7 +866,7 @@ function BrowsePage({
             {entries.map((entry) => (
               <EntryCard
                 key={entry.id}
-                entry={entry}
+                entry={withShownTags(entry)}
                 {...looks.card(entry)}
                 // A download's progress, or what went wrong, shows over the art without hover.
                 className={jobs[entry.id] ? "busy" : undefined}
@@ -883,8 +955,9 @@ function BrowseAction({ entry, onOpen }: { entry: Entry; onOpen: (e: Entry, at?:
 }
 
 /** The one button a card needs: Add, Install, progress, Play or Update. `apart`: the page says why a release was withdrawn itself. */
-function Action({ entry, apart }: { entry: Entry; apart?: boolean }) {
-  const { config, library, installs, jobs, catalog, get, play, dismiss, setUpdates, cancel, locateInstall, setLaunch, setNotice, addToLibrary } = useLauncher();
+/** `reasonElsewhere`: a failure's reason is shown beside it (the Downloads page's row), so only its buttons here. */
+function Action({ entry, apart, reasonElsewhere }: { entry: Entry; apart?: boolean; reasonElsewhere?: boolean }) {
+  const { config, library, installs, jobs, catalog, get, play, dismiss, setUpdates, cancel, locateInstall, setLaunch, setNotice, addToLibrary, appMoves } = useLauncher();
   const job = jobs[entry.id];
   const install = installs[entry.id];
   // Its verified release was withdrawn too: Choose a version, in place of installing it.
@@ -892,6 +965,17 @@ function Action({ entry, apart }: { entry: Entry; apart?: boolean }) {
   // Get's arrow: the version, and on Linux the build, to get, in place of Get's own choice.
   const [getting, setGetting] = useState(false);
   const noWayOff = Boolean(pulledVerified(catalog[entry.id] ?? entry));
+  // On its page, Play says so when it opens the setup of the player's copy first (own-copy-setup.tsx's chip says which).
+  const setsUp = apart && install && foldersOn(config.os) && copiesNeeded(catalog[entry.id] ?? entry, install, config.os).length > 0;
+  const playLabel = setsUp ? (
+    <>
+      <Disc3 size={15} /> <Trans comment="Button that sets up the player's copy of the game, then starts the app">Set up and play</Trans>
+    </>
+  ) : (
+    <>
+      <Play size={15} /> <Trans comment="Button that starts an app">Play</Trans>
+    </>
+  );
   const choose = (
     <>
       <button className="primary" onClick={() => setVersions(true)}>
@@ -905,7 +989,11 @@ function Action({ entry, apart }: { entry: Entry; apart?: boolean }) {
     const other = versionLabel(instead?.version);
     return (
       <div className="job-error" role="alert">
-        <p>{job.error}</p>
+        {!reasonElsewhere && (
+          <p>
+            <TriangleAlert size={15} aria-hidden="true" /> <span>{job.error}</span>
+          </p>
+        )}
         <div className="row">
           {/* Its file was gone or not the one Quiver checked: the newest other verified release, in its place. */}
           {instead && (
@@ -945,10 +1033,18 @@ function Action({ entry, apart }: { entry: Entry; apart?: boolean }) {
           <button onClick={() => dismiss(entry.id)}>
             <Trans>Dismiss</Trans>
           </button>
+          {/* On its page, one not installed can be found on this computer instead: after the buttons that retry. */}
+          {!install && apart && locatable(entry.id, install, job) && foldersOn(config.os) && (
+            <button onClick={() => void locateInstall(entry)}>
+              <FolderSearch size={17} /> <Trans>Locate existing install…</Trans>
+            </button>
+          )}
         </div>
       </div>
     );
   }
+  const moving = appMoves[entry.id];
+  if (moving) return <MovingBar moving={moving} />;
   if (job) {
     const percent = job.total ? Math.round((job.received / job.total) * 100) : null;
     const name = entry.projectName;
@@ -1003,7 +1099,7 @@ function Action({ entry, apart }: { entry: Entry; apart?: boolean }) {
     return (
       <div className="row">
         <button className="primary" onClick={() => play(entry.id)}>
-          <Play size={15} /> <Trans comment="Button that starts an app">Play</Trans>
+          {playLabel}
         </button>
         <button onClick={() => get(catalog[entry.id] ?? entry)}>
           <Trans>Update to {next}</Trans>
@@ -1017,7 +1113,7 @@ function Action({ entry, apart }: { entry: Entry; apart?: boolean }) {
     return (
       <div className="row pinned-action">
         <button className="primary wide" onClick={() => play(entry.id)}>
-          <Play size={15} /> <Trans comment="Button that starts an app">Play</Trans>
+          {playLabel}
         </button>
         {install.unverified &&
           (install.blocked ? (
@@ -1025,7 +1121,7 @@ function Action({ entry, apart }: { entry: Entry; apart?: boolean }) {
               <ShieldX size={14} />
             </span>
           ) : (
-            <span className="unverified-mark" role="img" aria-label={t`${version} is unverified`} title={t`${version} is unverified`}>
+            <span className="unverified-mark" role="img" aria-label={t`${version} was installed before Quiver offered it`} title={t`${version} was installed before Quiver offered it`}>
               <ShieldAlert size={14} />
             </span>
           ))}
@@ -1040,7 +1136,7 @@ function Action({ entry, apart }: { entry: Entry; apart?: boolean }) {
   if (install)
     return (
       <button className="primary wide" onClick={() => play(entry.id)}>
-        <Play size={15} /> <Trans comment="Button that starts an app">Play</Trans>
+        {playLabel}
       </button>
     );
   if (!availableOn(entry, config.os)) {
@@ -1097,7 +1193,9 @@ function Action({ entry, apart }: { entry: Entry; apart?: boolean }) {
  * library's sidebar it has no way back, and shows the player's own play.
  */
 /** Each tab of an app's page's icon: outlined and grey, filled in the accent while it's open (app.css). */
-const TAB_ICONS = { overview: Info, media: CirclePlay, releases: CircleArrowDown, feedback: Smile, computer: Monitor };
+const TAB_ICONS = { overview: Info, media: CirclePlay, releases: CircleArrowDown, feedback: Smile, discussions: MessagesSquare, computer: SlidersHorizontal, saves: Save };
+/** A tab of an app's page: which, its name, and a count beside it. */
+type PageTab = readonly [keyof typeof TAB_ICONS, string, string | undefined];
 
 function AppPage({
   entry: opened,
@@ -1116,7 +1214,7 @@ function AppPage({
   at?: PageAt;
   /**
    * Over TV mode: a larger header with its art, read from across a room, and only the buttons for playing it there
-   * (its folder and uninstalling are on its On this computer tab); Back (B) goes home; the README waits to be asked for.
+   * (its folder and uninstalling are on its Manage tab); Back (B) goes home; the README waits to be asked for.
    */
   tv?: boolean;
   onClose?: () => void;
@@ -1125,7 +1223,7 @@ function AppPage({
   onOpenApp: (entry: Entry, at?: PageAt) => void;
   onSignIn: () => void;
 }) {
-  const { config, library, installs, jobs, catalog, remove, confirmUninstall, askRename, consoleNames, setUpdates, declineUpdate, get, switched, switchToCatalog, locateInstall } = useLauncher();
+  const { config, library, installs, jobs, catalog, remove, confirmUninstall, askRename, askName, managing, askManage, consoleNames, setUpdates, declineUpdate, get, switched, switchToCatalog, locateInstall, askPlace, appMoves, settings } = useLauncher();
   // An app the player added and switched to the catalog's shows the catalog's.
   const id = switched[opened.id] ?? opened.id;
   const item = library.find((i) => i.id === id);
@@ -1140,7 +1238,7 @@ function AppPage({
   const releases = useReleases(entry, site);
   const { own, refresh } = useOwnFeedback(entry, site);
   const { user } = useAccount();
-  const [tab, setTab] = useState<"overview" | "media" | "releases" | "feedback" | "computer">(
+  const [tab, setTab] = useState<"overview" | "media" | "releases" | "feedback" | "discussions" | "computer" | "saves">(
     at && "releases" in at ? "releases" : at && "feedback" in at ? "feedback" : "overview",
   );
   // Another tab: its content keeps the last one's height until it has come (nothing loading in it, and no longer
@@ -1175,6 +1273,12 @@ function AppPage({
       el.style.minHeight = "";
     };
   }, [tab]);
+  // Asked for from its menu (All options…): its Manage tab, once.
+  useEffect(() => {
+    if (managing !== id) return;
+    if (item || install) setTab("computer");
+    askManage(null);
+  }, [managing]); // eslint-disable-line react-hooks/exhaustive-deps
   const readmeAsked = !!at && "readme" in at;
   const [readme, setReadme] = useState(readmeAsked);
   // Every release, asked for once the player opens the Releases tab or points
@@ -1192,16 +1296,26 @@ function AppPage({
     if (!user) onSignIn();
   };
   const said = entry.recommended + entry.reportIssues + entry.reportBroken;
+  const threads = useDiscussionCount(entry.id, site);
   const checking = checkingOf(detail, releases);
   // Only when the app has videos, as on the website.
   const media = detail?.media ?? [];
-  const tabs = [
-    ["overview", t({ message: "Overview", comment: "Tab of an app's page" }), undefined],
-    ...(media.length ? ([["media", t({ message: "Media", comment: "Tab of an app's page, with its videos" }), String(media.length)]] as const) : []),
-    ["releases", t({ message: "Releases", comment: "Tab of an app's page" }), history.items && `${history.items.length}${history.more ? "+" : ""}`],
+  const overviewTab: PageTab = ["overview", t({ message: "Overview", comment: "Tab of an app's page" }), undefined];
+  const computerTab: PageTab = ["computer", t({ message: "Manage", comment: "Tab of an app's page: its shortcuts, setup and place in the library" }), undefined];
+  const savesTab: PageTab[] = install && savesOn(config.os) ? [["saves", t({ message: "Saves", comment: "Tab of an installed app's page: its save backups" }), undefined]] : [];
+  // One the player added has no site page, so only its README and what this computer has of it, each a tab as a
+  // catalog app's are; a local app has no README, so no tabs.
+  const ownTabs: PageTab[] = [...(isLocal(entry.id) ? [] : [overviewTab]), ...(item || install ? [computerTab] : []), ...savesTab];
+  const siteTabs: PageTab[] = [
+    overviewTab,
+    ...(media.length ? [["media", t({ message: "Media", comment: "Tab of an app's page, with its videos" }), String(media.length)] as const] : []),
+    ["releases", t({ message: "Releases", comment: "Tab of an app's page" }), history.items ? `${history.items.length}${history.more ? "+" : ""}` : undefined],
     ["feedback", t`Player feedback`, String(said)],
-    ...(item || install ? ([["computer", t`On this computer`, undefined]] as const) : []),
-  ] as const;
+    ["discussions", t({ message: "Discussions", comment: "Tab on an app's page: players' threads about it" }), threads === undefined ? undefined : threads >= 100 ? "100+" : String(threads)],
+    ...(item || install ? [computerTab] : []),
+    ...savesTab,
+  ];
+  const tabs = site ? siteTabs : ownTabs.length > 1 ? ownTabs : [];
   const hero = entry.libraryArt?.hero || entry.libraryArt?.header;
   const [problem, setProblem] = useState<string | null>(null);
   // The installed release was withdrawn: why, over the way off it.
@@ -1213,16 +1327,21 @@ function AppPage({
   const known = catalog[entry.id] ?? entry;
   const update = updateFor(known, install);
   const updateVersion = versionLabel(update?.version);
+  // Waiting 48 hours for updates: the newest release, which the player can take early for this app.
+  // Not installed: the same release, to install in the offered one's place.
+  const early = jobs[entry.id] ? undefined : (earlyOffer(known, install) ?? (canGet(known, config.os) ? earlyGetOffer(known, install) : undefined));
+  const earlyVersion = versionLabel(early?.version);
   const installedVersion = versionLabel(install?.version);
   const pulledVersion = versionLabel(pulled ? pulled.version : undefined);
   const blockedWhy = install?.blocked ?? "";
-  // What this computer has of the app, and its setup: a tab of its own for a catalog app, the page itself for one of the player's own.
+  const app = entry.projectName;
+  // What this computer has of the app, and its setup: a tab of its own, or the page itself for a local app.
   const computer = (item || install) && (
-    <section className="app-panel computer-panel" aria-label={t`On this computer`}>
+    <section className="app-panel computer-panel" aria-label={t({ message: "Manage", comment: "Tab of an app's page: its shortcuts, setup and place in the library" })}>
       {/* A tab says it already. */}
-      {!site && (
+      {!tabs.length && (
         <h3>
-          <Trans>On this computer</Trans>
+          <Trans comment="Tab of an app's page: its shortcuts, setup and place in the library">Manage</Trans>
         </h3>
       )}
       {/* A group with nothing in it for this app (no shortcuts on macOS, say) doesn't show. */}
@@ -1239,12 +1358,31 @@ function AppPage({
         <ModsButton entry={entry} />
         {install && foldersOn(config.os) && <LaunchOptionsButton id={entry.id} />}
         {filesAddable(install) && foldersOn(config.os) && !(job && !("error" in job)) && <AddFilesButton entry={entry} />}
-        {install?.installer === "msi" && !job && <ReinstallButton id={entry.id} />}
+        {install?.installer && !job && <ReinstallButton id={entry.id} />}
         {renamable(install) && foldersOn(config.os) && !(job && !("error" in job)) && (
           <button className="panel-action opens" onClick={() => askRename(entry)}>
             <FolderPen size={16} aria-hidden="true" /> <Trans>Rename folder</Trans>
           </button>
         )}
+        {/* Its own folder somewhere else, as its menu's Move to… and Install to… do. */}
+        {foldersOn(config.os) && !isLocal(entry.id) && !(job && !("error" in job)) &&
+          (appMoves[entry.id] ? (
+            <button className="panel-action" disabled>
+              <FolderInput size={16} aria-hidden="true" /> <Trans>Moving…</Trans>
+            </button>
+          ) : movable(install) ? (
+            <button className="panel-action opens" onClick={() => askPlace(entry)}>
+              <FolderInput size={16} aria-hidden="true" /> <Trans>Move to…</Trans>
+            </button>
+          ) : (
+            !install &&
+            canGet(known, config.os) &&
+            !pulledVerified(known) && (
+              <button className="panel-action opens" onClick={() => askPlace(entry)}>
+                <FolderInput size={16} aria-hidden="true" /> <Trans>Install to…</Trans>
+              </button>
+            )
+          ))}
         {item && !isLocal(item.id) && <Versions entry={entry} source={source} />}
         {locatable(entry.id, install, job) && foldersOn(config.os) && (
           <button className="panel-action opens" onClick={() => void locateInstall(entry)}>
@@ -1252,6 +1390,7 @@ function AppPage({
           </button>
         )}
         {item && <UpdatesChoice id={item.id} />}
+        {item && <PrereleasesChoice id={item.id} />}
       </div>
       {item && (
         <div className="panel-group">
@@ -1299,7 +1438,15 @@ function AppPage({
             <Artwork src={entry.artwork ?? entry.libraryArt?.logo} name={entry.projectName} />
             <div className="app-heading">
               <div className="eyebrow">{[eyebrow, PROJECT_TYPES[entry.projectType] && i18n._(PROJECT_TYPES[entry.projectType])].filter(Boolean).join(" / ").toLocaleUpperCase(i18n.locale)}</div>
-              <h1>{entry.projectName}</h1>
+              {/* In the library: a double click on its name, or the pencil beside it, renames it. */}
+              <div className="app-title">
+                <h1 onDoubleClick={item && !tv ? () => askName(item.id) : undefined}>{entry.projectName}</h1>
+                {item && !tv && (
+                  <button type="button" className="title-rename" aria-label={t`Rename ${app}`} title={t({ message: "Rename", comment: "Button beside an app's name on its page: gives it a name of the player's own" })} onClick={() => askName(item.id)}>
+                    <Pencil size={15} aria-hidden="true" />
+                  </button>
+                )}
+              </div>
               {entry.games.length > 0 && (
                 <div className="based-on">
                   <span className="based-on-label">
@@ -1312,6 +1459,8 @@ function AppPage({
                     </button>
                   ))}
                   {entry.basedOn && <span className="based-on-version">{gameVersionLabel(entry.basedOn, consoleNames)}</span>}
+                  {/* The other apps that play its game, best first: which is best is easy to miss on the game's page alone. */}
+                  {site && <WaysToPlay entry={entry} onOpenApp={onOpenApp} onOpenGame={onOpenGame} />}
                 </div>
               )}
               {entry.description && <p className="app-tagline">{entry.description}</p>}
@@ -1331,8 +1480,8 @@ function AppPage({
                     {isOwn(entry.id)
                       ? t`${verifiedVersion} · not checked by Quiver`
                       : entry.verified.pinned
-                        ? t`${verifiedVersion} · verified`
-                        : t`${verifiedVersion} · files can't be verified`}
+                        ? verifiedVersion
+                        : t`${verifiedVersion} · downloads can't be checked`}
                   </span>
                 )}
                 {install && !install.local && (
@@ -1344,7 +1493,7 @@ function AppPage({
                   (install.blocked ? (
                     <ReleaseBadge state="blocked" title={t`Quiver blocked it: ${blockedWhy}`} />
                   ) : (
-                    <ReleaseBadge state="unverified" title={t`Installed before Quiver verified it`} />
+                    <ReleaseBadge state="unverified" title={t`Installed before Quiver offered it`} />
                   ))}
               </div>
             )}
@@ -1364,7 +1513,7 @@ function AppPage({
             <div className="app-actions" data-autofocus={tv || undefined}>
               <Action entry={entry} apart />
               {/* Already on this computer: an app needn't be in the library, or downloaded, for this. */}
-              {!install && locatable(entry.id, install, job) && foldersOn(config.os) && (
+              {!install && locatable(entry.id, install, job) && foldersOn(config.os) && !(job && "error" in job) && (
                 <button onClick={() => void locateInstall(entry)}>
                   <FolderSearch size={17} /> <Trans>Locate existing install…</Trans>
                 </button>
@@ -1376,15 +1525,17 @@ function AppPage({
               )}
               {/* Out of Browse, as its card's menu has it. */}
               {site && !item && <BrowseHideButton entry={entry} />}
-              {/* Its files go; the app stays in the library to get again. Taking it out is under On this computer. */}
+              {/* Its files go; the app stays in the library to get again. Taking it out is under Manage. */}
               {install && !install.local && !(job && !("error" in job)) && !tv && (
                 <button className="danger" onClick={() => confirmUninstall({ entry })}>
                   <Trash2 size={17} /> <Trans>Uninstall</Trans>
                 </button>
               )}
+              {/* Something on the page wrong or missing: to the maintainers. */}
+              {site && <ReportProblem entry={entry} installed={install && !install.local ? install.version : undefined} onSignIn={onSignIn} />}
+              {install && foldersOn(config.os) && !(job && !("error" in job)) && <OwnCopyChips entry={entry} install={install} />}
             </div>
             {/* When it was added to the library is the sidebar's to say; here, what playing it has come to. */}
-            {install && foldersOn(config.os) && <OwnCopyPanel entry={entry} install={install} />}
             {!onClose && <PlayStats install={install} item={item} added={false} />}
             {problem && (
               <p className="job-error" role="status">
@@ -1426,7 +1577,7 @@ function AppPage({
                 </span>
                 {entry.verified && bare(entry.verified.version) !== bare(install.version) && (
                   <button type="button" className="link-button" onClick={() => get(entry)}>
-                    <Trans>Install the verified {verifiedVersion}</Trans>
+                    <Trans>Install {verifiedVersion} instead</Trans>
                   </button>
                 )}
               </p>
@@ -1435,10 +1586,10 @@ function AppPage({
               <p className="release-pinned-line differs" role="alert">
                 <ShieldAlert size={14} aria-hidden="true" />
                 <span>
-                  <Trans>The verified {installedVersion} isn&apos;t the file you installed.</Trans>
+                  <Trans>The {installedVersion} Quiver offers isn&apos;t the file you installed.</Trans>
                 </span>
                 <button type="button" className="link-button" onClick={() => get(entry)}>
-                  <Trans>Install the verified {installedVersion}</Trans>
+                  <Trans>Reinstall {installedVersion}</Trans>
                 </button>
               </p>
             )}
@@ -1468,6 +1619,20 @@ function AppPage({
                 </button>
               </p>
             )}
+            {early && (
+              <p className="release-pinned-line">
+                <span>
+                  {stillWaiting(early.releasedAt) ? (
+                    <Trans>{earlyVersion} is less than 48 hours old, so Quiver Launcher isn't offering it yet.</Trans>
+                  ) : (
+                    <Trans>{earlyVersion} is out, but Quiver Launcher isn't offering it yet.</Trans>
+                  )}
+                </span>
+                <button type="button" className="link-button" onClick={() => void get(known, undefined, { early: true })}>
+                  {install ? <Trans>Update early…</Trans> : <Trans>Install latest…</Trans>}
+                </button>
+              </p>
+            )}
             {update && install?.updates !== "pinned" && declinedUpdate(known, install) && (
               <p className="release-pinned-line">
                 <span>
@@ -1478,7 +1643,7 @@ function AppPage({
                 </button>
               </p>
             )}
-            {install && !install.local && install.updates === "auto" && skipped(known, install) && (
+            {install && !install.local && updatesOf(settings, install) === "auto" && skipped(known, install) && (
               <p className="release-pinned-line">
                 <span>
                   <Trans>Auto Update won&apos;t put {updateVersion} back. It installs the next new release.</Trans>
@@ -1498,7 +1663,7 @@ function AppPage({
         </div>
       </div>
       <div className="detail-bar">
-        {site && (
+        {tabs.length > 0 && (
           <div className="detail-tabs" role="tablist" aria-label={t`App sections`}>
             <TabPrompt step="prevTab" />
             {tabs.map(([key, label, count]) => {
@@ -1530,11 +1695,13 @@ function AppPage({
         )}
       </div>
       <div className="app-columns">
-        <div ref={content} className="app-content" role={site ? "tabpanel" : undefined}>
+        <div ref={content} className="app-content" role={tabs.length ? "tabpanel" : undefined}>
           {tab === "overview" && (
             <>
               {/* Short, general facts first, over the README, which can run long. */}
               {site && <ProjectDetails entry={entry} detail={detail} source={source} />}
+              {/* Under its facts, as on the website: something there wrong or missing, for maintainers to fix. */}
+              {site && <CorrectionStatusPanel entry={entry} />}
               {/* In TV mode, long and full of links: there when asked for. */}
               {tv && !readme ? (
                 <button type="button" className="panel-action opens tv-readme" onClick={() => setReadme(true)}>
@@ -1547,7 +1714,9 @@ function AppPage({
           )}
           {tab === "media" && <MediaTab videos={media} slug={entry.slug} />}
           {tab === "releases" && <ReleasesTab entry={entry} detail={detail} history={history} checking={checking} openVersion={at && "releases" in at ? at.releases : undefined} />}
-          {(site ? tab === "computer" : true) && computer}
+          {(tabs.length ? tab === "computer" : true) && computer}
+          {tab === "saves" && savesTab.length > 0 && <SavesTab entry={entry} />}
+          {tab === "discussions" && <DiscussionsTab entryId={entry.id} />}
           {tab === "feedback" && (
             <FeedbackTab
               entry={entry}
@@ -1576,7 +1745,9 @@ const PROJECT_TYPES: Record<string, MessageDescriptor> = {
 const SORTS = ["added", "updated", "rating", "name"] as const;
 /** Browse's catalog filters; several kinds of project come from saved filters. */
 /** The catalog's filters, with "here" for the platforms this computer runs (catalogOs). */
-type BrowseFilters = Omit<AppQuery, "search" | "cursor" | "limit" | "projectType" | "os"> & { os?: Os | "here" };
+type BrowseFilters = Omit<AppQuery, "search" | "cursor" | "limit" | "projectType" | "os" | "console" | "platforms"> & { platforms?: (Os | "here")[] };
+/** The most consoles and makers the catalog takes at once (the site's catalogFilters.ts). */
+const MAX_SYSTEMS = 8;
 /** Browse's filters as the player left them, and whether they picked its sort. */
 type KeptBrowse = { filters: BrowseFilters; sorted: boolean };
 
@@ -1591,28 +1762,57 @@ function ReinstallButton({ id }: { id: string }) {
 }
 
 /**
- * How an installed app updates on this computer. A local app has no releases
- * to update from; a Windows installer's setup waits for the player, so it
- * never updates by itself.
+ * How an installed app updates on this computer, whatever the player's default (Settings, Updates). A local app has
+ * no releases to update from; a Windows installer's setup waits for the player, so it never updates by itself.
  */
 function UpdatesChoice({ id }: { id: string }) {
-  const { installs, setUpdates } = useLauncher();
+  const { installs, settings, setUpdates } = useLauncher();
   const install = installs[id];
   if (!install || install.local) return null;
-  const auto = !install.installer;
+  const auto = !install.installer && !install.setup;
   const installedVersion = versionLabel(install.version);
+  const byDefault =
+    settings.autoUpdates && auto
+      ? t({ message: "Use my default (install automatically)", comment: "How an app updates: whatever Settings, Updates says, which is to install them automatically" })
+      : t({ message: "Use my default (offer them)", comment: "How an app updates: whatever Settings, Updates says, which is to offer new releases to install" });
   return (
     <label className="panel-field">
       <span className="field-label">
         <Trans comment="How an installed app gets new releases">Updates</Trans>
       </span>
       <select
-        value={install.updates === "auto" && !auto ? "ask" : (install.updates ?? "ask")}
-        onChange={(e) => setUpdates(id, e.target.value === "ask" ? undefined : (e.target.value as "auto" | "pinned"))}
+        value={install.updates === "auto" && !auto ? "ask" : (install.updates ?? "default")}
+        onChange={(e) => setUpdates(id, e.target.value === "default" ? undefined : (e.target.value as "auto" | "ask" | "pinned"))}
       >
+        <option value="default">{byDefault}</option>
         <option value="ask">{t({ message: "Offer them", comment: "Updates: offer new releases to install" })}</option>
         {auto && <option value="auto">{t`Install automatically`}</option>}
         <option value="pinned">{t`Always stay on ${installedVersion}`}</option>
+      </select>
+    </label>
+  );
+}
+
+/**
+ * Whether an installed app gets pre-releases, whatever the player's default (Settings, Updates). A version it's set to
+ * stay on wins over either.
+ */
+function PrereleasesChoice({ id }: { id: string }) {
+  const { installs, settings, setPrereleases } = useLauncher();
+  const install = installs[id];
+  if (!install || install.local || isCustom(id)) return null;
+  const byDefault = settings.prereleases
+    ? t({ message: "Use my default (include pre-releases)", comment: "Which releases an app gets: whatever Settings, Updates says, which is to include pre-releases" })
+    : t({ message: "Use my default (main releases only)", comment: "Which releases an app gets: whatever Settings, Updates says, which is main releases only" });
+  return (
+    <label className="panel-field">
+      <span className="field-label">
+        <Trans comment="Which of an app's releases it gets: main releases only, or pre-releases too">Releases</Trans>
+      </span>
+      <select value={install.prereleases ?? "default"} onChange={(e) => setPrereleases(id, e.target.value === "default" ? undefined : (e.target.value as "include" | "main"))}>
+        <option value="default">{byDefault}</option>
+        <option value="main">{t({ message: "Main releases only", comment: "Which releases an app gets: only the ones its developer didn't mark as pre-releases" })}</option>
+        <option value="include">{t({ message: "Include pre-releases", comment: "Which releases an app gets: pre-releases too" })}</option>
       </select>
     </label>
   );
@@ -1930,6 +2130,247 @@ function Notice() {
   );
 }
 
+/** Play, for an app whose saves changed both here and in the account since they last matched: which the player keeps. */
+/**
+ * The account had no room for a backup: said once, with the two ways to make some. The backup is on this computer
+ * either way, and is sent by itself once there's room.
+ */
+function SavesFullPrompt({ onFreeUp }: { onFreeUp: () => void }) {
+  const { savesFull: id, closeSavesFull: close, catalog, installs, cloudCatchUp, setNotice } = useLauncher();
+  const account = useAccount();
+  const api = account.cloudSaves;
+  const [usage, setUsage] = useState<CloudUsage | null>(null);
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    setUsage(null);
+    if (id && api) api.usage().then(setUsage, () => {});
+  }, [id, Boolean(api)]); // eslint-disable-line react-hooks/exhaustive-deps
+  if (!id || !api) return null;
+  const name = catalog[id]?.projectName ?? "";
+  const used = usage ? sizeLabel(usage.used) : "";
+  const limit = usage ? sizeLabel(usage.limit) : "";
+  // The app keeping the most, when it's installed here: its switch is this computer's to set.
+  const [largest] = usage?.apps ?? [];
+  const largestInstall = largest && installs[largest.entryId];
+  const largestName = largest?.name ?? "";
+  const largestSize = largest ? sizeLabel(largest.size) : "";
+  const count = largest?.copies.length ?? 0;
+  const turnOff = () => {
+    if (!largest || !largestInstall) return;
+    setBusy(true);
+    native
+      .savesCloudOff(savesOf(largest.entryId, largestInstall, catalog[largest.entryId]), true)
+      .then(() => api.remove({ entryId: largest.entryId }))
+      .then(
+        () => {
+          savesChanged(largest.entryId);
+          cloudCatchUp();
+          setNotice(t`Cloud saves are off for ${largestName}, and its copies were removed from your account.`);
+        },
+        () => setNotice(t`Couldn't reach your cloud saves. Check your connection and try again.`, { stays: true }),
+      )
+      .finally(() => (setBusy(false), close()));
+  };
+  return (
+    <Dialog label={t`Your cloud saves are full`} onClose={close}>
+      <div className="detail-body program-prompt saves-full">
+        <h2>
+          <Cloud size={18} aria-hidden="true" /> <Trans>Your cloud saves are full</Trans>
+        </h2>
+        <p className="muted">
+          {usage ? t`${used} of ${limit} used.` : null} {t`The newest backup of ${name} is on this computer only, and so is each one after it until there's room. Quiver sends it by itself then.`}
+        </p>
+        <div className="choices">
+          <button autoFocus disabled={busy} onClick={() => (close(), onFreeUp())}>
+            <span>
+              <strong>
+                <Trans>Free up space</Trans>
+              </strong>
+              <small>
+                <Trans>See what each app keeps in your account, and remove copies you don&apos;t need.</Trans>
+              </small>
+            </span>
+          </button>
+          {largest && largestInstall && (
+            <button disabled={busy} onClick={turnOff}>
+              <span>
+                <strong>{t`Turn off cloud saves for ${largestName}`}</strong>
+                <small>
+                  {plural(count, {
+                    one: `It keeps the most. Its # copy (${largestSize}) is removed from your account. Its saves and backups on this computer stay.`,
+                    other: `It keeps the most. Its # copies (${largestSize}) are removed from your account. Its saves and backups on this computer stay.`,
+                  })}
+                </small>
+              </span>
+            </button>
+          )}
+        </div>
+        <div className="row">
+          <button disabled={busy} onClick={close}>
+            <Trans>Not now</Trans>
+          </button>
+        </div>
+      </div>
+    </Dialog>
+  );
+}
+
+function SavesConflictPrompt() {
+  const { savesConflict: conflict, catalog, installs, jobs, get } = useLauncher();
+  if (!conflict) return null;
+  // Saves from a newer version than the one installed: updating first is the way that can't go wrong, when there's an update.
+  const latest = catalog[conflict.entry.id];
+  const update = conflict.newer && latest && !jobs[conflict.entry.id] ? updateFor(latest, installs[conflict.entry.id]) : undefined;
+  const updateTo = versionLabel(update?.version);
+  const madeWith = versionLabel(conflict.newer?.cloud);
+  const have = versionLabel(conflict.newer?.here);
+  const name = conflict.entry.projectName;
+  const when = (at: number) => new Date(at).toLocaleString(i18n.locale, { dateStyle: "medium", timeStyle: "short" });
+  const { cloud, here } = conflict;
+  // The other saves are the account's, or the ones in the player's sync folder (sync-folder.ts).
+  const folder = conflict.from === "folder";
+  const device = cloud.device;
+  const cloudWhen = when(cloud.madeAt);
+  const hereWhen = here ? when(here.at) : "";
+  return (
+    <Dialog label={t`Which saves of ${name}?`} onClose={() => conflict.answer(null)}>
+      <div className="detail-body program-prompt saves-conflict">
+        <h2>
+          {folder ? <FolderSync size={18} aria-hidden="true" /> : <Cloud size={18} aria-hidden="true" />} {t`Which saves of ${name} do you want to keep?`}
+        </h2>
+        {conflict.places?.length ? (
+          <>
+            <p className="muted">
+              {folder ? (
+                <Trans>The saves in your sync folder would go in a folder Quiver hasn&apos;t kept this app&apos;s saves in on this computer. Only use them if this is where the app saves:</Trans>
+              ) : (
+                <Trans>Your cloud saves would go in a folder Quiver hasn&apos;t kept this app&apos;s saves in on this computer. Only use them if this is where the app saves:</Trans>
+              )}
+            </p>
+            <SavePlaces places={conflict.places} />
+          </>
+        ) : conflict.newer ? (
+          <p className="muted">
+            {folder
+              ? update
+                ? t`The saves in your sync folder were made with ${madeWith} of this app, and this computer has ${have}. An older version may not be able to load them. Update first, then play.`
+                : t`The saves in your sync folder were made with ${madeWith} of this app, and this computer has ${have}. An older version may not be able to load them. The ones you don't pick are kept as a backup on the app's Saves tab.`
+              : update
+                ? t`Your cloud saves were made with ${madeWith} of this app, and this computer has ${have}. An older version may not be able to load them. Update first, then play.`
+                : t`Your cloud saves were made with ${madeWith} of this app, and this computer has ${have}. An older version may not be able to load them. The ones you don't pick are kept as a backup on the app's Saves tab.`}
+          </p>
+        ) : (
+          <p className="muted">
+            {t`${name} was played on this computer and on another one since your saves last synced, so there are two different sets of saves now. Choose which to continue from. The other set is kept as a backup on the app's Saves tab.`}
+          </p>
+        )}
+        <div className="choices">
+          {update && latest && (
+            <button
+              autoFocus
+              className="saves-update"
+              onClick={() => {
+                // Nothing starts and the saves stay as they are: after the update, Play brings the other saves in.
+                conflict.answer(null);
+                void get(latest);
+              }}
+            >
+              <span>
+                <strong>{t`Update to ${updateTo}`}</strong>
+                <small>
+                  {folder ? <Trans>Then press Play, and the saves in your sync folder are put in place.</Trans> : <Trans>Then press Play, and your cloud saves are put in place.</Trans>}
+                </small>
+              </span>
+            </button>
+          )}
+          <button autoFocus={!update} onClick={() => conflict.answer("cloud")}>
+            <span>
+              <strong>
+                {folder ? (
+                  conflict.newer ? (
+                    <Trans>Use the saves in my sync folder anyway</Trans>
+                  ) : (
+                    <Trans>Use the saves in my sync folder</Trans>
+                  )
+                ) : conflict.newer ? (
+                  <Trans>Use my cloud saves anyway</Trans>
+                ) : (
+                  <Trans>Use my cloud saves</Trans>
+                )}
+              </strong>
+              <small>{conflict.newer ? t`From ${device}, ${cloudWhen}. The saves here are backed up first.` : t`From ${device}, ${cloudWhen}`}</small>
+            </span>
+          </button>
+          <button onClick={() => conflict.answer("here")}>
+            <span>
+              <strong>
+                <Trans>Play with the saves on this computer</Trans>
+              </strong>
+              <small>
+                {folder
+                  ? conflict.places?.length
+                    ? t`The saves in your sync folder stay there as a backup.`
+                    : here
+                      ? t`Last backed up ${hereWhen}. The saves in your sync folder stay there as a backup. These become your newest.`
+                      : t`The saves in your sync folder stay there as a backup. These become your newest.`
+                  : conflict.places?.length
+                    ? t`Your cloud saves stay in your account as a backup.`
+                    : here
+                      ? t`Last backed up ${hereWhen}. Your cloud saves stay in your account as a backup. These become your newest.`
+                      : t`Your cloud saves stay in your account as a backup. These become your newest.`}
+              </small>
+            </span>
+          </button>
+        </div>
+        <div className="row">
+          <button onClick={() => conflict.answer(null)}>
+            <Trans>Don&apos;t play yet</Trans>
+          </button>
+        </div>
+      </div>
+    </Dialog>
+  );
+}
+
+/** The folders a backup would be put in, as they are on this computer. */
+function SavePlaces({ places }: { places: { template: string; path: string }[] }) {
+  return (
+    <ul className="save-places">
+      {places.map((place) => (
+        <li key={place.template}>{place.path || place.template}</li>
+      ))}
+    </ul>
+  );
+}
+
+/** Restore, for a backup whose saves were in a folder this computer hasn't kept that app's saves in: the player sees the folder and says whether to go ahead. */
+function SavesPlacesPrompt() {
+  const { savesPlaces: asked } = useLauncher();
+  if (!asked) return null;
+  const name = asked.name;
+  return (
+    <Dialog label={t`Restore to this folder?`} onClose={() => asked.answer(false)}>
+      <div className="detail-body program-prompt saves-conflict">
+        <h2>
+          <Cloud size={18} aria-hidden="true" /> {t`Restore ${name}'s saves to this folder?`}
+        </h2>
+        <p className="muted">
+          <Trans>This backup&apos;s saves were in a folder Quiver hasn&apos;t kept this app&apos;s saves in on this computer. Only restore it if this is where the app saves:</Trans>
+        </p>
+        <SavePlaces places={asked.places} />
+        <div className="row">
+          <button onClick={() => asked.answer(false)}>
+            <Trans>Cancel</Trans>
+          </button>
+          <button className="primary" onClick={() => asked.answer(true)}>
+            <Trans>Restore</Trans>
+          </button>
+        </div>
+      </div>
+    </Dialog>
+  );
+}
+
 /** Play, for an app with more than one of its programs picked (its menu's Play with): which one starts. */
 function ProgramPrompt() {
   const { choosingProgram: id, chooseProgram, installs, catalog, play } = useLauncher();
@@ -1982,6 +2423,7 @@ function UninstallPrompt() {
   // Out of the library too: said only when it's in there.
   const leaves = confirming.remove && library.some((i) => i.id === entry.id);
   const close = () => confirmUninstall(null);
+  const program = going?.launch?.executable && outsideFolder(going.launch.executable, going.program) ? going.launch.executable : undefined;
   return (
     <Dialog label={t`Uninstall ${name}`} onClose={close}>
       <div className="detail-body uninstall-prompt">
@@ -1998,6 +2440,15 @@ function UninstallPrompt() {
         {portable && (
           <p>
             <Trans>This app may keep its saves in this folder. They&apos;ll be removed with it.</Trans>
+          </p>
+        )}
+        {/* What it starts is somewhere else (Launch options): only its folder goes, so the player knows that stays. */}
+        {program && (
+          <p>
+            <Trans>
+              It starts <code>{program}</code>, which is outside its folder, so it stays where it is. Uninstall or delete that yourself if you don&apos;t
+              want it any more.
+            </Trans>
           </p>
         )}
         <div className="row">
@@ -2036,7 +2487,8 @@ function RenameFolderPrompt() {
   const [name, setName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const folder = renaming ? installs[renaming.id]?.folder : undefined;
+  const install = renaming ? installs[renaming.id] : undefined;
+  const folder = install && folderNameOf(install);
   useEffect(() => {
     setName(folder ?? "");
     setError(null);
@@ -2088,6 +2540,180 @@ function RenameFolderPrompt() {
   );
 }
 
+/**
+ * The player's own name for an app in their library, in place of the catalog's: from its menu's Rename…, or its
+ * name on its page. Empty, or the catalog's own, shows the catalog's again. Its artwork stays as it is.
+ */
+function RenamePrompt() {
+  const { naming, askName, library, catalog, customize } = useLauncher();
+  const item = naming ? library.find((i) => i.id === naming) : undefined;
+  const [name, setName] = useState("");
+  const original = naming ? catalog[naming]?.projectName : undefined;
+  const now = item?.overrides?.name ?? original ?? "";
+  useEffect(() => {
+    // Its name now fills the field as it opens, selected to type over.
+    setName(now);
+  }, [naming]); // eslint-disable-line react-hooks/exhaustive-deps
+  if (!naming || !item) return null;
+  const app = now;
+  const close = () => askName(null);
+  const save = (to: string) => {
+    const next = to.trim();
+    customize(naming, { ...item.overrides, name: next && next !== original ? next : undefined });
+    close();
+  };
+  return (
+    <Dialog label={t`Rename ${app}`} onClose={close}>
+      <form className="detail-body rename-folder" onSubmit={(e) => (e.preventDefault(), save(name))}>
+        <h2>
+          <Pencil size={18} /> <Trans>Rename {app}</Trans>
+        </h2>
+        <input autoFocus aria-label={t`Name`} maxLength={200} placeholder={original} value={name} onChange={(e) => setName(e.target.value)} onFocus={(e) => e.currentTarget.select()} />
+        <p className="muted">
+          <Trans>Only your library shows this name. Its folder keeps the name it has.</Trans>
+        </p>
+        <div className="row">
+          <button className="primary">
+            <Trans>Save</Trans>
+          </button>
+          <button type="button" onClick={close}>
+            <Trans>Cancel</Trans>
+          </button>
+          {original && item.overrides?.name && (
+            <button type="button" className="link-button" onClick={() => save("")}>
+              <Trans>Use the catalog&apos;s name</Trans>
+            </button>
+          )}
+        </div>
+      </form>
+    </Dialog>
+  );
+}
+
+/** How far an app's move to another folder has got: a sweep until it's known to be copying, then its share copied. */
+function MovingBar({ moving }: { moving: AppMove }) {
+  const percent = moving.size ? Math.round((moving.copied / moving.size) * 100) : null;
+  return (
+    <div className={percent === null ? "progress waiting" : "progress"} aria-label={t`Moving`}>
+      <div className="bar" style={{ width: `${percent ?? 100}%` }} />
+      <span>{percent === null ? t`Moving…` : t`Moving ${percent}%`}</span>
+    </div>
+  );
+}
+
+/**
+ * Where an app goes, from its menu's Install to… or Move to…: one of the apps folders, or a folder the player
+ * chooses. Moving is the apps folder's safe move, for this one app, and its bar shows here and on the app's page.
+ */
+function PlaceAppPrompt() {
+  const { placing: asked, askPlace, installs, catalog, config, appsFolders, appMoves, get, moveApp, setNotice } = useLauncher();
+  const placing = asked?.entry;
+  const [to, setTo] = useState<string | null>(null);
+  const [chosen, setChosen] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const install = placing ? installs[placing.id] : undefined;
+  const here = install && (install.dir ? rootOf(install) : config.appsDir);
+  const folders = appsFolders().map((f) => f.path);
+  useEffect(() => {
+    setChosen(null);
+    setError(null);
+    // The first folder it isn't in already.
+    setTo(folders.find((f) => !here || !samePath(f, here)) ?? null);
+  }, [asked]); // eslint-disable-line react-hooks/exhaustive-deps
+  if (!placing) return null;
+  const entry = catalog[placing.id] ?? placing;
+  const app = entry.projectName;
+  // The version it was going to install, when one was chosen (Choose a version…): said, so it's clear which goes.
+  const version = asked?.release ? versionLabel(asked.release.version) : null;
+  const moving = appMoves[placing.id];
+  const close = () => askPlace(null);
+  // The apps folders, and where it is now and the folder chosen, when neither is one.
+  const options = [...folders, ...[here, chosen].filter((p): p is string => Boolean(p))].filter((p, i, all) => all.findIndex((q) => samePath(p, q)) === i);
+  const choose = async () => {
+    const picked = await native.pickFolder(install ? t`Choose where to move ${app}` : t`Choose where to install ${app}`).catch(() => null);
+    if (picked) {
+      setChosen(picked);
+      setTo(picked);
+      setError(null);
+    }
+  };
+  const go = () => {
+    if (!to) return;
+    setError(null);
+    if (!install) {
+      close();
+      void get(entry, asked?.release, { ...asked?.options, to });
+      return;
+    }
+    moveApp(placing.id, to).then(
+      ({ left }) => {
+        close();
+        setNotice(left ? t`${app} is moved. Its old folder couldn't all be deleted: ${left}` : t`${app} is moved.`, left ? { stays: true } : undefined);
+      },
+      (e) => setError(e instanceof Error ? e.message : String(e)),
+    );
+  };
+  return (
+    <Dialog label={install ? t`Move ${app}` : version ? t`Install ${app} ${version} to` : t`Install ${app} to`} onClose={close}>
+      <div className="detail-body place-app">
+        <h2>
+          <FolderOpen size={18} /> {install ? <Trans>Move {app}</Trans> : version ? <Trans>Install {app} {version} to</Trans> : <Trans>Install {app} to</Trans>}
+        </h2>
+        <div className="move-choice" role="radiogroup" aria-label={t`Folder`}>
+          {options.map((path) => {
+            const current = Boolean(here && samePath(path, here));
+            return (
+              <label key={path}>
+                <input type="radio" name="place-app" checked={Boolean(to && samePath(to, path))} disabled={current || Boolean(moving)} onChange={() => setTo(path)} />
+                <span className="place-app-folder">
+                  <span className="apps-folder-name">{path}</span>
+                  {samePath(path, config.appsDir) && (
+                    <span className="apps-folder-badge">
+                      <Trans comment="The apps folder new apps install in">Default</Trans>
+                    </span>
+                  )}
+                  {current && (
+                    <span className="muted">
+                      {" "}
+                      <Trans>It's here now.</Trans>
+                    </span>
+                  )}
+                </span>
+              </label>
+            );
+          })}
+        </div>
+        <div className="row place-app-choose">
+          <button type="button" disabled={Boolean(moving)} onClick={() => void choose()}>
+            <Trans>Choose a folder…</Trans>
+          </button>
+        </div>
+        <p className="muted">
+          {install ? (
+            <Trans>It gets a folder of its own in there, with its saves and settings. Desktop and Steam shortcuts you made before point at the old place, so make them again.</Trans>
+          ) : (
+            <Trans>It gets a folder of its own in there, and updates keep installing into it.</Trans>
+          )}
+        </p>
+        {moving && <MovingBar moving={moving} />}
+        {error && (
+          <p className="job-error" role="status">
+            {error}
+          </p>
+        )}
+        <div className="row">
+          <button className="primary" disabled={!to || Boolean(moving)} onClick={go}>
+            {install ? <Trans comment="Moves an app's folder">Move</Trans> : <Trans comment="Installs an app">Install</Trans>}
+          </button>
+          <button type="button" onClick={close}>
+            {moving ? <Trans>Close</Trans> : <Trans>Cancel</Trans>}
+          </button>
+        </div>
+      </div>
+    </Dialog>
+  );
+}
+
 /** Add files to folder (app-files.tsx), from an app's menu. */
 function AddFilesPrompt() {
   const { addingFiles, askAddFiles } = useLauncher();
@@ -2103,8 +2729,30 @@ function AddFilesPrompt() {
 function ChooseFile() {
   const { choice } = useLauncher();
   if (!choice) return null;
+  // Its own state for each choice, so Show all files starts closed every time.
+  return <ChooseFileDialog key={`${choice.entry.id}@${choice.version}`} choice={choice} />;
+}
+
+function ChooseFileDialog({ choice }: { choice: Choice }) {
+  // Open from the start when nothing else is offered: then the files a maintainer didn't tick are all there is.
+  const [showAll, setShowAll] = useState(choice.assets.length === 0);
+  const unapproved = new Set(choice.unapproved);
   const name = choice.entry.projectName;
   const version = versionLabel(choice.version);
+  // The release's other files this computer can install, whatever system the site says they're for.
+  const offered = new Set(choice.assets.map((a) => a.id));
+  const rest = choice.all.filter((a) => !offered.has(a.id));
+  // What the site says each is for, with its name under it.
+  const labelled = (a: Asset) => (
+    <span>
+      <strong>
+        {a.os === "unknown" ? t`Platform unspecified` : (OS_NAMES[a.os] ?? a.os)}
+        {a.architecture !== "unknown" ? ` · ${a.architecture}` : ""}
+        {unapproved.has(a.id) ? ` · ${t({ message: "Not approved", comment: "A release file a maintainer didn't tick for the app, in Which download?'s Show all files" })}` : ""}
+      </strong>
+      <small>{a.filename}</small>
+    </span>
+  );
   return (
     <div className="overlay">
       <section className="detail choose" role="dialog" aria-label={t`Choose a download`}>
@@ -2117,28 +2765,127 @@ function ChooseFile() {
               ? t`None of ${name} ${version}'s files are marked for your computer. If you know which one runs on it, pick it.`
               : t`${name} ${version} has more than one file for your computer.`}
           </p>
-          <div className="choices">
-            {choice.assets.map((a) => (
-              <button key={a.id} onClick={() => choice.resolve(a)}>
-                {/* What the site says each is for, as the app's release files show it. */}
-                {choice.unmatched ? (
-                  <span>
-                    <strong>
-                      {a.os === "unknown" ? t`Platform unspecified` : (OS_NAMES[a.os] ?? a.os)} · {a.architecture}
-                    </strong>
-                    <small>{a.filename}</small>
-                  </span>
-                ) : (
-                  a.filename
-                )}
+          {choice.assets.length > 0 && (
+            <div className="choices">
+              {choice.assets.map((a) => (
+                <button key={a.id} onClick={() => choice.resolve(a)}>
+                  {choice.unmatched ? labelled(a) : a.filename}
+                </button>
+              ))}
+            </div>
+          )}
+          {rest.length > 0 &&
+            (showAll ? (
+              <>
+                <p className="muted">
+                  {choice.assets.length > 0 ? (
+                    <Trans>The release's other files. They may not run on your computer.</Trans>
+                  ) : (
+                    <Trans>The release's files Quiver doesn't offer. They may not run on your computer.</Trans>
+                  )}
+                </p>
+                <div className="choices">
+                  {rest.map((a) => (
+                    <button key={a.id} onClick={() => choice.resolve(a)}>
+                      {labelled(a)}
+                    </button>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <button type="button" className="show-all" aria-expanded={false} onClick={() => setShowAll(true)}>
+                <Trans>Show all files</Trans>
               </button>
             ))}
-          </div>
+          {showAll && choice.unapproved.length > 0 && <SuggestPlatform choice={choice} files={[...choice.assets, ...rest]} />}
           <button onClick={() => choice.resolve(null)}>
             <Trans>Cancel</Trans>
           </button>
         </div>
       </section>
+    </div>
+  );
+}
+
+/**
+ * Under Which download?'s files Quiver doesn't offer: tells the maintainers, in a click, which file is the build for
+ * which system, so they can tick it and set its platform. Sent as a correction to the app's downloads, as Report a
+ * problem sends one; signed in only, as that is.
+ */
+function SuggestPlatform({ choice, files }: { choice: Choice; files: Asset[] }) {
+  const { config, installs } = useLauncher();
+  const { user, suggestCorrection } = useAccount();
+  const [open, setOpen] = useState(false);
+  const [file, setFile] = useState(choice.unapproved[0]);
+  const [os, setOs] = useState<string>(config.os in OS_NAMES ? config.os : "windows");
+  const [state, setState] = useState<"busy" | "sent" | { error: string }>();
+  if (!user)
+    return (
+      <p className="muted">
+        <Trans>Sign in to tell the maintainers which file is for which system.</Trans>
+      </p>
+    );
+  if (state === "sent")
+    return (
+      <p className="correction-sent" role="status">
+        <CircleCheck size={14} aria-hidden="true" /> <Trans>Sent. A maintainer will take a look.</Trans>
+      </p>
+    );
+  if (!open)
+    return (
+      <button type="button" className="show-all" onClick={() => setOpen(true)}>
+        <Trans>Tell the maintainers which file is for which system</Trans>
+      </button>
+    );
+  const send = () => {
+    const asset = files.find((a) => a.id === file);
+    if (!asset) return;
+    setState("busy");
+    // For the maintainers, who read corrections in English.
+    const system = OS_NAMES[os] ?? os;
+    suggestCorrection({
+      entryId: choice.entry.id,
+      topic: "downloads",
+      body: `${asset.filename} in ${versionLabel(choice.version)} is the ${system} build${choice.unapproved.includes(asset.id) ? ", but it isn't offered" : `, but it's marked for ${asset.os === "unknown" ? "no platform" : (OS_NAMES[asset.os] ?? asset.os)}`}. Please tick it and set its platform to ${system}. (Sent from Which download? in Quiver Launcher.)`,
+      client: correctionClient(config, installs[choice.entry.id]?.version),
+    }).then(
+      () => (track("correction_sent", { topic: "downloads", from: "file_choice" }), setState("sent")),
+      (error) => setState({ error: error instanceof Error ? error.message : String(error) }),
+    );
+  };
+  return (
+    <div className="suggest-platform" role="group" aria-labelledby="suggest-platform-title">
+      <h3 id="suggest-platform-title">
+        <Trans>Submit a correction for a release file's platform</Trans>
+      </h3>
+      <label className="field">
+        <Trans>File</Trans>
+        <select value={file} onChange={(e) => setFile(e.target.value)}>
+          {files.map((a) => (
+            <option key={a.id} value={a.id}>
+              {a.filename}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="field">
+        <Trans comment="Which download?: the system a release file is the build for, to tell the maintainers">Is for</Trans>
+        <select value={os} onChange={(e) => setOs(e.target.value)}>
+          {Object.entries(OS_NAMES).map(([id, name]) => (
+            <option key={id} value={id}>
+              {name}
+            </option>
+          ))}
+        </select>
+      </label>
+      <button type="button" disabled={state === "busy"} onClick={send}>
+        <Trans comment="Sends the maintainers which system a release file is for">Send</Trans>
+      </button>
+      {typeof state === "object" && (
+        <p className="job-error" role="status">
+          {state.error}
+        </p>
+      )}
     </div>
   );
 }
@@ -2150,31 +2897,64 @@ function ChooseFile() {
  * first, and where a controller starts.
  */
 function UnverifiedPrompt() {
-  const { asking } = useLauncher();
+  const { asking, installs } = useLauncher();
   if (!asking) return null;
-  const { entry, file, reasons, scan, checkEndsAt, resolve } = asking;
+  const { entry, file, reasons, scan, checkEndsAt, early, resolve } = asking;
   // Put in the sentences below by name.
   const release = versionLabel(asking.version);
   const app = entry.projectName;
   const name = file?.name ?? "";
   const unchecked = file?.why === "unchecked";
+  // A file a maintainer didn't tick, picked from Show all files.
+  const unapproved = file?.why === "unapproved";
   const waits = checkEndsAt !== undefined;
   const hours = waits ? hoursFrom(checkEndsAt) : 0;
-  const title = unchecked ? t`Install a file Quiver didn't check?` : t`Install ${release} before it's verified?`;
+  // Newest right away, where only its scan makes it ask: that's the question, not that it isn't offered.
+  const scanned = !file && early === "scan";
+  const title = unapproved
+    ? t`Install a file Quiver doesn't offer?`
+    : unchecked
+      ? t`Install a file Quiver didn't check?`
+      : early === "asked" && waits
+        ? installs[asking.entry.id]
+          ? t`Update to ${release} before its 48 hours are up?`
+          : t`Install ${release} before its 48 hours are up?`
+        : scanned
+          ? t`Install ${release} with a virus scan warning?`
+          : t`Install ${release} before Quiver offers it?`;
+  const scanLine = scan && (
+    <p className="scan-line">
+      VirusTotal: {scanText(scan)}{" "}
+      {scan.url && (
+        <a href={scan.url} target="_blank" rel="noreferrer">
+          <Trans>See the report</Trans>
+        </a>
+      )}
+    </p>
+  );
   return (
     // Each question its own: the next one in turn starts afresh, its first button focused.
-    <Dialog key={`${entry.id}@${release}:${name}`} label={unchecked ? title : t`Install a release before it's verified`} onClose={() => resolve(false)}>
+    <Dialog key={`${entry.id}@${release}:${name}`} label={unchecked || unapproved || scanned ? title : t`Install a release before Quiver offers it`} onClose={() => resolve(false)}>
       <div className="detail-body unverified-prompt">
         <h2>
           <ShieldAlert size={18} /> {title}
         </h2>
         <p>
           {!file
-            ? `${t`${app} has no verified release yet.`} ${t`Quiver hasn't verified this release. It installs the files Quiver saw when it came out, and refuses any that changed since.`}`
-            : unchecked
-              ? t`Quiver checked ${release}'s other files, not ${name}. It downloads as the developer published it.`
-              : t`${name} changed after Quiver verified ${release}, and Quiver hasn't verified the new file yet. It installs the file Quiver saw, and refuses one that changed since.`}
+            ? early === "asked" && waits
+              ? // They chose to wait for updates: what that wait is for, and that this skips it.
+                t`${release} is less than 48 hours old. You've chosen to wait 48 hours for updates, so that if a release turns out to be malicious, Quiver has time to withdraw it before it reaches you. Installing it now skips that wait.`
+              : scanned
+                ? t`Apps are set to update to the newest release right away, and ${release} is the newest. Quiver Launcher is asking in this case because of its virus scan.`
+                : `${early ? "" : `${t`Quiver doesn't offer a release of ${app} yet.`} `}${t`Quiver Launcher isn't offering this release as an update yet.`}`
+            : unapproved
+              ? t`Quiver doesn't offer ${name} for ${app}: it may be for another system, or missed when the downloads were picked.`
+              : unchecked
+                ? t`Quiver checked ${release}'s other files, not ${name}. It downloads as the developer published it.`
+                : t`${name} changed after ${release} finished its 48-hour wait, and the new file hasn't been out for 48 hours yet. It installs the file Quiver saw, and refuses one that changed since.`}
         </p>
+        {/* Asked because of its scan: the scan first, as what the sentence above leads to. */}
+        {scanned && scanLine}
         {reasons.length > 0 && (
           <ul className="unverified-reasons">
             {reasons.map((r) => (
@@ -2182,20 +2962,11 @@ function UnverifiedPrompt() {
             ))}
           </ul>
         )}
-        {scan && (
-          <p className="scan-line">
-            VirusTotal: {scanText(scan)}{" "}
-            {scan.url && (
-              <a href={scan.url} target="_blank" rel="noreferrer">
-                <Trans>See the report</Trans>
-              </a>
-            )}
-          </p>
-        )}
+        {!scanned && scanLine}
         {waits && (
           <p className="wait-line">
             <ShieldCheck size={14} aria-hidden="true" />{" "}
-            {plural(hours, { one: "If you wait, it's verified in about # hour.", other: "If you wait, it's verified in about # hours." })}
+            {plural(hours, { one: "If you wait, its 48 hours are up in about # hour.", other: "If you wait, its 48 hours are up in about # hours." })}
           </p>
         )}
         <div className="row">

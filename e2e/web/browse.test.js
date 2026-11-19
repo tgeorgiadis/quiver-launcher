@@ -3,7 +3,7 @@
  */
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { app, back, everything, home, open, page, s, useSharedApp } from "./controller.js";
+import { app, back, everything, home, open, page, s, useSharedApp, where } from "./controller.js";
 import * as reach from "../reach.js";
 
 useSharedApp();
@@ -35,6 +35,28 @@ test("the catalog, its filters, and Sign in, which B closes", async () => {
   });
   assert.equal(look.outline, "none");
   assert.match(look.art, /0px 0px 0px 1px/);
+});
+
+test("a filter of several choices: A opens its list, A ticks one and another with it open, and B closes it on its pill", async () => {
+  assert.equal(await open("button", { text: "Browse" }), "main");
+  await open("button", { text: "Filters" });
+  const PILL = ".filter-bar .pill-button";
+  assert.doesNotMatch(await reach.pressOn(app, PILL, "South", { text: "Any console" }), /^not reached/);
+  const inList = () => app.execute(() => Boolean(document.querySelector(".pill-menu")?.contains(document.activeElement)));
+  const ticked = () => app.execute(() => [...document.querySelectorAll(".pill-menu [aria-checked=true]")].map((b) => b.textContent));
+  assert.ok(await inList(), "A opens the list, the focus in it");
+  const first = await app.execute(() => document.activeElement.textContent);
+  await reach.press(app, "South");
+  assert.ok(await inList(), "A ticks it and the list stays open");
+  await reach.press(app, "DPadDown");
+  const second = await app.execute(() => document.activeElement.textContent);
+  await reach.press(app, "South");
+  assert.deepEqual(await ticked(), [first, second]);
+  await reach.press(app, "East");
+  assert.ok(!(await page.locator(".pill-menu").count()), "B closes the list");
+  assert.equal(await where(), "main", "and goes no further");
+  assert.match(await reach.focused(app), /^button "Console: /);
+  assert.equal(await page.locator(".pill.on .pill-text").first().textContent(), `${first}, ${second}`);
 });
 
 test("A opens a catalog card, Y opens its menu with Add first, X adds the app and X again installs it", async () => {
@@ -154,4 +176,20 @@ test("in Steam's desktop layout, where X isn't Quiver's, a catalog card offers i
   await s.until(async () => (await hints()).startsWith("A Open, Y Menu"));
   assert.doesNotMatch(await hints(), /\bX\b/);
   assert.equal(await CARD.locator("[data-pad-glyph]").count(), 0);
+});
+
+test("a console shelf's See all puts its maker on the console filter, in place of the front page", async () => {
+  await open("button", { text: "Browse" });
+  // From the front page: no filters on from the tests before.
+  const clear = page.getByRole("button", { name: "Clear all" });
+  if (await clear.count()) await clear.click();
+  const shelf = page.locator('section.shelf[aria-label="Nintendo"]');
+  await shelf.waitFor();
+  await shelf.getByRole("button", { name: "See all: Nintendo" }).click();
+  await page.locator(".discover").waitFor({ state: "detached" });
+  assert.equal(await page.locator(".pill.on .pill-text").first().textContent(), "All Nintendo");
+  // Its apps, all of them for a Nintendo console.
+  await s.until(async () => (await page.locator("article[data-slug]").count()) > 0);
+  await clear.click();
+  await page.locator(".discover").waitFor();
 });

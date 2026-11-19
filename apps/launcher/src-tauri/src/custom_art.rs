@@ -10,7 +10,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 pub const PROTOCOL: &str = "quiverart";
 const FOLDER: &str = "custom-art";
 /// The kinds of picture that can be picked: what the `image` crate here reads.
-pub const EXTENSIONS: &[&str] = &["png", "jpg", "jpeg", "gif", "webp"];
+pub const EXTENSIONS: &[&str] = &["png", "jpg", "jpeg", "gif", "webp", "ico"];
 /// A very large photo: past it, it's not a file to read into memory.
 const MAX_BYTES: u64 = 100 * 1024 * 1024;
 

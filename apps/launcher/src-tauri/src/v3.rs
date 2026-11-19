@@ -18,6 +18,10 @@ pub struct OldApp {
     version: Option<String>,
     /// The program a Windows installer (MSI) put on the computer, for an app 3.x installed that way.
     program: Option<String>,
+    /// Its installed copy is in one of 3.x's apps folders, not a folder of its own the player chose for it, so
+    /// moving the apps folder here can bring it in.
+    #[serde(skip_serializing_if = "std::ops::Not::not")]
+    in_apps: bool,
     /// Its tags as 3.x showed them: the player's, and the catalog's among them.
     #[serde(skip_serializing_if = "Vec::is_empty")]
     tags: Vec<String>,
@@ -27,6 +31,9 @@ pub struct OldApp {
     /// The player hid it in 3.x's library.
     #[serde(skip_serializing_if = "std::ops::Not::not")]
     hidden: bool,
+    /// Its picture in 3.x: the file the player chose for it (Add Custom Image), else the https address its entry had.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    icon: Option<String>,
     /// 3.x says it's installed in a folder that's gone, and it wasn't found anywhere else.
     #[serde(skip)]
     lost: bool,
@@ -123,6 +130,29 @@ fn library_file(dir: &Path) -> Option<PathBuf> {
 pub fn find() -> Option<Library> {
     let program = std::env::var_os("APPIMAGE").map(PathBuf::from).or_else(|| std::env::current_exe().ok());
     program.and_then(|p| best(around(&p))).or_else(|| best(data_dirs()))
+}
+
+/// Every apps folder of every 3.x library in the usual places, there now: the one each was set to, and its default
+/// `Apps`. A computer with more than one copy (a portable one beside an installed one) has apps in each's, though only
+/// one library is brought over.
+pub fn apps_folders() -> Vec<String> {
+    let program = std::env::var_os("APPIMAGE").map(PathBuf::from).or_else(|| std::env::current_exe().ok());
+    let dirs = program.map(|p| around(&p)).unwrap_or_default().into_iter().chain(data_dirs());
+    let mut found: Vec<PathBuf> = vec![];
+    for dir in dirs.filter(|d| library_file(d).is_some()) {
+        for folder in folders_of(&dir) {
+            if folder.is_dir() && !found.iter().any(|f| same_folder(f, &folder)) {
+                found.push(folder);
+            }
+        }
+    }
+    found.into_iter().map(|f| f.to_string_lossy().into_owned()).collect()
+}
+
+/// A 3.x library folder's apps folders: the one its settings name, and its default `Apps`.
+fn folders_of(dir: &Path) -> Vec<PathBuf> {
+    let settings = read(&dir.join("settings.json")).unwrap_or(Value::Null);
+    field(&settings, "appsPath").map(|p| resolve(dir, p)).into_iter().chain([dir.join("Apps")]).collect()
 }
 
 /// The folders a 3.x copy beside this program keeps its library in: the
@@ -268,6 +298,32 @@ pub fn existing(dir: &Path) -> Option<Existing> {
     Some(Existing { version: own.unwrap_or(version), program })
 }
 
+/// The kinds of picture 3.x's Add Custom Image kept, which Quiver can read too (custom_art.rs).
+const PICTURES: [&str; 6] = ["png", "jpg", "jpeg", "gif", "webp", "ico"];
+
+/// The picture 3.x showed for an app: the file the player chose for it, which 3.x kept in its cache folder as
+/// `<folder name>_custom.<kind>` (GameInfo.SetCustomIcon), or which an entry can name itself; else the address its
+/// entry had (appIconUrl, or gameIconUrl before that), when it's https.
+fn icon(dir: &Path, app: &Value) -> Option<String> {
+    let picture = |p: &Path| p.is_file() && p.extension().and_then(|e| e.to_str()).is_some_and(|e| PICTURES.contains(&e.to_ascii_lowercase().as_str()));
+    let named = ["customIconPath", "customIcon"].iter().filter_map(|k| field(app, k)).map(|p| resolve(dir, p)).find(|p| picture(p));
+    let kept = || {
+        let stem = format!("{}_custom", field(app, "folderName")?);
+        // 3.x's cache is beside its program: a Windows copy's is in its `current` folder.
+        [dir.join("Cache").join("CustomIcons"), dir.join("current").join("Cache").join("CustomIcons"), dir.join("CustomIcons")]
+            .iter()
+            .flat_map(|d| std::fs::read_dir(d).into_iter().flatten().flatten().map(|e| e.path()))
+            .find(|p| picture(p) && p.file_stem().and_then(|s| s.to_str()).is_some_and(|s| s.eq_ignore_ascii_case(&stem)))
+    };
+    let address = || ["appIconUrl", "gameIconUrl"].iter().filter_map(|k| field(app, k)).map(str::trim).find(|a| a.starts_with("https://") && !a.contains(char::is_whitespace)).map(str::to_string);
+    named.or_else(kept).map(|p| p.to_string_lossy().into_owned()).or_else(address)
+}
+
+/// Whether two paths name one folder, however they're written.
+fn same_folder(a: &Path, b: &Path) -> bool {
+    a == b || a.canonicalize().ok().zip(b.canonicalize().ok()).is_some_and(|(a, b)| a == b)
+}
+
 /// The apps in a folder's library file, if it's a 3.x one: each has a name,
 /// and at least one has a repository.
 fn read_library(dir: &Path, apps: &[PathBuf], settings: &Value) -> Vec<OldApp> {
@@ -290,6 +346,9 @@ fn read_library(dir: &Path, apps: &[PathBuf], settings: &Value) -> Vec<OldApp> {
             let gone = own.as_ref().is_some_and(|d| !d.is_dir());
             let install = own.into_iter().chain(named).find_map(|d| installed(&d).map(|(version, program)| (d, version, program)));
             let lost = gone && install.is_none();
+            let in_apps = install.as_ref().is_some_and(|(d, ..)| d.parent().is_some_and(|p| folders.iter().any(|f| same_folder(p, f))));
+            // Before `dir` is the install's, from here on.
+            let picture = icon(dir, app);
             let (dir, version, program) = match install {
                 Some((d, version, program)) => (Some(d.to_string_lossy().into()), Some(version), program),
                 None => (None, None, None),
@@ -309,6 +368,7 @@ fn read_library(dir: &Path, apps: &[PathBuf], settings: &Value) -> Vec<OldApp> {
                 tags: texts(set.or_else(|| get(app, "tags"))),
                 catalog_tags: texts(get(app, "catalog").and_then(|c| get(c, "tags"))),
                 hidden,
+                icon: picture,
                 lost,
                 name,
                 repository: repository.map(str::to_string),
@@ -317,6 +377,7 @@ fn read_library(dir: &Path, apps: &[PathBuf], settings: &Value) -> Vec<OldApp> {
                 dir,
                 version,
                 program,
+                in_apps,
             })
         })
         .collect::<Vec<_>>();
@@ -425,13 +486,38 @@ mod tests {
     }
 
     #[test]
+    fn a_librarys_apps_folders_are_the_one_its_set_to_and_its_default() {
+        let root = tempfile::tempdir().unwrap();
+        let data = root.path().join("home/.local/share/QuiverLauncher");
+        let beside = root.path().join("home/Applications/Apps");
+        library(&data, PORT);
+        assert_eq!(folders_of(&data), [data.join("Apps")]);
+        std::fs::write(data.join("settings.json"), serde_json::json!({ "AppsPath": beside }).to_string()).unwrap();
+        assert_eq!(folders_of(&data), [beside, data.join("Apps")]);
+    }
+
+    #[test]
     fn follows_an_apps_own_install_path() {
         let root = tempfile::tempdir().unwrap();
         let elsewhere = root.path().join("Games/Test Port");
         folder(&elsewhere, &[("port.exe", "")]);
         let apps = serde_json::json!({ "apps": [{ "name": "Test Port", "repository": "quiver/test-port", "folderName": "TestPort", "installPath": elsewhere }] });
         library(&root.path().join("data"), &apps.to_string());
-        assert_eq!(at(&apps_in(&root.path().join("data"))[0]), Some(elsewhere.as_path()));
+        let found = apps_in(&root.path().join("data"));
+        assert_eq!(at(&found[0]), Some(elsewhere.as_path()));
+        // A folder chosen for it alone, which moving the apps folder leaves be.
+        assert!(!found[0].in_apps);
+    }
+
+    #[test]
+    fn knows_an_app_in_3xs_apps_folder_can_come_along() {
+        let root = tempfile::tempdir().unwrap();
+        let data = root.path().join("data");
+        folder(&data.join("Apps/TestPort"), &[("port.exe", "")]);
+        // 3.x wrote the folder it installed in as the app's path too.
+        let apps = serde_json::json!({ "apps": [{ "name": "Test Port", "repository": "quiver/test-port", "folderName": "TestPort", "installPath": data.join("Apps/TestPort") }] });
+        library(&data, &apps.to_string());
+        assert!(apps_in(&data)[0].in_apps);
     }
 
     #[test]
@@ -666,6 +752,25 @@ mod tests {
             find_in(root.path(), &[]).unwrap().filters,
             [filter("Recomps", &["recomp", "n64"], false, &[], false), filter("Finished", &["n64", "done"], true, &["broken", "wip"], true)]
         );
+    }
+
+    #[test]
+    fn brings_the_picture_the_player_chose_else_the_address_the_entry_had() {
+        let root = tempfile::tempdir().unwrap();
+        let apps = serde_json::json!({ "Apps": [
+            { "Name": "Test Port", "Repository": "quiver/test-port", "FolderName": "TestPort", "AppIconUrl": "https://example.com/port.png" },
+            { "Name": "Other Port", "Repository": "quiver/other-port", "FolderName": "OtherPort", "appIconUrl": "https://example.com/other.png" },
+            { "Name": "Plain Port", "Repository": "quiver/plain-port", "FolderName": "PlainPort", "appIconUrl": "http://example.com/plain.png" },
+        ] });
+        library(root.path(), &apps.to_string());
+        let icons = root.path().join("Cache").join("CustomIcons");
+        let kept = icons.join("TestPort_custom.PNG");
+        folder(&icons, &[("TestPort_custom.PNG", ""), ("TestPort_custom.txt", "")]);
+        let apps = apps_in(root.path());
+        assert_eq!(apps[0].icon.as_deref(), Some(kept.to_string_lossy().as_ref()));
+        assert_eq!(apps[1].icon.as_deref(), Some("https://example.com/other.png"));
+        // Only an https address: the page shows no other.
+        assert_eq!(apps[2].icon, None);
     }
 
     #[test]

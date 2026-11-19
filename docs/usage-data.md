@@ -24,8 +24,16 @@ The launcher sends named events only (`apps/launcher/src/telemetry.ts`):
 - **Mods:** the mods screen opened, and mods installed, updated, uninstalled or failing to install: the catalog app's
   slug, the mod's id at its source, and the source.
 - **Everything else:** screens opened (each once per launch), playlists made, shared and followed, searches that found
-  nothing (their length, not their words), announcements dismissed and their links opened, the catalog falling back to
+  nothing (their length, not their words), corrections to an app's page started and sent (the topic, never
+  what they say), announcements dismissed and their links opened, the catalog falling back to
   its backup or not answering at all, the launcher's own updates starting and failing, and sign-in and sign-out.
+
+With usage data on, the launcher also tells quiverlauncher.com where it saw a catalog app keep its saves, so the
+catalog can list the place for every player (`apps/launcher/src/saves.ts`). It sends the app, the system, and each
+folder as a path under one of the system's own folders, such as `data/Game/saves`: no account, no identifier for the
+computer, no user name, and no file names or contents. A folder you chose yourself is never sent, each folder is sent
+once, and nothing is sent for an app whose save locations the catalog already lists. This doesn't go to Google
+Analytics.
 
 Every event carries the launcher's version, how this copy was installed (installer, portable, Flatpak and so on), the
 OS, its version (on Linux, with the distribution's name) and architecture, and whether it's a Steam Deck or in Steam's

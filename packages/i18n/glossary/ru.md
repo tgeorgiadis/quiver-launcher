@@ -20,8 +20,10 @@ Every plural needs all four forms: `one` (1, 21), `few` (2–4, 22–24), `many`
 | Change version / Choose a version | Сменить версию / Выбрать версию | |
 | pinned | закреплена | |
 | withdrawn | отозвана | |
-| verified / unverified / blocked (a release) | проверена / не проверена / заблокирована | |
+| available / not offered / blocked (a release) | доступна / не предлагается / заблокирована | |
 | preview release | предварительная версия | |
+| pre-release | Предварительная версия | a release its developer marked as one: an early or experimental build |
+| main release | основная версия | a release not marked as a pre-release; never "stable" |
 | play time / recently played | время в игре / недавно сыгранные | |
 | controller / keyboard | контроллер / клавиатура | |
 | Settings | Настройки | |
@@ -33,6 +35,7 @@ Every plural needs all four forms: `one` (1, 21), `few` (2–4, 22–24), `many`
 | usage data | данные об использовании | |
 | sign in / sign out / account | войти / выйти / аккаунт | |
 | feedback / player | отзывы / игрок | |
+| PC specs | характеристики ПК | the computer a player tried an app on: system, processor, graphics card, memory |
 | mod | мод | |
 | launch options / launch flags | параметры запуска / флаги запуска | |
 | backup (of the library) | резервная копия | |
@@ -43,6 +46,9 @@ Every plural needs all four forms: `one` (1, 21), `few` (2–4, 22–24), `many`
 | port / standalone game | порт / отдельная игра | |
 | Installed (a version) / (a tab) / (an app) | Установлена / Установленные / Установлено | separate strings, by context |
 | Update (a card's badge) / (a button) | Обновление / Обновить | separate strings, by context |
+| discussion / comment | обсуждение / комментарий | Community board: Сообщество |
+| Follow / Unfollow (a discussion) | Отслеживать / Не отслеживать | |
+| Pin / Lock / Report (a discussion) | Закрепить / Закрыть / Пожаловаться | |
 
 Left as they are: Quiver, Quiver Launcher, GitHub, GitLab, Steam, Steam Deck,
 Flatpak, AppImage, Thunderstore, GameBanana, console names, and controller

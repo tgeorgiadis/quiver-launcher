@@ -514,6 +514,8 @@ test.each([
   ["cancelled"],
   ["The download failed. Check your connection and try again."],
   ["The download stopped: error decoding response body"],
+  ["GitHub isn't answering right now (error 504). Try again in a few minutes."],
+  ["GitHub is limiting downloads right now (error 429). Try again in a few minutes."],
   ["Couldn't check for updates: error sending request for url (https://api.github.com/x)"],
   ["Couldn't check for updates: HTTP status client error (403 Forbidden) for url (https://api.github.com/x)"],
   ["Couldn't download the update: HTTP status server error (503 Service Unavailable) for url (https://x)"],
@@ -635,13 +637,26 @@ test("failures are counted by kind, whatever they say exactly", async () => {
   expect(failureKind("missing")).toBe("missing");
   expect(failureKind("HTTP status client error (429 Too Many Requests) for url")).toBe("rate_limited");
   expect(failureKind("HTTP status server error (503 Service Unavailable) for url")).toBe("network");
+  expect(failureKind("GitHub is limiting downloads right now (error 429). Try again in a few minutes.")).toBe("rate_limited");
+  expect(failureKind("GitHub isn't answering right now (error 504). Try again in a few minutes.")).toBe("network");
   expect(failureKind(new TypeError("Failed to fetch"))).toBe("network");
   expect(failureKind("There is not enough space on the disk. (os error 112)")).toBe("disk_full");
   expect(failureKind("Access is denied. (os error 5)")).toBe("permission");
+  expect(failureKind("E:\\Games\\Game.exe is on the drive E:, which isn't connected. Connect it, then try again.")).toBe("drive_missing");
   expect(failureKind("The process cannot access the file because it is being used by another process. (os error 32)")).toBe("in_use");
   expect(failureKind("The system cannot find the file specified. (os error 2)")).toBe("not_found");
   expect(failureKind(new Problem(msg`This app has no approved release yet.`))).toBe("no_release");
   expect(failureKind(new Problem(msg`This release has no download for your computer.`))).toBe("no_download");
   expect(failureKind("Couldn't find a program to start in this app's folder.")).toBe("no_program");
   expect(failureKind("something nobody has seen")).toBe("other");
+});
+
+test("every apps folder is taken out of what's sent, not only the default", async () => {
+  const telemetry = await import("./telemetry");
+  telemetry.startTelemetry(context);
+  // A folder no path pattern would know, with a space in it.
+  telemetry.setTelemetryAppsFolders(["D:\Quiver\apps", "/gamesdrive/My Apps"]);
+  const out = telemetry.scrub("couldn't start /gamesdrive/My Apps/zelda/run");
+  expect(out).not.toContain("gamesdrive");
+  expect(out).not.toContain("My Apps");
 });

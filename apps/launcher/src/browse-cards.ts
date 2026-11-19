@@ -6,12 +6,15 @@
 import { msg } from "@lingui/core/macro";
 import type { MessageDescriptor } from "@lingui/core";
 import type { Entry } from "@quiverlauncher/api";
-import { CARD_DETAILS, type CardDetail, type CardLook } from "@quiverlauncher/ui";
+import { CARD_DETAILS, hasEasySetup, ownIcon, type CardDetail, type CardLook } from "@quiverlauncher/ui";
 
 export type BrowseCards = { look: CardLook; details: CardDetail[] };
 
-/** Box art, with every detail but New: its kinds, and both what players said and when it was updated. */
-export const DEFAULT_BROWSE_CARDS: BrowseCards = { look: "box", details: ["subtitle", "kinds", "rating", "updated", "platforms", "ai"] };
+/**
+ * Box art, with every detail but New: the app's icon, its kinds, both what players said and when it was updated, and
+ * Easy setup.
+ */
+export const DEFAULT_BROWSE_CARDS: BrowseCards = { look: "box", details: ["icon", "subtitle", "kinds", "rating", "updated", "platforms", "ai", "setup"] };
 
 // The choices' names put in the language when shown (i18n._), not here, where the module loads before any is picked.
 export const CARD_LOOKS: [CardLook, MessageDescriptor][] = [
@@ -19,12 +22,14 @@ export const CARD_LOOKS: [CardLook, MessageDescriptor][] = [
   ["wide", msg({ message: "Wide art", comment: "Browse card style: the wide art over the catalog's details, as Quiver Launcher 3 had" })],
 ];
 export const DETAIL_NAMES: Record<CardDetail, MessageDescriptor> = {
+  icon: msg({ message: "App icon", comment: "Browse card detail: the app's own small icon before its name, to tell apart apps for the same game" }),
   subtitle: msg({ message: "Based on", comment: "Before the game(s) an app is made from" }),
   kinds: msg({ message: "Tags", comment: "Browse card detail: the app's tags, such as Recomp or its console, over its name" }),
   rating: msg({ message: "What players say", comment: "Browse card detail: Runs well, Has issues, and how many players said so" }),
   updated: msg({ message: "Last updated", comment: "Browse card detail: when the app's latest release came out" }),
   platforms: msg({ message: "Platforms", comment: "Browse card detail: icons for Windows, Linux, macOS, Android" }),
   ai: msg({ message: "AI label", comment: "Browse card detail: AI-assisted or Mostly AI" }),
+  setup: msg({ message: "Easy setup", comment: "Browse card detail: a chip on apps whose game files Quiver Launcher finds and puts in place" }),
   new: msg({ message: "New badge", comment: "Browse card detail: a badge on apps added to the catalog lately" }),
 };
 
@@ -37,12 +42,14 @@ export function sampleEntry(entries: readonly Entry[]): Entry | undefined {
     [
       e.libraryArt?.capsule,
       e.libraryArt?.header,
+      ownIcon(e),
       e.games.length,
       e.tags.length,
       e.recommended + e.reportIssues + e.reportBroken,
       e.lastReleaseAt,
       e.supportedOS.length,
       e.aiLevel && e.aiLevel !== "none",
+      hasEasySetup(e),
     ].filter(Boolean).length;
   return entries.reduce<Entry | undefined>((best, e) => (!best || has(e) > has(best) ? e : best), undefined);
 }

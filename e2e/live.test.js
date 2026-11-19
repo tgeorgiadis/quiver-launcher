@@ -61,12 +61,15 @@ test("real apps and games open as pages, and going back never blanks the window"
     assert.ok(await filled(), `the window went blank after ${slug}`);
   }
   // As on quiverlauncher.com: searching "mario" shows Mario's Tennis among the games, with its page.
-  const box = await app.$("input[placeholder^=Search]");
-  await box.setValue("mario");
-  const game = await app.$('.search-games button[data-game="marios-tennis"]');
-  await game.waitForDisplayed({ timeout: 20000 });
-  assert.match(await game.getText(), /Mario's Tennis[\s\S]*ways? to play →/);
-  await game.click();
+  // Found again each time: the search's results are drawn anew as they arrive and when the page over them closes,
+  // and the one from before isn't in the window any more.
+  const box = () => app.$("input[placeholder^=Search]");
+  const game = () => app.$('.search-games button[data-game="marios-tennis"]');
+  const shown = (el) => el().then((e) => e.isDisplayed()).catch(() => false);
+  await (await box()).setValue("mario");
+  await until(() => shown(game), 20000);
+  await until(async () => /Mario's Tennis[\s\S]*ways? to play →/.test(await (await game()).getText().catch(() => "")), 10000);
+  await (await game()).click();
   await until(async () => (await heading()) === "Mario's Tennis", 20000);
   await (await (await page()).$(".catalog-grid article")).waitForDisplayed({ timeout: 20000 });
   assert.match(await (await (await page()).$(".detail-tags")).getText(), /Virtual Boy/);
@@ -80,9 +83,9 @@ test("real apps and games open as pages, and going back never blanks the window"
   await (await (await page()).$("button.back-link")).click();
   await until(async () => (await heading()) === "Mario's Tennis", 20000);
   await (await (await page()).$("button.back-link")).click();
-  await game.waitForDisplayed({ timeout: 10000 });
+  await until(() => shown(game), 10000);
   assert.ok(await filled());
-  await box.click();
+  await (await box()).click();
   await app.keys(["Control", "a"]);
   await app.keys("Backspace");
   await until(async () => !(await app.$(".search-games").isExisting()), 20000);
@@ -125,14 +128,19 @@ test("Add then Install installs verified ports, and Play starts one", async () =
   for (const slug of (await cards()).slice(0, 8)) {
     // Found again each time: the card is drawn anew as the download goes, and an old one never shows Play.
     const card = () => app.$(`article[data-slug="${slug}"]`);
+    // In the middle of the window first: a card under the top bar, or beside the last one's error, can't be clicked.
+    const press = async (button) => {
+      await app.execute((el) => el.scrollIntoView({ block: "center" }), button);
+      await button.click();
+    };
     const add = await (await card()).$("button=Add");
     if (!(await add.isExisting())) continue;
-    await add.click();
+    await press(add);
     // In the library now: Install takes Add's place.
     await until(async () => (await (await card()).$("button=Install")).isExisting(), 10000);
     const get = await (await card()).$("button=Install");
     const started = Date.now();
-    await get.click();
+    await press(get);
     // Wait for Play, an error, or a choice between files.
     await until(async () => {
       const choose = await app.$('[role="dialog"][aria-label="Choose a download"] button');

@@ -5,28 +5,34 @@
  * overrides); names, artwork and files always come from the catalog. The
  * last catalog data seen is cached so the library shows instantly offline.
  */
-import { createContext, useContext, useEffect, useMemo, useRef, useState, type Dispatch, type ReactNode, type SetStateAction } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type Dispatch, type ReactNode, type SetStateAction } from "react";
 import { msg, plural, t } from "@lingui/core/macro";
-import { ApiError, createClient, createGithub, createGitlab, githubRepository, parseRepository, type Asset, type Client, type Console, type Entry, type Github, type Os, type HistoryRelease, type Release, type ReleaseScan, type ReleaseStatus, type UnverifiedRelease, type Withdrawn } from "@quiverlauncher/api";
+import { ApiError, createClient, createGithub, createGitlab, createProviders, githubRepository, parseRepository, toRef, type Asset, type Client, type Console, type Entry, type Github, type Gitlab, type Os, type HistoryRelease, type Release, type ReleaseScan, type ReleaseStatus, type UnverifiedRelease, type Verified, type Withdrawn, type Providers, type RepositoryRef } from "@quiverlauncher/api";
 import type { HiddenApp } from "./browse-hidden";
-import { native, type Config, type LaunchOptions, type OldApp, type OldFilter, type Progress, type StateProblem, type V3Library, type WindowsRunner } from "./native";
+import { hideOnApp, shownTags, type HiddenTags } from "./catalog-tags";
+import { native, type Config, type SaveBackup, type LaunchOptions, type MovingApp, type OldApp, type OldFilter, type Progress, type StateProblem, type V3Library, type WindowsRunner } from "./native";
 import { Recovery } from "./recovery";
 import { assetFilterFor, bestAssets, installable, installFormat, isMsi, pickedBefore, releaseFor } from "./assets";
-import { cameAfter, fromSite, installedFile, insteadOf, newestUnblocked, sameChecksum, unverifiedFile, versionLabel, withdrawnAsBlocked } from "./versions";
-import { captureError, captureFailure, failureKind, Problem, reasonOf, reportStartupFailure, setTelemetryAppsDir, telemetryChoice, track, type TelemetryContext } from "./telemetry";
+import { cameAfter, fromSite, scanAsks, installedFile, insteadOf, newestUnblocked, sameChecksum, unverifiedFile, versionLabel, withdrawnAsBlocked } from "./versions";
+import { captureError, captureFailure, failureKind, Problem, reasonOf, reportStartupFailure, setTelemetryAppsDir, setTelemetryAppsFolders, telemetryChoice, track, type TelemetryContext } from "./telemetry";
 import { appsDueToday, appsOnComputer, librarySummary } from "./usage-summary";
 import { AccountProvider, useAccount } from "./account";
-import { applyServer, applyServerCollections, changesFrom, hasFilters, joinAccount, matches, newKey, type Collection } from "./sync";
+import { applyServer, applyServerCollections, changesFrom, hasFilters, joinAccount, matches, newKey, syncableCustom, withoutApp, type Collection } from "./sync";
 import type { Platform } from "./platforms";
 import { setBindings, setScrolling, type Bindings } from "./spatial";
 import { musicForGame, setMusic } from "./music";
-import { appsOfRepository, bestGameArt, customEntry, customKey, folderNameFor, freeFolder, isCustom, isLocal, localEntry, localKey, withGame, type CustomApp, type GameArt, type LocalApp } from "./custom";
-import { artFiles, type Pictures } from "./custom-art";
+import { appsOfRepository, movedTo, bestGameArt, customEntry, customKey, folderNameFor, fromKey, freeFolder, isCustom, isLocal, isOwn, localEntry, localKey, withGame, type CustomApp, type GameArt, type LocalApp } from "./custom";
+import { artFile, artFiles, isArtAddress, type ArtSlot, type Pictures } from "./custom-art";
 import { followTheme, type Theme } from "./theme";
 import type { LibraryView } from "./view";
 import { nearestInterfaceSize, pageZoom } from "./zoom";
 import { copiesNeeded, launchCopies } from "./own-copy";
+import { reportSaveLocations, savesChanged, savesOf, savesOn } from "./saves";
+import { reportMissedPrograms, startPatterns } from "./start-programs";
+import { folderBeforePlay } from "./sync-folder";
+import { beforePlay, onSent, retries, sendBackup, sendCurrent, type CloudApi, type Conflict, type ConfirmPlaces } from "./cloud-saves";
 import { activate, pick, type Language } from "@quiverlauncher/i18n";
+import { providerFetch } from "./provider-fetch";
 
 /** The language the launcher shows in: the one picked in Settings, or else the system's nearest. */
 export const languageOf = (settings: Settings): Language => settings.language ?? pick(navigator.languages);
@@ -69,18 +75,51 @@ export type CatalogEntry = Entry & {
    * `of` says which verified release and build it was looked up for (`forHereKey`); none found, no `release`.
    */
   forHere?: { of: string; release?: { version: string; releasedAt: number } };
+  /**
+   * The newest release an install here can update to that's still in its 48-hour wait (Quiver hasn't verified it yet),
+   * and that Quiver hasn't blocked. `of` says what it was looked up for (`earlyKey`); none found, no `release`.
+   * `now`: Newest right away (`Settings.appUpdates`) is on, so it's the app's update; without it, only what the
+   * player can update to early by asking (`earlyOffer`). `pre`: looked up with the app's pre-releases; one looked up
+   * the other way isn't the app's any more (`withEarlyFor`), and is looked up again.
+   */
+  early?: { of: string; release?: { version: string; releasedAt: number }; now?: true; pre?: true };
+  /**
+   * The site's `verified` (its newest main release), while `verified` is the newest pre-release because the player
+   * chose pre-releases for this app (`withPrereleases`). Only in the store's `catalog`; never kept.
+   */
+  verifiedMain?: Verified;
+  /**
+   * The catalog's tags, while `tags` is those of them the player hasn't hidden (catalog-tags.ts). Only in the store's
+   * `catalog`; never kept.
+   */
+  allTags?: string[];
 };
 export type Install = {
   /** Set for an install adopted from Quiver Launcher 3, which stays where it was. */
   dir?: string;
+  /**
+   * Its `dir` is in an apps folder (Quiver Launcher 3's, or this one under another name), so moving the apps folder
+   * takes it along. Without it, `dir` is a folder the player chose for this app alone, which stays where they put it.
+   */
+  inApps?: true;
+  /**
+   * The console folder it's in inside its apps folder ("N64", "Emulators"): `dir` is `<apps folder>/<group>/<its
+   * folder>`, so its apps folder is two up, and moving that folder keeps it in its console folder.
+   */
+  group?: string;
   version: string; releasedAt?: number; releaseId?: string; folder: string; executables: string[]; wine?: boolean;
   lastPlayed?: number;
   /** When it was installed here, not updated: a game's card plays the port got last until another is played (group.ts). */
   installedAt?: number;
   /** How long the player has played it, in seconds: each session the launcher started, until the app closed. */
   playTime?: number;
-  /** Install new releases without asking, or stay on this one (only ever the player's own choice). Unset: offer them. */
-  updates?: "auto" | "pinned";
+  /**
+   * Install new releases without asking, offer them, or stay on this one, whatever the player's default
+   * (`Settings.autoUpdates`). Unset: the default. Staying on a version is only ever the player's own choice.
+   */
+  updates?: "auto" | "ask" | "pinned";
+  /** Whether this app gets pre-releases, whatever the player's default (`Settings.prereleases`). Unset: the default. */
+  prereleases?: "include" | "main";
   /** A verified version Auto Update leaves alone: the one the player went back from by picking an older release. */
   skip?: string;
   /** A release the player said to skip: not offered or installed by itself, until a newer one comes. */
@@ -97,8 +136,13 @@ export type Install = {
   local?: true;
   /** A program the player picked, started exactly where it is; for a Windows installer, the program it installed. */
   program?: string;
-  /** Installed by its Windows installer (MSI), wherever its setup put it: Windows updates and uninstalls it, never on its own. */
-  installer?: "msi";
+  /**
+   * Installed by its Windows installer, wherever its setup put it: an MSI package ("msi"), or a setup program the player
+   * installed outside the app's folder ("setup"). Its setup updates it and its uninstaller removes it, never on its own.
+   */
+  installer?: "msi" | "setup";
+  /** A setup program installed it, in the app's folder or outside it: an update runs its setup window again, so it never updates on its own. */
+  setup?: true;
   /** The player's own way of starting it; kept through updates. */
   launch?: LaunchOptions;
   /** The file the player picked among several for this computer, as a filter (`assetFilterFor`): updates take it again. */
@@ -130,28 +174,49 @@ export type Job = Progress | { error: string; download?: true; instead?: Release
 /** A download that finished since the launcher started: Downloads lists it under Recently finished. */
 export type Finished = { id: string; version: string; update: boolean; at: number };
 /** Several files suit this computer: the player picks one. */
-/** `unmatched`: none of the files is marked for this computer, so these are all the release's. */
-export type Choice = { entry: Entry; version: string; assets: Asset[]; unmatched?: boolean; resolve: (asset: Asset | null) => void };
+/**
+ * `unmatched`: none of the files is marked for this computer, so these are all the release's, or the ones the site
+ * didn't put on any platform. `all`: every file of the release this computer can install, for Show all files, the
+ * ones a maintainer didn't tick too.
+ */
+export type Choice = {
+  entry: Entry;
+  version: string;
+  assets: Asset[];
+  all: Asset[];
+  /** Of `all`, the files a maintainer didn't tick, by id: picking one asks first. */
+  unapproved: string[];
+  unmatched?: boolean;
+  resolve: (asset: Asset | null) => void;
+};
 /** Deleting an app's files, waiting on the player's yes: `remove` takes it out of the library too, and `then` runs after. */
 export type Confirming = { entry: Entry; remove?: boolean; then?: () => void };
 /**
  * What Quiver hasn't verified, waiting on the player's yes before it installs (`resolve(true)`): the newest release of
  * an app with no verified one, or a file of a verified release that `changed` upstream since or that Quiver has no
- * checksum for (`unchecked`).
+ * checksum for (`unchecked`), or one a maintainer didn't tick for the app, picked from Show all files (`unapproved`).
  */
 export type Asking = {
   entry: Entry;
   version: string;
-  file?: { name: string; why: "changed" | "unchecked" };
+  file?: { name: string; why: "changed" | "unchecked" | "unapproved" };
   /** Why the release isn't verified, worded for players. */
   reasons: string[];
   scan?: ReleaseScan;
   /** When it's verified by itself, if nothing changes. */
   checkEndsAt?: number;
+  /**
+   * An update taken before Quiver offers it, of an app that has a release it does offer: `asked`, the player waits
+   * 48 hours for updates and asked for this one early; `scan`, they get updates right away, and VirusTotal
+   * warned of or flagged this one.
+   */
+  early?: "asked" | "scan";
   resolve: (install: boolean) => void;
 };
 /** How an install goes, as `get` takes it; `app`, a custom app's repository not in the library yet; `auto`, Auto Update's. */
-type InstallOptions = { app?: CustomApp; pin?: boolean; unverified?: boolean; blocked?: string; auto?: boolean; asset?: string; platform?: Os };
+/** `to`: the folder a new install goes in, in a folder of its own; the default apps folder when absent. */
+/** `early`: the newest release still in its 48-hour wait, which the player asked for: it asks first. */
+type InstallOptions = { app?: CustomApp; pin?: boolean; unverified?: boolean; blocked?: string; auto?: boolean; asset?: string; platform?: Os; to?: string; early?: boolean };
 
 type Launcher = {
   config: Config;
@@ -160,10 +225,21 @@ type Launcher = {
   /** The player's GitHub token (GITHUB_TOKEN); saving one keeps it in the keychain, none removes it. */
   githubToken?: string;
   saveGithubToken: (token: string | undefined) => Promise<void>;
-  gitlab: ReturnType<typeof createGitlab>;
+  /** The player's GitLab token (GITLAB_TOKEN); saving one keeps it in the keychain, none removes it. */
+  gitlabToken?: string;
+  saveGitlabToken: (token: string | undefined) => Promise<void>;
+  gitlab: Gitlab;
+  /** The player's tokens, by repository host. */
+  tokens: Record<string, string>;
+  /** Saves a token for a host; none removes it. */
+  saveToken: (host: string, token: string | undefined) => Promise<void>;
+  /** The release hosts, with those tokens, for the apps the player added. */
+  providers: Providers;
   /** The catalog's consoles, and their names by id. */
   consoles: Console[];
   consoleNames: Record<string, string>;
+  /** An entry from the site (Browse's, or a game's ports) less the tags hidden here, as `catalog`'s are. */
+  withShownTags: <E extends Pick<Entry, "id" | "tags">>(entry: E) => E;
   library: LibraryItem[];
   installs: Record<string, Install>;
   catalog: Record<string, CatalogEntry>;
@@ -177,6 +253,19 @@ type Launcher = {
   confirming: Confirming | null;
   /** Asks the player before uninstalling (or uninstalling and removing) an app; null closes the prompt. */
   confirmUninstall: (confirming: Confirming | null) => void;
+  /** An app's saves here and in the account both changed: Play asks which to keep, and `answer` is called with it (null: neither, don't start). */
+  savesConflict: (Conflict & { answer: (keep: "cloud" | "here" | null) => void }) | null;
+  /** A backup the player asked to restore names folders this computer hasn't kept that app's saves in: they're shown, and `answer` is called with whether to go ahead (App.tsx's SavesPlacesPrompt). */
+  savesPlaces: { name: string; places: Parameters<ConfirmPlaces>[0]; answer: (ok: boolean) => void } | null;
+  /** Asks the player whether a backup of `name`'s saves may be put in those folders. */
+  confirmSavePlaces: (name: string) => ConfirmPlaces;
+  /** The app whose backup found the account full: asked about once, until a backup gets there again (App.tsx's SavesFullPrompt). Null closes it. */
+  savesFull: string | null;
+  closeSavesFull: () => void;
+  /** Room was made in the account: the apps whose backups didn't fit send what they have now. */
+  cloudCatchUp: () => void;
+  /** The account's cloud saves for an app, or null when it has none: signed out, switched off, or not from the catalog. */
+  cloudSavesFor: (id: string) => CloudApi | null;
   /** The app whose Play asks which of the player's programs to start; null closes the prompt. */
   choosingProgram: string | null;
   chooseProgram: (id: string | null) => void;
@@ -185,8 +274,11 @@ type Launcher = {
   setUpCopy: (asking: { id: string; fileId?: string; play?: boolean } | null) => void;
   /** The Quiver Launcher 3 library the launcher found by itself, until a library is brought over; undefined while it looks. */
   oldLibrary: V3Library | null | undefined;
-  /** Imports a Quiver Launcher 3 library's apps and tag filters, saying how many apps are done as it goes; resolves to the names of those it couldn't. */
-  importOld: (library: Pick<V3Library, "apps" | "filters">, onProgress?: (done: number) => void) => Promise<string[]>;
+  /**
+   * Imports a Quiver Launcher 3 library's apps and tag filters, and its pictures as each kind in `slots` (the icon
+   * unless said), saying how many apps are done as it goes; resolves to the names of those it couldn't.
+   */
+  importOld: (library: Pick<V3Library, "apps" | "filters">, onProgress?: (done: number) => void, slots?: readonly ArtSlot[]) => Promise<string[]>;
   /** The Quiver Launcher 3 library in a folder the player picked, its installs in `apps` if given: null when there isn't one. */
   findOld: (path: string, apps?: string[]) => Promise<V3Library | null>;
   /** Installs of Quiver Launcher 3's for apps in the library that show as not installed here, once found: a library brought over before Quiver could see them. */
@@ -206,7 +298,7 @@ type Launcher = {
    * `asset`: the name of the release's file the player picked, in place of the one Quiver would choose.
    * `platform`: the system whose build to install, as Windows' through Wine on Linux; later updates keep to it.
    */
-  get: (entry: Entry, release?: Release, options?: { pin?: boolean; unverified?: boolean; blocked?: string; asset?: string; platform?: Os }) => Promise<void>;
+  get: (entry: Entry, release?: Release, options?: GetOptions) => Promise<void>;
   /** Starts an app: `executable`, else its one program the player picked, else asks which of them, else the launcher's own choice. */
   /** Starts an installed app. Without the player's copy of its game that it needs, asks for it first, unless `withoutCopy`. */
   play: (id: string, executable?: string, withoutCopy?: boolean) => Promise<void>;
@@ -218,12 +310,14 @@ type Launcher = {
   remove: (id: string) => Promise<void>;
   /** Deletes the app's files (to the trash), keeping it in the library to get again. */
   uninstall: (id: string) => Promise<void>;
-  /** A GitHub or GitLab repository: the catalog's app when it lists it, else what adding it would install. */
-  lookUpRepository: (input: string) => Promise<{ error: string } | { listed: Entry[] } | { preview: RepositoryPreview }>;
+  /** A repository from any supported host: the catalog's app when it lists it, else what adding it would install. */
+  lookUpRepository: (input: string, provider?: string) => Promise<{ error: string } | { listed: Entry[] } | { preview: RepositoryPreview }>;
   /** The catalog's apps for an app the player added from its repository, once the catalog lists it; several when the repository ships several. */
   listedAs: (id: string) => Promise<Entry[]>;
   /** Repositories the player added that the catalog lists an app of now, that isn't in the library yet. */
   inCatalog: ReadonlySet<string>;
+  /** Apps the player added whose repository was renamed or moved since: its name now, by app (`movedTo`). */
+  moved: Readonly<Record<string, string>>;
   /** The game an app the player added plays: its artwork, consoles and "Based on". Null for none. */
   setGame: (id: string, art: GameArt | null) => void;
   /**
@@ -244,6 +338,8 @@ type Launcher = {
   /** Adds an app the player picked out, without downloading it, and says so: its card in Browse looks no different. */
   addToLibrary: (entry: Entry) => void;
   setUpdates: (id: string, updates: Install["updates"]) => void;
+  /** Sets whether an installed app gets pre-releases; undefined goes back to the player's default. */
+  setPrereleases: (id: string, prereleases: Install["prereleases"]) => void;
   /** Stops offering this release of an app; a newer one is offered as usual. */
   declineUpdate: (id: string, version: string) => void;
   /** Sets how an installed app starts; nothing set goes back to the launcher's choice. */
@@ -256,6 +352,8 @@ type Launcher = {
   customize: (id: string, overrides: { name?: string; cover?: string; pictures?: Pictures }) => void;
   /** The player's own tags on an app; hand-picked collections are tags. */
   setTags: (id: string, tags: string[]) => void;
+  /** Renames one of the player's tags on every app that has it; with no new name, takes it off them all. */
+  renameTag: (from: string, to?: string) => void;
   /** The consoles the player says an app is for, by id; undefined, or the catalog's own, shows the catalog's again. */
   setConsoles: (id: string, consoles?: string[]) => void;
   /** Saved library filters, in order. */
@@ -273,11 +371,23 @@ type Launcher = {
   notice: { text: string; stays?: boolean } | null;
   setNotice: (text: string | null, options?: { stays?: boolean }) => void;
   dismiss: (id: string) => void;
-  /** The folders of installed apps that live in the apps folder, which moving it takes along. */
-  appFolders: () => string[];
+  /** The installed apps moving the apps folder takes along: those in it, and those kept elsewhere it can bring in. */
+  movableApps: () => MovableApps;
   /** The app whose folder the player is renaming; null closes the prompt. */
   renaming: Entry | null;
   askRename: (entry: Entry | null) => void;
+  /** The library app the player is giving a name of their own (its id); null closes the prompt. */
+  naming: string | null;
+  askName: (id: string | null) => void;
+  /** The app whose page is to show its Manage tab, once it's open (its id); null once it has. */
+  managing: string | null;
+  askManage: (id: string | null) => void;
+  /**
+   * The app the player is choosing a folder for: to install it in (the version and options it was going to install
+   * with, if any), or move it to; null closes the prompt.
+   */
+  placing: Placing | null;
+  askPlace: (entry: Entry | null, release?: Release, options?: GetOptions) => void;
   /** The app whose folder the player is adding files to, from its menu; null closes the prompt. */
   addingFiles: Entry | null;
   askAddFiles: (entry: Entry | null) => void;
@@ -286,9 +396,312 @@ type Launcher = {
   changeVersion: (entry: Entry | null) => void;
   /** Renames an installed app's folder in the apps folder, as a folder can be named; resolves to the name it got. */
   renameFolder: (id: string, name: string) => Promise<string>;
-  /** Moves the installed apps to another folder, where apps install from then on. */
-  moveApps: (to: string) => Promise<void>;
+  /** The apps folders, the default first: the one apps install in, and each other one apps are kept in. */
+  appsFolders: () => AppsFolder[];
+  /**
+   * The installed apps not yet in a folder for their console, each with the apps folder it's in, and those that stay
+   * at the top of the apps folder with why (`sortPlan`).
+   */
+  sortPlan: () => ReturnType<typeof sortPlan>;
+  /**
+   * Makes `to` the folder new apps install in, moving nothing: the apps in the old one stay there and play from it,
+   * which becomes one more apps folder. Apps already in `to` become its own again.
+   */
+  switchAppsFolder: (to: string) => Promise<void>;
+  /**
+   * Moves installed apps to `to`, where apps install from then on: the default folder's (`inside`), and those in the
+   * other apps folders named in `from`. Each app's new place is recorded as soon as it's there, so one that fails part
+   * way loses none. Resolves to the old copies left to delete, and the apps that couldn't move (each still where it
+   * was, and playable).
+   */
+  moveApps: (to: string, which: { inside: boolean; from: string[] }) => Promise<{ left: string[]; failed: { folder: string; why: string }[] }>;
+  /**
+   * Moves one installed app's folder into `to`, beside what's there, the same safe way the apps folder moves. Resolves
+   * to its old copy if that couldn't all be deleted.
+   */
+  moveApp: (id: string, to: string) => Promise<{ left?: string }>;
+  /** The apps moving now, by id, with how far each has got. */
+  appMoves: Record<string, AppMove>;
 };
+
+/** What Get installs with: `to`, the folder a new install goes in; the default apps folder when absent. */
+export type GetOptions = { pin?: boolean; unverified?: boolean; blocked?: string; asset?: string; platform?: Os; to?: string; early?: boolean };
+
+/** An app whose folder the player is choosing, with what it was going to install. */
+export type Placing = { entry: Entry; release?: Release; options?: GetOptions };
+
+/** How far an app's move has got: bytes copied of its size, both 0 until it's known to be copying. */
+export type AppMove = { copied: number; size: number };
+
+/** Whether an install's folder can move to another: one Quiver put there, not a Windows installer's or the player's own. */
+export const movable = (install: Install | undefined) => Boolean(install && !install.local && !install.installer);
+
+/** `placed`: how many apps are in folders the player chose for each, which moving the apps folder leaves be. */
+export type MovableApps = { inside: MovingApp[]; elsewhere: MovingApp[]; placed: number };
+
+/** A folder apps are installed in: the default, which new apps install in, or another the player's apps are kept in. */
+export type AppsFolder = { path: string; default: boolean; apps: MovingApp[] };
+
+/** The short names of console folders, by the catalog's console ids (its facets). */
+const CONSOLE_FOLDERS: Record<string, string> = {
+  nes: "NES", snes: "SNES", n64: "N64", gcn: "GameCube", wii: "Wii", wiiu: "Wii U", switch: "Switch", switch2: "Switch 2",
+  gb: "Game Boy", vb: "Virtual Boy", gbc: "Game Boy Color", gba: "GBA", nds: "DS", "3ds": "3DS",
+  ps1: "PS1", ps2: "PS2", ps3: "PS3", ps4: "PS4", ps5: "PS5", psp: "PSP", vita: "Vita",
+  "og xbox": "Xbox", x360: "Xbox 360", xone: "Xbox One",
+  sms: "Master System", gg: "Game Gear", gen: "Genesis", segacd: "Sega CD", "32x": "32X", saturn: "Saturn", dreamcast: "Dreamcast",
+  cdi: "CD-i", "3do": "3DO", ami: "Amiga", arcade: "Arcade", pc: "PC", mobile: "Mobile",
+};
+
+/**
+ * The folder an app goes in inside its apps folder when new apps are grouped by console, as a path with "/": emulators,
+ * tools and standalone games each together, and ports in Ports, in their console's folder there (or Multi-console, for
+ * more than one). None for the player's own apps, which have no console to go by.
+ */
+export function groupFolder(entry: Pick<Entry, "id" | "projectType" | "consoles" | "basedOn">, consoleNames: Record<string, string> = {}): string | undefined {
+  if (isLocal(entry.id)) return undefined;
+  if (entry.projectType === "emulator") return "Emulators";
+  if (entry.projectType === "tool") return "Tools";
+  if (entry.projectType === "game") return "Games";
+  const consoles = entry.basedOn?.console ? [entry.basedOn.console] : (entry.consoles ?? []);
+  // An app the player added from a repository goes by the consoles they gave it (or its game's): without one, there's
+  // nothing to say it's a port of anything, so it stays where it is.
+  if (isCustom(entry.id) && !consoles.length) return undefined;
+  const id = consoles[0];
+  const folder = consoles.length > 1 ? "Multi-console" : !id ? "Other" : (CONSOLE_FOLDERS[id] ?? folderNameFor(consoleNames[id] ?? id));
+  return `Ports/${folder}`;
+}
+
+/** The apps folder an app kept in one is in: its folder's parent, or the one above its console folder (Ports/N64). */
+export const rootOf = (app: { dir?: string; group?: string }) => {
+  let path = parentOf(app.dir!);
+  for (let up = app.group ? app.group.split(/[\\/]/).length : 0; up > 0; up--) path = parentOf(path);
+  return path;
+};
+
+/** `folder` and `name` (which may be a path with "/") joined as a path, with `folder`'s own separator. */
+export const joinPath = (folder: string, name: string) => `${folder.replace(/[\\/]+$/, "")}${separator(folder)}${name.split(/[\\/]/).join(separator(folder))}`;
+
+const separator = (path: string) => (path.includes("\\") ? "\\" : "/");
+/** The folder a path is in. */
+export const parentOf = (path: string) => path.replace(/[\\/]+$/, "").replace(/[\\/][^\\/]*$/, "");
+/** A path's last part. */
+const baseName = (path: string) => path.replace(/[\\/]+$/, "").split(/[\\/]/).pop() ?? "";
+/** Whether two paths name one folder, however their separators, trailing slash or (on Windows) case. */
+export const samePath = (a: string, b: string) => {
+  const norm = (p: string) => {
+    const s = p.replace(/[\\/]+/g, "/").replace(/\/$/, "");
+    return /^[A-Za-z]:/.test(s) ? s.toLowerCase() : s;
+  };
+  return norm(a) === norm(b);
+};
+/** Whether `inner` is `outer` or a folder somewhere inside it. */
+const within = (inner: string, outer: string) => {
+  let at = inner;
+  for (let i = 0; i < 64 && at; i++) {
+    if (samePath(at, outer)) return true;
+    const up = parentOf(at);
+    if (up === at) break;
+    at = up;
+  }
+  return false;
+};
+
+/** The apps folders: the default (`appsDir`) first, then each other folder apps are kept in, by path. */
+export function appsFolders(installs: Record<string, Install>, appsDir: string): AppsFolder[] {
+  const { inside, elsewhere } = movableApps(installs);
+  const folders: AppsFolder[] = [{ path: appsDir, default: true, apps: [...inside] }];
+  for (const app of elsewhere) {
+    const path = rootOf(app);
+    const folder = folders.find((f) => samePath(f.path, path));
+    if (folder) folder.apps.push(app);
+    else folders.push({ path, default: false, apps: [app] });
+  }
+  return [folders[0], ...folders.slice(1).sort((a, b) => a.path.localeCompare(b.path))];
+}
+
+/** Why `to` can't be a new default folder beside `folders`: one inside another would show its apps as an app's folder. */
+export function folderClash(to: string, folders: AppsFolder[]): string | null {
+  for (const f of folders) {
+    if (samePath(to, f.path)) continue;
+    const path = f.path;
+    if (within(to, path)) return t`Choose a folder outside ${path}, which has apps in it.`;
+    if (within(path, to)) return t`Choose a folder that doesn't have ${path} inside it.`;
+  }
+  return null;
+}
+
+/**
+ * The installs with those in the default folder `appsDir` kept where they are, by their folder there, as another
+ * apps folder's: what they need before another folder becomes the default, so none is looked for in the new one.
+ */
+export function keptWhereTheyAre(installs: Record<string, Install>, appsDir: string): Record<string, Install> {
+  const sep = separator(appsDir);
+  const root = appsDir.replace(/[\\/]+$/, "");
+  return Object.fromEntries(Object.entries(installs).map(([id, i]) => [id, i.dir ? i : { ...i, dir: `${root}${sep}${i.folder}`, inApps: true as const }]));
+}
+
+/**
+ * The installs once `to` is the default folder: those kept in it under their own folder's name become its own, as if
+ * installed there. One kept under another name (a move gave it "Name 2") keeps its folder.
+ */
+export function ownedBy(installs: Record<string, Install>, to: string): Record<string, Install> {
+  return Object.fromEntries(
+    Object.entries(installs).map(([id, i]) => [id, i.dir && i.inApps && samePath(parentOf(i.dir), to) && baseName(i.dir) === i.folder ? movedInside(i) : i]),
+  );
+}
+
+/**
+ * The installs moving the apps folder takes: those in it, and those kept in another apps folder (Quiver Launcher 3's),
+ * which it can bring in. Never one in a folder the player chose for it alone (Locate existing install, or one 3.x
+ * kept outside its apps folder), the player's own files, or a program a Windows installer put where Windows looks
+ * after it.
+ */
+export function movableApps(installs: Record<string, Install>): MovableApps {
+  const all = Object.entries(installs);
+  return {
+    inside: all.flatMap(([id, i]) => (i.dir ? [] : [{ id, folder: i.folder }])),
+    // A folder of the player's own files kept in another apps folder (by changing the default) goes with that folder.
+    elsewhere: all.flatMap(([id, i]) => (i.dir && i.inApps && !i.installer ? [{ id, folder: i.folder, dir: i.dir, ...(i.group ? { group: i.group } : {}) }] : [])),
+    placed: all.filter(([, i]) => i.dir && !i.inApps && !i.local && !i.installer).length,
+  };
+}
+
+/**
+ * An app's entry with the consoles the player chose for it, if they did, in place of the catalog's (and its "Based
+ * on"): where grouping by console puts it, as the library shows it.
+ */
+export function withOwnConsoles<T extends Pick<Entry, "consoles" | "basedOn">>(entry: T, own: string[] | undefined): T {
+  if (!own) return entry;
+  const { basedOn: _, ...rest } = entry;
+  return { ...rest, consoles: own } as T;
+}
+
+/** Why an app at the top of the default apps folder stays there when the others move into console folders. */
+export type StaysReason = "own" | "installer" | "noConsole" | "unknown";
+
+/**
+ * The installed apps at the top of the default apps folder, as sorting into console folders takes them: those that
+ * move (`moves`, each with that folder as `to`, which `moveApp` puts in its console's folder there), and those that
+ * stay with why (`stays`): the player's own (a local app), a Windows installer's, an app the player added with no
+ * console to go by, or one the catalog hasn't answered for. Never one in another apps folder (which may already be
+ * one console's) or one chosen for it alone. `own` is the consoles the player chose for an app, by id.
+ */
+export function sortPlan(
+  installs: Record<string, Install>,
+  appsDir: string,
+  catalog: Record<string, Pick<Entry, "id" | "projectType" | "consoles" | "basedOn">>,
+  consoleNames: Record<string, string> = {},
+  own: Record<string, string[] | undefined> = {},
+): { moves: { id: string; folder: string; to: string }[]; stays: { id: string; folder: string; why: StaysReason }[] } {
+  const moves: { id: string; folder: string; to: string }[] = [];
+  const stays: { id: string; folder: string; why: StaysReason }[] = [];
+  for (const [id, i] of Object.entries(installs)) {
+    if (i.dir) continue;
+    const why: StaysReason | undefined =
+      i.local || isLocal(id) ? "own"
+      : i.installer ? "installer"
+      : !catalog[id] ? "unknown"
+      : !groupFolder(withOwnConsoles(catalog[id], own[id]), consoleNames) ? "noConsole"
+      : undefined;
+    if (why) stays.push({ id, folder: i.folder, why });
+    else moves.push({ id, folder: i.folder, to: appsDir });
+  }
+  // A folder two entries share moves once, with the first; the other goes with it (`moveApp`). One that stays with
+  // another of its folder moving goes too, so it isn't listed as staying.
+  const sameFolder = (a: { folder: string }, b: { folder: string }) => samePath(joinPath(appsDir, a.folder), joinPath(appsDir, b.folder));
+  return {
+    moves: moves.filter((a, n) => !moves.slice(0, n).some((b) => sameFolder(a, b))),
+    stays: stays.filter((a, n) => !moves.some((b) => sameFolder(a, b)) && !stays.slice(0, n).some((b) => sameFolder(a, b))),
+  };
+}
+
+/** The installed apps that sorting into console folders moves (`sortPlan`'s `moves`). */
+export const unsortedApps = (...args: Parameters<typeof sortPlan>) => sortPlan(...args).moves;
+
+/** Whether an install may be one of 3.x's that came over before Quiver knew which of them were in its apps folder. */
+export const unsureInApps = (i: Install) => Boolean(i.dir && !i.inApps && !i.local && !i.installer);
+
+/**
+ * The installs with those 3.x has in its apps folder marked as such, or the same object when none needs it: the ones
+ * a launcher before this brought over, which moving the apps folder can then bring in.
+ */
+export function markedInApps(installs: Record<string, Install>, old: OldApp[], folders: string[] = []): Record<string, Install> {
+  const dirs = new Set(old.flatMap((a) => (a.inApps && a.dir && !a.program ? [a.dir] : [])));
+  // One in any of 3.x's apps folders is too, though the library brought over doesn't list it: another 3.x copy's,
+  // or one 3.x forgot.
+  const inFolder = (dir: string) => folders.some((f) => samePath(parentOf(dir), f));
+  const marking = Object.entries(installs).filter(([, i]) => unsureInApps(i) && (dirs.has(i.dir!) || inFolder(i.dir!)));
+  return marking.length ? { ...installs, ...Object.fromEntries(marking.map(([id, i]) => [id, { ...i, inApps: true as const }])) } : installs;
+}
+
+/** An install once a move has put it in the apps folder under its own folder's name, where it needs no `dir`. */
+export function movedInside({ dir: _, inApps: __, ...install }: Install): Install {
+  return install;
+}
+
+/**
+ * An install whose folder went from `from` to `to`, with its copies put inside it (a ROM in the app's own folder)
+ * known where they are now: Play passes that path to a game told of its copy by flag or variable.
+ */
+export function withCopiesIn(install: Install, from: string, to: string): Install {
+  if (!install.copies || samePath(from, to)) return install;
+  const norm = (p: string) => p.replace(/[\\/]+/g, "/").replace(/\/$/, "");
+  const fold = (p: string) => (/^[A-Za-z]:/.test(p) ? norm(p).toLowerCase() : norm(p));
+  const old = `${fold(from)}/`;
+  const copies = Object.fromEntries(
+    Object.entries(install.copies).map(([id, c]) => [id, c.placed && fold(c.placed).startsWith(old) ? { ...c, placed: joinPath(to, norm(c.placed).slice(old.length)) } : c]),
+  );
+  return { ...install, copies };
+}
+
+/** Where an install's folder is: its own path, or its folder in the default apps folder `appsDir`. */
+export const placeOf = (install: Install, appsDir: string) => install.dir ?? joinPath(appsDir, install.folder);
+
+/**
+ * The other installs in `id`'s very folder: two library entries for one app (an entry the catalog renamed, kept beside
+ * the one it became) can both point at it. A move takes the folder once, and they go with it.
+ */
+export function twinsOf(installs: Record<string, Install>, id: string, appsDir: string): string[] {
+  const at = installs[id];
+  if (!at) return [];
+  const place = placeOf(at, appsDir);
+  return Object.entries(installs).flatMap(([other, i]) => (other !== id && samePath(placeOf(i, appsDir), place) ? [other] : []));
+}
+
+/**
+ * The installs with `twins` recorded where `id`'s folder is now: in it, in its apps folder and console folder too. One
+ * whose own folder name it has, at the top of the default apps folder, is one of that folder's own.
+ */
+export function withTwins(installs: Record<string, Install>, id: string, twins: string[], appsDir: string): Record<string, Install> {
+  const at = installs[id];
+  if (!at || !twins.length) return installs;
+  const dir = placeOf(at, appsDir);
+  const next = { ...installs };
+  for (const twin of twins) {
+    if (!next[twin]) continue;
+    const { dir: _, inApps: __, group: ___, ...rest } = next[twin];
+    const own = !at.group && samePath(parentOf(dir), appsDir) && baseName(dir) === rest.folder;
+    next[twin] = own ? rest : { ...rest, dir, ...(at.inApps || !at.dir ? { inApps: true as const } : {}), ...(at.group ? { group: at.group } : {}) };
+  }
+  return next;
+}
+
+/**
+ * `apps` with only the first of each folder: a folder two library entries share moves once. With, for each app kept,
+ * the others in its folder, which go where it does.
+ */
+export function oncePerFolder<T extends { id: string }>(apps: T[], installs: Record<string, Install>, appsDir: string): { apps: T[]; twins: Map<string, string[]> } {
+  const twins = new Map<string, string[]>();
+  const taken = new Set<string>();
+  const kept = apps.filter((a) => {
+    if (taken.has(a.id)) return false;
+    const others = twinsOf(installs, a.id, appsDir);
+    others.forEach((o) => taken.add(o));
+    if (others.length) twins.set(a.id, others);
+    return true;
+  });
+  return { apps: kept, twins };
+}
 
 const LauncherContext = createContext<Launcher | null>(null);
 
@@ -301,27 +714,29 @@ const LauncherNow = createContext<{ readonly current: Launcher } | null>(null);
  */
 export const useLauncherNow = () => useContext(LauncherNow)!;
 
+/** How long a release waits before Quiver offers it: the time there is to withdraw a harmful one. */
+export const RELEASE_WAIT = 48 * 3_600_000;
+/** Whether a release came out so lately that its 48-hour wait is why Quiver doesn't offer it yet. */
+export const stillWaiting = (releasedAt: number | undefined, now = Date.now()) => releasedAt !== undefined && now - releasedAt < RELEASE_WAIT;
 /** How long looking up a repository may take before it gives up. */
 const LOOKUP_TIMEOUT = 30_000;
 /** The release a player gets: the newest that isn't a pre-release, else the newest. */
 const latestOf = (releases: Release[]) => releases.find((r) => !r.prerelease) ?? releases[0];
-/** A custom app's repository from its key, for one not in the library; GitHub and GitLab don't mind its lower case. */
-const fromKey = (id: string): CustomApp => {
-  const repository = id.slice(id.indexOf(":") + 1);
-  return { provider: id.startsWith("gitlab:") ? "gitlab" : "github", repository, name: repository.split("/").at(-1)! };
-};
-
 /**
  * Whether the player can rename an app's folder: one Quiver keeps in the apps
- * folder. Not a 3.x install or a program left where it is, and not a Windows
- * installer's, whose files are wherever its setup put them.
+ * folder, at its top or in its console's folder there (Group by console), or
+ * one kept where it is (Locate existing install, or 3.x's), renamed in place.
+ * Not a program left where it is, the player's own files where they keep them,
+ * or a Windows installer's, whose files are wherever its setup put them.
  */
-export const renamable = (install: Install | undefined) => Boolean(install && !install.dir && install.installer !== "msi");
+export const renamable = (install: Install | undefined) => Boolean(install && !install.program && !install.installer && !(install.local && install.dir));
+/** The name an app's folder has on disk: a located one keeps the name the player gave it, not the one Quiver would. */
+export const folderNameOf = (install: Install) => (install.dir ? baseName(install.dir) : install.folder);
 
 /** The empty file that has many apps keep their saves and settings in their own folder. */
 export const PORTABLE_FILE = "portable.txt";
 /** Whether files can be added to an app's folder: not a program the player added from where it is, or one its Windows installer put elsewhere. */
-export const filesAddable = (install: Install | undefined) => Boolean(install && !install.program && install.installer !== "msi");
+export const filesAddable = (install: Install | undefined) => Boolean(install && !install.program && !install.installer);
 /** File names without blanks or repeats; on Windows, names in different case are one file. */
 export const uniqueFiles = (names: string[]) => {
   const seen = new Set<string>();
@@ -351,6 +766,75 @@ export const catalogOs = (os: Os) => (os === "linux" ? undefined : os);
  */
 export const canGet = (entry: Entry, os: string) => availableOn(entry, os) && Boolean(entry.verified || entry.lastReleaseVersion);
 
+/**
+ * How an app updates: its own choice, else the player's default (`Settings.autoUpdates`). Unset: it offers them. A
+ * Windows installer's setup waits for the player, so it never updates by itself either way.
+ */
+export const updatesOf = (settings: Pick<Settings, "autoUpdates">, install: Pick<Install, "updates" | "installer" | "setup"> | undefined): "auto" | "pinned" | undefined => {
+  const updates = install?.updates ?? (settings.autoUpdates ? "auto" : undefined);
+  return updates === "ask" || (updates === "auto" && (install?.installer || install?.setup)) ? undefined : updates;
+};
+
+/** Whether an app gets pre-releases: its own choice, else the player's default. */
+export const wantsPrereleases = (settings: Pick<Settings, "prereleases">, install: Pick<Install, "prereleases"> | undefined) =>
+  install?.prereleases ? install.prereleases === "include" : Boolean(settings.prereleases);
+
+/** The app's newest verified main release, whatever the player chose; a pre-release only for a project with nothing else. */
+export const mainRelease = (entry: CatalogEntry) => entry.verifiedMain ?? entry.verified;
+
+/** A project that only publishes pre-releases: every player gets its newest. */
+export const onlyPrereleases = (entry: CatalogEntry) => Boolean(mainRelease(entry)?.prerelease);
+
+/** The entry as the site sent it, without the player's pre-release choice. */
+export function withMainRelease(entry: CatalogEntry): CatalogEntry {
+  if (!entry.verifiedMain) return entry;
+  const { verifiedMain, ...rest } = entry;
+  return { ...rest, verified: verifiedMain };
+}
+
+/**
+ * The entry for a player who chose pre-releases for it: its newest verified pre-release, when it's newer than its main
+ * release, is the release it updates to. Every reader of `verified` then follows the choice.
+ */
+export function withPrereleases(entry: CatalogEntry, wants: boolean): CatalogEntry {
+  const main = withMainRelease(entry);
+  return wants && main.verifiedPrerelease ? { ...main, verified: main.verifiedPrerelease, verifiedMain: main.verified } : main;
+}
+
+/**
+ * The entry without what was looked up early (`CatalogEntry.early`) for the other choice of pre-releases than the
+ * app's now, so it's looked up again: on main releases, a pre-release is never the app's update.
+ */
+export function withEarlyFor(entry: CatalogEntry, wants: boolean): CatalogEntry {
+  if (!entry.early || Boolean(entry.early.pre) === wants) return entry;
+  const { early: _, ...rest } = entry;
+  return rest;
+}
+
+/**
+ * The saved entries that are whole. 4.0.0-beta.4 could save an app's page with no entry in it (an app with no slug
+ * asked for /apps/, which answers with the catalog's first page): one with no games or tags left the library unable to
+ * show. Without it, the app's entry is asked for again, or made again for an app the player added.
+ */
+export function usableCatalog(catalog: Record<string, CatalogEntry>) {
+  const whole = (e: CatalogEntry | null | undefined) => Boolean(e?.id && Array.isArray(e.games) && Array.isArray(e.tags));
+  if (Object.values(catalog).every(whole)) return catalog;
+  return Object.fromEntries(Object.entries(catalog).filter(([, e]) => whole(e)));
+}
+
+/** The entry with every tag the catalog gave it, the ones the player hid among them. */
+export function withAllTags(entry: CatalogEntry): CatalogEntry {
+  if (!entry.allTags) return entry;
+  const { allTags, ...rest } = entry;
+  return { ...rest, tags: allTags };
+}
+
+/** Entries as they're kept: each the site's own. The same object when none had the player's choice in it. */
+function keptAsSent(catalog: Record<string, CatalogEntry>) {
+  if (!Object.values(catalog).some((e) => e.verifiedMain || e.allTags)) return catalog;
+  return Object.fromEntries(Object.entries(catalog).map(([id, e]) => [id, withMainRelease(withAllTags(e))]));
+}
+
 /** "v1.2" and "1.2" are the same release. */
 const bare = (version: string) => version.trim().replace(/^v/i, "");
 
@@ -376,10 +860,86 @@ export const mayUpdate = (entry: CatalogEntry | undefined, install: Install | un
   Boolean(entry?.verified && install && !install.local && !pulledVerified(entry) && newerThan(entry.verified, install));
 
 /**
+ * What `early` was looked up for: the newest release upstream, and the kind of build installed (this computer's own,
+ * for an app not installed yet). None when there's nothing to look up: the newest is the one installed, or the
+ * verified one, which updates as it always has.
+ */
+export const earlyKey = (entry: Pick<Entry, "lastReleaseVersion" | "verified"> | undefined, install: Install | undefined) => {
+  const newest = entry?.lastReleaseVersion;
+  if (!newest || install?.local || (install && bare(newest) === bare(install.version)) || (entry.verified && bare(newest) === bare(entry.verified.version))) return undefined;
+  return `${bare(newest)}:${install?.wine ? "windows" : "own"}:${install?.installer === "msi" ? "msi" : "files"}`;
+};
+
+/**
+ * The release still in its 48-hour wait that this install could update to, whichever way apps update. None once it's
+ * withdrawn, and none until `early` is looked up, as for `forHere`.
+ */
+export function earlyRelease(entry: CatalogEntry | undefined, install: Install | undefined) {
+  const found = entry?.early;
+  const release = found?.release;
+  if (!release || !install || found.of !== earlyKey(entry, install) || !stillEarly(entry!, release)) return undefined;
+  return newerThan(release, install) ? release : undefined;
+}
+
+/**
+ * Whether a release looked up early (`CatalogEntry.early`) is still one: not withdrawn since, nor verified since, as a
+ * main release or a pre-release. A verified one is offered as any verified release is, or not at all: a pre-release to
+ * an app on main releases, say. `early` is only looked up again once a newer release comes.
+ */
+const stillEarly = (entry: CatalogEntry, release: { version: string }) =>
+  !entry.withdrawn?.some((w) => bare(w.version) === bare(release.version)) &&
+  ![entry.verified, entry.verifiedMain, entry.verifiedPrerelease].some((v) => v && bare(v.version) === bare(release.version));
+
+/**
+ * The newest release upstream that a card says isn't offered yet: one newer than the verified release. None once
+ * `early` was looked up for an install and found no release this computer can take (only another system's build, or
+ * an updater's files), as that one is never offered here, however long the wait.
+ */
+export function notOfferedYet(entry: CatalogEntry | undefined, install: Install | undefined) {
+  const newest = entry?.lastReleaseVersion;
+  const verified = entry?.verified;
+  if (!newest || !verified || bare(newest) === bare(verified.version) || (entry.lastReleaseAt ?? 0) <= (verified.releasedAt ?? 0)) return undefined;
+  const of = earlyKey(entry, install);
+  return of && entry.early?.of === of && !entry.early.release ? undefined : newest;
+}
+
+/**
+ * For an app that isn't installed yet, the release ahead of the verified one that this computer could install: the
+ * newest with a file for it. None until `early` is looked up, or once it's withdrawn.
+ */
+function earlyToGet(entry: CatalogEntry | undefined) {
+  const found = entry?.early;
+  const release = found?.release;
+  if (!release || found.of !== earlyKey(entry, undefined)) return undefined;
+  return stillEarly(entry!, release) ? release : undefined;
+}
+
+/** With Newest right away, that release as the one Install takes. */
+export const earlyGet = (entry: CatalogEntry | undefined) => (entry?.early?.now ? earlyToGet(entry) : undefined);
+
+/** Waiting 48 hours, that release as what the player can install in the verified one's place, by asking: Install latest. */
+export const earlyGetOffer = (entry: CatalogEntry | undefined, install: Install | undefined) => (install || entry?.early?.now ? undefined : earlyToGet(entry));
+
+/** With Newest right away, the release this computer takes ahead of the verified one: an install's update, or what Install gets. */
+export const earlyHereFor = (entry: CatalogEntry | undefined, install: Install | undefined) => (install ? earlyUpdate(entry, install) : earlyGet(entry));
+
+/** With Newest right away, that release as the app's update. */
+export const earlyUpdate = (entry: CatalogEntry | undefined, install: Install | undefined) => (entry?.early?.now ? earlyRelease(entry, install) : undefined);
+
+/**
+ * Waiting 48 hours, that release as what the player can update this one app to early, by asking: never offered by
+ * itself, and not for an app pinned to its version.
+ */
+export const earlyOffer = (entry: CatalogEntry | undefined, install: Install | undefined) =>
+  entry?.early?.now || install?.updates === "pinned" ? undefined : earlyRelease(entry, install);
+
+/**
  * The release this install could update to, whatever the player chose to do about it. None until `forHere` is looked
  * up: a false update is worse than one that shows a moment late, as installing it could replace what works.
  */
 export function updateFor(entry: CatalogEntry | undefined, install: Install | undefined) {
+  const early = earlyUpdate(entry, install);
+  if (early) return early;
   if (!mayUpdate(entry, install)) return undefined;
   const found = entry!.forHere;
   if (found?.of !== forHereKey(entry!.verified!, install!)) return undefined;
@@ -413,7 +973,8 @@ export function adoptedInstall(old: OldApp, entry: Entry, os: Os): Install | und
   const executables = entry.launcher.preferredExecutables?.[os as "windows" | "linux" | "macos"] ?? [];
   // One 3.x installed with its Windows installer starts the program it linked.
   const msi = old.program ? { installer: "msi" as const, program: old.program } : {};
-  return { dir: old.dir, version: old.version, folder: entry.launcher.folderName || entry.slug, executables: old.program ? [] : executables, ...msi };
+  const inApps = old.inApps && !old.program ? { inApps: true as const } : {};
+  return { dir: old.dir, version: old.version, folder: entry.launcher.folderName || entry.slug, executables: old.program ? [] : executables, ...msi, ...inApps };
 }
 
 /**
@@ -441,8 +1002,12 @@ export const locatable = (id: string, install: Install | undefined, job: Job | u
  * The catalog's entry for a 3.x app: the one 3.x knew first, as one repository can ship several apps, each with an
  * entry of its own (a port of two games); else the one for its repository.
  */
-export function catalogMatch<T>(old: OldApp, ids: Map<string, T>): T | undefined {
-  return (old.catalogId && ids.get(`id:${old.catalogId}`)) || (old.repository && ids.get(`${old.provider}:${old.repository}`.toLowerCase())) || undefined;
+export function catalogMatch<T>(old: OldApp, ids: Map<string, T>, now?: string): T | undefined {
+  const ref = old.repository ? v3Ref(old.provider, old.repository) : null;
+  // Under its name now too, when it was renamed or moved since 3.x knew it (`movedTo`), as the catalog follows a rename.
+  const byName = (repository: string) => (ref ? ids.get(customKey(ref.provider, repository, ref.host)) : undefined);
+  const byRepository = ref ? (byName(ref.repository) ?? (now ? byName(now) : undefined)) : undefined;
+  return (old.catalogId && ids.get(`id:${old.catalogId}`)) || byRepository || undefined;
 }
 
 /**
@@ -450,8 +1015,19 @@ export function catalogMatch<T>(old: OldApp, ids: Map<string, T>): T | undefined
  * isn't pointed back at 3.x's copy, unless that's another of 3.x's folders, which is the one 3.x says is this app's.
  */
 export function keptInstall(now: Install | undefined, adopted: Install): Install {
-  return !now ? adopted : now.dir && now.dir !== adopted.dir ? { ...now, ...adopted } : now;
+  if (!now) return adopted;
+  if (now.dir && now.dir !== adopted.dir) return { ...now, ...adopted };
+  // The same copy, which a launcher from before it knew could come along with the apps folder now learns can.
+  return now.dir === adopted.dir && adopted.inApps && !now.inApps ? { ...now, inApps: true } : now;
 }
+
+/** A 3.x app's repository: GitHub, GitLab, or the Codeberg that 3.x added. */
+export const v3Ref = (provider: string, repository: string): RepositoryRef | null => {
+  if (provider === "gitlab") return { provider: "gitlab", repository };
+  if (provider === "codeberg") return { provider: "gitea", host: "codeberg.org", repository };
+  if (provider === "github" && githubRepository(repository)) return { provider: "github", repository };
+  return null;
+};
 
 /** The installs 3.x has for apps in the library that have none here, by app. */
 export function looseInstalls(apps: OldApp[], ids: Map<string, { id: string }>, library: LibraryItem[], installs: Record<string, Install>, catalog: Record<string, Entry>, os: Os) {
@@ -459,7 +1035,8 @@ export function looseInstalls(apps: OldApp[], ids: Map<string, { id: string }>, 
   const has = (id: string | undefined): id is string => Boolean(id && library.some((i) => i.id === id && !i.removed));
   for (const old of apps) {
     // A catalog app that couldn't be read when it came over is in the library as a custom one.
-    const custom = old.repository && (old.provider === "github" || old.provider === "gitlab") ? customKey(old.provider, old.repository) : undefined;
+    const ref = old.repository ? v3Ref(old.provider, old.repository) : null;
+    const custom = ref ? customKey(ref.provider, ref.repository, ref.host) : undefined;
     const id = [catalogMatch(old, ids)?.id, custom].find(has);
     if (!id || loose[id] || installs[id] || !catalog[id]) continue;
     const install = adoptedInstall(old, catalog[id], os);
@@ -479,9 +1056,36 @@ export function importedTags(old: OldApp, entry: Entry): string[] {
 }
 
 /**
+ * The catalog's tags the player took off a 3.x app, which 3.x let them: those it last had from the catalog that the
+ * app no longer had there, and the catalog still gives it. None from a 3.x that didn't keep the catalog's.
+ */
+export function removedTags(old: OldApp, entry: Entry): string[] {
+  const kept = new Set((old.tags ?? []).map((t) => t.trim().toLowerCase()));
+  const was = new Set((old.catalogTags ?? []).map((t) => t.toLowerCase()));
+  return entry.tags.filter((t) => was.has(t.toLowerCase()) && !kept.has(t.toLowerCase()));
+}
+
+/**
+ * The library with one of the player's tags renamed on every app that has it, whatever its case, or taken off them
+ * all without `to`. An app that has the new name already keeps it once, and only the apps changed are new objects.
+ */
+export function retagged(library: LibraryItem[], from: string, to?: string): LibraryItem[] {
+  const old = from.toLowerCase();
+  const name = to?.trim().slice(0, 50);
+  return library.map((i) => {
+    const have = i.overrides?.tags ?? [];
+    if (!have.some((t) => t.toLowerCase() === old)) return i;
+    const renamed = have.map((t) => (t.toLowerCase() === old ? name : t)).filter((t): t is string => Boolean(t));
+    const tags = renamed.filter((t, n) => renamed.findIndex((o) => o.toLowerCase() === t.toLowerCase()) === n);
+    return { ...i, overrides: { ...i.overrides, tags: tags.length ? tags : undefined }, pending: i.account ? { ...i.pending, tags: true } : i.pending };
+  });
+}
+
+/**
  * What a 3.x library brings along besides its apps, as far as it can say before the catalog is asked: the apps
  * with tags of the player's own (those 3.x didn't have from the catalog, or any on an app the catalog doesn't
- * know), its tag filters and its hidden apps. Only apps it knows where they come from come over.
+ * know), its tag filters, its hidden apps and the pictures the player chose (Add Custom Image). Only apps it knows
+ * where they come from come over: `left` counts the others.
  */
 export function bringsAlong({ apps, filters }: Pick<V3Library, "apps" | "filters">) {
   const coming = apps.filter((a) => a.repository || a.catalogId);
@@ -491,7 +1095,21 @@ export function bringsAlong({ apps, filters }: Pick<V3Library, "apps" | "filters
     const catalogs = new Set((a.catalogTags ?? []).map((t) => t.toLowerCase()));
     return (a.tags ?? []).some((t) => !catalogs.has(t.toLowerCase()));
   };
-  return { tagged: coming.filter(own).length, filters: filters?.length ?? 0, hidden: coming.filter((a) => a.hidden).length };
+  return {
+    tagged: coming.filter(own).length,
+    filters: filters?.length ?? 0,
+    hidden: coming.filter((a) => a.hidden).length,
+    pictures: coming.filter((a) => a.icon && !isArtAddress(a.icon)).length,
+    left: apps.length - coming.length,
+  };
+}
+
+/** An app with the pictures it had in 3.x, in each place that has none of the player's here; the same app when none is new. */
+export function withOldPictures(item: LibraryItem, pictures: Pictures): LibraryItem {
+  const have = item.overrides?.pictures ?? {};
+  // A cover from an address is the account's cover, which the player may have set.
+  const unset = Object.entries(pictures).filter(([slot]) => !have[slot as ArtSlot] && !(slot === "cover" && item.overrides?.cover));
+  return unset.length ? { ...item, overrides: { ...item.overrides, pictures: { ...have, ...Object.fromEntries(unset) } } } : item;
 }
 
 /**
@@ -567,6 +1185,13 @@ export const tvModeOn = (settings: Pick<Settings, "tvMode">, config: Pick<Config
 export type Settings = {
   /** What runs Windows programs on Linux, for every app without a runner of its own; unset, Automatic (a Proton, else Wine). */
   windowsRunner?: WindowsRunner;
+  /**
+   * The folders the player keeps their game copies (ROMs, disc images) in, by console id; `*` for every console. A
+   * game's setup looks there first (own-copy.ts).
+   */
+  copyFolders?: Record<string, string[]>;
+  /** Asked once where those folders are: in the setup, or by the banner for a player set up before it (own-copy-settings.tsx). */
+  copyFoldersAsked?: boolean;
   /** An app's page's Project details folded away, for every app. */
   projectDetailsClosed?: boolean;
   /** TV mode: on, off, or unset, on by itself in Steam's Game Mode. */
@@ -597,8 +1222,14 @@ export type Settings = {
   language?: Language;
   /** New installs get `portable.txt` in their folder, beside what the catalog asks for. */
   portableByDefault?: boolean;
+  /** Every new install asks where it goes first (Install to…), whichever button started it. */
+  askWhereToInstall?: boolean;
+  /** New installs go in a folder for their console inside the apps folder (`groupFolder`). */
+  groupByConsole?: boolean;
   /** Apps hidden from the library here. */
   hidden?: string[];
+  /** The catalog's tags hidden here: everywhere, on one app, or as they're added (catalog-tags.ts). */
+  hiddenTags?: HiddenTags;
   /** Keyboard and controller bindings; unset uses the defaults. */
   keys?: Bindings;
   pad?: Bindings;
@@ -606,6 +1237,10 @@ export type Settings = {
   padOff?: boolean;
   /** No hints along the bottom for what a controller's buttons do. */
   padHintsOff?: boolean;
+  /** Holding buttons together doesn't close the game being played (src-tauri/src/session.rs). */
+  closeComboOff?: boolean;
+  /** The buttons that close it, as gamepad.rs names them; unset is Start + Select (CLOSE_COMBOS in controls.tsx). */
+  closeCombo?: string[];
   /** The library in sections by original console: what groupBy "console" was before there were other sections. */
   byConsole?: boolean;
   /** The library in sections (group.ts); unset is one piece. */
@@ -621,7 +1256,7 @@ export type Settings = {
   /** The library's tab, when it's one kept (library.tsx keepsTab); unset is All. */
   libraryTab?: string;
   /** The library's filters (library.tsx keptFilters); unset is none. */
-  libraryFilters?: Record<string, string>;
+  libraryFilters?: Record<string, string | string[]>;
   /** The platforms whose apps the library shows here (platforms.ts); unset is this device's own. */
   platforms?: string[];
   /** How the library shows its apps (view.ts); only what differs from the defaults. */
@@ -634,6 +1269,12 @@ export type Settings = {
   telemetryConsent?: boolean;
   /** The first-run notice about usage data was answered. */
   telemetryNoticeSeen?: boolean;
+  /** Cloud saves switched off for every app: save backups stay on this computer (cloud-saves.ts). */
+  cloudSavesOff?: boolean;
+  /** The player was told their cloud saves are full; not told again until a backup gets there. */
+  cloudFullTold?: boolean;
+  /** A folder of the player's own that save backups are also kept in, for Dropbox, OneDrive or Syncthing to sync (sync-folder.ts). */
+  syncFolder?: string;
   /** Quiver Launcher has started here before. */
   launched?: boolean;
   /** The first-run notice offering to bring over a Quiver Launcher 3 library was answered. */
@@ -642,25 +1283,64 @@ export type Settings = {
   oldInstallsChecked?: boolean;
   /** The first start's setup (setup.tsx) was finished or skipped. */
   setupDone?: boolean;
+  /**
+   * Which releases apps update to (app-updates.tsx): unset, only the ones Quiver verified; "newest", the newest it
+   * hasn't blocked, as soon as it's out, without asking.
+   */
+  appUpdates?: "newest";
+  /** Asked once which: in the setup, or by the banner for a player set up before it. */
+  appUpdatesAsked?: boolean;
+  /** Apps install their updates by themselves, unless an app says otherwise (`Install.updates`). Unset: they offer them. */
+  autoUpdates?: boolean;
+  /** Apps get pre-releases too, unless an app says otherwise (`Install.prereleases`). Unset: main releases only. */
+  prereleases?: boolean;
   /** Offer preview releases of Quiver Launcher too. */
   previewUpdates?: boolean;
   /** Announcements dismissed here, by id (announcements.ts). */
   dismissedAnnouncements?: string[];
-  /** Where earlier versions kept the player's GitHub token, as plain text; it moves to the keychain on start (`GITHUB_TOKEN`). */
+  /** Where earlier versions kept the player's GitHub token, as plain text; it moves to the keychain's token map on start. */
   githubToken?: string;
 };
 
-/** The player's GitHub token, for GitHub's higher limit: in the keychain (secret_set), sent only to GitHub's API, never synced. */
+/** The player's repository tokens, by host: in the keychain (secret_set), sent only to their host, never synced. */
+const REPOSITORY_TOKENS = "repositoryTokens";
+/** Where earlier versions kept the GitHub and GitLab tokens; they move into the map above on start. */
 const GITHUB_TOKEN = "githubToken";
+const GITLAB_TOKEN = "gitlabToken";
 
-/** The GitHub token from the keychain, moving one an earlier version left in settings.json there first. */
-async function githubToken(settings: Settings | null): Promise<string | undefined> {
-  if (settings?.githubToken) {
-    await native.secretSet(GITHUB_TOKEN, settings.githubToken);
-    delete settings.githubToken;
-    await native.writeState("settings", settings);
+/** The tokens from the keychain, moving earlier versions' GitHub and GitLab tokens there first. */
+async function repositoryTokens(settings: Settings | null): Promise<Record<string, string>> {
+  const raw = await native.secretGet(REPOSITORY_TOKENS).catch(() => null);
+  let tokens: Record<string, string> = {};
+  try {
+    tokens = raw ? (JSON.parse(raw) as Record<string, string>) : {};
+  } catch {
+    tokens = {};
   }
-  return (await native.secretGet(GITHUB_TOKEN)) ?? undefined;
+  const [github, gitlab] = await Promise.all([
+    native.secretGet(GITHUB_TOKEN).catch(() => null),
+    native.secretGet(GITLAB_TOKEN).catch(() => null),
+  ]);
+  if (github && !tokens["github.com"]) tokens["github.com"] = github;
+  if (gitlab && !tokens["gitlab.com"]) tokens["gitlab.com"] = gitlab;
+  const moved = Boolean(settings?.githubToken);
+  if (settings?.githubToken) {
+    tokens["github.com"] = settings.githubToken;
+    delete settings.githubToken;
+    await native.writeState("settings", settings).catch(() => {});
+  }
+  if (github || gitlab || moved) {
+    const saved = await native.secretSet(REPOSITORY_TOKENS, JSON.stringify(tokens)).then(
+      () => true,
+      () => false,
+    );
+    // The map has them now; the old keys would only be a second copy. Only removed once the map is safely saved.
+    if (saved) {
+      if (github) await native.secretSet(GITHUB_TOKEN, null).catch(() => {});
+      if (gitlab) await native.secretSet(GITLAB_TOKEN, null).catch(() => {});
+    }
+  }
+  return tokens;
 }
 
 /** An app as usage data names it: a catalog app by its slug; one the player added only by where it's from. */
@@ -683,6 +1363,9 @@ type Saved = {
   catalog: Record<string, CatalogEntry>;
   collections: Collection[];
   githubToken?: string;
+  gitlabToken?: string;
+  /** The player's tokens, by repository host. */
+  tokens: Record<string, string>;
 };
 
 /** What usage data says about this copy of the launcher, and takes out of what it sends. */
@@ -725,10 +1408,10 @@ export function LauncherProvider({ children }: { children: ReactNode }) {
       ]).then(async ([config, library, installs, catalog, settings, collections]) => {
         // The language picked here before anything shows, not the system's for a moment first.
         await activate(languageOf(settings ?? {})).catch(() => {});
-        // Without it GitHub still answers, at its lower limit.
-        const token = await githubToken(settings).catch(() => undefined);
+        // Without them GitHub and GitLab still answer, at their lower limits.
+        const tokens = await repositoryTokens(settings).catch(() => ({}) as Record<string, string>);
         if (settings?.scale) settings.scale = nearestInterfaceSize(settings.scale);
-        setSaved({ config, library: library ?? [], installs: installs ?? {}, catalog: catalog ?? {}, settings: settings ?? {}, collections: collections ?? [], githubToken: token });
+        setSaved({ config, library: library ?? [], installs: installs ?? {}, catalog: usableCatalog(catalog ?? {}), settings: settings ?? {}, collections: collections ?? [], tokens, githubToken: tokens["github.com"], gitlabToken: tokens["gitlab.com"] });
       });
     }).catch((e) => setBroken(e instanceof Error ? e : new Error(String(e))));
   }, []);
@@ -748,32 +1431,64 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
   const account = useAccount();
   const [allItems, setLibrary] = useState(saved.library);
   const [installs, setInstalls] = useState(saved.installs);
-  const [catalog, setCatalog] = useState(saved.catalog);
+  // As the site sent them; `catalog`, below, has each player's pre-release choice in it.
+  const [rawCatalog, setRawCatalog] = useState(() => keptAsSent(saved.catalog));
+  // What's written back may be from `catalog`: kept as the site sent it.
+  const setCatalog: Dispatch<SetStateAction<Record<string, CatalogEntry>>> = useCallback(
+    (next) => setRawCatalog((c) => keptAsSent(typeof next === "function" ? next(c) : next)),
+    [],
+  );
   const [jobs, setJobs] = useState<Record<string, Job>>({});
+  const [appMoves, setAppMoves] = useState<Record<string, AppMove>>({});
+  // The apps moving and installing this moment, kept as they change rather than as of a render: one mustn't start
+  // while the other is under way, even when both start together (an automatic update during Sort into console folders).
+  const moving = useRef(new Set<string>());
+  const installing = useRef(new Set<string>());
+  // The folder the player chose for an app not installed yet (Install to…), so Try again after a failed download
+  // installs there too.
+  const chosenFolder = useRef(new Map<string, string>());
   const [finished, setFinished] = useState<Finished[]>([]);
   const [choice, setChoice] = useState<Choice | null>(null);
   // Asked one at a time, in turn: Update all can come to several.
   const [questions, setQuestions] = useState<Asking[]>([]);
   const [confirming, confirmUninstall] = useState<Confirming | null>(null);
   const [renaming, askRename] = useState<Entry | null>(null);
+  const [naming, askName] = useState<string | null>(null);
+  const [managing, askManage] = useState<string | null>(null);
+  const [placing, setPlacing] = useState<Placing | null>(null);
+  const askPlace = (entry: Entry | null, release?: Release, options?: GetOptions) => setPlacing(entry ? { entry, release, options } : null);
   const [addingFiles, askAddFiles] = useState<Entry | null>(null);
   const [changingVersion, changeVersion] = useState<Entry | null>(null);
   const [choosingProgram, chooseProgram] = useState<string | null>(null);
+  const [savesConflict, setSavesConflict] = useState<Launcher["savesConflict"]>(null);
+  const [savesPlaces, setSavesPlaces] = useState<Launcher["savesPlaces"]>(null);
+  const [savesFull, setSavesFull] = useState<string | null>(null);
   const [settingUpCopy, setUpCopy] = useState<Launcher["settingUpCopy"]>(null);
   const [oldLibrary, setOldLibrary] = useState<V3Library | null | undefined>(undefined);
   const [oldInstalls, setOldInstalls] = useState<Record<string, Install> | null>(null);
   const [notice, showNotice] = useState<Launcher["notice"]>(null);
   const setNotice = useMemo<Launcher["setNotice"]>(() => (text, options) => showNotice(text === null ? null : { text, ...options }), []);
+  // A moved app's old copy goes once its new place is saved (lib.rs's write_state); one that couldn't all go is said.
+  useEffect(() => {
+    const off = native.onMoveLeft((path) => setNotice(t`An app moved, but some of its old copy couldn't be deleted. You can delete ${path} yourself.`, { stays: true }));
+    return () => void off.then((stop) => stop());
+  }, [setNotice]);
   const library = useMemo(() => allItems.filter((i) => !i.removed), [allItems]);
+  // The consoles the player chose for an app, by id: where grouping by console puts it, as the library shows it.
+  const ownConsoles = useMemo(() => Object.fromEntries(library.flatMap((i) => (i.overrides?.consoles ? [[i.id, i.overrides.consoles]] : []))), [library]);
   // The catalog comes from the site's REST API, which Cloudflare caches for every player; only the account uses Convex.
   const client = useMemo(() => createClient(config.api, {
         onFallback: (e) => track("catalog_fallback_used", { reason: reasonOf(e), error: failureKind(e) }),
         onUnreachable: (e) => track("catalog_load_failed", { reason: reasonOf(e), error: failureKind(e) }),
       }), [config.api]);
-  const gitlab = useMemo(() => createGitlab(config.gitlabApi), [config.gitlabApi]);
+  const [tokens, setTokens] = useState(saved.tokens);
+  const tokensNow = useRef(tokens);
+  tokensNow.current = tokens;
+  const providers = useMemo(() => createProviders({ tokens, fetch: providerFetch }), [tokens]);
+  const [gitlabToken, setGitlabToken] = useState(saved.gitlabToken);
+  const gitlab = useMemo(() => createGitlab(config.gitlabApi, gitlabToken, native.gitlabLimit), [config.gitlabApi, gitlabToken]);
   /** A custom app's releases, newest first. */
-  const releasesOf = (app: Pick<CustomApp, "provider" | "repository">) =>
-    app.provider === "gitlab" ? gitlab.releases(app.repository) : github.releases(app.repository);
+  const releasesOf = (app: Pick<CustomApp, "provider" | "host" | "repository">) => providers.releases(app);
   const [consoles, setConsoles] = useState<Console[]>([]);
   useEffect(() => void client.facets().then((f) => setConsoles(f.consoles), () => {}), [client]);
   const consoleNames = useMemo(() => Object.fromEntries(consoles.map((c) => [c.id, c.name])), [consoles]);
@@ -797,25 +1512,143 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
           })
           .catch(() => {});
     } else native.findV3Library().then(setOldLibrary, () => setOldLibrary(null));
+    // 3.x's installs brought over before Quiver told those in its apps folder from those placed on purpose.
+    if (Object.values(saved.installs).some(unsureInApps))
+      Promise.all([native.findV3Library().catch(() => null), native.v3AppsFolders().catch(() => [])])
+        .then(([old, folders]) => setInstalls((i) => markedInApps(i, old?.apps ?? [], folders)))
+        .catch(() => {});
     const off = native.onProgress((p) => setJobs((j) => ({ ...j, [p.id]: p })));
     const closed = native.onAppClosed(({ id, seconds }) => setInstalls((i) => (i[id] ? { ...i, [id]: { ...i[id], playTime: (i[id].playTime ?? 0) + seconds } } : i)));
     return () => void [off, closed].forEach((o) => o.then((stop) => stop()));
   }, [saved]);
 
+  // Every folder the player's apps are in is a path usage data never carries.
+  const folderPaths = appsFolders(installs, config.appsDir)
+    .map((f) => f.path)
+    .join("\n");
+  useEffect(() => setTelemetryAppsFolders(folderPaths.split("\n")), [folderPaths]);
+
   usePersist("library", allItems);
   usePersist("installs", installs);
-  usePersist("catalog", catalog);
+  usePersist("catalog", rawCatalog);
   const [settings, setSettings] = useState(saved.settings);
   usePersist("settings", settings);
+  // Each app's verified release as the player chose: the newest pre-release for an app that gets them. What was looked
+  // up early for the other choice is left out, and looked up again.
+  const prereleasesOn = Boolean(settings.prereleases);
+  // Its tags are those the player hasn't hidden; never a console's, which says what the app is for.
+  const hiddenTags = settings.hiddenTags;
+  const isConsole = (tag: string) => Object.hasOwn(consoleNames, tag);
+  const catalog = useMemo(() => {
+    let shown = rawCatalog;
+    for (const [id, entry] of Object.entries(rawCatalog)) {
+      const wants = wantsPrereleases({ prereleases: prereleasesOn }, installs[id]);
+      const released = withEarlyFor(entry.verifiedPrerelease && wants ? withPrereleases(entry, true) : entry, wants);
+      const tags = shownTags(hiddenTags, id, entry.tags, isConsole);
+      const now = tags === entry.tags ? released : { ...released, tags: [...tags], allTags: entry.tags };
+      if (now === entry) continue;
+      if (shown === rawCatalog) shown = { ...rawCatalog };
+      shown[id] = now;
+    }
+    return shown;
+  }, [rawCatalog, installs, prereleasesOn, hiddenTags, consoleNames]); // eslint-disable-line react-hooks/exhaustive-deps
+  const withShownTags = useMemo(() => {
+    const made = new WeakMap<object, object>();
+    return <E extends Pick<Entry, "id" | "tags">>(entry: E): E => {
+      const tags = shownTags(hiddenTags, entry.id, entry.tags, isConsole);
+      if (tags === entry.tags) return entry;
+      if (!made.has(entry)) made.set(entry, { ...entry, tags: [...tags] });
+      return made.get(entry) as E;
+    };
+  }, [hiddenTags, consoleNames]); // eslint-disable-line react-hooks/exhaustive-deps
+  /** Whether this app gets pre-releases: what's asked of the site's releases for it. */
+  const prereleasesFor = (id: string) => wantsPrereleases(settings, installs[id]);
   const [githubToken, setGithubToken] = useState(saved.githubToken);
   const github = useMemo(() => createGithub(config.githubApi, githubToken), [config.githubApi, githubToken]);
   // What usage data reads later on, as it stands by then.
-  const forUsage = useRef({ library, installs, catalog, settings });
-  forUsage.current = { library, installs, catalog, settings };
+  const forUsage = useRef({ library, installs, catalog, settings, client });
+  forUsage.current = { library, installs, catalog, settings, client };
+  // Cloud saves are for the catalog's apps, for a signed-in player who hasn't switched them off. Read when a backup
+  // is made or an app starts, as things stand by then.
+  const cloudNow = useRef<Launcher["cloudSavesFor"]>(() => null);
+  cloudNow.current = (id) => (savesOn(config.os) && !settings.cloudSavesOff && !isLocal(id) && catalog[id]?.slug ? account.cloudSaves : null);
+  // The sync folder takes every app's backups, the player's own apps too, signed in or not.
+  const syncFolder = savesOn(config.os) ? settings.syncFolder : undefined;
+  /** Said once each time the launcher runs: a folder on a drive that's unplugged fails for every backup. */
+  const folderFailed = useRef(false);
+  /** Keeps a backup that was just made in the sync folder too; never waited for. */
+  const sendToFolder = (id: string, install: Install, made: SaveBackup) => {
+    const folder = forUsage.current.settings.syncFolder;
+    if (!folder || !savesOn(config.os)) return;
+    native.savesFolderPut(savesOf(id, install, forUsage.current.catalog[id]), folder, made.name).then(
+      () => ((folderFailed.current = false), savesChanged(id)),
+      (e) => {
+        if (folderFailed.current) return;
+        folderFailed.current = true;
+        setNotice(typeof e === "string" ? e : t`Couldn't write to your sync folder. Your backups are on this computer.`, { stays: true });
+      },
+    );
+  };
+  /** Sends a backup that was just made to the sync folder and to the account; never waited for. */
+  const sendToCloud = (id: string, install: Install, made: SaveBackup | null | undefined) => {
+    if (made) sendToFolder(id, install, made);
+    const api = made && cloudNow.current(id);
+    if (!api || !made) return;
+    void native
+      .savesCloud(savesOf(id, install, forUsage.current.catalog[id]))
+      .then((state) => (state.off ? null : sendBackup(savesOf(id, install, forUsage.current.catalog[id]), id, made, { api, native })))
+      .then(() => savesChanged(id))
+      .catch(() => {});
+  };
+  // How each send to the account went (cloud-saves.ts). One that didn't get there is tried again after 1, 5, 15 and 60
+  // minutes. One the account had no room for is said once, with ways to make room, and sent when there is some.
+  const noRoomFor = useRef(new Set<string>());
+  /** Sends an app's saves as they are now, when the account doesn't have them. */
+  const sendNow = useRef(async (id: string) => {
+    const api = cloudNow.current(id);
+    const install = forUsage.current.installs[id];
+    if (!api || !install) return null;
+    return sendCurrent(savesOf(id, install, forUsage.current.catalog[id]), id, { api, native }).finally(() => savesChanged(id));
+  });
+  const cloudCatchUp = useRef(() => {
+    for (const id of noRoomFor.current) void sendNow.current(id).catch(() => {});
+  });
+  useEffect(() => {
+    const again = retries((id) => sendNow.current(id));
+    const off = onSent((id, how, manual) => {
+      again.note(id, how);
+      if (how === "sent") {
+        noRoomFor.current.delete(id);
+        setSettings((s) => (s.cloudFullTold ? { ...s, cloudFullTold: undefined } : s));
+      }
+      if (how !== "full") return;
+      noRoomFor.current.add(id);
+      // Where the player asked for the send, the answer is in front of them already.
+      if (manual || forUsage.current.settings.cloudFullTold) return;
+      setSettings((s) => ({ ...s, cloudFullTold: true }));
+      setSavesFull(id);
+    });
+    return () => (off(), again.stop());
+  }, []);
   useEffect(() => {
     const closed = native.onAppClosed(({ id, seconds }) => {
       const { catalog, installs } = forUsage.current;
       track("app_closed", { ...playedRef(appRef(id, catalog[id]?.slug ?? ""), installs[id]?.version ?? ""), seconds });
+      // Its saves, backed up if the session changed them.
+      const install = installs[id];
+      if (install && savesOn(config.os))
+        void native.savesPlayed(savesOf(id, install, catalog[id])).then(
+          (made) => {
+            if (made) savesChanged(id);
+            sendToCloud(id, install, made);
+            // Where it saved, for the catalog to list for everyone: only from players who share usage data, and only
+            // for the catalog's own apps.
+            const entry = catalog[id];
+            if (entry?.slug && telemetryChoice().enabled)
+              void reportSaveLocations(savesOf(id, install, entry), entry, { toReport: native.savesToReport, reported: native.savesReported, send: (app, report) => forUsage.current.client.saveLocations(app, report) }).catch(() => {});
+          },
+          () => {},
+        );
     });
     // Once the catalog and the account have had time to come in, so its counts are of the library as it is.
     const counted = setTimeout(() => {
@@ -823,7 +1656,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       const { library, installs, catalog, settings } = forUsage.current;
       track("library_loaded", librarySummary(library, installs, catalog, settings, telemetryChoice().signedIn));
       // Not marked as counted with nothing to count yet: a first start's apps are counted once it has some.
-      const apps = appsOnComputer(library, installs, catalog);
+      const apps = appsOnComputer(library, installs, catalog, settings);
       if (apps.length && appsDueToday(new Date())) apps.forEach((app) => track("app_on_computer", app));
     }, USAGE_COUNTED_AFTER_MS);
     return () => {
@@ -856,6 +1689,9 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     document.addEventListener("visibilitychange", check);
     return () => document.removeEventListener("visibilitychange", check);
   }, [config.os]);
+  // Start + Select, or the buttons the player chose, close the game being played (gamepad.rs), unless they turned it off.
+  const closeCombo = settings.closeCombo?.join("+");
+  useEffect(() => void native.closeCombo(!settings.closeComboOff, closeCombo?.split("+")).catch(() => {}), [settings.closeComboOff, closeCombo]);
   const tv = tvModeOn(settings, config);
   // Again as the window changes: TV mode's going full screen, or the launcher moving to another screen.
   useEffect(() => {
@@ -887,6 +1723,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
 
   // Catalog data for library apps: refreshed at start and every so often, fetched for apps another device added.
   const fetched = useRef(new Set<string>());
+  const [moved, setMoved] = useState<Record<string, string>>({});
   // Every half hour, look again for new releases.
   const [round, setRound] = useState(0);
   useEffect(() => {
@@ -905,17 +1742,22 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       }
       if (custom) {
         releasesOf(custom).then(
-          (releases) => setCatalog((c) => ({ ...c, [item.id]: { ...customEntry(item.id, custom, latestOf(releases), art), forHere: c[item.id]?.forHere } })),
+          (releases) => {
+            setCatalog((c) => ({ ...c, [item.id]: { ...customEntry(item.id, custom, latestOf(releases), art), forHere: c[item.id]?.forHere, early: c[item.id]?.early } }));
+            // Renamed or moved since: the catalog may list it under its name now, which its page then offers to switch to.
+            const now = movedTo(custom, releases);
+            if (now) setMoved((m) => (m[item.id] === now ? m : { ...m, [item.id]: now }));
+          },
           () => setCatalog((c) => (c[item.id] ? c : { ...c, [item.id]: customEntry(item.id, custom, undefined, art) })),
         );
         continue;
       }
       client.app(item.slug).then(
-        (d) => setCatalog((c) => ({ ...c, [item.id]: { ...d.entry, withdrawn: d.withdrawn, forHere: c[item.id]?.forHere } })),
+        (d) => setCatalog((c) => ({ ...c, [item.id]: { ...d.entry, withdrawn: d.withdrawn, forHere: c[item.id]?.forHere, early: c[item.id]?.early } })),
         () => {},
       );
     }
-  }, [library, client, github, gitlab, round]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [library, client, github, gitlab, providers, round]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Signed in: fold the account's library in, live.
   const userId = account.user?.id;
@@ -940,7 +1782,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     const changes = userId ? changesFrom(allItems, userId) : [];
     if (!userId || !changes.length || pushing.current) return;
     pushing.current = true;
-    const sent = new Set(allItems.filter((i) => i.pending && i.account === userId));
+    const sent = new Set(allItems.filter((i) => i.pending && i.account === userId && (!i.custom || syncableCustom(i.custom))));
     (async () => {
       // Refused changes come back; they can't succeed by retrying, so they count as done too.
       for (let i = 0; i < changes.length; i += 100) await account.save(changes.slice(i, i + 100));
@@ -986,10 +1828,10 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       const install = installs[item.id];
       const update = updateFor(entry, install);
       const waits = update && (waiting.current.get(`${item.id}@${bare(update.version)}`) ?? 0) > Date.now();
-      if (entry && install?.updates === "auto" && !install.installer && !jobs[item.id] && hasUpdate(entry, install) && !skipped(entry, install) && !waits)
+      if (entry && updatesOf(settings, install) === "auto" && !jobs[item.id] && hasUpdate(entry, install) && !skipped(entry, install) && !waits)
         void installEntry(entry, undefined, { auto: true });
     }
-  }, [catalog]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [catalog, settings.autoUpdates]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /** The newest of an app's releases this computer can install: for an install, of the build it has. */
   const releaseHere = (entry: Entry, list: Release[], custom: boolean, was?: Install, platform?: Os) => {
@@ -1017,7 +1859,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       if (entry.forHere?.of === of || lookingUp.current.has(asked)) continue;
       lookingUp.current.add(asked);
       const custom = isCustom(item.id) ? (item.custom ?? fromKey(item.id)) : null;
-      (custom ? releasesOf(custom) : client.releases(entry.slug, 100).then((p) => p.items))
+      (custom ? releasesOf(custom) : client.releases(entry.slug, 100, null, prereleasesFor(item.id)).then((p) => p.items))
         .then((list) => {
           const found = releaseHere(entry, list, Boolean(custom), install);
           const release = found && { version: found.version, releasedAt: found.releasedAt };
@@ -1028,6 +1870,65 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         .finally(() => lookingUp.current.delete(asked));
     }
   }, [catalog, installs, library, client]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /**
+   * The release an install (or a new one) here takes ahead of the verified one, with Newest right away or when the
+   * player asks to update early: the newest in
+   * the site's history that isn't blocked or withdrawn and has a file for this computer, when Quiver hasn't verified
+   * it yet. None when that newest is verified. Only releases the site has seen, so its files are checked against what
+   * Quiver saw of them.
+   */
+  const earlyHere = (entry: Entry, history: HistoryRelease[], was?: Install, platform?: Os) => {
+    // On main releases, a project's pre-releases aren't updates, unless it publishes nothing else.
+    const known = catalog[entry.id] ?? entry;
+    const mainOnly = !prereleasesFor(entry.id) && Boolean(mainRelease(known)) && !onlyPrereleases(known);
+    const open = withdrawnAsBlocked(history, (r) => r.version, catalog[entry.id]?.withdrawn).filter((r) => r.state !== "blocked" && r.assets.length > 0 && !(mainOnly && r.prerelease));
+    const here = releaseHere(entry, open.map(fromSite), false, was, platform);
+    const found = here && open.find((r) => r.releaseId === here.id);
+    return found?.state === "unverified" ? found : undefined;
+  };
+
+  // Which release still in its 48-hour wait each install could update to, asked once for each newest release
+  // upstream. With Newest right away it's the app's update (`now`); otherwise only what the player can ask for.
+  const newestRightAway = settings.appUpdates === "newest";
+  const lookingEarly = useRef(new Set<string>());
+  useEffect(() => {
+    // The setting changed: what was looked up stays, and is the update or isn't.
+    if (Object.values(catalog).some((e) => e.early && Boolean(e.early.now) !== newestRightAway))
+      setCatalog((c) =>
+        Object.fromEntries(
+          Object.entries(c).map(([id, e]) => {
+            if (!e.early) return [id, e];
+            const { now: _, ...early } = e.early;
+            return [id, { ...e, early: newestRightAway ? { ...early, now: true as const } : early }];
+          }),
+        ),
+      );
+    for (const item of library) {
+      const entry = catalog[item.id];
+      const install = installs[item.id];
+      // An app not installed yet, too: what Install takes with Newest right away, or Install latest offers.
+      const of = !isCustom(item.id) && earlyKey(entry, install);
+      if (!entry || !of || entry.early?.of === of) continue;
+      // Pre-releases or not, as the release history is read for them (`earlyHere`).
+      const pre = prereleasesFor(item.id);
+      const asked = `${item.id}@${of}${pre ? ":pre" : ""}`;
+      if (lookingEarly.current.has(asked)) continue;
+      lookingEarly.current.add(asked);
+      client
+        .releaseHistory(entry.slug, 100)
+        .then(({ items }) => {
+          const found = earlyHere(entry, items, install);
+          const release = found && { version: found.version, releasedAt: found.releasedAt };
+          const early = { of, ...(release ? { release } : {}), ...(newestRightAway ? { now: true as const } : {}), ...(pre ? { pre: true as const } : {}) };
+          setCatalog((c) => (c[item.id] ? { ...c, [item.id]: { ...c[item.id], early } } : c));
+        })
+        // Offline, or a site without the history: only verified updates show, and it's asked again when something next changes.
+        // (The setting changing meanwhile is put right by the next pass, above.)
+        .catch(() => {})
+        .finally(() => lookingEarly.current.delete(asked));
+    }
+  }, [catalog, installs, library, client, newestRightAway]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // An app installed unverified turns verified once the site verifies that
   // version, if it's the same file; otherwise the player hears it differs. A
@@ -1041,7 +1942,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       if (!install.unverified || install.differs || !entry?.verified || bare(entry.verified.version) !== bare(install.version) || (compared.current.get(key) ?? 0) > Date.now()) continue;
       compared.current.set(key, Infinity);
       client
-        .releases(entry.slug, 5)
+        .releases(entry.slug, 5, null, true)
         .then(({ items }) => {
           const release = items.find((r) => bare(r.version) === bare(install.version));
           if (!release) return;
@@ -1100,11 +2001,40 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
   }
 
   /**
+   * A release's files the site doesn't offer this app's players, from its history: what Show all files adds. None
+   * when it can't be read, or the site is older than them.
+   */
+  async function otherFilesOf(slug: string, version: string) {
+    const history = await client.releaseHistory(slug, 100).catch(() => undefined);
+    return history?.items.find((r) => bare(r.version) === bare(version))?.otherAssets ?? [];
+  }
+
+  /**
    * `app` is the custom app's repository, when it isn't in the library yet; `auto`, an update nobody asked for just
    * now, which doesn't ask: one whose file Quiver hasn't verified waits for it instead.
    */
+  /** Installs or updates an app, never one that's moving: its folder is on its way somewhere else. */
   async function installEntry(entry: Entry, chosen?: Release, options: InstallOptions = {}) {
+    if (moving.current.has(entry.id)) {
+      // An automatic update tries again next time.
+      if (!options.auto) setNotice(t`Wait for it to finish moving, then try again.`);
+      return;
+    }
+    installing.current.add(entry.id);
+    if (options.to) chosenFolder.current.set(entry.id, options.to);
+    // Installed since: an update goes where the app is.
+    else if (installs[entry.id]) chosenFolder.current.delete(entry.id);
+    const to = options.to ?? chosenFolder.current.get(entry.id);
+    try {
+      await installNow(entry, chosen, to ? { ...options, to } : options);
+    } finally {
+      installing.current.delete(entry.id);
+    }
+  }
+
+  async function installNow(entry: Entry, chosen: Release | undefined, options: InstallOptions) {
     const { app, pin = false, blocked, auto = false } = options;
+    const updatesByItself = updatesOf(settings, installs[entry.id]) === "auto";
     // The player's own files are never downloaded over.
     if (isLocal(entry.id) || installs[entry.id]?.local) return;
     setJobs((j) => ({ ...j, [entry.id]: { id: entry.id, phase: "downloading", received: 0, total: null } }));
@@ -1112,6 +2042,8 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     const was = installs[entry.id];
     const from = was?.version;
     const portableByDefault = settings.portableByDefault && config.os !== "android" && config.os !== "ios";
+    // The player's, read here: further down, `settings` is the catalog's for installing it.
+    const groupByConsole = Boolean(settings.groupByConsole);
     let version = chosen?.version ?? entry.verified?.version;
     let format: string | undefined;
     // A release Quiver hasn't verified, or a file of one it has, that the player said to install.
@@ -1137,11 +2069,44 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         ? undefined
         : custom
           ? await releasesOf(custom)
-          : (await client.releases(entry.slug, 100).catch(() => {
+          : (await client.releases(entry.slug, 100, null, prereleasesFor(entry.id)).catch(() => {
               throw noAnswer();
             })).items;
       const here = listed && releaseHere(entry, listed, Boolean(custom), was, options.platform);
-      let release = chosen ?? here ?? (custom ? latestOf(listed!) : listed![0]);
+      // Newest right away, or the player asked to update early: the newest release still in its 48-hour wait, when
+      // it's newer than the verified one and than what's installed. Read from the site again here, so one blocked
+      // since is never taken. No answer, or a site without the history: the verified one, as ever.
+      let early: HistoryRelease | undefined;
+      if ((newestRightAway || options.early) && !chosen && !custom) {
+        const history = await client.releaseHistory(entry.slug, 100).then((page) => page.items, () => undefined);
+        const found = history && earlyHere(entry, history, was, options.platform);
+        if (found && (!here || found.releasedAt > here.releasedAt) && (!was || newerThan(found, was))) early = found;
+        // What the card offers was looked up once, for the newest release upstream, and may be out of date since: one
+        // blocked, or a pre-release on main releases. What was just read puts it right, so it isn't offered again.
+        const of = history && !options.platform && earlyKey(catalog[entry.id] ?? entry, was);
+        if (of) {
+          const release = found && { version: found.version, releasedAt: found.releasedAt };
+          const pre = prereleasesFor(entry.id);
+          const saved = { of, ...(release ? { release } : {}), ...(newestRightAway ? { now: true as const } : {}), ...(pre ? { pre: true as const } : {}) };
+          setCatalog((c) => (c[entry.id] ? { ...c, [entry.id]: { ...c[entry.id], early: saved } } : c));
+        }
+      }
+      // With Newest right away it installs without asking: by itself whatever VirusTotal says, as the player chose not
+      // to wait, and when the player asks for it, unless VirusTotal warned of or flagged it (not while it's still
+      // scanning). Waiting 48 hours, the player who asked for it is always asked, as for any unverified release. An
+      // automatic update takes the verified one meanwhile, or waits when there's none newer.
+      if (early && (!newestRightAway || (!auto && scanAsks(early.scan)))) {
+        if (auto) {
+          if (!here || !was || !newerThan(here, was)) {
+            waiting.current.set(`${entry.id}@${bare(early.version)}`, early.checkEndsAt ?? Infinity);
+            setJobs(({ [entry.id]: _, ...rest }) => rest);
+            return;
+          }
+          early = undefined;
+        } else if (!(await ask({ entry, version: early.version, reasons: early.reasons, scan: early.scan, checkEndsAt: early.checkEndsAt, early: newestRightAway ? "scan" : "asked" }))) return stop("unverified_prompt");
+      }
+      if (early) unverified = true;
+      let release = chosen ?? (early ? fromSite(early) : here) ?? (custom ? latestOf(listed!) : listed![0]);
       // An update with no release for the build installed: never another system's file in its place.
       const stray = Boolean(was && listed?.length && !here);
       // No verified release: its newest that isn't blocked, once the player says so, as Quiver Launcher 3 offers it.
@@ -1159,6 +2124,18 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         }
       }
       if (!release) throw new Problem(custom ? msg`This repository has no releases yet.` : msg`This app has no approved release yet.`);
+      // An update that comes to the version installed, or an older one, has nothing to do: never the same files put
+      // back, nor an older release, by a button or an automatic update that said a newer one. Putting them back is for
+      // Reinstall, of a file that differs; going back, for the player's own choice of version.
+      if (was && !chosen && !options.platform && !was.differs && !newerThan(release, was)) {
+        setJobs(({ [entry.id]: _, ...rest }) => rest);
+        if (!auto) {
+          const name = entry.projectName;
+          const installed = versionLabel(was.version);
+          setNotice(t`${name} already has ${installed}, the newest release it can update to.`);
+        }
+        return;
+      }
       version = release.version;
       const settings = release.installationOverride ?? entry.launcher;
       // The file the player picked on the app's Releases tab: that one, unless it isn't the kind installed.
@@ -1183,47 +2160,79 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
             ? msg`This release has no Windows installer (MSI) to update it with. Uninstall it, then get it again to install this release's download.`
             : msg`This release only comes as a Windows installer (MSI). Uninstall it, then get it again to install it that way.`,
         );
-      // None marked for this computer: the player picks from the files there are, as they may know which runs.
-      const unmatched = !asset;
-      if (unmatched && !stray) [asset, ...others] = installable(release.assets, config.os).filter((a) => !kind || isMsi(a.filename) === (kind === "msi"));
-      if (!asset) {
-        if (auto) return waitForPlayer();
-        throw new Problem(msg`This release has no download for your computer.`);
-      }
+      // Of the release's files, the ones this computer can install, of the kind installed.
+      const ofKind = (list: Asset[]) => installable(list, config.os).filter((a) => !kind || isMsi(a.filename) === (kind === "msi"));
+      const approved = ofKind(release.assets);
+      // None marked for this computer: the player picks from the files there are, as they may know which runs. Files
+      // the site put on no platform aren't marked for it either (a PS5 or Switch build can be one), so several of them
+      // ask the same way, not as files for this computer.
+      const unmatched = !asset || (others.length > 0 && asset.os === "unknown");
+      if (!asset && !stray) [asset, ...others] = approved;
+      if (!asset && auto) return waitForPlayer();
       // The file the player picked last time, when it's still one of these: taken again without asking.
-      const again = pickedBefore([asset, ...others], lastPick);
+      const again = asset && pickedBefore([asset, ...others], lastPick);
       let pick = lastPick;
+      // The release's files a maintainer didn't tick, which Show all files offers too, once the player is asked.
+      let unapproved: Asset[] = [];
       // Picked by name: later releases keep to it, as to a file picked from several.
       if (clicked) {
         const files = installable(release.assets, config.os).map((a) => a.filename);
         pick = files.length > 1 ? assetFilterFor(clicked.filename, files) : undefined;
       } else if (again) asset = again;
-      else if (others.length || missed || unmatched) {
+      else if (!asset || others.length || missed || unmatched) {
         if (auto) return waitForPlayer();
-        const choices = [asset, ...others];
-        const picked = await new Promise<Asset | null>((resolve) => setChoice({ entry, version: release.version, assets: choices, unmatched, resolve }));
+        unapproved = stray || custom ? [] : ofKind(release.otherAssets ?? (await otherFilesOf(entry.slug, release.version)));
+        if (!asset && !unapproved.length) throw new Problem(msg`This release has no download for your computer.`);
+        const choices = asset ? [asset, ...others] : [];
+        const all = [...approved, ...unapproved];
+        const picked = await new Promise<Asset | null>((resolve) => setChoice({ entry, version: release.version, assets: choices, all, unapproved: unapproved.map((a) => a.id), unmatched, resolve }));
         setChoice(null);
         if (!picked) return stop("file_choice");
         asset = picked;
-        pick = assetFilterFor(picked.filename, choices.map((a) => a.filename));
+        // Told apart from every file it could have been, as Show all files may have offered any of them.
+        const files = [...new Set([...choices, ...all].map((a) => a.filename))];
+        pick = assetFilterFor(picked.filename, files);
       }
-      // A file of a verified release that isn't verified itself asks first, as an unverified release does. An
-      // automatic update waits instead: until the site says it's verified by itself, else till the launcher starts again.
-      const why = !custom && !unverified ? unverifiedFile(asset, release) : undefined;
-      if (why) {
+      if (!asset) throw new Problem(msg`This release has no download for your computer.`);
+      // One a maintainer didn't tick always asks first, whatever the release: it's installed as the developer
+      // published it, checked against the file Quiver saw. A file of a verified release that isn't verified itself asks
+      // first, as an unverified release does. An automatic update takes one that changed with Newest right away, as it
+      // would an unverified release, since it's still checked against what Quiver saw of it; never one Quiver has no
+      // checksum for. Otherwise it waits: until the site says it's verified by itself, else till the launcher starts
+      // again.
+      const chose = asset;
+      const why = unapproved.some((a) => a.id === chose.id) ? "unapproved" : !custom && !unverified ? unverifiedFile(asset, release) : undefined;
+      if (why === "changed" && auto && newestRightAway) unverified = true;
+      else if (why) {
         if (auto) return waitForPlayer(asset.checkEndsAt ?? Infinity);
-        if (!(await ask({ entry, version: release.version, file: { name: asset.filename, why }, reasons: [], checkEndsAt: asset.checkEndsAt }))) return stop("unverified_prompt");
+        if (!(await ask({ entry, version: release.version, file: { name: asset.filename, why }, reasons: [], checkEndsAt: why === "unapproved" ? undefined : asset.checkEndsAt }))) return stop("unverified_prompt");
         unverified = true;
       }
       format = installFormat(asset.filename);
-      // One folder, one app: uninstalling either would take the other's files.
-      const taken = Object.entries(installs).flatMap(([id, i]) => (id !== entry.id && !i.dir ? [i.folder] : []));
+      // One folder, one app: uninstalling either would take the other's files. A new install keeps clear of names apps
+      // use in other apps folders too, as Quiver keeps an app's Proton prefix, icon and Steam art by its folder's
+      // name; one installed already keeps its folder, as before, so an update never leaves its files behind.
+      const otherInstalls = Object.entries(installs).flatMap(([id, i]) => (id !== entry.id ? [i] : []));
+      const taken = (installs[entry.id] ? otherInstalls.filter((i) => !i.dir) : otherInstalls).map((i) => i.folder);
       const folder = freeFolder(settings.folderName?.trim() || entry.slug, installs[entry.id]?.folder, taken);
       const runs = asset.os === "windows" ? "windows" : (config.os as "windows" | "linux" | "macos");
       const executables = settings.preferredExecutables?.[runs] ?? [];
       tried = { release, asset };
       const catalogFiles = settings.filesToAdd ?? [];
       const files = installFiles(was, catalogFiles, portableByDefault);
+      // A new install in a folder the player chose; the default apps folder is where they go anyway.
+      const chosenFolder = !was && options.to && !samePath(options.to, config.appsDir) ? options.to : undefined;
+      // Grouped by console: in the default apps folder, in its console's folder there. Any other folder (another
+      // apps folder, which may already be one console's, or one chosen for it alone) is exactly where it goes.
+      const desktop = config.os !== "android" && config.os !== "ios";
+      const group = !was && desktop && groupByConsole && !chosenFolder ? groupFolder(withOwnConsoles(catalog[entry.id] ?? entry, ownConsoles[entry.id]), consoleNames) : undefined;
+      const into = group ? joinPath(config.appsDir, group) : chosenFolder;
+      // An update writes over the app's folder, where many apps keep their saves: backed up first, as they are.
+      if (was && savesOn(config.os))
+        await native.savesBackup(savesOf(entry.id, was, catalog[entry.id] ?? entry), "update").then(
+          (made) => made && (savesChanged(entry.id), sendToCloud(entry.id, was, made)),
+          () => {},
+        );
       const done = await native.install({
         id: entry.id,
         url: asset.url,
@@ -1232,13 +2241,14 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         checksum: asset.checksum ?? asset.unverifiedChecksum,
         folder,
         dir: was?.dir,
+        into,
         filesToAdd: files ?? catalogFiles,
         version: release.version,
         preferred: executables,
-        program: was?.installer === "msi" ? was.program : undefined,
+        program: was?.installer ? was.program : undefined,
       });
       // A Windows installer's program, when Quiver can't tell which it is: the player says, as in Quiver Launcher 3.
-      const msi = done.installer === "msi";
+      const msi = Boolean(done.installer);
       const program = msi ? (done.program ?? (await native.pickProgram(done.location ?? undefined).catch(() => null)) ?? undefined) : undefined;
       const name = entry.projectName;
       if (done.restart) setNotice(t`${name} is installed. Windows says to restart the computer to finish setting it up.`, { stays: true });
@@ -1260,11 +2270,15 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         const wine = asset.os === "windows" && config.os === "linux";
         const old = i[entry.id]?.launch;
         const launch = old && Boolean(i[entry.id]?.wine) !== wine ? (old.command ? { command: old.command } : undefined) : old;
-        return { ...i, [entry.id]: { dir: i[entry.id]?.dir, lastPlayed: i[entry.id]?.lastPlayed, ...(installedAt ? { installedAt } : {}), playTime: i[entry.id]?.playTime, ...(launch ? { launch } : {}), ...(updates ? { updates } : {}), ...(skip ? { skip } : {}), ...(declined ? { declined } : {}), ...(unverified ? { unverified: true } : {}), ...(blocked ? { blocked } : {}), ...(checksum ? { checksum } : {}), ...(pick ? { pick } : {}), ...(files ? { files } : {}), version: release.version, releasedAt: release.releasedAt, releaseId: release.id, folder, executables: msi ? [] : executables, ...(msi ? { installer: "msi" as const, ...(program ? { program } : {}) } : {}), ...(wine ? { wine: true } : {}) } };
+        // Kept where it was, or in the folder it went in: one that's an apps folder already is one of its apps.
+        const dir = into && !msi ? done.dir : i[entry.id]?.dir;
+        const inApps = into && !msi ? Boolean(group) || appsFolders(i, config.appsDir).some((f) => samePath(f.path, into)) : i[entry.id]?.inApps;
+        const kept = into && !msi ? group : i[entry.id]?.group;
+        return { ...i, [entry.id]: { dir, ...(inApps ? { inApps: true as const } : {}), ...(kept ? { group: kept } : {}), lastPlayed: i[entry.id]?.lastPlayed, ...(installedAt ? { installedAt } : {}), playTime: i[entry.id]?.playTime, ...(i[entry.id]?.copies ? { copies: i[entry.id].copies } : {}), ...(launch ? { launch } : {}), ...(updates ? { updates } : {}), ...(skip ? { skip } : {}), ...(declined ? { declined } : {}), ...(unverified ? { unverified: true } : {}), ...(blocked ? { blocked } : {}), ...(checksum ? { checksum } : {}), ...(pick ? { pick } : {}), ...(files ? { files } : {}), version: release.version, releasedAt: release.releasedAt, releaseId: release.id, folder, executables: msi ? [] : executables, ...(done.installer ? { installer: done.installer, ...(program ? { program } : {}) } : {}), ...(done.setup ? { setup: true as const } : {}), ...(wine ? { wine: true } : {}) } };
       });
       setJobs(({ [entry.id]: _, ...rest }) => rest);
       setFinished((f) => [{ id: entry.id, version: release.version, update: Boolean(from), at: Date.now() }, ...f.filter((d) => d.id !== entry.id)]);
-      if (from) track("app_updated", { ...ref, from, to: release.version, auto: !chosen && installs[entry.id]?.updates === "auto", verified: !unverified, blocked: Boolean(blocked), format });
+      if (from) track("app_updated", { ...ref, from, to: release.version, auto: !chosen && updatesByItself, verified: !unverified, blocked: Boolean(blocked), format });
       else track("app_installed", { ...ref, version: release.version, verified: !unverified, blocked: Boolean(blocked), format });
     } catch (error) {
       // A Windows installer's setup the player closed is cancelled too.
@@ -1288,7 +2302,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         if (!custom) {
           void client.downloadProblem(entry, { version: release.version, file, problem: error }).catch(() => {});
           const fits = (r: Release) => bestAssets(r.assets, config.os, config.arch, (r.installationOverride ?? entry.launcher).releaseAssetFilter, kind).length > 0;
-          instead = insteadOf((await client.releases(entry.slug).catch(() => null))?.items ?? [], release.version, from, fits);
+          instead = insteadOf((await client.releases(entry.slug, 5, null, prereleasesFor(entry.id)).catch(() => null))?.items ?? [], release.version, was, fits);
         }
       }
       fail(entry.id, problem, true, instead);
@@ -1301,23 +2315,33 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
   function add(entry: Entry, own: Pick<LibraryItem, "custom" | "local" | "art"> = {}) {
     setLibrary((l) => {
       const mine = l.find((i) => i.id === entry.id);
-      const added = { pending: { ...mine?.pending, added: true }, account: userId ?? mine?.account, removed: undefined };
+      // The account knows GitHub and GitLab: an app from another host stays on this computer.
+      const syncable = !own.custom || syncableCustom(own.custom);
+      const added = syncable ? { pending: { ...mine?.pending, added: true }, account: userId ?? mine?.account, removed: undefined } : { removed: undefined };
       if (mine) return mine.removed ? l.map((i) => (i === mine ? { ...i, ...added } : i)) : l;
       // A local app stays on this computer, out of the account.
-      return [...l, { id: entry.id, slug: entry.slug, addedAt: Date.now(), ...own, ...(userId && !own.local ? added : {}) }];
+      return [...l, { id: entry.id, slug: entry.slug, addedAt: Date.now(), ...own, ...(userId && !own.local && syncable ? added : {}) }];
     });
   }
 
-  /** Installed apps' folders in the apps folder: not 3.x installs or programs left where they are. */
-  function appFolders() {
-    return Object.values(installs).flatMap((i) => (i.dir ? [] : [i.folder]));
-  }
 
   /** Deletes an app's files; a local app's are the player's own and stay. */
   async function uninstall(id: string) {
     const install = installs[id];
     if (!install || install.local) return;
+    // Its folder is on its way somewhere else: nothing's removed, from the library either.
+    if (moving.current.has(id)) {
+      setNotice(t`Wait for it to finish moving, then try again.`);
+      throw "cancelled";
+    }
+    // Its saves are kept: in a folder of the app's own they'd go with it, and elsewhere a reinstall may want them back.
+    if (savesOn(config.os))
+      await native.savesBackup(savesOf(id, install, catalog[id]), "uninstall").then(
+        (made) => sendToCloud(id, install, made),
+        () => {},
+      );
     await native.uninstall(install.folder, install.dir);
+    chosenFolder.current.delete(id);
     track("app_uninstalled", appRef(id, catalog[id]?.slug ?? allItems.find((i) => i.id === id)?.slug ?? ""));
   }
 
@@ -1336,7 +2360,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
   async function catalogRepositories() {
     const ids = new Map<string, { id: string; slug: string }>();
     for (const s of await catalogStatuses()) {
-      if (s.repository) ids.set(`${s.provider}:${s.repository}`.toLowerCase(), s);
+      if (s.repository) ids.set(customKey(s.provider, s.repository, s.host), s);
       // And by its id, as Quiver Launcher 3 kept it (importOld), under a key no provider has.
       ids.set(`id:${s.id}`, s);
     }
@@ -1348,16 +2372,29 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     (await Promise.all(statuses.map((s) => client.app(s.slug).catch(() => null)))).flatMap((detail) => (detail ? [detail.entry] : []));
 
   /** The catalog's apps for a repository, or a preview of its latest release. */
-  async function lookUpRepository(input: string): ReturnType<Launcher["lookUpRepository"]> {
-    const repository = parseRepository(input);
-    if (!repository) return { error: t`Enter a GitHub or GitLab repository: owner/name, or its github.com or gitlab.com address.` };
+  async function lookUpRepository(input: string, chosen?: string): ReturnType<Launcher["lookUpRepository"]> {
+    let parsed = parseRepository(input, chosen);
+    if (!parsed) return { error: t`Enter a repository: owner/name, or its address on a forge.` };
+    if (parsed.provider === "unknown") {
+      const host = parsed.host;
+      const detected = await providers.detect(host).catch(() => null);
+      if (!detected) return { error: t`Quiver couldn't tell what kind of forge ${host} is. Choose its kind and try again.` };
+      parsed = parseRepository(input, detected);
+      if (!parsed) return { error: t`That address isn't a repository on ${host}.` };
+    }
+    const repository = toRef(parsed);
     // Already added: its page.
-    const key = customKey(repository.provider, repository.repository);
+    const key = customKey(repository.provider, repository.repository, repository.host);
     if (library.some((i) => i.id === key) && catalog[key]) return { listed: [catalog[key]] };
     try {
       const listed = await entriesOf(appsOfRepository(await catalogStatuses().catch((): ReleaseStatus[] => []), repository));
       if (listed.length) return { listed };
-      const latest = latestOf(await releasesOf(repository));
+      const releases = await releasesOf(repository);
+      // Under an old name: the catalog's app under its name now.
+      const now = movedTo(repository, releases);
+      const renamed = now ? await entriesOf(appsOfRepository(await catalogStatuses().catch((): ReleaseStatus[] => []), repository, now)) : [];
+      if (renamed.length) return { listed: renamed };
+      const latest = latestOf(releases);
       const app: CustomApp = { ...repository, name: repository.repository.split("/").at(-1)! };
       return { preview: { app, latest, files: latest ? bestAssets(latest.assets, config.os, config.arch) : [] } };
     } catch (e) {
@@ -1386,8 +2423,8 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     return () => void (live = false);
   }, [hasCustom]); // eslint-disable-line react-hooks/exhaustive-deps
   const inCatalog = useMemo(
-    () => new Set(library.flatMap((i) => (i.custom && appsOfRepository(statusList, i.custom).some((s) => !library.some((l) => l.id === s.id)) ? [i.id] : []))),
-    [library, statusList],
+    () => new Set(library.flatMap((i) => (i.custom && appsOfRepository(statusList, i.custom, moved[i.id]).some((s) => !library.some((l) => l.id === s.id)) ? [i.id] : []))),
+    [library, statusList, moved],
   );
   // The pictures nothing uses any more: replaced, or their app removed. Once a run, as the library was saved at the last.
   useEffect(() => {
@@ -1396,10 +2433,22 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
 
   /** Adds a custom app for a repository; the caller installs it. */
   function addCustom(custom: CustomApp, latest?: Release, art?: GameArt) {
-    const entry = customEntry(customKey(custom.provider, custom.repository), custom, latest, art);
+    const entry = customEntry(customKey(custom.provider, custom.repository, custom.host), custom, latest, art);
     setCatalog((c) => ({ ...c, [entry.id]: entry }));
     add(entry, { custom, art });
     return entry;
+  }
+
+  /** Saves a token for a host; none removes it. */
+  async function saveToken(host: string, token: string | undefined) {
+    const next = { ...tokensNow.current };
+    if (token?.trim()) next[host] = token.trim();
+    else delete next[host];
+    await native.secretSet(REPOSITORY_TOKENS, JSON.stringify(next));
+    tokensNow.current = next;
+    setTokens(next);
+    if (host === "github.com") setGithubToken(next[host]);
+    if (host === "gitlab.com") setGitlabToken(next[host]);
   }
 
   const value: Launcher = {
@@ -1407,13 +2456,16 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     client,
     github,
     githubToken,
-    saveGithubToken: async (token) => {
-      await native.secretSet(GITHUB_TOKEN, token ?? null);
-      setGithubToken(token);
-    },
+    saveGithubToken: async (token) => saveToken("github.com", token),
     gitlab,
+    gitlabToken,
+    saveGitlabToken: async (token) => saveToken("gitlab.com", token),
+    tokens,
+    saveToken,
+    providers,
     consoles,
     consoleNames,
+    withShownTags,
     collections,
     saveCollection: (c) => {
       if (!c.removed && !allCollections.some((x) => x.key === c.key))
@@ -1428,6 +2480,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     },
     setTags: (id, tags) =>
       setLibrary((l) => l.map((i) => (i.id !== id ? i : { ...i, overrides: { ...i.overrides, tags: tags.length ? tags : undefined }, pending: i.account ? { ...i.pending, tags: true } : i.pending }))),
+    renameTag: (from, to) => setLibrary((l) => retagged(l, from, to)),
     setConsoles: (id, consoles) => {
       const theirs = catalog[id]?.consoles ?? [];
       const same = consoles && consoles.length === theirs.length && consoles.every((c) => theirs.includes(c));
@@ -1446,6 +2499,12 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       setNotice(t`${name} is in your library.`);
     },
     setUpdates: (id, updates) => setInstalls((i) => (i[id] ? { ...i, [id]: { ...i[id], updates } } : i)),
+    setPrereleases: (id, prereleases) =>
+      setInstalls((i) => {
+        if (!i[id]) return i;
+        const { prereleases: _, ...install } = i[id];
+        return { ...i, [id]: prereleases ? { ...install, prereleases } : install };
+      }),
     declineUpdate: (id, version) => setInstalls((i) => (i[id] ? { ...i, [id]: { ...i[id], declined: version } } : i)),
     setLaunch: (id, launch) =>
       setInstalls((i) => {
@@ -1473,9 +2532,10 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     },
     async listedAs(id) {
       const app = allItems.find((i) => i.id === id)?.custom ?? (isCustom(id) ? fromKey(id) : null);
-      return app ? entriesOf(appsOfRepository(await statuses(), app)) : [];
+      return app ? entriesOf(appsOfRepository(await statuses(), app, moved[id])) : [];
     },
     inCatalog,
+    moved,
     setGame(id, art) {
       setLibrary((l) => l.map((i) => (i.id === id ? { ...i, art: art ?? undefined } : i)));
       setCatalog((c) => (c[id] ? { ...c, [id]: withGame(c[id], art) } : c));
@@ -1576,6 +2636,13 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     confirmUninstall,
     choosingProgram,
     chooseProgram,
+    savesConflict,
+    savesPlaces,
+    confirmSavePlaces: (name) => (places) => new Promise((resolve) => setSavesPlaces({ name, places, answer: (ok) => (setSavesPlaces(null), resolve(ok)) })),
+    savesFull,
+    closeSavesFull: () => setSavesFull(null),
+    cloudCatchUp: () => cloudCatchUp.current(),
+    cloudSavesFor: (id) => cloudNow.current(id),
     settingUpCopy,
     setUpCopy,
     cache: (entries) => setCatalog((c) => ({ ...c, ...Object.fromEntries(entries.map((e) => [e.id, { ...c[e.id], ...e }])) })),
@@ -1595,13 +2662,17 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         const reason = pulled.reason;
         return setNotice(t`${version} of ${name} was withdrawn: ${reason} Choose another version from its page.`, { stays: true });
       }
+      // The player asks to choose where each new app goes: whichever button this came from, the folder first.
+      const desktop = config.os !== "android" && config.os !== "ios";
+      if (settings.askWhereToInstall && desktop && !installs[entry.id] && !options?.to && !isLocal(entry.id)) return askPlace(entry, release, options);
       setCatalog((c) => ({ ...c, [entry.id]: { ...c[entry.id], ...entry } }));
       add(entry);
-      await installEntry(entry, release, { pin: options?.pin, unverified: options?.unverified || Boolean(options?.blocked), blocked: options?.blocked, asset: options?.asset, platform: options?.platform });
+      await installEntry(entry, release, { pin: options?.pin, unverified: options?.unverified || Boolean(options?.blocked), blocked: options?.blocked, asset: options?.asset, platform: options?.platform, to: options?.to, early: options?.early });
     },
     async play(id, executable, withoutCopy) {
       const install = installs[id];
       if (!install) return;
+      if (appMoves[id]) return setNotice(t`Wait for it to finish moving, then play it.`);
       // The game needs the player's own copy, which Quiver gets to it: asked for first.
       if (!withoutCopy && copiesNeeded(catalog[id], install, config.os).length) return setUpCopy({ id, play: true });
       // The programs the player picked for Play: one starts; more, and they choose.
@@ -1611,7 +2682,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       const launch = { ...install.launch, ...(chosen ? { executable: chosen } : {}), windowsRunner: settings.windowsRunner, copies: launchCopies(catalog[id], install) };
       let program = install.program;
       // A Windows installer's program the player didn't choose after its setup: they choose it now.
-      if (install.installer === "msi" && !program) {
+      if (install.installer && !program) {
         program = (await native.pickProgram().catch(() => null)) ?? undefined;
         if (!program) return;
       }
@@ -1621,8 +2692,47 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       // On the player's Discord profile while it runs: its square icon, else its box art.
       const entry = catalog[id];
       const presence = entry?.projectName ? { name: entry.projectName, image: entry.artwork || entry.libraryArt?.capsule || entry.libraryArt?.header || undefined } : undefined;
-      await native.launch(id, install.folder, install.dir, install.executables, Boolean(install.wine), program, launch, presence).then(
-        () => (musicForGame(), track("app_launched", played)),
+      // Its saves brought in line with the account's first (cloud-saves.ts): a newer copy from another computer is put
+      // in place, and when both changed the player says which to keep.
+      const cloud = cloudNow.current(id);
+      if (cloud && entry) {
+        const synced = await beforePlay(savesOf(id, { ...install, program }, entry), entry, {
+          api: cloud,
+          native,
+          changed: savesChanged,
+          ask: (conflict) => new Promise((resolve) => setSavesConflict({ ...conflict, answer: (keep) => (setSavesConflict(null), resolve(keep)) })),
+        }).catch(() => ({ go: true }) as Awaited<ReturnType<typeof beforePlay>>);
+        if (!synced.go) return;
+        const device = synced.fetched?.device;
+        if (device) setNotice(t`Your saves from ${device} were put in place. The saves that were here are backed up.`);
+        else if (synced.problem !== undefined) setNotice(synced.problem || t`Couldn't get your cloud saves. The app starts with the saves on this computer.`, { stays: true });
+      }
+      // And with the sync folder's (sync-folder.ts), the same way, for any app and with no account.
+      if (syncFolder) {
+        const named = entry ?? { id, projectName: install.folder };
+        const synced = await folderBeforePlay(savesOf(id, { ...install, program }, entry), named, syncFolder, {
+          native,
+          changed: savesChanged,
+          ask: (conflict) => new Promise((resolve) => setSavesConflict({ ...conflict, answer: (keep) => (setSavesConflict(null), resolve(keep)) })),
+        }).catch(() => ({ go: true }) as Awaited<ReturnType<typeof folderBeforePlay>>);
+        if (!synced.go) return;
+        const device = synced.fetched?.device;
+        if (device) setNotice(t`Your saves from ${device} were put in place from your sync folder. The saves that were here are backed up.`);
+        else if (synced.problem !== undefined) setNotice(synced.problem || t`Couldn't get the saves in your sync folder. The app starts with the saves on this computer.`, { stays: true });
+      }
+      // What's in its likely save places now, to tell afterwards where it saved (saves.rs). Never in the way of playing.
+      if (savesOn(config.os)) await native.savesWatch(savesOf(id, { ...install, program }, catalog[id])).catch(() => {});
+      // The catalog's programs as they are now: a fix to them reaches this app without an update.
+      const patterns = program || launch?.executable ? install.executables : startPatterns(install, entry, config.os);
+      await native.launch(id, install.folder, install.dir, patterns, Boolean(install.wine), program, launch, presence).then(
+        () => {
+          musicForGame();
+          track("app_launched", played);
+          // None of them is in its folder: which programs are, for the catalog to learn the right one. Only from players
+          // who share usage data, only for the catalog's own apps, and never in the way of playing.
+          if (entry?.slug && !program && !launch?.executable && telemetryChoice().enabled)
+            void reportMissedPrograms(install, entry, patterns, config.os, { missed: native.missedPrograms, send: (app, report) => client.startProgram(app, report) }).catch(() => {});
+        },
         async (e) => {
           // Windows asked for administrator rights and the player said no.
           if (e === "cancelled") return;
@@ -1646,7 +2756,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       try {
         const release = custom
           ? (await releasesOf(custom)).find(same)
-          : ((await client.releases(entry.slug, 100)).items.find(same) ??
+          : ((await client.releases(entry.slug, 100, null, true)).items.find(same) ??
             (install.unverified ? (await client.unverifiedReleases(entry.slug).catch(() => [])).filter(same).map(fromSite)[0] : undefined));
         const version = versionLabel(install.version);
         if (!release) throw new Problem(msg`${version} can't be installed again: its release isn't available any more.`);
@@ -1667,6 +2777,8 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
           i.id !== id ? [i] : i.account ? [{ ...i, removed: true, pending: { removed: true } }] : [],
         ),
       );
+      // One the player added has no page to add it back from: it comes off their playlists with it.
+      if (isOwn(id)) setCollections((all) => withoutApp(all, id, userId));
       setJobs(({ [id]: _, ...rest }) => rest);
     },
     uninstall: (id) =>
@@ -1702,29 +2814,38 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     },
     /**
      * Adds the 3.x apps, keeping their installs: the catalog's as the catalog has them (found by repository, or by
-     * the entry 3.x knew), any other from GitHub or GitLab as a custom app. Returns the names of those it couldn't:
+     * the entry 3.x knew), any other from a supported host as a custom app. Returns the names of those it couldn't:
      * ones 3.x didn't say where they're from. The player's tag filters come over as playlists.
      */
-    async importOld({ apps, filters = [] }, onProgress) {
+    async importOld({ apps, filters = [] }, onProgress, slots = ["icon"]) {
       const ids = await catalogRepositories();
       let done = 0;
       // Each asks the site, or its repository's host, so several at a time; then they're added in the library's order.
       const found = await inTurns(apps, 6, async (old) => {
-        const match = catalogMatch(old, ids);
-        const detail = match && (await client.app(match.slug).catch(() => null));
+        const listed = async (match: { slug: string } | undefined) => (match ? await client.app(match.slug).catch(() => null) : null);
+        const detail = await listed(catalogMatch(old, ids));
         if (detail) return { kind: "catalog" as const, detail };
-        if (!old.repository || !((old.provider === "github" && githubRepository(old.repository)) || old.provider === "gitlab")) return null;
+        const ref = old.repository ? v3Ref(old.provider, old.repository) : null;
+        if (!ref) return null;
         // Not in the catalog: a custom app, with its game's artwork and consoles as adding one picks them. A
         // repository whose releases can't be read now (gone, or GitHub's hourly limit) still comes over, installs
         // and all: its releases are read when its page is opened.
-        const custom: CustomApp = { provider: old.provider, repository: old.repository, name: old.name };
+        const custom: CustomApp = { ...ref, name: old.name };
         const [releases, art] = await Promise.all([releasesOf(custom).catch(() => null), bestGameArt(client, old.name).catch(() => undefined)]);
+        // Renamed or moved since 3.x knew it: the catalog's app under its name now.
+        const now = movedTo(custom, releases);
+        const renamed = now ? await listed(catalogMatch(old, ids, now)) : null;
+        if (renamed) return { kind: "catalog" as const, detail: renamed };
         return { kind: "custom" as const, custom, latest: releases ? latestOf(releases) : undefined, art };
       }, () => onProgress?.(++done));
       const missing: string[] = [];
       const tags = new Map<string, string[]>();
+      // The catalog's tags they took off an app in 3.x, which stay off it here.
+      const removed = new Map<string, string[]>();
       const hidden: string[] = [];
       const imported: ImportedApp[] = [];
+      // The pictures the player had for them, to keep a copy of once they're in: by app.
+      const pictures: [string, string][] = [];
       apps.forEach((old, i) => {
         const it = found[i];
         if (!it) return void missing.push(old.name);
@@ -1732,14 +2853,18 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         if (it.kind === "catalog") {
           const { detail } = it;
           entry = detail.entry;
-          setCatalog((c) => ({ ...c, [detail.entry.id]: { ...detail.entry, withdrawn: detail.withdrawn, forHere: c[detail.entry.id]?.forHere } }));
+          setCatalog((c) => ({ ...c, [detail.entry.id]: { ...detail.entry, withdrawn: detail.withdrawn, forHere: c[detail.entry.id]?.forHere, early: c[detail.entry.id]?.early } }));
           add(entry);
         } else entry = addCustom(it.custom, it.latest, it.art);
         const install = adoptedInstall(old, entry, config.os);
         if (install) setInstalls((i) => ({ ...i, [entry.id]: keptInstall(i[entry.id], install) }));
         const own = importedTags(old, entry);
         if (own.length) tags.set(entry.id, own);
+        const off = removedTags(old, entry).filter((t) => !isConsole(t));
+        if (off.length) removed.set(entry.id, off);
         if (old.hidden) hidden.push(entry.id);
+        // One they chose themselves, for any app; an address, only for their own, as a catalog app's was the catalog's.
+        if (old.icon && (!isArtAddress(old.icon) || it.kind === "custom")) pictures.push([entry.id, old.icon]);
         const have = library.find((l) => l.id === entry.id)?.overrides?.tags ?? [];
         imported.push({ id: entry.id, old: old.tags ?? [], tags: [...entry.tags, ...have, ...own], platforms: entry.supportedOS });
       });
@@ -1755,6 +2880,21 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
           }),
         );
       if (hidden.length) setSettings((s) => ({ ...s, hidden: [...new Set([...(s.hidden ?? []), ...hidden])] }));
+      if (removed.size)
+        setSettings((s) => ({ ...s, hiddenTags: [...removed].reduce((h, [id, off]) => off.reduce((next, tag) => hideOnApp(next, id, tag, true), h), s.hiddenTags ?? {}) }));
+      // Their pictures, as each kind of picture the player chose for them (OldPictures), where the app has none of the
+      // player's here already. A file is copied in for each, sized for it, as picking one does; one that can't be read
+      // is left out.
+      const kept = new Map<string, Pictures>();
+      await Promise.all(
+        pictures.flatMap(([id, picture]) =>
+          slots.map(async (slot) => {
+            const value = isArtAddress(picture) ? picture : await native.importArtwork(picture, slot).then(artFile, () => undefined);
+            if (value) kept.set(id, { ...kept.get(id), [slot]: value });
+          }),
+        ),
+      );
+      if (kept.size) setLibrary((l) => l.map((i) => (kept.has(i.id) ? withOldPictures(i, kept.get(i.id)!) : i)));
       // Their tag filters, as playlists; one named as a playlist here already leaves that one as it is.
       const names = new Set(collections.map((c) => c.name.toLowerCase()));
       const playlists = importedPlaylists(filters, imported).filter((p) => !names.has(p.name.toLowerCase()) && names.add(p.name.toLowerCase()));
@@ -1769,9 +2909,31 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       return missing;
     },
     dismiss: (id) => setJobs(({ [id]: _, ...rest }) => rest),
-    appFolders,
+    movableApps: () => movableApps(installs),
+    appsFolders: () => appsFolders(installs, config.appsDir),
+    sortPlan: () => sortPlan(installs, config.appsDir, catalog, consoleNames, ownConsoles),
+    async switchAppsFolder(to) {
+      const from = config.appsDir;
+      if (samePath(to, from)) return;
+      // Saved before the default changes, so even a launcher closed mid-way finds every app: each one in the old folder
+      // is recorded where it is, which is where it already was.
+      const kept = keptWhereTheyAre(installs, from);
+      await native.writeState("installs", kept);
+      setInstalls(kept);
+      const switched = await native.moveAppsFolder(to, []);
+      setInstalls((i) => ownedBy(i, switched.appsDir));
+      setConfig((c) => ({ ...c, appsDir: switched.appsDir }));
+      setTelemetryAppsDir(switched.appsDir);
+      track("apps_folder_changed", { kept: movableApps(installs).inside.length });
+    },
     renaming,
     askRename,
+    naming,
+    askName,
+    managing,
+    askManage,
+    placing,
+    askPlace,
     addingFiles,
     askAddFiles,
     changingVersion,
@@ -1782,12 +2944,14 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       if (jobs[id] && !("error" in jobs[id])) throw new Problem(msg`Wait for its download to finish, then rename its folder.`);
       if (!name.trim()) throw new Problem(msg`Enter a name for its folder.`);
       const folder = folderNameFor(name);
-      if (folder === install.folder) return folder;
-      // One folder, one app, as installing keeps it.
-      const taken = Object.entries(installs).some(([other, i]) => other !== id && !i.dir && i.folder.toLowerCase() === folder.toLowerCase());
+      if (folder === folderNameOf(install) && folder === install.folder) return folder;
+      // One folder, one app, as installing keeps it: none other in the same folder by that name.
+      const from = placeOf(install, config.appsDir);
+      const to = joinPath(parentOf(from), folder);
+      const taken = Object.entries(installs).some(([other, i]) => other !== id && samePath(placeOf(i, config.appsDir), to));
       if (taken) throw new Problem(msg`Another app in your library uses a folder named ${folder}. Choose another name.`);
-      await native.renameAppFolder(id, install.folder, folder);
-      setInstalls((i) => ({ ...i, [id]: { ...i[id], folder } }));
+      await native.renameAppFolder(id, install.folder, folder, install.dir);
+      setInstalls((i) => ({ ...i, [id]: { ...withCopiesIn(i[id], from, to), folder, ...(i[id].dir ? { dir: to } : {}) } }));
       // A folder the player fills keeps its name in the library too, which its page shows.
       const item = library.find((i) => i.id === id);
       if (item?.local?.kind === "folder") {
@@ -1798,11 +2962,81 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       track("app_folder_renamed", appRef(id, catalog[id]?.slug ?? item?.slug ?? ""));
       return folder;
     },
-    async moveApps(to) {
-      const appsDir = await native.moveAppsFolder(to, appFolders());
-      setConfig((c) => ({ ...c, appsDir }));
-      setTelemetryAppsDir(appsDir);
-      track("apps_folder_moved", { apps: appFolders().length });
+    async moveApps(to, which) {
+      let now = installs;
+      // The default folder's apps left behind when apps go to another folder that becomes the default stay findable.
+      if (!which.inside && !samePath(to, config.appsDir)) {
+        now = keptWhereTheyAre(installs, config.appsDir);
+        await native.writeState("installs", now);
+        setInstalls(now);
+      }
+      const { inside, elsewhere } = movableApps(now);
+      // Those in the folders asked for, and with the default folder's own its apps in console folders.
+      const kept = elsewhere.filter((a) => which.from.some((f) => samePath(rootOf(a), f)) || (which.inside && samePath(rootOf(a), config.appsDir)));
+      // A folder two library entries share moves once, and both go with it.
+      const { apps, twins } = oncePerFolder([...inside, ...kept], now, config.appsDir);
+      const all = apps.flatMap((a) => [a.id, ...(twins.get(a.id) ?? [])]);
+      if (all.some((id) => installing.current.has(id) || moving.current.has(id))) throw new Problem(msg`Wait for downloads to finish first`);
+      for (const id of all) moving.current.add(id);
+      // Each app is recorded where it is the moment it gets there: a move that stops part way, or a launcher closed
+      // mid-move, leaves every app findable. It's in an apps folder still (or one that couldn't move stays in the
+      // old one), so it comes along with the next move.
+      const stop = await native.onAppMoved(({ id, dir }) =>
+        setInstalls((i) => (i[id] ? withTwins({ ...i, [id]: { ...withCopiesIn(i[id], placeOf(i[id], config.appsDir), dir), dir, inApps: true } }, id, twins.get(id) ?? [], config.appsDir) : i)),
+      );
+      try {
+        const moved = await native.moveAppsFolder(to, apps);
+        setInstalls((i) => {
+          let next = { ...i };
+          for (const id of moved.inside) if (next[id]) next[id] = movedInside(next[id]);
+          // Those in a folder another entry moved: where it is now, in the apps folder that is the default now.
+          for (const [id, others] of twins) next = withTwins(next, id, others, moved.appsDir);
+          return next;
+        });
+        setConfig((c) => ({ ...c, appsDir: moved.appsDir }));
+        setTelemetryAppsDir(moved.appsDir);
+        track("apps_folder_moved", { apps: inside.length, elsewhere: kept.length, failed: moved.failed.length });
+        return { left: moved.left, failed: moved.failed };
+      } finally {
+        stop();
+        for (const id of all) moving.current.delete(id);
+      }
+    },
+    appMoves,
+    async moveApp(id, to) {
+      // As it is now, not as of the render that offered the move: Sort into console folders moves one after another.
+      const install = now.current.installs[id];
+      if (!movable(install)) throw new Problem(msg`This app's folder can't be moved.`);
+      if (installing.current.has(id)) throw new Problem(msg`Wait for its download to finish, then move it.`);
+      if (moving.current.has(id)) return {};
+      // Another library entry in its very folder goes with it.
+      const twins = twinsOf(now.current.installs, id, config.appsDir);
+      if (twins.some((t) => installing.current.has(t) || moving.current.has(t))) throw new Problem(msg`Wait for its download to finish, then move it.`);
+      for (const t of [id, ...twins]) moving.current.add(t);
+      setAppMoves((m) => ({ ...m, [id]: { copied: 0, size: 0 } }));
+      const stop = await native.onAppMoving((m) => m.id === id && setAppMoves((all) => (all[id] ? { ...all, [id]: { copied: m.copied, size: m.size } } : all)));
+      try {
+        const listed = appsFolders(installs, config.appsDir).some((f) => samePath(f.path, to));
+        // Into the default apps folder while apps are grouped by console: its console's folder there, kept from
+        // where it was or worked out now. Another folder is exactly where it goes.
+        const group = samePath(to, config.appsDir) && settings.groupByConsole ? (install.group ?? groupFolder(withOwnConsoles(catalog[id] ?? { id, projectType: "port" }, ownConsoles[id]), consoleNames)) : undefined;
+        const moved = await native.moveApp(id, install.folder, install.dir, group ? joinPath(to, group) : to, { inApps: listed, group });
+        setInstalls((i) => {
+          const now = i[id];
+          if (!now) return i;
+          const { dir: _, inApps: __, group: ___, ...rest } = withCopiesIn(now, placeOf(now, config.appsDir), moved.dir);
+          // In the default folder under its own name: one of its apps like any other.
+          const own = !group && samePath(parentOf(moved.dir), config.appsDir) && baseName(moved.dir) === now.folder;
+          const next = { ...i, [id]: own ? rest : { ...rest, dir: moved.dir, ...(listed ? { inApps: true as const } : {}), ...(group ? { group } : {}) } };
+          return withTwins(next, id, twins, config.appsDir);
+        });
+        track("app_moved", { ...appRef(id, catalog[id]?.slug ?? ""), appsFolder: listed });
+        return moved.left ? { left: moved.left } : {};
+      } finally {
+        stop();
+        for (const t of [id, ...twins]) moving.current.delete(t);
+        setAppMoves(({ [id]: _, ...rest }) => rest);
+      }
     },
     cancel: (id) => void native.cancelInstall(id).catch(() => {}),
   };

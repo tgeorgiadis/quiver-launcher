@@ -4,17 +4,18 @@
  * signing in comes first).
  */
 import { useEffect, useRef, useState } from "react";
-import { ChevronDown, CircleCheck, CircleX, MessageSquare, Pencil, TriangleAlert } from "lucide-react";
+import { BadgeCheck, ChevronDown, CircleCheck, CircleX, Cpu, MessageSquare, Pencil, TriangleAlert } from "lucide-react";
 import { msg, t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import type { MessageDescriptor } from "@lingui/core";
 import { i18n } from "@quiverlauncher/i18n";
-import type { Entry, Feedback, Release } from "@quiverlauncher/api";
+import type { Entry, Feedback, FeedbackSpecs, Release } from "@quiverlauncher/api";
 import { OS_NAMES, Score, fullDate } from "@quiverlauncher/ui";
 import { useLauncher } from "./store";
 import { useAccount } from "./account";
-import { NOTE_LIMIT, clearDraft, readDraft, saveDraft } from "./reviewDraft";
+import { NOTE_LIMIT, NOT_SURE, clearDraft, missing, readDraft, saveDraft } from "./reviewDraft";
 import { moveFocus } from "./spatial";
+import { pcSpecs } from "./specs";
 
 export type Result = Feedback["result"];
 /** What the player asked to do: give feedback with this answer, or edit what they gave. */
@@ -46,6 +47,38 @@ const ownStatus = (own: Feedback) =>
 
 /** The release a player tried, among the facts under their name. */
 const testedOn = (version: string) => t({ message: `tested on ${version}`, comment: "Under a player's name on their feedback, after the date and platform" });
+
+/**
+ * The computer a piece of feedback was tried on, in one line: system, processor, graphics card, memory. Specs its
+ * author kept from other players (only they, the developer and Quiver staff get them) say so.
+ */
+export function SpecsLine({ specs, specsPublic }: { specs?: FeedbackSpecs; specsPublic?: boolean }) {
+  if (!specs) return null;
+  const ram = specs.ramGb === undefined ? undefined : i18n.number(specs.ramGb);
+  const parts = [
+    specs.osVersion,
+    specs.cpu,
+    specs.gpu,
+    ram !== undefined && t({ message: `${ram} GB RAM`, comment: "The memory of the computer a player tried an app on" }),
+  ].filter(Boolean);
+  if (!parts.length) return null;
+  return (
+    <p className="review-specs">
+      <Cpu size={13} aria-hidden />
+      <span>
+        <span className="sr-only">
+          <Trans comment="Before the computer a player tried an app on">PC specs:</Trans>
+        </span>
+        {parts.join(" · ")}
+        {specsPublic === false && (
+          <span className="chip">
+            <Trans comment="On PC specs only the app's developer and the player who shared them can see">Not shown to other players</Trans>
+          </span>
+        )}
+      </span>
+    </p>
+  );
+}
 
 /** The player's own feedback on an app: undefined while loading, null signed out or none. */
 export function useOwnFeedback(entry: Entry, on: boolean) {
@@ -257,7 +290,25 @@ export function FeedbackTab({
           <span className="spinner" />
         </div>
       ) : (
-        list.map((review) => (
+        <>
+          {list.filter((r) => !r.fixed).map(card)}
+          {list.some((r) => r.fixed) && (
+            <details className="fixed-reviews">
+              <summary>{t`Fixed in an update (${list.filter((r) => r.fixed).length})`}</summary>
+              {list.filter((r) => r.fixed).map(card)}
+            </details>
+          )}
+        </>
+      )}
+      {next && (
+        <button type="button" className="button secondary" onClick={() => load(next)}>
+          <Trans>Load more</Trans>
+        </button>
+      )}
+    </section>
+  );
+  function card(review: Feedback) {
+    return (
           // A stop of its own, for a controller's d-pad (and Tab) to read down the list, which has no buttons.
           <article key={review.id} className="review panel" tabIndex={0}>
             <div className="review-header">
@@ -280,16 +331,36 @@ export function FeedbackTab({
               <ResultBadge result={review.result} />
             </div>
             {review.body && <p className="review-body">{review.body}</p>}
+            <SpecsLine specs={review.specs} specsPublic={review.specsPublic} />
+            {review.fixed && (
+              <p className="fixed-note">
+                <CircleCheck size={13} aria-hidden /> {t`The developer says ${review.fixed.version} fixed this.`}
+              </p>
+            )}
+            {!review.fixed && review.disputed && (
+              <p className="fixed-note disputed">
+                <TriangleAlert size={13} aria-hidden /> <Trans>Its author says it's still broken after the last fix.</Trans>
+              </p>
+            )}
+            {!!review.replies?.length && (
+              <div className="review-replies">
+                {review.replies.map((reply) => (
+                  <div key={reply.id} className="review-reply">
+                    <div className="review-reply-head">
+                      <strong>{reply.author}</strong>
+                      <span className="developer-tag">
+                        <BadgeCheck size={11} aria-hidden /> <Trans comment="Tag on a reply from the app's verified developer">Developer</Trans>
+                      </span>
+                      <small>{fullDate(reply.createdAt)}</small>
+                    </div>
+                    <p>{reply.body}</p>
+                  </div>
+                ))}
+              </div>
+            )}
           </article>
-        ))
-      )}
-      {next && (
-        <button type="button" className="button secondary" onClick={() => load(next)}>
-          <Trans>Load more</Trans>
-        </button>
-      )}
-    </section>
-  );
+    );
+  }
 }
 
 // Put in the language when shown, as RESULTS are.
@@ -302,6 +373,11 @@ const CHOICES: [Result, MessageDescriptor, MessageDescriptor][] = [
 /**
  * The website's form: how it went, where, which release, and a note. Saving
  * again replaces what the player said before. The app needn't be installed.
+ * The release starts on the installed one; otherwise the player picks one, or
+ * Not sure, so a report never lacks it only because nobody looked. Anything
+ * but "It worked well" needs a note saying what went wrong. Tried on this
+ * computer's platform, its PC specs go with it: shown to other players unless
+ * unticked, and to the app's developer either way.
  */
 function ReviewEditor({
   userId,
@@ -335,6 +411,19 @@ function ReviewEditor({
   const [platform, setPlatform] = useState(draft?.platform ?? (config.os === "unknown" ? "" : config.os));
   const [releaseId, setReleaseId] = useState(draft?.releaseId ?? (installed && releases.some((r) => r.id === installed) ? installed : ""));
   const [body, setBody] = useState(draft?.body ?? "");
+  // Whether other players see the specs, once the player changed it; until then, what they chose before (shown by default).
+  const [specsPublic, setSpecsPublic] = useState(draft?.specsPublic);
+  const showSpecs = specsPublic ?? existing?.specsPublic ?? true;
+  // This computer's specs, read as the form opens: null when none could be.
+  const [specs, setSpecs] = useState<FeedbackSpecs | null>(null);
+  useEffect(() => {
+    let live = true;
+    pcSpecs(config).then((s) => live && setSpecs(s), () => undefined);
+    return () => void (live = false);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  // Only the computer it was tried on: feedback on another platform says nothing of this one.
+  const sendsSpecs = !!specs && platform === config.os;
+  const shownSpecs = sendsSpecs ? specs : platform === existing?.platform ? existing?.specs : undefined;
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   // Changed here since opening (or kept from before): what's kept if they leave.
@@ -345,11 +434,15 @@ function ReviewEditor({
     setResult(picked ?? existing.result);
     setBody(existing.body);
     if (existing.platform && existing.platform !== "unknown") setPlatform(existing.platform);
-    setReleaseId(existing.entryReleaseId ?? "");
+    setReleaseId(existing.entryReleaseId ?? NOT_SURE);
   }, [existing]); // eslint-disable-line react-hooks/exhaustive-deps
+  // The installed release, once the releases it's among have loaded.
   useEffect(() => {
-    if (changed) saveDraft(userId, entry.id, { result, platform, releaseId, body });
-  }, [changed, userId, entry.id, result, platform, releaseId, body]);
+    if (!changed && !existing && !releaseId && installed && releases.some((r) => r.id === installed)) setReleaseId(installed);
+  }, [releases]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (changed) saveDraft(userId, entry.id, { result, platform, releaseId, body, ...(specsPublic === undefined ? {} : { specsPublic }) });
+  }, [changed, userId, entry.id, result, platform, releaseId, body, specsPublic]);
   // Asked for by a press: its answer, if it named one (picked again in the box while the form's open, too), and the
   // focus on the answer, eased into view.
   const answers = useRef<HTMLDivElement>(null);
@@ -370,7 +463,15 @@ function ReviewEditor({
       className="review-editor panel"
       onSubmit={(e) => {
         e.preventDefault();
-        if (!platform) return setMessage(t`Choose the platform you tried.`);
+        const needs = missing({ result, platform, releaseId, body }, releases.length > 0);
+        if (needs)
+          return setMessage(
+            {
+              platform: t`Choose the platform you tried.`,
+              release: t`Choose the release you tried, or Not sure.`,
+              note: t`Say what went wrong, so the developer and other players can make sense of it.`,
+            }[needs],
+          );
         setBusy(true);
         setMessage("");
         review({
@@ -378,7 +479,8 @@ function ReviewEditor({
           result,
           body: body.trim(),
           platform: platform as Exclude<typeof config.os, "unknown">,
-          ...(releaseId ? { entryReleaseId: releaseId } : {}),
+          ...(releaseId && releaseId !== NOT_SURE ? { entryReleaseId: releaseId } : {}),
+          ...(sendsSpecs ? { specs, specsPublic: showSpecs } : specsPublic !== undefined ? { specsPublic } : {}),
         }).then(() => {
           clearDraft(userId, entry.id);
           onSaved();
@@ -420,8 +522,9 @@ function ReviewEditor({
         </label>
         <label className="field">
           <Trans>Tested release</Trans>
-          <select value={releaseId} onChange={(e) => edit(setReleaseId)(e.target.value)}>
-            <option value="">{t({ message: "Not sure", comment: "Which release the player tested" })}</option>
+          <select required={releases.length > 0} value={releaseId} onChange={(e) => edit(setReleaseId)(e.target.value)}>
+            <option value="">{t`Choose a release`}</option>
+            <option value={NOT_SURE}>{t({ message: "Not sure", comment: "Which release the player tested" })}</option>
             {releases.map((r) => (
               <option key={r.id} value={r.id}>
                 {r.version}
@@ -434,14 +537,33 @@ function ReviewEditor({
         <Trans comment="The player's note about how the app ran">Note</Trans>
         <textarea
           maxLength={NOTE_LIMIT}
+          required={result !== "runs"}
           rows={4}
           value={body}
           aria-describedby="review-note-count"
-          placeholder={t`What worked well, and what didn't? Did you do anything to get it running or fix a problem?`}
+          placeholder={
+            result === "runs"
+              ? t`What worked well, and what didn't? Did you do anything to get it running or fix a problem?`
+              : t`What went wrong, and when? What did you try to fix it?`
+          }
           onChange={(e) => edit(setBody)(e.target.value)}
         />
       </label>
       <CharacterCount id="review-note-count" length={body.length} limit={NOTE_LIMIT} />
+      {shownSpecs && (
+        <div className="review-specs-choice">
+          <label className="toggle">
+            <input type="checkbox" checked={showSpecs} onChange={(e) => edit(setSpecsPublic)(e.target.checked)} />
+            <span>
+              <Trans>Show my PC specs to other players</Trans>
+            </span>
+          </label>
+          <SpecsLine specs={shownSpecs} />
+          <small>
+            <Trans>The app's developer sees them either way.</Trans>
+          </small>
+        </div>
+      )}
       <div className="review-editor-actions">
         <button className="button" disabled={busy}>
           {busy ? t`Saving…` : existing ? t`Update notes` : t({ message: "Share", comment: "Button: share the player's feedback" })}
@@ -464,7 +586,7 @@ function ReviewEditor({
 }
 
 /** "120/500" under the note, and a clear message once it's full, so typing never just stops. */
-function CharacterCount({ id, length, limit }: { id: string; length: number; limit: number }) {
+export function CharacterCount({ id, length, limit }: { id: string; length: number; limit: number }) {
   const full = length >= limit;
   return (
     <div id={id} className={`character-count${full ? " full" : ""}`}>

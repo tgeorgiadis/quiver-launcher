@@ -57,8 +57,8 @@ for (const mode of ["the usual library", "TV mode"]) {
   });
 }
 
-test("where Steam is running Quiver, Add to Steam is greyed out, saying why", async () => {
-  const s2 = await openApp({ state: installed, config: { steamRunsUs: true } });
+test("on Windows, where Steam is running Quiver, Add to Steam is greyed out, saying why", async () => {
+  const s2 = await openApp({ state: installed, config: { steamRunsUs: true, os: "windows" } });
   try {
     const a = s2.app;
     await s2.page.locator("article[data-slug]").first().waitFor();
@@ -69,6 +69,23 @@ test("where Steam is running Quiver, Add to Steam is greyed out, saying why", as
     const item = s2.page.locator('.game-submenu [role="menuitem"]', { hasText: "Add to Steam" });
     assert.equal(await item.isDisabled(), true);
     await s2.page.locator(".game-submenu .game-menu-note", { hasText: "Steam is running Quiver" }).waitFor();
+  } finally {
+    await s2.close();
+  }
+});
+
+test("on Linux, Steam running Quiver doesn't grey out Add to Steam: it can add games at once", async () => {
+  const s2 = await openApp({ state: installed, config: { steamRunsUs: true, os: "linux" } });
+  try {
+    const a = s2.app;
+    await s2.page.locator("article[data-slug]").first().waitFor();
+    await reach.install(a);
+    await reach.pressOn(a, ".library-tile .card-open", "North");
+    await a.execute(() => [...document.querySelectorAll('[role="menu"] [role="menuitem"]')].find((b) => b.innerText.includes("Manage")).focus());
+    await reach.press(a, "DPadRight");
+    const item = s2.page.locator('.game-submenu [role="menuitem"]', { hasText: "Add to Steam" });
+    assert.equal(await item.isDisabled(), false);
+    assert.equal(await s2.page.locator(".game-submenu .game-menu-note").count(), 0, "no note: it can add games now");
   } finally {
     await s2.close();
   }
@@ -233,4 +250,64 @@ test("after the mouse, a menu shows where the d-pad is", async () => {
   await page.waitForTimeout(100);
   const moved = await looks();
   assert.notEqual(moved.focused, moved.other, `${moved.on} is lit`);
+});
+
+test("View options' card size slider: the d-pad's left and right size the cards a step at a time, and down leaves it", async () => {
+  const scale = () => app.execute(() => getComputedStyle(document.querySelector(".library-grid")).getPropertyValue("--card-scale").trim());
+  await app.execute(() => document.querySelector("button[aria-label='View options']").click());
+  await app.execute(() => document.querySelector(".card-size input").focus());
+  assert.equal(await scale(), "1");
+  await reach.press(app, "DPadRight");
+  await reach.press(app, "DPadRight");
+  assert.equal(await scale(), "1.1", "two steps larger");
+  assert.match(await focusIs(app), /Card size/, "the focus stays on the slider");
+  // Saved once it stops: the menu, opened again, has it.
+  await pause(400);
+  await back();
+  await app.execute(() => document.querySelector("button[aria-label='View options']").click());
+  assert.equal(await app.execute(() => document.querySelector(".card-size input").value), "1.1", "saved");
+  await app.execute(() => document.querySelector(".card-size input").focus());
+  await reach.press(app, "DPadLeft");
+  assert.equal(await scale(), "1.05", "a step back");
+  await reach.press(app, "DPadLeft");
+  await reach.press(app, "DPadDown");
+  assert.doesNotMatch(await focusIs(app), /Card size/, "down leaves it");
+  assert.equal(await scale(), "1");
+  await back();
+});
+
+test("with the mouse, a submenu switches at once, unless the pointer is heading into the open one", async () => {
+  await page.locator(".library-tile").first().click({ button: "right" });
+  const add = page.locator('.game-menu [role="menuitem"]', { hasText: "Add to playlist" });
+  const tags = page.locator('.game-menu [role="menuitem"]', { hasText: "Tags" });
+  await add.waitFor();
+  // Read once the pointer's last move has been drawn: two frames on, well short of AIM_RESTS (card-menu.tsx), so a submenu
+  // that only opens after that wait still isn't open, and one that switched at once is.
+  const open = () =>
+    app.execute(
+      () =>
+        new Promise((done) =>
+          requestAnimationFrame(() => requestAnimationFrame(() => done(document.querySelector(".game-submenu")?.getAttribute("aria-label") ?? null))),
+        ),
+    );
+  const middle = async (item) => {
+    const b = await item.boundingBox();
+    return [b.x + b.width / 2, b.y + b.height / 2];
+  };
+  // On the way from where the menu opened, the pointer may cross another submenu's item: resting on Add to playlist opens its own.
+  await page.mouse.move(...(await middle(add)), { steps: 4 });
+  await page.waitForTimeout(200);
+  assert.equal(await open(), "Add to playlist");
+  // Straight down onto Tags, away from the open submenu: it opens with no wait.
+  await page.mouse.move(...(await middle(tags)), { steps: 4 });
+  assert.equal(await open(), "Tags", "switched at once");
+  // Back up, then across Tags towards the open submenu's near edge: it stays open, the pointer heading into it.
+  await page.mouse.move(...(await middle(add)), { steps: 4 });
+  assert.equal(await open(), "Add to playlist");
+  const b = await tags.boundingBox();
+  await page.mouse.move(b.x + b.width - 4, b.y + b.height / 2, { steps: 4 });
+  assert.equal(await open(), "Add to playlist", "kept open on the way into it");
+  // Resting on Tags opens its own.
+  await page.waitForTimeout(200);
+  assert.equal(await open(), "Tags", "resting on Tags opens it");
 });

@@ -10,8 +10,8 @@
 [![Join the community on Discord](https://img.shields.io/badge/Join_the_community-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/5XRThpWHGk)
 [![Support Quiver on Patreon](https://img.shields.io/badge/Support_on_Patreon-B8394A?style=for-the-badge&logo=patreon&logoColor=white)](https://www.patreon.com/c/quiverlauncher)
 
-**One place to find, install, update and play the games and apps people release on GitHub and GitLab**,
-such as PC ports, recompilations and fan projects. Browse the [Quiver catalog](https://quiverlauncher.com), press
+**One place to find, install, update and play the games and apps people release on GitHub, GitLab and other forges**,
+such as modern ports (source ports and recompilations) and fan projects. Browse the [Quiver catalog](https://quiverlauncher.com), press
 **Get**, and Quiver downloads it, checks it and installs it. Then it keeps it up to date.
 
 <img width="2559" height="1366" alt="quiver-launcher-screenshot" src="https://github.com/user-attachments/assets/4cae3f54-0e41-43a3-9925-1adbbf81071e" />
@@ -20,20 +20,25 @@ such as PC ports, recompilations and fan projects. Browse the [Quiver catalog](h
 
 - **A catalog to browse.** Search the [quiverlauncher.com](https://quiverlauncher.com) catalog by console, platform
   and type, and see what other players said about how each app runs.
-- **Verified downloads.** Quiver records the checksum of each catalog app's release files when they come out. Every
-  download is compared with it, and a file that changed since is refused. Automatic updates only install releases
-  Quiver has verified. This checks that you get the file the developer published; it can't promise that the file
-  itself is safe.
+- **Checked downloads, and a 48-hour wait.** Quiver records the checksum of each catalog app's release files when
+  they come out. Every download is compared with it, and a file that changed since is refused. Updates are offered
+  once a release has been out for 48 hours, which leaves time to withdraw a harmful one; you can update an app early
+  yourself, or choose to get every update right away. This checks that you get the file the developer published; it
+  can't promise that the file itself is safe.
 - **Your library, your way.** Sort and filter by console, make playlists, and share them or follow other people's.
-  Add any GitHub or GitLab repository, a program already on your computer, or a folder you fill yourself.
+  Add any GitHub, GitLab, Gitea/Forgejo, Bitbucket or release-feed repository, a program already on your computer, or a
+  folder you fill yourself.
 - **Made for the couch.** TV mode turns Quiver into a full-screen launcher for a controller. It comes on by itself in
   the Steam Deck's Game Mode.
 - **Mods.** Browse, install and update mods from Thunderstore and GameBanana for the apps that support them.
 - **Play it your way.** Add any app to Steam or the desktop, and run Windows builds on Linux with Wine or Proton.
 - **Sign in to sync** (optional). Sign in with GitHub or Discord to keep your library and playlists the same on every
   device.
-- **In your language.** English, Português (Brasil), Español (Latinoamérica), Deutsch, Français, Русский, Italiano
-  and 한국어.
+- **Release hosts, your way.** GitHub and GitLab work as before, and so do Gitea/Forgejo (including Codeberg), Bitbucket,
+  self-hosted GitLab, GitHub Enterprise and any host with a JSON release feed. See
+  [docs/providers.md](docs/providers.md) for tokens, checksums and self-hosting notes.
+- **In your language.** English, Português (Brasil), Español (Latinoamérica), Deutsch, Français, Русский, Italiano,
+  한국어, 简体中文 and 繁體中文.
 
 ## Download
 
@@ -57,8 +62,14 @@ anywhere else isn't made by us.
 ## Coming from Quiver Launcher 3
 
 Your apps come with you, and nothing needs downloading again. On its first start, Quiver Launcher 4 asks where your
-Quiver Launcher 3 folder is (or finds it by itself) and adds your apps to your library. Anything already installed
-stays where it is and plays from there. You can do this later too, in **Settings**.
+Quiver Launcher 3 folder is (or finds it by itself), shows what it found and adds your apps to your library, with the
+tags you gave them, your hidden apps, the pictures you chose and your tag filters (as playlists). For a portable copy,
+choose the folder you unzipped it to. You can do this later too, in **Settings › Library**.
+
+Adding them moves nothing: anything already installed stays where Quiver Launcher 3 put it and plays from there. The
+setup then shows that folder beside Quiver Launcher 4's and asks whether to move the apps across now, or keep them there for
+now. If you keep them, don't delete your Quiver Launcher 3 folder yet, as that would delete those apps: move them once
+you've tried Quiver Launcher 4, in **Settings › Apps folder**, and delete the old folder after.
 
 Quiver Launcher 3 is still available on the [`v3` branch](https://github.com/tgeorgiadis/quiver-launcher/tree/v3)
 and its [releases](https://github.com/tgeorgiadis/quiver-launcher/releases?q=v3).

@@ -19,8 +19,10 @@ Polite, friendly 해요체 in sentences; short noun forms on buttons and labels
 | Change version / Choose a version | 버전 변경 / 버전 선택 | |
 | pinned | 고정됨 | |
 | withdrawn | 철회됨 | |
-| verified / unverified / blocked (a release) | 검증됨 / 미검증 / 차단됨 | |
+| available / not offered / blocked (a release) | 사용 가능 / 제공 안 함 / 차단됨 | |
 | preview release | 미리 보기 버전 | |
+| pre-release | 사전 출시 | a release its developer marked as one: an early or experimental build |
+| main release | 정식 버전 | a release not marked as a pre-release; never "stable" |
 | play time / recently played | 플레이 시간 / 최근 플레이 | |
 | controller / keyboard | 컨트롤러 / 키보드 | |
 | Settings | 설정 | |
@@ -32,6 +34,7 @@ Polite, friendly 해요체 in sentences; short noun forms on buttons and labels
 | usage data | 사용 데이터 | |
 | sign in / sign out / account | 로그인 / 로그아웃 / 계정 | |
 | feedback / player | 피드백 / 플레이어 | |
+| PC specs | PC 사양 | the computer a player tried an app on: system, processor, graphics card, memory |
 | mod | 모드 | |
 | launch options / launch flags | 실행 옵션 / 실행 인수 | |
 | backup (of the library) | 백업 | |
@@ -42,6 +45,9 @@ Polite, friendly 해요체 in sentences; short noun forms on buttons and labels
 | port / standalone game | 포트 / 독립형 게임 | |
 | Installed | 설치됨 | |
 | Update (a card's badge) / (a button) | 업데이트 | |
+| discussion / comment | 토론 / 댓글 | Community board: 커뮤니티 |
+| Follow / Unfollow (a discussion) | 팔로우 / 팔로우 취소 | |
+| Pin / Lock / Report (a discussion) | 고정 / 잠그기 / 신고 | |
 
 Left as they are: Quiver, Quiver Launcher, GitHub, GitLab, Steam, Steam Deck,
 Flatpak, AppImage, Thunderstore, GameBanana, console names, and controller

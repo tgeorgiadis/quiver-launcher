@@ -99,7 +99,8 @@ test("the player's picture shows behind the library's grid and nowhere else, and
 });
 
 test("Settings' list stays on the screen as the page scrolls, in a window with just room for it", async () => {
-  const s2 = await openApp({ state: installed, height: 345 });
+  // Room for the list's eight sections, and little more.
+  const s2 = await openApp({ state: installed, height: 434 });
   try {
     await s2.page.locator(".topbar").waitFor();
     await s2.page.locator(".topbar button[aria-label='Settings']").click();
@@ -153,6 +154,59 @@ test("a controller rebinds a control with its own buttons", async () => {
   await s.until(async () => (await cells()).join() === "B,A");
   await reach.press(app, "East");
   await s.until(async () => (await cells()).join() === "A,B");
+});
+
+test("Settings turns off closing a game with Start + Select, and chooses other buttons for it", async () => {
+  const s2 = await openApp({ state: installed });
+  const { page: p } = s2;
+  const last = () => p.evaluate(() => window.__calls.filter((c) => c.cmd === "close_combo").at(-1)?.args);
+  try {
+    // On from the start.
+    await s2.until(async () => (await last())?.on === true);
+    await p.locator(".topbar button[aria-label='Settings']").click();
+    await p.locator(".settings-nav button", { hasText: "Controllers" }).first().click();
+    const toggle = p.locator(".controls label.toggle", { hasText: "Close a game" }).locator("input");
+    const buttons = p.locator(".controls .close-combo select");
+    const saved = () => p.evaluate(() => window.__calls.filter((c) => c.cmd === "write_state" && c.args.name === "settings").at(-1)?.args.value);
+    assert.equal(await toggle.isChecked(), true);
+    assert.equal(await buttons.inputValue(), "Start+Select");
+    // Other buttons: the sticks pressed in.
+    await buttons.selectOption("LeftThumb+RightThumb");
+    await s2.until(async () => (await last())?.buttons?.join() === "LeftThumb,RightThumb");
+    assert.deepEqual((await saved()).closeCombo, ["LeftThumb", "RightThumb"]);
+    await toggle.uncheck();
+    await s2.until(async () => (await last())?.on === false);
+    assert.equal((await saved()).closeComboOff, true);
+    assert.equal(await buttons.isDisabled(), true);
+  } finally {
+    await s2.close();
+  }
+});
+
+test("Advanced Settings takes a GitLab token, keeps it in the keychain, and shows what it allows", async () => {
+  const s2 = await openApp({ state: installed });
+  const { page: p } = s2;
+  try {
+    await p.locator(".topbar button[aria-label='Settings']").click();
+    await p.locator('.settings-nav [data-section="advanced"]').click();
+    const setting = p.locator('section[aria-label="GitLab token"]');
+    await setting.waitFor();
+    // Without one, the mock allows fewer requests, and says how many are left.
+    await setting.getByText(/499 of 500 requests left/).waitFor();
+    await setting.locator('input[type="password"]').fill("glpat-test");
+    await setting.getByRole("button", { name: "Save token" }).click();
+    await setting.getByText("Saved. Requests to GitLab use your token now.").waitFor();
+    // The token was kept in the keychain, not in settings.json: with every host's, under its own host.
+    assert.deepEqual(
+      await p.evaluate(() => window.__calls.find((c) => c.cmd === "secret_set")?.args),
+      { key: "repositoryTokens", value: JSON.stringify({ "gitlab.com": "glpat-test" }) },
+    );
+    // It went with the request that checked it, and the mock's higher limit shows.
+    assert.ok(s2.api.gitlabRequests().some((r) => r.path === "/gitlab/user" && r.token === "glpat-test"));
+    await setting.getByText(/1,999 of 2,000 requests left/).waitFor();
+  } finally {
+    await s2.close();
+  }
 });
 
 test("A on a dropdown on a page opens its options, and B closes them without going back a page", async () => {

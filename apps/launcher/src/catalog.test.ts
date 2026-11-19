@@ -1,5 +1,5 @@
 import { afterEach, expect, test, vi } from "vitest";
-import { ApiError, createClient, createGithub, DEFAULT_API, FALLBACK_API } from "@quiverlauncher/api";
+import { ApiError, createClient, createGithub, createGitlab, DEFAULT_API, FALLBACK_API } from "@quiverlauncher/api";
 import { byPlayerFeedback } from "./catalog";
 
 /** The site's REST API, answering each path from `answers` (404 otherwise) and recording what was asked. */
@@ -35,8 +35,27 @@ test("several kinds of project, from saved filters, go as projectTypes; one goes
   expect(asked).toEqual(["/apps?limit=48&projectTypes=port%2Cgame", "/apps?limit=48&projectType=tool", "/apps?limit=48"]);
 });
 
+test("several consoles go as consoles and makers, several platforms as platforms; one of each as before", async () => {
+  const urls = [
+    "/apps?limit=48&consoles=n64%2Cps1&makers=Sega",
+    "/apps?limit=48&makers=Sega%2CSony",
+    "/apps?limit=48&maker=Sega",
+    "/apps?limit=48&console=n64",
+    "/apps?limit=48&platforms=windows%2Cmacos",
+    "/apps?limit=48&os=linux",
+  ];
+  const { client, asked } = fakeApi(Object.fromEntries(urls.map((u) => [u, empty])));
+  await client.apps({ consoles: ["n64", "maker:Sega", "ps1"] });
+  await client.apps({ consoles: ["maker:Sega", "maker:Sony"] });
+  await client.apps({ consoles: ["maker:Sega"] });
+  await client.apps({ consoles: ["n64"] });
+  await client.apps({ platforms: ["windows", "macos"] });
+  await client.apps({ platforms: ["linux"] });
+  expect(asked).toEqual(urls);
+});
+
 test("an app, its README and releases; a missing app is a 404 and a missing README null", async () => {
-  const detail = { entry: { id: "a" }, project: { name: "A", description: "", provider: "github", repository: "o/a" }, withdrawn: [] };
+  const detail = { entry: { id: "a", games: [] }, project: { name: "A", description: "", provider: "github", repository: "o/a" }, withdrawn: [] };
   const { client } = fakeApi({
     "/apps/a": detail,
     "/apps/a/readme": { markdown: "# A", rawBase: "r/", htmlBase: "h/" },
@@ -47,6 +66,14 @@ test("an app, its README and releases; a missing app is a 404 and a missing READ
   expect(await client.releases("a", 100)).toEqual({ items: [{ id: "r1" }], nextCursor: null, isDone: true });
   await expect(client.app("gone")).rejects.toSatisfy((e) => e instanceof ApiError && e.status === 404);
   expect(await client.readme("gone")).toBeNull();
+});
+
+test("an app with no slug, or an answer with no app in it, is a 404: /apps/ answers with the catalog's first page", async () => {
+  const { client, asked } = fakeApi({ "/apps/": { items: [{ id: "a" }], nextCursor: null, isDone: true }, "/apps/odd": { items: [] } });
+  const notFound = (e: unknown) => e instanceof ApiError && e.status === 404;
+  await expect(client.app("")).rejects.toSatisfy(notFound);
+  await expect(client.app("odd")).rejects.toSatisfy(notFound);
+  expect(asked).toEqual(["/apps/odd"]);
 });
 
 test("what players said, 12 at a time", async () => {
@@ -101,6 +128,39 @@ test("a broken download is reported by the app's catalog id, else its slug; a fi
   await expect(client.downloadProblem({ slug: "gone" }, mismatch)).rejects.toSatisfy(
     (e) => e instanceof ApiError && e.status === 404 && e.message === "No such file in a release of this app",
   );
+});
+
+test("where an app saved is reported by its catalog id, else its slug", async () => {
+  const sent: { url: string; method?: string; body: unknown }[] = [];
+  const fetch = (async (url: string, init?: RequestInit) => {
+    sent.push({ url, method: init?.method, body: JSON.parse(String(init?.body)) });
+    return url.includes("/gone/") ? new Response(JSON.stringify({ error: { code: "NOT_FOUND", message: "No such app" } }), { status: 404 }) : new Response(JSON.stringify({ status: "noted" }), { status: 202 });
+  }) as typeof globalThis.fetch;
+  const client = createClient("https://api.test", { fetch });
+  const report = { os: "windows", places: ["localData/Game/saves"] } as const;
+  await client.saveLocations({ slug: "game", catalogId: "qcat_1" }, { ...report, places: [...report.places] });
+  await client.saveLocations({ slug: "game" }, { ...report, places: [...report.places] });
+  expect(sent).toEqual([
+    { url: "https://api.test/catalog-entries/qcat_1/save-locations", method: "POST", body: report },
+    { url: "https://api.test/apps/game/save-locations", method: "POST", body: report },
+  ]);
+  await expect(client.saveLocations({ slug: "gone" }, { ...report, places: [...report.places] })).rejects.toSatisfy((e) => e instanceof ApiError && e.status === 404);
+});
+
+test("a missing start program is reported by the app's catalog id, else its slug", async () => {
+  const sent: { url: string; method?: string; body: unknown }[] = [];
+  const fetch = (async (url: string, init?: RequestInit) => {
+    sent.push({ url, method: init?.method, body: JSON.parse(String(init?.body)) });
+    return new Response(JSON.stringify({ status: "noted" }), { status: 202 });
+  }) as typeof globalThis.fetch;
+  const client = createClient("https://api.test", { fetch });
+  const report = { os: "windows" as const, version: "v1.2", programs: ["Game.exe", "bin/tool.exe"] };
+  await client.startProgram({ slug: "game", catalogId: "qcat_1" }, report);
+  await client.startProgram({ slug: "game" }, report);
+  expect(sent).toEqual([
+    { url: "https://api.test/catalog-entries/qcat_1/start-program", method: "POST", body: report },
+    { url: "https://api.test/apps/game/start-program", method: "POST", body: report },
+  ]);
 });
 
 test("an error from the site is thrown with its message", async () => {
@@ -257,6 +317,101 @@ test("a saved GitHub token goes with every request to GitHub, and the limit is r
   expect((await createGithub("https://gh.test").rateLimit()).limit).toBe(60);
   expect(asked.at(-1)!.auth).toBeNull();
   await expect(createGithub("https://gh.test", "bad").rateLimit()).rejects.toSatisfy((e) => e instanceof ApiError && e.status === 401);
+});
+
+test("GitLab's request limit says when it resets, rather than only its status", async () => {
+  const reset = Date.UTC(2026, 9, 21, 9, 30) / 1000;
+  const limited = new Response("", {
+    status: 429,
+    headers: { "ratelimit-remaining": "0", "ratelimit-reset": String(reset) },
+  });
+  vi.stubGlobal("fetch", async () => limited);
+  const at = new Date(reset * 1000).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  await expect(createGitlab("https://gl.test").releases("o/r")).rejects.toSatisfy(
+    (e) =>
+      e instanceof ApiError &&
+      e.status === 429 &&
+      e.message === `GitLab's limit of requests from this network is used up until ${at}. Try again then, or add a GitLab token in Settings to raise the limit.`,
+  );
+  await expect(createGitlab("https://gl.test", "glpat-x").releases("o/r")).rejects.toThrow(`Your GitLab token's limit of requests is used up until ${at}. Try again then.`);
+  vi.stubGlobal("fetch", async () => new Response("", { status: 429, headers: { "retry-after": "90" } }));
+  await expect(createGitlab("https://gl.test").releases("o/r")).rejects.toThrow("GitLab is limiting requests from this network. Try again in 2 min.");
+  vi.stubGlobal("fetch", async () => new Response("", { status: 500 }));
+  await expect(createGitlab("https://gl.test").releases("o/r")).rejects.toThrow("GitLab answered 500. Try again later.");
+});
+
+test("a saved GitLab token goes with every request to GitLab, and the limit is read for it", async () => {
+  const asked: { url: string; token: string | null }[] = [];
+  const rate = (limit: number, remaining: number) => ({
+    "ratelimit-limit": String(limit),
+    "ratelimit-remaining": String(remaining),
+    "ratelimit-reset": "1800000000",
+  });
+  vi.stubGlobal("fetch", async (url: string, init?: RequestInit) => {
+    const token = new Headers(init?.headers).get("private-token");
+    asked.push({ url, token });
+    if (url.endsWith("/user"))
+      return token === "glpat-bad" ? new Response(JSON.stringify({ message: "401 Unauthorized" }), { status: 401 }) : new Response("{}", { headers: rate(2000, 1999) });
+    if (url.endsWith("/projects?per_page=1")) return new Response("{}", { headers: rate(500, 499) });
+    return Response.json([]);
+  });
+  const gitlab = createGitlab("https://gl.test", "  glpat-x ");
+  await gitlab.releases("o/r");
+  expect(await gitlab.rateLimit()).toEqual({ limit: 2000, remaining: 1999, resetAt: 1_800_000_000_000 });
+  expect(asked.map((a) => a.token)).toEqual(["glpat-x", "glpat-x"]);
+  // Without one, GitLab still says how many are left; with one GitLab refuses, it says so.
+  expect(await createGitlab("https://gl.test").rateLimit()).toEqual({ limit: 500, remaining: 499, resetAt: 1_800_000_000_000 });
+  expect(asked.at(-1)!.token).toBeNull();
+  await expect(createGitlab("https://gl.test", "glpat-bad").rateLimit()).rejects.toSatisfy((e) => e instanceof ApiError && e.status === 401);
+  // An instance that doesn't say has no usage line.
+  vi.stubGlobal("fetch", async () => Response.json({}));
+  expect(await createGitlab("https://gl.test", "glpat-x").rateLimit()).toBeNull();
+});
+
+test("the Rust side reads GitLab's limit, since the page can't see its headers", async () => {
+  const asked: { url: string; token: string | null }[] = [];
+  const read = async (url: string, token: string | null) => {
+    asked.push({ url, token });
+    return token === "glpat-bad" ? { status: 401 } : token ? { status: 200, limit: 2000, remaining: 1999, reset: 1_800_000_000 } : { status: 200, limit: 500, remaining: 499, reset: 1_800_000_000 };
+  };
+  const browser = vi.fn();
+  vi.stubGlobal("fetch", browser);
+  const gitlab = createGitlab("https://gl.test", "glpat-x", read);
+  expect(await gitlab.rateLimit()).toEqual({ limit: 2000, remaining: 1999, resetAt: 1_800_000_000_000 });
+  expect(asked).toEqual([{ url: "https://gl.test/user", token: "glpat-x" }]);
+  expect(browser).not.toHaveBeenCalled();
+  // Without a token, a public project list says how many are left.
+  expect(await createGitlab("https://gl.test", undefined, read).rateLimit()).toEqual({ limit: 500, remaining: 499, resetAt: 1_800_000_000_000 });
+  expect(asked.at(-1)).toEqual({ url: "https://gl.test/projects?per_page=1", token: null });
+  // A token GitLab refuses is an ApiError, so Settings doesn't save it.
+  await expect(createGitlab("https://gl.test", "glpat-bad", read).rateLimit()).rejects.toSatisfy((e) => e instanceof ApiError && e.status === 401);
+  // An instance that doesn't say has no usage line.
+  expect(await createGitlab("https://gl.test", "glpat-x", async () => ({ status: 200 })).rateLimit()).toBeNull();
+});
+
+test("when GitLab refuses releases, the Rust side says whether it's the limit, since the page can't see why", async () => {
+  const reset = Date.UTC(2026, 9, 21, 9, 30) / 1000;
+  const at = new Date(reset * 1000).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  const usedUp = async () => ({ status: 429, limit: 500, remaining: 0, reset });
+  // The page sees only the status: GitLab doesn't expose its rate-limit headers.
+  vi.stubGlobal("fetch", async () => new Response("", { status: 429 }));
+  await expect(createGitlab("https://gl.test", undefined, usedUp).releases("o/r")).rejects.toThrow(`GitLab's limit of requests from this network is used up until ${at}.`);
+  // A refusal without CORS headers is a failed fetch to the page.
+  vi.stubGlobal("fetch", async () => {
+    throw new TypeError("Failed to fetch");
+  });
+  await expect(createGitlab("https://gl.test", "glpat-x", usedUp).releases("o/r")).rejects.toThrow(`Your GitLab token's limit of requests is used up until ${at}.`);
+  await expect(createGitlab("https://gl.test", undefined, async () => ({ status: 429, retryAfter: 90 })).releases("o/r")).rejects.toThrow("Try again in 2 min.");
+  // Offline, or not the limit: the page's own error stands.
+  await expect(createGitlab("https://gl.test", undefined, async () => ({ status: 200, limit: 500, remaining: 499, reset })).releases("o/r")).rejects.toThrow(TypeError);
+  await expect(
+    createGitlab("https://gl.test", undefined, async () => {
+      throw "Couldn't reach GitLab.";
+    }).releases("o/r"),
+  ).rejects.toThrow(TypeError);
+  // A private project's 403 isn't the limit.
+  vi.stubGlobal("fetch", async () => new Response("", { status: 403 }));
+  await expect(createGitlab("https://gl.test", undefined, async () => ({ status: 200, limit: 500, remaining: 499, reset })).releases("o/r")).rejects.toThrow("GitLab answered 403. Try again later.");
 });
 
 test("says once when neither address answers, and not when the other one does", async () => {

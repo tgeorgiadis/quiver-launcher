@@ -1,5 +1,5 @@
 /**
- * Change version's list: every release on GitHub or GitLab and every one
+ * Change version's list: every release on the repository host and every one
  * quiverlauncher.com knows, each verified, unverified or blocked.
  */
 import { t } from "@lingui/core/macro";
@@ -10,7 +10,7 @@ import type { ReleaseState } from "@quiverlauncher/ui";
  * A release in Change version: verified (published on the site), or not.
  * An unverified one the site knows installs its files against the
  * checksums the site pinned; one it hasn't seen yet comes straight from
- * GitHub or GitLab. A blocked one installs its pinned files only when the
+ * the host. A blocked one installs its pinned files only when the
  * player insists.
  */
 export type Version = {
@@ -66,6 +66,7 @@ export const fromSite = (u: UnverifiedRelease | HistoryRelease): Release => ({
   releasedAt: u.releasedAt,
   prerelease: u.prerelease,
   assets: u.assets,
+  ...(u.otherAssets?.length ? { otherAssets: u.otherAssets } : {}),
   ...(u.installationOverride ? { installationOverride: u.installationOverride } : {}),
 });
 
@@ -77,10 +78,10 @@ export const unverifiedIn = (history: HistoryRelease[]) =>
   history.filter((h): h is HistoryRelease & UnverifiedRelease => h.state !== "verified");
 
 /**
- * Every release on GitHub or GitLab and every one the site knows, each
+ * Every release on the repository host and every one the site knows, each
  * marked verified, unverified or blocked. A site that doesn't list
  * unverified releases yet (`unverified` null) leaves every unpublished one
- * unverified, as GitHub or GitLab has it.
+ * unverified, as the host has it.
  */
 export function versionList(published: Release[], unverified: UnverifiedRelease[] | null, upstream: Release[]): Version[] {
   const verified = new Map(published.map((r) => [bare(r.version), r]));
@@ -118,6 +119,13 @@ export function withdrawnAsBlocked<T extends { state: ReleaseState; reasons: str
 }
 
 /**
+ * Whether a release Quiver hasn't verified asks the player before it installs even with Newest right away
+ * (`Settings.appUpdates`): VirusTotal warned of a file or flagged it. Clean, still scanning, or with nothing to
+ * scan, it doesn't.
+ */
+export const scanAsks = (scan: ReleaseScan | undefined) => scan?.verdict === "warning" || scan?.verdict === "flagged";
+
+/**
  * What an app with no verified release offers in its place, after a warning,
  * as Quiver Launcher 3 does: its newest release that isn't blocked and still
  * has files. Undefined when there's none.
@@ -130,7 +138,7 @@ export const newestUnblocked = <T extends { state: ReleaseState; assets: Asset[]
  * `changed` upstream since its release was verified, and isn't verified yet
  * itself (`unverifiedChecksum`); or Quiver checked the release's other files
  * but has no checksum for this one (`unchecked`). Undefined for a verified
- * file, and for a release with no checksums at all (GitLab), which installs
+ * file, and for a release with no checksums at all (GitLab, Gitea/Forgejo, Bitbucket), which installs
  * as it always has.
  */
 export function unverifiedFile(asset: Asset, release: Pick<Release, "assets">): "changed" | "unchecked" | undefined {
@@ -145,7 +153,7 @@ export const sameChecksum = (a: string, b: string) => a.toLowerCase() === b.toLo
 /**
  * Whether the file installed before Quiver verified it (its checksum) is one
  * its release is verified with now: `verified` when it is, or when there's
- * nothing to tell by (no checksum kept, or none listed, as on GitLab);
+ * nothing to tell by (no checksum kept, or none listed, as on GitLab, Gitea/Forgejo or Bitbucket);
  * `waiting` when it's a file of the release still in its own wait, or the
  * release has a file Quiver has no checksum for, which it may be; `differs`
  * when it's none of them.
@@ -159,11 +167,12 @@ export function installedFile(checksum: string | undefined, release: Pick<Releas
 
 /**
  * What a broken download offers instead: the newest other release of the
- * site's verified ones, not the one that failed or the one installed, that
- * has a file for this computer (`fits`).
+ * site's verified ones, not the one that failed, that has a file for this
+ * computer (`fits`). For an update, only one newer than what's installed: a
+ * button in place of an update never takes the app back to an older release.
  */
-export const insteadOf = (releases: Release[], failed: string, installed: string | undefined, fits: (release: Release) => boolean) =>
-  releases.find((r) => bare(r.version) !== bare(failed) && (installed === undefined || bare(r.version) !== bare(installed)) && fits(r));
+export const insteadOf = (releases: Release[], failed: string, installed: { version: string; releasedAt?: number } | undefined, fits: (release: Release) => boolean) =>
+  releases.find((r) => bare(r.version) !== bare(failed) && (!installed || (bare(r.version) !== bare(installed.version) && cameAfter(r, installed))) && fits(r));
 
 /** How many players said a version runs well, has issues, or is broken. */
 export type Said = { runs: number; issues: number; broken: number };

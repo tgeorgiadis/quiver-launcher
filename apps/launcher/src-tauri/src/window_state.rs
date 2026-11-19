@@ -1,7 +1,8 @@
 //! The window's size and place, kept from one run to the next in
 //! `window.json` (in the launcher's data, so a portable copy keeps its own).
 //! It goes back where it was only on a screen that's still connected, and
-//! a maximized window comes back maximized at its earlier size.
+//! a maximized window comes back maximized at its earlier size. The very
+//! first window, with nothing saved yet, opens maximized.
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -53,6 +54,22 @@ fn read(data: &Path) -> Option<Saved> {
     serde_json::from_slice(&std::fs::read(data.join(FILE)).ok()?).ok()
 }
 
+fn write(data: &Path, saved: &Saved) {
+    let _ = std::fs::create_dir_all(data);
+    let temp = data.join(format!("{FILE}.tmp"));
+    let _ = serde_json::to_vec_pretty(saved)
+        .map_err(std::io::Error::other)
+        .and_then(|bytes| std::fs::write(&temp, bytes))
+        .and_then(|_| std::fs::rename(&temp, data.join(FILE)));
+}
+
+/// Whether the window opens maximized: always the first time, when nothing is saved (a new player's screen may be
+/// smaller than the window's 1280×800, squeezing the setup wizard), else as the player left it, or when its size
+/// would fill its screen.
+fn maximized(saved: Option<&Saved>, size: Option<(u32, u32)>, screen: Option<Rect>) -> bool {
+    saved.is_none_or(|saved| saved.maximized) || size.zip(screen).is_some_and(|(size, screen)| fills(size, screen))
+}
+
 /// Whether a window `size` big fills `screen`: there it would run under a taskbar or panel (as the first window, at
 /// its 1280×800, did on a Steam Deck's 1280×800 screen, hiding the bottom of the page), so it's maximized instead,
 /// which the desktop fits beside them.
@@ -73,7 +90,16 @@ pub fn restore(window: &WebviewWindow, data: &Path) -> bool {
     // Its screen: the one it was on, else the first (a new window's place, where Wayland has no primary screen to ask for).
     let screen = screens.iter().find(|(name, _)| saved.as_ref().is_some_and(|s| s.monitor.is_some() && *name == s.monitor)).or(screens.first()).map(|(_, r)| *r);
     let size = place.map(|r| (r.width, r.height)).or_else(|| window.inner_size().ok().map(|s| (s.width, s.height)));
-    let maximize = size.zip(screen).is_some_and(|(size, screen)| fills(size, screen)) || saved.is_some_and(|saved| saved.maximized);
+    let maximize = maximized(saved.as_ref(), size, screen);
+    // The first time, keep its own size and place as the one it goes back to when the player restores it down,
+    // rather than the maximized one that tracking would save.
+    if saved.is_none() {
+        if let (Ok(position), Ok(size)) = (window.outer_position(), window.inner_size()) {
+            let rect = Rect { x: position.x, y: position.y, width: size.width, height: size.height };
+            let monitor = window.current_monitor().ok().flatten().and_then(|m| m.name().cloned());
+            write(data, &Saved { rect, maximized: true, monitor });
+        }
+    }
     #[cfg(desktop)]
     if maximize {
         let _ = window.maximize();
@@ -112,12 +138,7 @@ pub fn track(window: &WebviewWindow, data: PathBuf) {
                 return;
             }
             if let Some(saved) = &*last.lock().unwrap() {
-                let _ = std::fs::create_dir_all(&data);
-                let temp = data.join(format!("{FILE}.tmp"));
-                let _ = serde_json::to_vec_pretty(saved)
-                    .map_err(std::io::Error::other)
-                    .and_then(|bytes| std::fs::write(&temp, bytes))
-                    .and_then(|_| std::fs::rename(&temp, data.join(FILE)));
+                write(&data, saved);
             }
         });
     });
@@ -158,5 +179,16 @@ mod tests {
         assert_eq!(placed(&saved(0, 0, 4000, 3000, "DP-1"), &screens), Some(Rect { x: 0, y: 0, width: 1920, height: 1080 }));
         assert_eq!(placed(&saved(1900, 1050, 800, 600, "DP-1"), &screens), None);
         assert_eq!(placed(&saved(-600, 40, 800, 600, "DP-1"), &screens).map(|r| r.x), Some(-600));
+    }
+
+    #[test]
+    fn opens_maximized_the_first_time_then_as_the_player_left_it() {
+        let size = Some((1280, 800));
+        assert!(maximized(None, size, Some(SCREEN)), "nothing saved yet");
+        assert!(maximized(None, None, None), "nothing saved, and no screen to ask about");
+        assert!(!maximized(Some(&saved(100, 100, 1280, 800, "DP-1")), size, Some(SCREEN)), "restored down last time");
+        assert!(maximized(Some(&Saved { maximized: true, ..saved(100, 100, 1280, 800, "DP-1") }), size, Some(SCREEN)));
+        let deck = Rect { x: 0, y: 0, width: 1280, height: 800 };
+        assert!(maximized(Some(&saved(0, 0, 1280, 800, "DP-1")), size, Some(deck)), "fills its screen");
     }
 }

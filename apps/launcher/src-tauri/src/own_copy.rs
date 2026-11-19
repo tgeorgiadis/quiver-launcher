@@ -1,7 +1,7 @@
 //! The player's own copy of a game, for an app that plays it (a port of a console game): a ROM, a disc image or a
 //! folder of the game's files. The catalog says what the copy is and how the app gets it (`setupFiles`, from
 //! quiverlauncher.com): put somewhere in the app's folder or the system's folders for apps' data, passed after a
-//! command-line flag, or named in an environment variable (launch.rs adds those two at every start). Here it's
+//! command-line flag or on its own, or named in an environment variable (launch.rs adds those at every start). Here it's
 //! found where players keep copies, checked (by the dumps the catalog lists, else by its kind), and put in place.
 //! Quiver never downloads or ships game files: it reads the player's, and writes them nowhere but where the app
 //! they're for reads them.
@@ -30,6 +30,9 @@ pub struct SetupFile {
     pub root: Option<String>,
     #[serde(default)]
     pub flag: Option<String>,
+    /// Its path is passed as an argument of its own, with no flag.
+    #[serde(default)]
+    pub positional: bool,
     #[serde(default)]
     pub env: Option<String>,
     /// For a folder: names it must hold.
@@ -241,7 +244,7 @@ pub fn check(file: &SetupFile, path: &Path, progress: &dyn Fn(u64, u64)) -> Chec
     if !path.exists() {
         return problem("That copy isn't there any more.");
     }
-    if (file.flag.is_some() || file.env.is_some()) && file.destination.is_none() && portal_path(path) {
+    if (file.flag.is_some() || file.positional || file.env.is_some()) && file.destination.is_none() && portal_path(path) {
         return problem("The game can't see files picked from there. Pick it from your home folder, a game drive or an SD card.");
     }
     if file.folder() {
@@ -309,15 +312,21 @@ fn relative(destination: &str) -> Result<PathBuf, String> {
         || destination.starts_with('/')
         || destination.contains(':')
         || parts.len() > 4
-        || parts.iter().any(|p| p.is_empty() || *p == "." || *p == "..");
+        || parts.iter().any(|p| p.is_empty() || *p == "." || *p == ".." || !plain(p));
     if bad {
         return Err(format!("The catalog's place for this copy ({destination}) isn't one Quiver can use."));
     }
     Ok(parts.iter().collect())
 }
 
+/// Whether a part of a destination is a plain file name on every system: none of the characters a command line or
+/// Windows reads as more than a name, and no space or dot at its end (which Windows drops).
+fn plain(part: &str) -> bool {
+    !part.chars().any(|c| c.is_control() || "<>\"|?*%&^!`$;".contains(c)) && !part.ends_with([' ', '.']) && !part.starts_with(' ')
+}
+
 /// The home folder games see: in the Flatpak, the host's (games start outside the sandbox), not the sandbox's.
-fn host_home() -> Option<PathBuf> {
+pub fn host_home() -> Option<PathBuf> {
     std::env::var_os("HOME").map(PathBuf::from).filter(|h| h.is_absolute()).or_else(dirs::home_dir)
 }
 /// The system's folders for apps' data, as the game reads them. `XDG_*` is the sandbox's own in the Flatpak, so
@@ -356,7 +365,13 @@ pub fn root_dir(root: Option<&str>, app: &Path, wine: bool) -> Result<PathBuf, S
 pub fn target(file: &SetupFile, app: &Path, wine: bool) -> Result<Option<PathBuf>, String> {
     let Some(destination) = file.destination.as_deref() else { return Ok(None) };
     let base = root_dir(file.root.as_deref(), app, wine)?;
-    Ok(Some(base.join(relative(destination)?)))
+    let path = relative(destination)?;
+    // A folder in the system's folders is inside a folder of the app's there, never loose among other programs' own. A
+    // single file may be (a ROM some apps read from there), and one already there is kept beside it.
+    if file.root.as_deref().is_some_and(|r| r != "app") && file.folder() && path.components().count() < 2 {
+        return Err(format!("The catalog's place for this copy ({destination}) isn't one Quiver can use."));
+    }
+    Ok(Some(base.join(path)))
 }
 
 /// Whether `b` is surely `a`, put in place before (in big-endian order, with `order`), without reading either
@@ -413,16 +428,8 @@ fn aside(path: &Path) -> PathBuf {
 fn link_dir(from: &Path, to: &Path) -> Result<(), String> {
     #[cfg(windows)]
     {
-        use std::os::windows::process::CommandExt;
-        let out = std::process::Command::new("cmd")
-            .raw_arg(format!("/C mklink /J \"{}\" \"{}\"", to.display(), from.display()))
-            .creation_flags(0x0800_0000)
-            .output()
-            .map_err(|e| format!("Couldn't link the game's folder into place: {e}"))?;
-        if !out.status.success() {
-            return Err(format!("Couldn't link the game's folder into place: {}", String::from_utf8_lossy(&out.stdout).trim()));
-        }
-        Ok(())
+        // Made by the system call, never through a command line: neither path is ever read as a command.
+        junction::create(from, to).map_err(|e| format!("Couldn't link the game's folder into place: {e}"))
     }
     #[cfg(unix)]
     {
@@ -483,14 +490,23 @@ pub fn place(file: &SetupFile, copy: &Path, app: &Path, wine: bool, progress: &d
         if to.canonicalize().ok().is_some_and(|t| copy.canonicalize().ok().is_some_and(|c| c == t)) {
             return Ok(Some(to));
         }
+        // A folder in the place it's linked to, or around it, can't be linked there: moving what's there aside
+        // would take the copy with it, or the link would lead to itself.
+        let (mine, place) = (crate::apps_folder::resolved(copy), crate::apps_folder::resolved(&to));
+        if mine.starts_with(&place) || place.starts_with(&mine) {
+            return Err(format!("That folder is where the app keeps its own files ({}). Choose the folder your copy of the game is in.", to.display()));
+        }
     } else if same_copy(copy, &to, order) {
         return Ok(Some(to));
     }
     if to.symlink_metadata().is_ok() {
         // A link Quiver made for an earlier copy goes; anything else is kept.
-        let link = fs::symlink_metadata(&to).map(|m| m.file_type().is_symlink()).unwrap_or(false) || is_junction(&to);
-        if link {
+        if is_link(&to) {
             remove_link(&to)?;
+        } else if file.root.as_deref().is_some_and(|r| r != "app") && to.is_dir() {
+            // Outside the app's folder no folder is moved: it may be another program's. A file (a copy put there
+            // before) is kept beside the new one, as in the app's folder.
+            return Err(format!("There's already something at {}. Move it somewhere else, then try again.", to.display()));
         } else {
             fs::rename(&to, aside(&to)).map_err(|e| format!("Couldn't move aside what's already at {}: {e}", to.display()))?;
         }
@@ -517,6 +533,11 @@ fn is_junction(_: &Path) -> bool {
     false
 }
 /// Takes away a link, never what it points at.
+/// Whether something at `path` is a link (a symbolic link, or a junction on Windows), not a file or folder itself.
+pub fn is_link(path: &Path) -> bool {
+    fs::symlink_metadata(path).map(|m| m.file_type().is_symlink()).unwrap_or(false) || is_junction(path)
+}
+
 fn remove_link(path: &Path) -> Result<(), String> {
     let meta = fs::symlink_metadata(path).map_err(|e| e.to_string())?;
     // A junction (or a folder link) on Windows is removed as a folder; that removes the link only.
@@ -539,40 +560,9 @@ pub fn present(file: &SetupFile, copy: &Path, app: &Path, wine: bool) -> bool {
 pub struct Found {
     pub path: String,
     pub size: u64,
-}
-
-/// The usual places players keep copies of their games, on this computer.
-pub fn places() -> Vec<PathBuf> {
-    let mut out: Vec<PathBuf> = [dirs::download_dir(), dirs::desktop_dir(), dirs::document_dir()].into_iter().flatten().collect();
-    if let Some(home) = host_home() {
-        for sub in ["ROMs", "roms", "Roms", "Games", "games", "Emulation/roms", "retrodeck/roms", "ISOs"] {
-            out.push(home.join(sub));
-        }
-    }
-    // SD cards, USB drives and game drives.
-    if crate::OS == "linux" {
-        for base in ["/run/media", "/media", "/mnt"] {
-            for user in fs::read_dir(base).into_iter().flatten().flatten() {
-                let p = user.path();
-                if base == "/mnt" {
-                    out.push(p);
-                } else {
-                    out.extend(fs::read_dir(&p).into_iter().flatten().flatten().map(|e| e.path()));
-                }
-            }
-        }
-    }
-    if crate::OS == "windows" {
-        for letter in b'D'..=b'Z' {
-            let root = PathBuf::from(format!("{}:\\", letter as char));
-            if root.is_dir() {
-                out.push(root);
-            }
-        }
-    }
-    let mut seen = HashSet::new();
-    out.retain(|p| p.is_dir() && seen.insert(p.canonicalize().unwrap_or_else(|_| p.clone())));
-    out
+    /// Found in a folder the player keeps this console's copies in (their settings).
+    #[serde(skip_serializing_if = "std::ops::Not::not")]
+    pub mine: bool,
 }
 
 /// How deep under a place copies are looked for: an SD card's Emulation/roms/n64 is three down.
@@ -580,15 +570,29 @@ const DEPTH: usize = 4;
 /// How many files and folders are looked at in all, so a huge drive can't keep it looking.
 const BUDGET: usize = 50_000;
 const MOST: usize = 20;
+/// In the player's own folders for a console: deeper, longer and more, as everything there is likely a copy. All of
+/// a big ROM set, not its first few hundred files in the order the drive lists them: the launcher ranks them by name,
+/// and a set's _All folder with a thousand ROMs has the one wanted anywhere in it.
+const OWN_DEPTH: usize = 6;
+const OWN_BUDGET: usize = 100_000;
+const OWN_MOST: usize = 5_000;
 /// Folders that hold no game copies, only a lot of other files.
 const PASS_OVER: [&str; 14] = [
     "node_modules", "steamapps", "windows", "program files", "program files (x86)", "programdata", "$recycle.bin",
     "system volume information", "appdata", "compatdata", "pfx", "library", "proc", "quiver launcher",
 ];
 
-/// Copies in `places` that could be the one wanted, by name, without reading them. `skip`: folders not to look in
-/// (Quiver's apps folder, where copies already put in place are).
-pub fn find(file: &SetupFile, places: &[PathBuf], skip: &[PathBuf]) -> Vec<Found> {
+/// How far one search goes: how deep, and how many it finds.
+#[derive(Clone, Copy)]
+struct Reach {
+    deepest: usize,
+    most: usize,
+}
+
+/// Copies that could be the one wanted, by name, without reading them: first in `own`, the folders the player keeps
+/// this game's console's copies in, then in the usual `places`. `skip`: folders not to look in (Quiver's apps folder,
+/// where copies already put in place are).
+pub fn find(file: &SetupFile, own: &[PathBuf], places: &[PathBuf], skip: &[PathBuf]) -> Vec<Found> {
     let wanted = file.wanted();
     if !file.folder() && wanted.is_empty() {
         return vec![];
@@ -597,11 +601,20 @@ pub fn find(file: &SetupFile, places: &[PathBuf], skip: &[PathBuf]) -> Vec<Found
         return vec![];
     }
     let mut found = Vec::new();
-    let mut budget = BUDGET;
     let mut seen = HashSet::new();
+    let mut budget = OWN_BUDGET;
+    let reach = Reach { deepest: OWN_DEPTH, most: OWN_MOST };
+    for place in own {
+        look(file, &wanted, place, 0, reach, &mut budget, &mut seen, skip, &mut found);
+    }
+    for f in &mut found {
+        f.mine = true;
+    }
+    let mut budget = BUDGET;
+    let reach = Reach { deepest: DEPTH, most: found.len() + MOST };
     for place in places {
-        look(file, &wanted, place, 0, &mut budget, &mut seen, skip, &mut found);
-        if found.len() >= MOST || budget == 0 {
+        look(file, &wanted, place, 0, reach, &mut budget, &mut seen, skip, &mut found);
+        if found.len() >= reach.most || budget == 0 {
             break;
         }
     }
@@ -609,8 +622,8 @@ pub fn find(file: &SetupFile, places: &[PathBuf], skip: &[PathBuf]) -> Vec<Found
 }
 
 #[allow(clippy::too_many_arguments)]
-fn look(file: &SetupFile, wanted: &[String], dir: &Path, depth: usize, budget: &mut usize, seen: &mut HashSet<PathBuf>, skip: &[PathBuf], found: &mut Vec<Found>) {
-    if *budget == 0 || found.len() >= MOST || skip.iter().any(|s| dir.starts_with(s)) {
+fn look(file: &SetupFile, wanted: &[String], dir: &Path, depth: usize, reach: Reach, budget: &mut usize, seen: &mut HashSet<PathBuf>, skip: &[PathBuf], found: &mut Vec<Found>) {
+    if *budget == 0 || found.len() >= reach.most || skip.iter().any(|s| dir.starts_with(s)) {
         return;
     }
     let Ok(real) = dir.canonicalize() else { return };
@@ -623,13 +636,13 @@ fn look(file: &SetupFile, wanted: &[String], dir: &Path, depth: usize, budget: &
         let names: HashSet<String> = entries.iter().map(|e| e.file_name().to_string_lossy().to_lowercase()).collect();
         let first = |p: &str| p.split('/').next().unwrap_or("").to_lowercase();
         if file.contains.iter().all(|c| names.contains(&first(c))) && file.contains.iter().all(|c| holds(dir, c)) {
-            found.push(Found { path: dir.to_string_lossy().into_owned(), size: 0 });
+            found.push(Found { path: dir.to_string_lossy().into_owned(), size: 0, mine: false });
             return;
         }
     }
     let mut folders = Vec::new();
     for entry in entries {
-        if *budget == 0 || found.len() >= MOST {
+        if *budget == 0 || found.len() >= reach.most {
             return;
         }
         *budget -= 1;
@@ -648,14 +661,14 @@ fn look(file: &SetupFile, wanted: &[String], dir: &Path, depth: usize, budget: &
             if wanted.contains(&ext) {
                 let size = entry.metadata().map(|m| m.len()).unwrap_or(0);
                 if size > 0 {
-                    found.push(Found { path: path.to_string_lossy().into_owned(), size });
+                    found.push(Found { path: path.to_string_lossy().into_owned(), size, mine: false });
                 }
             }
         }
     }
-    if depth + 1 < DEPTH {
+    if depth + 1 < reach.deepest {
         for folder in folders {
-            look(file, wanted, &folder, depth + 1, budget, seen, skip, found);
+            look(file, wanted, &folder, depth + 1, reach, budget, seen, skip, found);
         }
     }
 }
@@ -798,13 +811,50 @@ mod tests {
     #[test]
     fn refuses_places_outside_its_roots() {
         let app = Path::new("/apps/game");
-        for bad in ["../x.z64", "/etc/x", "a\\b.z64", "C:/x.z64", "a//b", "a/b/c/d/e.z64"] {
+        for bad in ["../x.z64", "/etc/x", "a\\b.z64", "C:/x.z64", "a//b", "a/b/c/d/e.z64", "x\"&calc&\"", "a%PATH%", "a|b", "rom.z64 ", "rom."] {
             let file = SetupFile { destination: Some(bad.into()), ..Default::default() };
             assert!(target(&file, app, false).is_err(), "{bad}");
         }
         let data = SetupFile { destination: Some("Game/rom.z64".into()), root: Some("localData".into()), ..Default::default() };
         assert!(target(&data, app, true).unwrap_err().contains("Wine or Proton"));
         assert!(target(&data, app, false).unwrap().unwrap().ends_with("Game/rom.z64"));
+        // In the system's folders, only inside a folder of the app's.
+        let loose = |kind: &str| SetupFile { destination: Some("autostart".into()), root: Some("config".into()), kind: Some(kind.into()), ..Default::default() };
+        assert!(target(&loose("folder"), app, false).is_err());
+        // A file may be: one app reads its ROM from there.
+        assert!(target(&loose("file"), app, false).unwrap().unwrap().ends_with("autostart"));
+    }
+
+    #[test]
+    fn never_links_a_folder_to_itself_or_moves_the_copy_aside() {
+        let dir = temp("inside");
+        let app = dir.join("app");
+        fs::create_dir_all(app.join("assets/game")).unwrap();
+        fs::write(app.join("assets/game/default.xex"), b"x").unwrap();
+        let folder = SetupFile { id: "game".into(), label: "Game".into(), kind: Some("folder".into()), destination: Some("assets".into()), ..Default::default() };
+        // The copy inside the place it goes, and the app's own folder around it.
+        assert!(place(&folder, &app.join("assets/game"), &app, false, &none).is_err());
+        assert!(place(&folder, &app, &app, false, &none).is_err());
+        assert!(app.join("assets/game/default.xex").is_file() && !app.join("assets (before Quiver)").exists());
+    }
+
+    #[test]
+    fn looks_in_the_players_own_folders_first_and_deeper() {
+        let dir = temp("own");
+        let own = dir.join("Collection");
+        let deep = own.join("Nintendo/N64/USA/Shooters/Rare");
+        fs::create_dir_all(&deep).unwrap();
+        fs::create_dir_all(dir.join("Downloads")).unwrap();
+        fs::write(deep.join("GoldenEye 007 (USA).z64"), rom()).unwrap();
+        fs::write(dir.join("Downloads/Banjo.z64"), rom()).unwrap();
+        // The usual places include the player's folder too: what's in it is listed once, as theirs.
+        let found = find(&rom_file("x"), std::slice::from_ref(&own), &[dir.join("Downloads"), dir.clone()], &[]);
+        assert_eq!(found.len(), 2, "{found:?}");
+        assert!(found[0].path.ends_with("GoldenEye 007 (USA).z64") && found[0].mine);
+        assert!(found[1].path.ends_with("Banjo.z64") && !found[1].mine);
+        // Five folders down is past where the usual places are looked in.
+        assert!(find(&rom_file("x"), &[], &[own], &[]).is_empty());
+        let _ = fs::remove_dir_all(&dir);
     }
 
     #[test]
@@ -817,13 +867,13 @@ mod tests {
         fs::write(dir.join(".hidden/x.z64"), rom()).unwrap();
         fs::write(dir.join("apps/game/baserom.z64"), rom()).unwrap();
         fs::write(dir.join("notes.txt"), b"x").unwrap();
-        let found = find(&rom_file("x"), std::slice::from_ref(&dir), &[dir.join("apps")]);
+        let found = find(&rom_file("x"), &[], std::slice::from_ref(&dir), &[dir.join("apps")]);
         assert_eq!(found.len(), 1);
         assert!(found[0].path.ends_with("Zelda (USA).Z64"));
         fs::create_dir_all(dir.join("ps3/BLUS30443/PS3_GAME")).unwrap();
         fs::write(dir.join("ps3/BLUS30443/PS3_GAME/PARAM.SFO"), b"x").unwrap();
         let folder = SetupFile { kind: Some("folder".into()), contains: vec!["PS3_GAME/PARAM.SFO".into()], ..Default::default() };
-        let found = find(&folder, std::slice::from_ref(&dir), &[]);
+        let found = find(&folder, &[], std::slice::from_ref(&dir), &[]);
         assert_eq!(found.len(), 1);
         assert!(found[0].path.ends_with("BLUS30443"));
     }

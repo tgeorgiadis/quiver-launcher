@@ -47,8 +47,9 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: pnpm }
       - run: pnpm install --frozen-lockfile
-      # Its system libraries come from Ubuntu's mirror too.
-      - run: pnpm --filter @quiver/e2e exec playwright install --with-deps chromium
+      # Chromium alone: the runner's image has the libraries it needs already. --with-deps added only fonts for scripts
+      # these English screens don't show, and Ubuntu's mirror stalled on them past the step's 8 minutes three times.
+      - run: pnpm --filter @quiver/e2e exec playwright install chromium
         timeout-minutes: 8
       - run: pnpm --filter @quiver/e2e phone
       # To look over, failed or not.

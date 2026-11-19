@@ -12,9 +12,11 @@ import { useSignInWithEmailPassword } from "@convex-dev/auth/methods/email-passw
 import { msg, t } from "@lingui/core/macro";
 import type { MessageDescriptor } from "@lingui/core";
 import { i18n } from "@quiverlauncher/i18n";
-import type { Feedback, Os } from "@quiverlauncher/api";
+import type { Feedback, FeedbackSpecs, Os } from "@quiverlauncher/api";
 import { native, type Config } from "./native";
 import type { Change, Collection, ServerCollection, ServerItem } from "./sync";
+import type { CorrectionTopic } from "./corrections";
+import type { CloudApi, CloudBegun, CloudMine, CloudUsage } from "./cloud-saves";
 
 export type ReviewInput = {
   entryId: string;
@@ -22,6 +24,36 @@ export type ReviewInput = {
   body?: string;
   platform: Exclude<Os, "unknown">;
   entryReleaseId?: string;
+  /** This computer's PC specs, when it's the platform tried. Left out, the site keeps the ones sent before. */
+  specs?: FeedbackSpecs;
+  /** Whether other players see the specs; the app's developer does either way. Left out, the earlier choice stays. */
+  specsPublic?: boolean;
+};
+
+export type CorrectionInput = {
+  entryId: string;
+  topic?: CorrectionTopic;
+  body: string;
+  /** This launcher and the release of the app installed, for maintainers to check it against. */
+  client: { version: string; os: string; installed?: string };
+};
+
+/** A player's own correction, as the website's corrections.mine has it: never who decided it. */
+export type OwnCorrection = {
+  id: string;
+  entryId: string;
+  entryName: string;
+  /** Only while the app is published. */
+  entrySlug?: string;
+  topic?: CorrectionTopic;
+  body: string;
+  status: "open" | "done" | "dismissed";
+  /** What the maintainer said back, if anything. */
+  reply?: string;
+  createdAt: number;
+  resolvedAt?: number;
+  /** Decided since the player last saw it. */
+  unseen: boolean;
 };
 
 export type Provider = "github" | "discord";
@@ -51,6 +83,14 @@ export type Account = {
   save: (changes: Change[]) => Promise<{ key: string; error: string }[]>;
   /** Saves the player's feedback on an app, replacing any they gave before; rejects with a message to show. */
   review: (review: ReviewInput) => Promise<void>;
+  /** Tells maintainers something on an app's page is wrong or missing (the website's corrections.submit); rejects with a message to show. */
+  suggestCorrection: (input: CorrectionInput) => Promise<void>;
+  /** The player's corrections decided since they last saw them, newest first, live; undefined signed out or on an older site. */
+  correctionNotices: OwnCorrection[] | undefined;
+  /** The player's latest correction to an app, null signed out, with none, or from an older site. */
+  ownCorrection: (entryId: string) => Promise<OwnCorrection | null>;
+  /** Says the player has seen how these were decided, here and on the website. */
+  markCorrectionsSeen: (ids: string[]) => Promise<void>;
   /** The player's own feedback on an app, null signed out or when they haven't given any. */
   ownReview: (entryId: string) => Promise<Feedback | null>;
   /** Shares a playlist publicly (again: updates it); resolves to its slug. Rejects with a message to show. */
@@ -59,6 +99,8 @@ export type Account = {
   unshareList: (slug: string) => Promise<void>;
   /** Turns anonymous usage data on or off for the account, wherever they sign in (the website's users.setAnalytics). */
   setAnalytics: (enabled: boolean) => Promise<void>;
+  /** The account's cloud saves (cloud-saves.ts, the website's cloudSaves); null signed out. */
+  cloudSaves: CloudApi | null;
 };
 
 /** The signed-in account, as the website's users.me has it. */
@@ -82,6 +124,7 @@ export type CatalogDefaults = {
   platforms?: string[];
   console?: string;
   ai?: string;
+  setup?: string;
   sort?: string;
 };
 
@@ -93,8 +136,18 @@ const SHARE_FAILED = msg`Couldn't share this playlist. Try again.`;
 
 const REVIEW_FAILED = msg`Couldn't save your feedback. Try again.`;
 
+const CORRECTION_FAILED = msg`Couldn't send it. Try again.`;
+
 const AccountContext = createContext<Account | null>(null);
 export const useAccount = () => useContext(AccountContext)!;
+
+/**
+ * Whether the site's backend is connected live, for screens that read it
+ * directly with Convex's hooks (discussions.tsx). False in end-to-end tests,
+ * which stand in for it over plain HTTP (TestAccount).
+ */
+const LiveContext = createContext(false);
+export const useLive = () => useContext(LiveContext);
 
 /** Tokens live on the Rust side (secrets.rs), in the OS keychain or the data folder, not the webview's storage. */
 const keychain: TokenStorage = {
@@ -108,7 +161,7 @@ export function AccountProvider({ config, children }: { config: Config; children
   return <ConvexAccount url={config.convex} returnTo={config.returnTo}>{children}</ConvexAccount>;
 }
 
-const ref = <T extends "query" | "mutation">(type: T, name: string) =>
+const ref = <T extends "query" | "mutation" | "action">(type: T, name: string) =>
   makeFunctionReference<T>(name) as unknown as FunctionReference<T>;
 const fns = {
   refreshSession: ref("mutation", "auth:refreshSession"),
@@ -124,10 +177,20 @@ const fns = {
   collections: ref("query", "libraryCollections:list"),
   saveCollections: ref("mutation", "libraryCollections:save"),
   review: ref("mutation", "reviews:save"),
+  suggestCorrection: ref("mutation", "corrections:submit"),
+  correctionNotices: ref("query", "corrections:unseen"),
+  ownCorrection: ref("query", "corrections:mineFor"),
+  markCorrectionsSeen: ref("mutation", "corrections:markSeen"),
   ownReview: ref("query", "reviews:own"),
   shareList: ref("mutation", "sharedLists:share"),
   unshareList: ref("mutation", "sharedLists:unshare"),
   setAnalytics: ref("mutation", "users:setAnalytics"),
+  cloudMine: ref("query", "cloudSaves:mine"),
+  cloudUsage: ref("query", "cloudSaves:usage"),
+  cloudBegin: ref("action", "cloudSaves:beginUpload"),
+  cloudFinish: ref("action", "cloudSaves:finishUpload"),
+  cloudDownload: ref("action", "cloudSaves:download"),
+  cloudRemove: ref("mutation", "cloudSaves:remove"),
   github: [ref("mutation", "auth:startSignInGithub"), ref("mutation", "auth:completeSignInGithub")],
   discord: [ref("mutation", "auth:startSignInDiscord"), ref("mutation", "auth:completeSignInDiscord")],
 };
@@ -191,6 +254,8 @@ function ConvexAccountState({ client, returnTo, children }: { client: ConvexReac
     | undefined;
   const items = useQuery(fns.list, isAuthenticated ? {} : "skip") as ServerItem[] | undefined;
   const collections = useOptionalQuery<ServerCollection[]>(client, fns.collections, isAuthenticated);
+  // New on the site: an older one has none.
+  const correctionNotices = useOptionalQuery<OwnCorrection[]>(client, fns.correctionNotices, isAuthenticated);
   // Both are new on the site; an older one has neither, and no email login.
   const providers = useOptionalQuery<{ email?: boolean }>(client, fns.authProviders, true);
   const emailLogin = providers?.email === true;
@@ -198,6 +263,7 @@ function ConvexAccountState({ client, returnTo, children }: { client: ConvexReac
   const save = useMutation(fns.save);
   const saveCollections = useMutation(fns.saveCollections);
   const review = useMutation(fns.review);
+  const suggestCorrection = useMutation(fns.suggestCorrection);
   const setAnalytics = useMutation(fns.setAnalytics);
   const login = useSignInWithUsernamePassword({ signInWithUsernamePassword: fns.signIn as never });
   const register = useSignUpWithUsernamePassword({ signUpWithUsernamePassword: fns.signUp as never });
@@ -260,6 +326,17 @@ function ConvexAccountState({ client, returnTo, children }: { client: ConvexReac
         throw new Error(e instanceof ConvexError && typeof e.data === "string" ? e.data : i18n._(REVIEW_FAILED));
       }
     },
+    async suggestCorrection(c) {
+      try {
+        await suggestCorrection({ ...c, source: "launcher" });
+      } catch (e) {
+        // The site's reasons (too many sent lately, language it doesn't allow) come as the error's data.
+        throw new Error(e instanceof ConvexError && typeof e.data === "string" ? e.data : i18n._(CORRECTION_FAILED));
+      }
+    },
+    correctionNotices,
+    ownCorrection: (entryId) => (me ? (client.query(fns.ownCorrection, { entryId }) as Promise<OwnCorrection | null>).catch(() => null) : Promise.resolve(null)),
+    markCorrectionsSeen: async (ids) => void (await client.mutation(fns.markCorrectionsSeen, { ids }).catch(() => {})),
     ownReview: (entryId) => (me ? (client.query(fns.ownReview, { entryId }) as Promise<Feedback | null>) : Promise.resolve(null)),
     async shareList(list) {
       try {
@@ -270,8 +347,23 @@ function ConvexAccountState({ client, returnTo, children }: { client: ConvexReac
     },
     unshareList: async (slug) => void (await client.mutation(fns.unshareList, { slug })),
     setAnalytics: async (enabled) => void (await setAnalytics({ enabled })),
+    // An older site has none of these: each call fails, which cloud saves takes as "not now".
+    cloudSaves: me
+      ? {
+          mine: (entryId) => client.query(fns.cloudMine, { entryId }) as Promise<CloudMine | null>,
+          usage: () => client.query(fns.cloudUsage, {}) as Promise<CloudUsage | null>,
+          begin: (backup) => client.action(fns.cloudBegin, backup) as Promise<CloudBegun>,
+          finish: (id) => client.action(fns.cloudFinish, { id }) as Promise<boolean>,
+          download: (id) => client.action(fns.cloudDownload, { id }) as Promise<{ url: string; size: number } | null>,
+          remove: async (what) => void (await client.mutation(fns.cloudRemove, what)),
+        }
+      : null,
   };
-  return <AccountContext.Provider value={account}>{children}</AccountContext.Provider>;
+  return (
+    <AccountContext.Provider value={account}>
+      <LiveContext.Provider value={true}>{children}</LiveContext.Provider>
+    </AccountContext.Provider>
+  );
 }
 
 /** What the site stores of a collection; apps on this computer only never leave it. null clears a field there. */
@@ -339,6 +431,7 @@ function TestAccount({ base, returnTo, children }: { base: string; returnTo: str
   const [user, setUser] = useState<Account["user"]>(null);
   const [items, setItems] = useState<ServerItem[] | undefined>();
   const [collections, setCollections] = useState<ServerCollection[] | undefined>();
+  const [correctionNotices, setCorrectionNotices] = useState<OwnCorrection[] | undefined>();
   // The saved session's account has been asked for once.
   const [polled, setPolled] = useState(false);
   // A poll that started before the usage data setting changed may answer with the old one.
@@ -348,19 +441,19 @@ function TestAccount({ base, returnTo, children }: { base: string; returnTo: str
       method: body ? "POST" : "GET",
       headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
       body: body ? JSON.stringify(body) : undefined,
-    }).then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))));
+    }).then(async (r) => (r.ok ? r.json() : Promise.reject(new Error((await r.json().catch(() => null))?.error ?? String(r.status)))));
   const adopt = async (token: string) => {
     await native.secretSet("testToken", token);
     setToken(token);
   };
   useEffect(() => void native.secretGet("testToken").then((t) => setToken(t ?? null)), []);
   useEffect(() => {
-    if (!token) return setUser(null), setItems(undefined), setCollections(undefined);
+    if (!token) return setUser(null), setItems(undefined), setCollections(undefined), setCorrectionNotices(undefined);
     let live = true;
     const poll = () => {
       const at = changes.current;
       return call("/library")
-        .then((r) => live && at === changes.current && (setUser(r.user), setItems(r.items), setCollections(r.collections)))
+        .then((r) => live && at === changes.current && (setUser(r.user), setItems(r.items), setCollections(r.collections), setCorrectionNotices(r.correctionNotices)))
         .catch(() => {})
         .finally(() => live && (setPolled(true), setTimeout(poll, 400)));
     };
@@ -405,6 +498,23 @@ function TestAccount({ base, returnTo, children }: { base: string; returnTo: str
       });
       if (!response.ok) throw new Error((await response.json().catch(() => null))?.error ?? i18n._(REVIEW_FAILED));
     },
+    async suggestCorrection(c) {
+      const response = await fetch(base + "/corrections", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ ...c, source: "launcher" }),
+      });
+      if (!response.ok) throw new Error((await response.json().catch(() => null))?.error ?? i18n._(CORRECTION_FAILED));
+    },
+    correctionNotices,
+    ownCorrection: (entryId) => (token ? call("/corrections/own", { entryId }).catch(() => null) : Promise.resolve(null)),
+    async markCorrectionsSeen(ids) {
+      changes.current++;
+      setCorrectionNotices((list) => list?.filter((c) => !ids.includes(c.id)));
+      await call("/corrections/seen", { ids })
+        .catch(() => {})
+        .finally(() => changes.current++);
+    },
     ownReview: (entryId) => (token ? call("/reviews/own", { entryId }) : Promise.resolve(null)),
     async shareList(list) {
       const response = await fetch(base + "/lists/share", {
@@ -421,6 +531,16 @@ function TestAccount({ base, returnTo, children }: { base: string; returnTo: str
       setUser((u) => u && { ...u, analyticsOptOut: enabled ? undefined : true });
       await call("/analytics", { enabled }).finally(() => changes.current++);
     },
+    cloudSaves: user
+      ? {
+          mine: (entryId) => call("/cloud-saves/mine", { entryId }),
+          usage: () => call("/cloud-saves/usage", {}),
+          begin: (backup) => call("/cloud-saves/begin", backup),
+          finish: (id) => call("/cloud-saves/finish", { id }),
+          download: (id) => call("/cloud-saves/download", { id }),
+          remove: async (what) => void (await call("/cloud-saves/remove", what)),
+        }
+      : null,
   };
   return <AccountContext.Provider value={account}>{children}</AccountContext.Provider>;
 }
