@@ -997,10 +997,6 @@ msgstr "Agregar tu carpeta de juegos…"
 msgid "Added"
 msgstr "Agregado"
 
-#: ../../apps/launcher/src/launch-options.tsx
-msgid "Added after the program, or write %command% where the program should go. NAME=value at the start sets an environment variable."
-msgstr "Se agrega después del programa, o escribe %command% donde debe ir el programa. NOMBRE=valor al inicio define una variable de entorno."
-
 #: ../../apps/launcher/src/custom.ts
 msgid "Added from {site}. Quiver hasn't checked this app."
 msgstr "Agregado desde {site}. Quiver no ha revisado esta app."
@@ -1801,6 +1797,10 @@ msgstr "Elige Crear un token en GitHub e inicia sesión en GitHub."
 msgid "Choose Create a token on GitLab, and sign in to GitLab."
 msgstr "Elige Crear un token en GitLab e inicia sesión en GitLab."
 
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "Choose executable…"
+msgstr "Elegir ejecutable…"
+
 #: ../../apps/launcher/src/saves-tab.tsx
 #: ../../apps/launcher/src/sync-folder-page.tsx
 msgid "Choose folder"
@@ -1814,8 +1814,8 @@ msgid "Choose Generate token, copy it, paste it above and choose Save token."
 msgstr "Elige Generate token, cópialo, pégalo arriba y elige Guardar token."
 
 #: ../../apps/launcher/src/App.tsx
-msgid "Choose its program…"
-msgstr "Elegir su programa…"
+msgid "Choose its executable…"
+msgstr "Elegir su ejecutable…"
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Choose music to play in the background"
@@ -1828,10 +1828,6 @@ msgstr "Elegir música…"
 #: ../../apps/launcher/src/old-library.tsx
 msgid "Choose my Quiver Launcher 3 folder…"
 msgstr "Elegir mi carpeta de Quiver Launcher 3…"
-
-#: ../../apps/launcher/src/launch-options.tsx
-msgid "Choose program…"
-msgstr "Elegir programa…"
 
 #: ../../apps/launcher/src/store.tsx
 msgid "Choose the folder {name} is installed in"
@@ -2520,6 +2516,10 @@ msgstr "Todo está actualizado."
 #: ../../apps/launcher/src/detail.tsx
 msgid "Evidence"
 msgstr "Evidencia"
+
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "Executable"
+msgstr "Ejecutable"
 
 #: ../../apps/launcher/src/window-bar.tsx
 msgid "Exit full screen"
@@ -3296,8 +3296,8 @@ msgid "It ran, but I had issues"
 msgstr "Funcionó, pero tuve problemas"
 
 #: ../../apps/launcher/src/App.tsx
-msgid "It starts <0>{program}</0>, which is outside its folder, so it stays where it is. Uninstall or delete that yourself if you don't want it any more."
-msgstr "Inicia <0>{program}</0>, que está fuera de su carpeta, así que se queda donde está. Desinstálalo o bórralo tú si ya no lo quieres."
+msgid "It starts <0>{executable}</0>. That file is outside the app's folder, so it won't be deleted. You can delete it yourself if you don't need it."
+msgstr "Inicia <0>{executable}</0>. Ese archivo está fuera de la carpeta de la app, así que no se borrará. Puedes borrarlo tú si no lo necesitas."
 
 #: ../../apps/launcher/src/own.tsx
 msgid "It starts where it is, and removing it from your library leaves it there."
@@ -3319,10 +3319,6 @@ msgstr "No se instaló, no abrió o no arrancó."
 #: ../../apps/launcher/src/App.tsx
 msgid "It's here now."
 msgstr "Ahora está aquí."
-
-#: ../../apps/launcher/src/launch-options.tsx
-msgid "It's outside the app's folder, so moving, renaming, updating or uninstalling the app leaves it where it is."
-msgstr "Está fuera de la carpeta de la app, así que mover, renombrar, actualizar o desinstalar la app lo deja donde está."
 
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Its author says it's still broken after the last fix."
@@ -4344,6 +4340,10 @@ msgstr "Nada coincide con esa búsqueda y esos filtros."
 msgid "Nothing to choose in this folder."
 msgstr "En esta carpeta no hay nada que elegir."
 
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "Nothing, run it directly"
+msgstr "Nada, ejecutarlo directamente"
+
 #. Name, for a screen reader, of the dialog saying something failed or must be read
 #: ../../apps/launcher/src/App.tsx
 msgid "Notice"
@@ -4731,10 +4731,6 @@ msgstr "Letra o página anterior"
 msgid "Previous tab"
 msgstr "Pestaña anterior"
 
-#: ../../apps/launcher/src/launch-options.tsx
-msgid "Program"
-msgstr "Programa"
-
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/library.tsx
 msgid "Project type"
@@ -4958,6 +4954,10 @@ msgstr "Quiver Launcher: ir a tu biblioteca"
 #: ../../apps/launcher/src/own.tsx
 msgid "Quiver makes a folder for it in {dir} and opens it. Put the app's files there; Play starts the first program in it."
 msgstr "Quiver crea una carpeta para ella en {dir} y la abre. Pon ahí los archivos de la app; Jugar inicia el primer programa que haya en ella."
+
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "Quiver picks one from the app's folder. You can choose a different one from any folder or drive."
+msgstr "Quiver elige uno de la carpeta de la app. Puedes elegir otro de cualquier carpeta o unidad."
 
 #: ../../apps/launcher/src/saves-tab.tsx
 msgid "Quiver saw the app save here."
@@ -5974,10 +5974,6 @@ msgstr "Inicia <0>{executable}</0>"
 msgid "Starts it where it is. Nothing is downloaded, moved or deleted."
 msgstr "La inicia donde está. No se descarga, mueve ni elimina nada."
 
-#: ../../apps/launcher/src/launch-options.tsx
-msgid "Starts the program Quiver finds in its folder."
-msgstr "Inicia el programa que Quiver encuentra en su carpeta."
-
 #: ../../apps/launcher/src/custom.ts
 msgid "Starts the program you put in its folder, {folder}."
 msgstr "Inicia el programa que pusiste en su carpeta, {folder}."
@@ -6259,10 +6255,6 @@ msgstr "El problema que informaste el {sent} se corrigió. ¡Gracias!"
 msgid "The problem you reported with {app} was fixed. Thanks!"
 msgstr "El problema que informaste sobre {app} se corrigió. ¡Gracias!"
 
-#: ../../apps/launcher/src/launch-options.tsx
-msgid "The program itself"
-msgstr "El programa en sí"
-
 #: ../../apps/launcher/src/App.tsx
 msgid "The programs Play offers are under Play with in the app's menu."
 msgstr "Los programas que ofrece Jugar están en Jugar con, en el menú de la app."
@@ -6343,6 +6335,10 @@ msgstr "Aún no hay versiones. Busca descargas en el proyecto original."
 msgid "These are the saves on this computer now."
 msgstr ""
 
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "These go after the executable. To put the executable somewhere else, write %command% there. NAME=value at the start sets an environment variable."
+msgstr "Esto va después del ejecutable. Para poner el ejecutable en otro lugar, escribe %command% ahí. NOMBRE=valor al principio define una variable de entorno."
+
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "These old copies moved safely, but some of their files were in use and stayed behind. You can delete them:"
 msgstr "Estas copias anteriores se movieron de forma segura, pero algunos de sus archivos estaban en uso y se quedaron. Puedes borrarlos:"
@@ -6377,8 +6373,8 @@ msgid "This app isn't installed on this computer. Install it to restore a copy."
 msgstr "Esta app no está instalada en esta computadora. Instálala para restaurar una copia."
 
 #: ../../apps/launcher/src/App.tsx
-msgid "This app may keep its saves in this folder. They'll be removed with it."
-msgstr "Puede que esta app guarde sus partidas en esta carpeta. Se eliminarán junto con ella."
+msgid "This app may keep your saves in its folder. They'll go to the trash too."
+msgstr "Puede que esta app guarde tus partidas en su carpeta. También irán a la papelera."
 
 #: ../../apps/launcher/src/app-files.tsx
 msgid "This app may stop finding its saves and settings, because it will look for them in a different place. Nothing is deleted."
@@ -6411,6 +6407,10 @@ msgstr "Esta discusión no está disponible"
 #: ../../apps/launcher/src/store.tsx
 msgid "This download doesn't match the file Quiver checked, so it wasn't installed."
 msgstr "Esta descarga no coincide con el archivo que Quiver revisó, así que no se instaló."
+
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "This file is outside the app's folder, so Quiver never moves or deletes it."
+msgstr "Este archivo está fuera de la carpeta de la app, así que Quiver nunca lo mueve ni lo borra."
 
 #: ../../apps/launcher/src/discussions.tsx
 msgid "This is waiting for Quiver staff to review it before others can see it."

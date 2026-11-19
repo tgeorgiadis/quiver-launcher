@@ -2439,15 +2439,15 @@ function UninstallPrompt() {
         </p>
         {portable && (
           <p>
-            <Trans>This app may keep its saves in this folder. They&apos;ll be removed with it.</Trans>
+            <Trans>This app may keep your saves in its folder. They&apos;ll go to the trash too.</Trans>
           </p>
         )}
         {/* What it starts is somewhere else (Launch options): only its folder goes, so the player knows that stays. */}
         {executable && (
           <p>
             <Trans>
-              It starts <code>{executable}</code>, which is outside its folder, so it stays where it is. Uninstall or delete that yourself if you don&apos;t
-              want it any more.
+              It starts <code>{executable}</code>. That file is outside the app&apos;s folder, so it won&apos;t be deleted. You can delete it yourself if you
+              don&apos;t need it.
             </Trans>
           </p>
         )}

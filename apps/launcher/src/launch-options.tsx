@@ -51,7 +51,7 @@ export function RunnerSelect({ value, onChange, onError, automatic, direct }: { 
   return (
     <select aria-label={t`Run with`} value={runnerValue(value)} onChange={(e) => pick(e.target.value)}>
       <option value="">{automatic}</option>
-      {direct && <option value="direct">{t`The executable itself`}</option>}
+      {direct && <option value="direct">{t`Nothing, run it directly`}</option>}
       <option value="wine">Wine</option>
       {listed.map((p) => (
         <option key={p.path} value={`proton:${p.path}`}>
@@ -76,7 +76,7 @@ export function useAutomaticRunner() {
 }
 
 /** A runner Settings set, by name. */
-const runnerName = (runner: NonNullable<Runner>) => (runner.kind === "proton" ? folderName(runner.path) : runner.kind === "wine" ? "Wine" : t`The executable itself`);
+const runnerName = (runner: NonNullable<Runner>) => (runner.kind === "proton" ? folderName(runner.path) : runner.kind === "wine" ? "Wine" : t`Nothing, run it directly`);
 
 /** Automatic's line in a Run with dropdown, saying what it runs Windows programs with. */
 const automaticLine = (name: string | null | undefined) =>
@@ -181,12 +181,12 @@ export function LaunchOptionsButton({ id }: { id: string }) {
               Starts <code>{executable}</code>
             </Trans>
           ) : (
-            t`Starts the executable Quiver finds in the app's folder. You can choose another, in that folder or anywhere else.`
+            t`Quiver picks one from the app's folder. You can choose a different one from any folder or drive.`
           )}
         </p>
         {outsideFolder(executable, install.program) && (
           <p className="muted small">
-            <Trans>It&apos;s outside the app&apos;s folder, so moving, renaming, updating or uninstalling the app leaves it where it is.</Trans>
+            <Trans>This file is outside the app&apos;s folder, so Quiver never moves or deletes it.</Trans>
           </p>
         )}
         <div className="row">
@@ -219,7 +219,7 @@ export function LaunchOptionsButton({ id }: { id: string }) {
           onChange={(e) => setCommand(e.target.value)}
         />
         <span className="muted small">
-          <Trans>Added after the executable, or write %command% where the executable should go. NAME=value at the start sets an environment variable.</Trans>
+          <Trans>These go after the executable. To put the executable somewhere else, write %command% there. NAME=value at the start sets an environment variable.</Trans>
         </span>
       </label>
       {unclosed && (

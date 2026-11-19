@@ -997,10 +997,6 @@ msgstr "新增你的遊戲資料夾 →"
 msgid "Added"
 msgstr "已新增"
 
-#: ../../apps/launcher/src/launch-options.tsx
-msgid "Added after the program, or write %command% where the program should go. NAME=value at the start sets an environment variable."
-msgstr "新增在程式後面，或者在程式應放置的位置寫入 %command%。在開頭使用 NAME=value 設定環境變數。"
-
 #: ../../apps/launcher/src/custom.ts
 msgid "Added from {site}. Quiver hasn't checked this app."
 msgstr "已從 {site} 新增。Quiver 尚未檢查此應用程式。"
@@ -1801,6 +1797,10 @@ msgstr "選擇“在 GitHub 上建立權杖”，然後登入 GitHub。"
 msgid "Choose Create a token on GitLab, and sign in to GitLab."
 msgstr "選擇“在 GitLab 上建立權杖”，然後登入 GitLab。"
 
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "Choose executable…"
+msgstr "選擇執行檔…"
+
 #: ../../apps/launcher/src/saves-tab.tsx
 #: ../../apps/launcher/src/sync-folder-page.tsx
 msgid "Choose folder"
@@ -1814,8 +1814,8 @@ msgid "Choose Generate token, copy it, paste it above and choose Save token."
 msgstr "選擇“生成權杖”，複製權杖並貼上到上方，然後選擇“儲存權杖”。"
 
 #: ../../apps/launcher/src/App.tsx
-msgid "Choose its program…"
-msgstr "選擇其程式 →"
+msgid "Choose its executable…"
+msgstr "選擇它的執行檔…"
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Choose music to play in the background"
@@ -1828,10 +1828,6 @@ msgstr "選擇音樂 →"
 #: ../../apps/launcher/src/old-library.tsx
 msgid "Choose my Quiver Launcher 3 folder…"
 msgstr "選擇我的 Quiver Launcher 3 資料夾 →"
-
-#: ../../apps/launcher/src/launch-options.tsx
-msgid "Choose program…"
-msgstr "選擇程式 →"
 
 #: ../../apps/launcher/src/store.tsx
 msgid "Choose the folder {name} is installed in"
@@ -2520,6 +2516,10 @@ msgstr "所有內容均為最新版本。"
 #: ../../apps/launcher/src/detail.tsx
 msgid "Evidence"
 msgstr "證據"
+
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "Executable"
+msgstr "執行檔"
 
 #: ../../apps/launcher/src/window-bar.tsx
 msgid "Exit full screen"
@@ -3296,8 +3296,8 @@ msgid "It ran, but I had issues"
 msgstr "它可以執行，但我遇到了一些問題"
 
 #: ../../apps/launcher/src/App.tsx
-msgid "It starts <0>{program}</0>, which is outside its folder, so it stays where it is. Uninstall or delete that yourself if you don't want it any more."
-msgstr "它啟動的是 <0>{program}</0>，該程式在它的資料夾之外，因此會保留在原處。如果不再需要，請自行解除安裝或刪除。"
+msgid "It starts <0>{executable}</0>. That file is outside the app's folder, so it won't be deleted. You can delete it yourself if you don't need it."
+msgstr "它啟動的是 <0>{executable}</0>。這個檔案在應用程式資料夾之外，所以不會被刪除。如果不需要，你可以自己刪除它。"
 
 #: ../../apps/launcher/src/own.tsx
 msgid "It starts where it is, and removing it from your library leaves it there."
@@ -3319,10 +3319,6 @@ msgstr "無法安裝、開啟或啟動。"
 #: ../../apps/launcher/src/App.tsx
 msgid "It's here now."
 msgstr "它現在已在這裡。"
-
-#: ../../apps/launcher/src/launch-options.tsx
-msgid "It's outside the app's folder, so moving, renaming, updating or uninstalling the app leaves it where it is."
-msgstr "它在應用程式資料夾之外，因此移動、重新命名、更新或解除安裝該應用程式都不會動到它。"
 
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Its author says it's still broken after the last fix."
@@ -4344,6 +4340,10 @@ msgstr "沒有內容符合此搜尋和篩選條件。"
 msgid "Nothing to choose in this folder."
 msgstr "此資料夾中沒有可供選擇的內容。"
 
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "Nothing, run it directly"
+msgstr "無，直接執行"
+
 #. Name, for a screen reader, of the dialog saying something failed or must be read
 #: ../../apps/launcher/src/App.tsx
 msgid "Notice"
@@ -4731,10 +4731,6 @@ msgstr "上一個字母或頁面"
 msgid "Previous tab"
 msgstr "上一個標籤頁"
 
-#: ../../apps/launcher/src/launch-options.tsx
-msgid "Program"
-msgstr "程式"
-
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/library.tsx
 msgid "Project type"
@@ -4958,6 +4954,10 @@ msgstr "Quiver Launcher：前往你的遊戲庫"
 #: ../../apps/launcher/src/own.tsx
 msgid "Quiver makes a folder for it in {dir} and opens it. Put the app's files there; Play starts the first program in it."
 msgstr "Quiver 會在 {dir} 中為它建立資料夾並開啟該資料夾。請將應用程式檔案放入其中；按“遊玩”會啟動其中的第一個程式。"
+
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "Quiver picks one from the app's folder. You can choose a different one from any folder or drive."
+msgstr "Quiver 會從應用程式資料夾中選一個。你可以從任何資料夾或磁碟另選一個。"
 
 #: ../../apps/launcher/src/saves-tab.tsx
 msgid "Quiver saw the app save here."
@@ -5974,10 +5974,6 @@ msgstr "啟動 <0>{executable}</0>"
 msgid "Starts it where it is. Nothing is downloaded, moved or deleted."
 msgstr "從當前位置啟動。不會下載、移動或刪除任何內容。"
 
-#: ../../apps/launcher/src/launch-options.tsx
-msgid "Starts the program Quiver finds in its folder."
-msgstr "啟動 Quiver 在其資料夾中找到的程式。"
-
 #: ../../apps/launcher/src/custom.ts
 msgid "Starts the program you put in its folder, {folder}."
 msgstr "啟動你放入其資料夾 {folder} 中的程式。"
@@ -6259,10 +6255,6 @@ msgstr "你在 {sent} 報告的問題已修復。謝謝！"
 msgid "The problem you reported with {app} was fixed. Thanks!"
 msgstr "你報告的 {app} 問題已修復。謝謝！"
 
-#: ../../apps/launcher/src/launch-options.tsx
-msgid "The program itself"
-msgstr "程式本身"
-
 #: ../../apps/launcher/src/App.tsx
 msgid "The programs Play offers are under Play with in the app's menu."
 msgstr "在應用程式選單的“使用以下方式遊玩”中，可以找到“遊玩”提供的程式。"
@@ -6343,6 +6335,10 @@ msgstr "還沒有版本。請前往上游專案查詢下載。"
 msgid "These are the saves on this computer now."
 msgstr ""
 
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "These go after the executable. To put the executable somewhere else, write %command% there. NAME=value at the start sets an environment variable."
+msgstr "這些會加在執行檔之後。要把執行檔放在別處，就在那裡寫 %command%。開頭的 NAME=value 用來設定環境變數。"
+
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "These old copies moved safely, but some of their files were in use and stayed behind. You can delete them:"
 msgstr "這些舊副本已安全移動，但部分檔案當時正在使用，因此仍留在原處。你可以刪除它們："
@@ -6377,8 +6373,8 @@ msgid "This app isn't installed on this computer. Install it to restore a copy."
 msgstr "此應用程式未安裝在這部電腦上。安裝後即可恢復副本。"
 
 #: ../../apps/launcher/src/App.tsx
-msgid "This app may keep its saves in this folder. They'll be removed with it."
-msgstr "此應用程式可能會將存檔儲存在此資料夾中。解除安裝時，這些存檔也會被刪除。"
+msgid "This app may keep your saves in its folder. They'll go to the trash too."
+msgstr "這個應用程式可能把你的存檔放在它的資料夾裡。存檔也會一起移到資源回收筒。"
 
 #: ../../apps/launcher/src/app-files.tsx
 msgid "This app may stop finding its saves and settings, because it will look for them in a different place. Nothing is deleted."
@@ -6411,6 +6407,10 @@ msgstr "此討論無法查看"
 #: ../../apps/launcher/src/store.tsx
 msgid "This download doesn't match the file Quiver checked, so it wasn't installed."
 msgstr "此下載檔案與 Quiver 檢查過的檔案不匹配，因此未安裝。"
+
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "This file is outside the app's folder, so Quiver never moves or deletes it."
+msgstr "這個檔案在應用程式資料夾之外，所以 Quiver 永遠不會移動或刪除它。"
 
 #: ../../apps/launcher/src/discussions.tsx
 msgid "This is waiting for Quiver staff to review it before others can see it."
