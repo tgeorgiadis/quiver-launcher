@@ -724,12 +724,14 @@ const LOOKUP_TIMEOUT = 30_000;
 const latestOf = (releases: Release[]) => releases.find((r) => !r.prerelease) ?? releases[0];
 /**
  * Whether the player can rename an app's folder: one Quiver keeps in the apps
- * folder, at its top or in its console's folder there (Group by console). Not a
- * 3.x install or a program left where it is, and not a Windows installer's,
- * whose files are wherever its setup put them.
+ * folder, at its top or in its console's folder there (Group by console), or
+ * one kept where it is (Locate existing install, or 3.x's), renamed in place.
+ * Not a program left where it is, the player's own files where they keep them,
+ * or a Windows installer's, whose files are wherever its setup put them.
  */
-export const renamable = (install: Install | undefined) =>
-  Boolean(install && (!install.dir || (install.group && !install.program && baseName(install.dir) === install.folder)) && !install.installer);
+export const renamable = (install: Install | undefined) => Boolean(install && !install.program && !install.installer && !(install.local && install.dir));
+/** The name an app's folder has on disk: a located one keeps the name the player gave it, not the one Quiver would. */
+export const folderNameOf = (install: Install) => (install.dir ? baseName(install.dir) : install.folder);
 
 /** The empty file that has many apps keep their saves and settings in their own folder. */
 export const PORTABLE_FILE = "portable.txt";
@@ -2942,7 +2944,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       if (jobs[id] && !("error" in jobs[id])) throw new Problem(msg`Wait for its download to finish, then rename its folder.`);
       if (!name.trim()) throw new Problem(msg`Enter a name for its folder.`);
       const folder = folderNameFor(name);
-      if (folder === install.folder) return folder;
+      if (folder === folderNameOf(install) && folder === install.folder) return folder;
       // One folder, one app, as installing keeps it: none other in the same folder by that name.
       const from = placeOf(install, config.appsDir);
       const to = joinPath(parentOf(from), folder);
