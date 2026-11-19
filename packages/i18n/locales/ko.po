@@ -1508,6 +1508,10 @@ msgstr "빌드"
 msgid "Built with some AI assistance"
 msgstr "일부 AI의 도움을 받아 제작됨"
 
+#: ../../apps/launcher/src/controls.tsx
+msgid "Buttons that close a game"
+msgstr "게임을 닫는 버튼"
+
 #. Who made a mod
 #: ../../apps/launcher/src/mods.tsx
 msgid "by {author}"
@@ -1922,6 +1926,10 @@ msgstr "닫기"
 #: ../../apps/launcher/src/detail.tsx
 msgid "Close {title}"
 msgstr "{title} 닫기"
+
+#: ../../apps/launcher/src/controls.tsx
+msgid "Close a game by holding buttons together for a second, for games with no way to quit"
+msgstr "버튼을 함께 1초간 누르고 있으면 게임 닫기 (종료 방법이 없는 게임용)"
 
 #: ../../apps/launcher/src/library-sidebar.tsx
 msgid "Close filters"

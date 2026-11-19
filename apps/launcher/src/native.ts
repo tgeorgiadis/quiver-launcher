@@ -289,6 +289,8 @@ export type SavesInfo = {
 };
 
 export const native = {
+  /** Whether holding these buttons together closes the game being played (unset: Start + Select). */
+  closeCombo: (on: boolean, buttons?: string[]) => invoke<void>("close_combo", { on, buttons: buttons ?? null }),
   config: () => invoke<Config>("config"),
   /** The processor, graphics card and memory, for feedback (specs.rs); what can't be read is null. Missing from an older build, which rejects. */
   pcSpecs: () => invoke<PcSpecs>("pc_specs"),

@@ -1508,6 +1508,10 @@ msgstr "Build"
 msgid "Built with some AI assistance"
 msgstr "Développé avec un peu d'aide de l'IA"
 
+#: ../../apps/launcher/src/controls.tsx
+msgid "Buttons that close a game"
+msgstr "Boutons qui ferment un jeu"
+
 #. Who made a mod
 #: ../../apps/launcher/src/mods.tsx
 msgid "by {author}"
@@ -1922,6 +1926,10 @@ msgstr "Fermer"
 #: ../../apps/launcher/src/detail.tsx
 msgid "Close {title}"
 msgstr "Fermer {title}"
+
+#: ../../apps/launcher/src/controls.tsx
+msgid "Close a game by holding buttons together for a second, for games with no way to quit"
+msgstr "Fermer un jeu en maintenant des boutons ensemble une seconde, pour les jeux qu'on ne peut pas quitter"
 
 #: ../../apps/launcher/src/library-sidebar.tsx
 msgid "Close filters"
