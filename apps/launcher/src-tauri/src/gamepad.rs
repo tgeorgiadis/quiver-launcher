@@ -12,7 +12,7 @@
 //! Only while Quiver's window is in front: behind it (a game started from
 //! Quiver, say) the controllers are let go, so the game has them to itself.
 //! On Windows SDL holds some (DirectInput ones, wheels among them) exclusively.
-//! Except while a game Quiver started runs, for Start + Select, which closes it
+//! Except while a game Quiver started runs, for the buttons that close it (Start + Select unless others are chosen)
 //! (session.rs): then they're read in the background, sending nothing, and
 //! without DirectInput.
 use std::sync::Mutex;
@@ -260,33 +260,35 @@ mod sdl {
         true
     }
 
-    /// How long Start + Select are held to close the game.
+    /// How long the buttons are held to close the game.
     const CLOSE_HOLD: Duration = Duration::from_secs(1);
 
-    /// While a game the launcher started runs (session.rs): Start + Select held together on one controller for a
-    /// second closes it, for games with no way to quit.
+    /// While a game the launcher started runs (session.rs): the buttons chosen in Settings (Start + Select at first),
+    /// held together on one controller for a second, close it, for games with no way to quit.
     #[derive(Default)]
     struct InGame {
-        /// Since when Start + Select have been held, and whether that hold has acted already.
+        /// Since when the buttons have been held, and whether that hold has acted already.
         combo: Option<(Instant, bool)>,
     }
 
     impl InGame {
         fn tick(&mut self, app: &AppHandle, held: &Held) {
-            if !held.combo() {
+            let buttons = crate::session::close_buttons();
+            if !held.combo(&buttons) {
                 self.combo = None;
             } else if let Some((since, done)) = self.combo.as_mut() {
                 if !*done && since.elapsed() >= CLOSE_HOLD {
                     *done = true;
                     // What it did, in quiver.log: Steam's Game Mode can't be watched any other way.
                     let path = app.state::<crate::Data>().0.join("quiver.log");
-                    crate::append_log(&path, if !crate::session::CLOSE_COMBO.load(Ordering::Relaxed) {
-                        "Start + Select held: closing a game with it is off in Settings"
+                    let what = if !crate::session::CLOSE_COMBO.load(Ordering::Relaxed) {
+                        "closing a game with them is off in Settings"
                     } else if crate::session::close_game(&path) {
-                        "Start + Select held: closing the game"
+                        "closing the game"
                     } else {
-                        "Start + Select held: no game started from Quiver is running"
-                    });
+                        "no game started from Quiver is running"
+                    };
+                    crate::append_log(&path, &format!("{} held: {what}", buttons.join(" + ")));
                 }
             } else {
                 self.combo = Some((Instant::now(), false));
@@ -439,9 +441,9 @@ mod sdl {
             self.0.drain().flat_map(|(_, keys)| keys).collect()
         }
 
-        /// Start and Select held together on one controller.
-        fn combo(&self) -> bool {
-            self.0.values().any(|keys| keys.contains("Start") && keys.contains("Select"))
+        /// All these buttons held together on one controller.
+        fn combo(&self, buttons: &[String]) -> bool {
+            !buttons.is_empty() && self.0.values().any(|keys| buttons.iter().all(|b| keys.contains(b.as_str())))
         }
     }
 
@@ -473,13 +475,19 @@ mod sdl {
         }
 
         #[test]
-        fn start_and_select_close_a_game_only_held_on_one_controller() {
+        fn the_buttons_close_a_game_only_held_on_one_controller() {
+            let start_select = ["Start".to_string(), "Select".to_string()];
             let mut held = Held::default();
             held.set(1, "Start", true);
             held.set(2, "Select", true);
-            assert!(!held.combo());
+            assert!(!held.combo(&start_select));
             held.set(1, "Select", true);
-            assert!(held.combo());
+            assert!(held.combo(&start_select));
+            let sticks = ["LeftThumb".to_string(), "RightThumb".to_string()];
+            assert!(!held.combo(&sticks), "other buttons chosen");
+            held.set(2, "LeftThumb", true);
+            held.set(2, "RightThumb", true);
+            assert!(held.combo(&sticks));
         }
 
         #[test]

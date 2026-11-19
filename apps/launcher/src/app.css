@@ -338,6 +338,7 @@ p.job-error { color: var(--danger); font-size: 13px; }
 .installed { color: var(--green); }
 .shortcuts { display: grid; gap: 6px; }
 .controls { display: grid; gap: 10px; border-top: 1px solid var(--line); padding-top: 14px; }
+.controls .close-combo { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin-left: 21px; color: var(--muted); font-size: 13px; } .controls .close-combo select { min-width: 0; max-width: 100%; }
 .pads { margin: 0; padding-left: 20px; font-size: 13px; }
 .bindings { border-collapse: collapse; font-size: 13px; }
 .bindings td, .bindings th { padding: 4px 6px; text-align: left; }

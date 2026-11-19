@@ -479,7 +479,10 @@ fn start(
                 // On the player's Discord profile while it runs (discord.rs).
                 presence.map(|game| app.state::<discord::Presence>().started(id, game)).is_some()
             });
-            session::track(game, target.dir.clone(), move |seconds| {
+            // Its folder tells the game's other processes apart only when it's the app's own: a program elsewhere may sit
+            // in a folder others share (/usr/bin, say), whose every program would count as the game.
+            let own = app_folder.as_ref().is_some_and(|f| session::inside(&target.exe, f)).then(|| target.dir.clone());
+            session::track(game, own, move |seconds| {
                 let Some(id) = id else { return };
                 app.state::<Running>().closed(&id);
                 if shown {

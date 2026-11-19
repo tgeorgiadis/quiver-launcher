@@ -8,13 +8,15 @@
 //! (a .bat that starts python.exe there, say).
 //!
 //! A game with no way to quit can be closed from the controller (gamepad.rs:
-//! hold Start + Select): it and everything it started are asked to quit, then forced.
+//! hold the buttons chosen in Settings, Start + Select at first): it and everything it started are asked to quit, then forced.
 use std::path::{Path, PathBuf};
 use std::process::Child;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::Mutex;
 use std::time::{Duration, Instant};
-use sysinfo::{Pid, ProcessRefreshKind, ProcessesToUpdate, Signal, System, UpdateKind};
+use sysinfo::{Pid, ProcessRefreshKind, ProcessesToUpdate, System, UpdateKind};
+#[cfg(not(windows))]
+use sysinfo::Signal;
 
 /// A newer game supersedes an older one's tracking.
 static LATEST: AtomicU64 = AtomicU64::new(0);
@@ -23,10 +25,15 @@ static LATEST: AtomicU64 = AtomicU64::new(0);
 const STUB_TIME: Duration = Duration::from_secs(10);
 const POLL: Duration = Duration::from_secs(2);
 
-/// The game being played: its session, process (unknown for one Windows started), folder and start (Unix seconds).
-static PLAYING: Mutex<Option<(u64, Option<u32>, PathBuf, u64)>> = Mutex::new(None);
-/// The launcher's setting "Close a game with Start + Select" (Settings → Controls).
+/// The game being played: its session, process (unknown for one Windows started), folder (when it's the app's own)
+/// and start (Unix seconds).
+static PLAYING: Mutex<Option<(u64, Option<u32>, Option<PathBuf>, u64)>> = Mutex::new(None);
+/// The launcher's setting "Close a game by holding buttons together" (Settings → Controllers).
 pub static CLOSE_COMBO: AtomicBool = AtomicBool::new(true);
+/// The buttons held together to close it (gamepad.rs names), as chosen in Settings.
+pub static CLOSE_BUTTONS: Mutex<Vec<String>> = Mutex::new(Vec::new());
+/// Unless another is chosen.
+pub const DEFAULT_BUTTONS: [&str; 2] = ["Start", "Select"];
 /// How long a game has to quit when asked, before it's forced.
 const GRACE: Duration = Duration::from_secs(3);
 
@@ -39,8 +46,9 @@ pub enum Started {
 }
 
 /// Called with each game the launcher starts; `ended` is told how long it ran, a launcher's hand-over included, or
-/// nothing when it couldn't be waited on.
-pub fn track(game: Started, dir: PathBuf, ended: impl FnOnce(Option<u64>) + Send + 'static) {
+/// nothing when it couldn't be waited on. `dir` is the game's folder, given only when it's the app's own (lib.rs
+/// `start`): without it only the game's process and what it started are the game's.
+pub fn track(game: Started, dir: Option<PathBuf>, ended: impl FnOnce(Option<u64>) + Send + 'static) {
     let session = LATEST.fetch_add(1, Ordering::SeqCst) + 1;
     // A second early, as process start times are in whole seconds.
     let since = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map_or(0, |d| d.as_secs()).saturating_sub(1);
@@ -57,9 +65,9 @@ pub fn track(game: Started, dir: PathBuf, ended: impl FnOnce(Option<u64>) + Send
                 Started::Child(mut child) => child.wait().is_ok(),
                 Started::Elsewhere(wait) => wait(),
             };
-            if started.elapsed() < STUB_TIME {
+            if let Some(dir) = dir.as_deref().filter(|_| started.elapsed() < STUB_TIME) {
                 let mut system = System::new();
-                while game_running(&mut system, &dir, since) {
+                while game_running(&mut system, dir, since) {
                     std::thread::sleep(POLL);
                 }
             }
@@ -71,15 +79,23 @@ pub fn track(game: Started, dir: PathBuf, ended: impl FnOnce(Option<u64>) + Send
         .ok();
 }
 
-/// Whether the controllers are worth reading while a game is in front: for Start + Select.
+/// Whether the controllers are worth reading while a game is in front: for the buttons that close it.
 pub fn watching() -> bool {
     CLOSE_COMBO.load(Ordering::Relaxed) && PLAYING.lock().unwrap().is_some()
 }
 
-/// The launcher's setting: whether holding Start + Select closes the game being played.
+/// The launcher's setting: whether holding buttons together closes the game being played, and which. Fewer than two
+/// is Start + Select: one alone would close a game in the middle of playing it.
 #[tauri::command]
-pub fn close_combo(on: bool) {
+pub fn close_combo(on: bool, buttons: Option<Vec<String>>) {
     CLOSE_COMBO.store(on, Ordering::Relaxed);
+    *CLOSE_BUTTONS.lock().unwrap() = buttons.filter(|b| b.len() >= 2).unwrap_or_else(|| DEFAULT_BUTTONS.map(String::from).to_vec());
+}
+
+/// The buttons that close the game being played.
+pub fn close_buttons() -> Vec<String> {
+    let buttons = CLOSE_BUTTONS.lock().unwrap();
+    if buttons.is_empty() { DEFAULT_BUTTONS.map(String::from).to_vec() } else { buttons.clone() }
 }
 
 /// Closes the game being played and everything it started (in the background);
@@ -90,20 +106,25 @@ pub fn close_game(log: &Path) -> bool {
     std::thread::Builder::new()
         .name("close-game".into())
         .spawn(move || {
-            let outcome = close_tree(pid.map(Pid::from_u32), &dir, since, GRACE);
+            let outcome = close_tree(pid.map(Pid::from_u32), dir.as_deref(), since, GRACE);
             let pid = pid.map_or("unknown".into(), |pid| pid.to_string());
-            crate::append_log(&log, &format!("Closing the game (process {pid}, {}): {outcome}", dir.display()));
+            let dir = dir.map_or("its own folder unknown".into(), |dir| dir.display().to_string());
+            crate::append_log(&log, &format!("Closing the game (process {pid}, {dir}): {outcome}"));
         })
         .is_ok()
 }
 
 /// Asks the game's processes to quit, then forces whichever are left after `grace`; says how it went.
-fn close_tree(root: Option<Pid>, dir: &Path, since: u64, grace: Duration) -> String {
+fn close_tree(root: Option<Pid>, dir: Option<&Path>, since: u64, grace: Duration) -> String {
     let mut system = System::new();
     let targets = game_processes(&mut system, root, dir, since);
+    // Windows has no "please quit" signal for another program: its windows are asked to close instead, as their X
+    // button would. One with no window is forced once the time is up.
+    #[cfg(windows)]
+    close_windows(&targets);
+    #[cfg(not(windows))]
     for pid in &targets {
         if let Some(process) = system.process(*pid) {
-            // Windows has no "please quit" signal for another program: it's forced there.
             if process.kill_with(Signal::Term).is_none() {
                 process.kill();
             }
@@ -124,8 +145,30 @@ fn close_tree(root: Option<Pid>, dir: &Path, since: u64, grace: Duration) -> Str
     format!("{} processes, {} forced: {}", targets.len(), forced.len(), forced.join(", "))
 }
 
+/// Asks each visible window of these processes to close.
+#[cfg(windows)]
+fn close_windows(pids: &[Pid]) {
+    use windows_sys::Win32::Foundation::{HWND, LPARAM};
+    use windows_sys::Win32::UI::WindowsAndMessaging::{EnumWindows, GetWindowThreadProcessId, IsWindowVisible, PostMessageW, WM_CLOSE};
+    unsafe extern "system" fn each(window: HWND, pids: LPARAM) -> windows_sys::core::BOOL {
+        // SAFETY: `pids` is the list passed to EnumWindows below, alive until it returns.
+        let pids = unsafe { &*(pids as *const Vec<u32>) };
+        let mut pid = 0;
+        // SAFETY: a window EnumWindows gave, and a place for its process.
+        unsafe { GetWindowThreadProcessId(window, &mut pid) };
+        // SAFETY: as above; posting doesn't wait for the window.
+        if pids.contains(&pid) && unsafe { IsWindowVisible(window) } != 0 {
+            unsafe { PostMessageW(window, WM_CLOSE, 0, 0) };
+        }
+        1
+    }
+    let pids: Vec<u32> = pids.iter().map(|p| p.as_u32()).collect();
+    // SAFETY: the callback only reads `pids`, which outlives the call.
+    unsafe { EnumWindows(Some(each), &pids as *const Vec<u32> as LPARAM) };
+}
+
 /// The game's process, everything it started, and anything of the game's (`of_game`).
-fn game_processes(system: &mut System, root: Option<Pid>, dir: &Path, since: u64) -> Vec<Pid> {
+fn game_processes(system: &mut System, root: Option<Pid>, dir: Option<&Path>, since: u64) -> Vec<Pid> {
     refresh_for_game(system);
     let me = Pid::from_u32(std::process::id());
     let mut found: Vec<Pid> = root.into_iter().collect();
@@ -141,9 +184,11 @@ fn game_processes(system: &mut System, root: Option<Pid>, dir: &Path, since: u64
         }
         found.extend(more);
     }
-    for (pid, p) in system.processes() {
-        if !found.contains(pid) && of_game(p, dir, since) {
-            found.push(*pid);
+    if let Some(dir) = dir {
+        for (pid, p) in system.processes() {
+            if !found.contains(pid) && of_game(p, dir, since) {
+                found.push(*pid);
+            }
         }
     }
     found.retain(|pid| *pid != me);
@@ -178,7 +223,7 @@ fn same(a: &Path, b: &Path) -> bool {
 }
 
 /// `exe` is in `dir` or below it. Windows paths compare without regard to case.
-fn inside(exe: &Path, dir: &Path) -> bool {
+pub fn inside(exe: &Path, dir: &Path) -> bool {
     if cfg!(windows) {
         let (exe, dir) = (exe.to_string_lossy().to_lowercase(), dir.to_string_lossy().to_lowercase());
         let dir = dir.trim_end_matches(['\\', '/']);
@@ -237,9 +282,9 @@ mod tests {
         std::thread::sleep(Duration::from_millis(300));
         let mut system = System::new();
         let root = Pid::from_u32(game.id());
-        let started = game_processes(&mut system, Some(root), Path::new("/no/such/folder"), u64::MAX);
+        let started = game_processes(&mut system, Some(root), None, u64::MAX);
         assert!(started.len() >= 2, "{started:?}");
-        let outcome = close_tree(Some(root), Path::new("/no/such/folder"), u64::MAX, Duration::from_millis(500));
+        let outcome = close_tree(Some(root), None, u64::MAX, Duration::from_millis(500));
         assert!(outcome.contains(&format!("{} forced", started.len())), "{outcome}");
         assert!(game.wait().is_ok());
         system.refresh_processes(ProcessesToUpdate::All, true);

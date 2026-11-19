@@ -287,8 +287,8 @@ export type SavesInfo = {
 };
 
 export const native = {
-  /** Whether holding Start + Select closes the game being played. */
-  closeCombo: (on: boolean) => invoke<void>("close_combo", { on }),
+  /** Whether holding these buttons together closes the game being played (unset: Start + Select). */
+  closeCombo: (on: boolean, buttons?: string[]) => invoke<void>("close_combo", { on, buttons: buttons ?? null }),
   config: () => invoke<Config>("config"),
   readState: <T>(name: StateFile) => invoke<T | null>("read_state", { name }),
   writeState: (name: StateFile, value: unknown) => invoke<void>("write_state", { name, value }),

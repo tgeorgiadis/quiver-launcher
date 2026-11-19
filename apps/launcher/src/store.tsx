@@ -1235,8 +1235,10 @@ export type Settings = {
   padOff?: boolean;
   /** No hints along the bottom for what a controller's buttons do. */
   padHintsOff?: boolean;
-  /** Holding Start + Select doesn't close the game being played (src-tauri/src/session.rs). */
+  /** Holding buttons together doesn't close the game being played (src-tauri/src/session.rs). */
   closeComboOff?: boolean;
+  /** The buttons that close it, as gamepad.rs names them; unset is Start + Select (CLOSE_COMBOS in controls.tsx). */
+  closeCombo?: string[];
   /** The library in sections by original console: what groupBy "console" was before there were other sections. */
   byConsole?: boolean;
   /** The library in sections (group.ts); unset is one piece. */
@@ -1685,8 +1687,9 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     document.addEventListener("visibilitychange", check);
     return () => document.removeEventListener("visibilitychange", check);
   }, [config.os]);
-  // Start + Select closes the game being played (gamepad.rs), unless the player turned it off.
-  useEffect(() => void native.closeCombo(!settings.closeComboOff).catch(() => {}), [settings.closeComboOff]);
+  // Start + Select, or the buttons the player chose, close the game being played (gamepad.rs), unless they turned it off.
+  const closeCombo = settings.closeCombo?.join("+");
+  useEffect(() => void native.closeCombo(!settings.closeComboOff, closeCombo?.split("+")).catch(() => {}), [settings.closeComboOff, closeCombo]);
   const tv = tvModeOn(settings, config);
   // Again as the window changes: TV mode's going full screen, or the launcher moving to another screen.
   useEffect(() => {

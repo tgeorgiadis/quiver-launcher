@@ -156,7 +156,7 @@ test("a controller rebinds a control with its own buttons", async () => {
   await s.until(async () => (await cells()).join() === "A,B");
 });
 
-test("Settings turns off closing a game with Start + Select", async () => {
+test("Settings turns off closing a game with Start + Select, and chooses other buttons for it", async () => {
   const s2 = await openApp({ state: installed });
   const { page: p } = s2;
   const last = () => p.evaluate(() => window.__calls.filter((c) => c.cmd === "close_combo").at(-1)?.args);
@@ -165,11 +165,19 @@ test("Settings turns off closing a game with Start + Select", async () => {
     await s2.until(async () => (await last())?.on === true);
     await p.locator(".topbar button[aria-label='Settings']").click();
     await p.locator(".settings-nav button", { hasText: "Controllers" }).first().click();
-    const toggle = p.locator(".controls label.toggle", { hasText: "Start + Select" }).locator("input");
+    const toggle = p.locator(".controls label.toggle", { hasText: "Close a game" }).locator("input");
+    const buttons = p.locator(".controls .close-combo select");
+    const saved = () => p.evaluate(() => window.__calls.filter((c) => c.cmd === "write_state" && c.args.name === "settings").at(-1)?.args.value);
     assert.equal(await toggle.isChecked(), true);
+    assert.equal(await buttons.inputValue(), "Start+Select");
+    // Other buttons: the sticks pressed in.
+    await buttons.selectOption("LeftThumb+RightThumb");
+    await s2.until(async () => (await last())?.buttons?.join() === "LeftThumb,RightThumb");
+    assert.deepEqual((await saved()).closeCombo, ["LeftThumb", "RightThumb"]);
     await toggle.uncheck();
     await s2.until(async () => (await last())?.on === false);
-    assert.equal(await p.evaluate(() => window.__calls.filter((c) => c.cmd === "write_state" && c.args.name === "settings").at(-1)?.args.value.closeComboOff), true);
+    assert.equal((await saved()).closeComboOff, true);
+    assert.equal(await buttons.isDisabled(), true);
   } finally {
     await s2.close();
   }
