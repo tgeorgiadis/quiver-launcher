@@ -22,6 +22,17 @@ const RELEASE = {
 };
 // Only the Windows build that wasn't ticked is one Windows can install: Show all files is open from the start.
 const ONLY_UNTICKED = { ...RELEASE, assets: files(["Port-android.apk", "android"]) };
+// As Darkwatch: Darker Edition v0.8.1 reached the launcher: the Linux build ticked, the Windows one not, its virus
+// scan not finished.
+const SCAN_PENDING = {
+  ...RELEASE,
+  assets: files(["Port-linux-x64.tar.gz", "linux"]),
+  otherAssets: files(["Port-windows-x64.zip", "windows"]).map(({ checksum, ...a }) => ({
+    ...a,
+    unverifiedChecksum: checksum,
+    scan: { verdict: "pending", url: "https://www.virustotal.com/gui/file/aaaa" },
+  })),
+};
 
 const open = (path, release = RELEASE, signIn = false) =>
   openApp({
@@ -81,6 +92,28 @@ test("a file no maintainer ticked asks before it installs, and is offered at onc
     await prompt.waitFor();
     assert.match(await prompt.innerText(), /Install a file Quiver doesn't offer\?/);
     if (process.env.SHOT_DIR) await prompt.screenshot({ path: `${process.env.SHOT_DIR}/which-download-ask.png` });
+    await prompt.getByRole("button", { name: "Install anyway" }).click();
+    assert.equal(await installedFile(s), "Port-windows-x64.zip");
+  } finally {
+    await s.close();
+  }
+});
+
+test("a file Quiver doesn't offer whose virus scan isn't finished says so, and so does the question before it installs", async () => {
+  const s = await open(process.env.SHOT_DIR && `${process.env.SHOT_DIR}/which-download-scan-pending.png`, SCAN_PENDING);
+  try {
+    const dialog = s.page.locator(".choose");
+    await dialog.getByRole("button", { name: "Show all files" }).click();
+    const file = dialog.locator(".choices button").filter({ hasText: "Port-windows-x64.zip" });
+    assert.match(await file.innerText(), /Windows · Virus scan not finished/);
+    assert.doesNotMatch(await file.innerText(), /Not approved/);
+    if (process.env.SHOT_DIR) await dialog.screenshot({ path: `${process.env.SHOT_DIR}/which-download-scan-pending-all.png` });
+    await file.click();
+    const prompt = s.page.locator(".unverified-prompt");
+    await prompt.waitFor();
+    assert.match(await prompt.innerText(), /Quiver doesn't offer Port-windows-x64\.zip for .*, and its virus scan hasn't finished\./);
+    assert.match(await prompt.innerText(), /VirusTotal: still scanning its files\./);
+    if (process.env.SHOT_DIR) await prompt.screenshot({ path: `${process.env.SHOT_DIR}/which-download-scan-pending-ask.png` });
     await prompt.getByRole("button", { name: "Install anyway" }).click();
     assert.equal(await installedFile(s), "Port-windows-x64.zip");
   } finally {

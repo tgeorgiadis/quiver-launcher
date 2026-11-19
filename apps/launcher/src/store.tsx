@@ -2233,7 +2233,9 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       if (why === "changed" && auto && newestRightAway) unverified = true;
       else if (why) {
         if (auto) return waitForPlayer(asset.checkEndsAt ?? Infinity);
-        if (!(await ask({ entry, version: release.version, file: { name: asset.filename, why }, reasons: [], checkEndsAt: why === "unapproved" ? undefined : asset.checkEndsAt }))) return stop("unverified_prompt");
+        // One a maintainer didn't tick with its own scan: the scan, as it may not have finished.
+        const scan = why === "unapproved" ? asset.scan : undefined;
+        if (!(await ask({ entry, version: release.version, file: { name: asset.filename, why }, reasons: [], scan, checkEndsAt: why === "unapproved" ? undefined : asset.checkEndsAt }))) return stop("unverified_prompt");
         unverified = true;
       }
       format = installFormat(asset.filename);
