@@ -43,12 +43,15 @@ export const ALL_APPS = msg({ message: "All apps", comment: "Heading over the wh
 
 const reducedMotion = () => typeof window !== "undefined" && Boolean(window.matchMedia?.("(prefers-reduced-motion: reduce)").matches);
 
+/** How far a finger goes across the featured apps, more than up or down, to step to the next: past a tap's wobble. */
+const SWIPE = 40;
+
 /**
  * A few apps, one at a time across the page, each its game's wide art with the logo over it, why it's featured, the
  * app's name, its console and what players said. It moves on by itself every `interval`, except under the pointer, with the focus in
  * it, or when the player asked for less motion. The slides not showing are inert, so focus passes them by. Left and right
  * on a slide (the arrow keys, or a controller's in the launcher, which leaves them to it: data-arrows) go to the one before
- * or after, the focus going along.
+ * or after, the focus going along. So does a finger's swipe across them, while one going up or down still scrolls the page.
  */
 export function FeaturedCarousel({
   slides,
@@ -84,6 +87,10 @@ export function FeaturedCarousel({
     stepped.current = false;
     all.current?.querySelector<HTMLElement>("[data-current] .featured-open")?.focus({ preventScroll: true, focusVisible: true } as FocusOptions);
   }, [shown]);
+  // A finger's swipe: where it went down, and when the last one stepped, so the tap a browser may still make of it
+  // doesn't open the slide it stepped to.
+  const swipe = useRef<{ id: number; x: number; y: number } | null>(null);
+  const swiped = useRef(-Infinity);
   if (!count) return null;
   const go = (step: number) => setIndex((shown + step + count) % count);
   return (
@@ -105,6 +112,25 @@ export function FeaturedCarousel({
           e.preventDefault();
           stepped.current = true;
           go(e.key === "ArrowLeft" ? -1 : 1);
+        }}
+        onPointerDown={(e) => {
+          swipe.current = e.pointerType === "mouse" || count < 2 ? null : { id: e.pointerId, x: e.clientX, y: e.clientY };
+        }}
+        onPointerUp={(e) => {
+          const from = swipe.current;
+          swipe.current = null;
+          if (!from || from.id !== e.pointerId) return;
+          const across = e.clientX - from.x;
+          if (Math.abs(across) < SWIPE || Math.abs(across) < Math.abs(e.clientY - from.y)) return;
+          swiped.current = performance.now();
+          go(across < 0 ? 1 : -1);
+        }}
+        // The page scrolled instead (touch-action leaves up and down to it).
+        onPointerCancel={() => (swipe.current = null)}
+        onClickCapture={(e) => {
+          if (performance.now() - swiped.current > 500) return;
+          e.preventDefault();
+          e.stopPropagation();
         }}
       >
         {slides.map(({ entry, reason }, i) => {

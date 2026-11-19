@@ -2278,6 +2278,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "junction"
+version = "1.4.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8cfc352a66ba903c23239ef51e809508b6fc2b0f90e3476ac7a9ff47e863ae95"
+dependencies = [
+ "scopeguard",
+ "windows-sys 0.61.2",
+]
+
+[[package]]
 name = "keyboard-types"
 version = "0.8.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2601,6 +2611,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "ntapi"
+version = "0.4.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c3b335231dfd352ffb0f8017f3b6027a4917f7df785ea2143d8af2adc66980ae"
+dependencies = [
+ "winapi",
+]
+
+[[package]]
 name = "num"
 version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2826,6 +2845,16 @@ dependencies = [
  "block2",
  "libc",
  "objc2",
+ "objc2-core-foundation",
+]
+
+[[package]]
+name = "objc2-io-kit"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "33fafba39597d6dc1fb709123dfa8289d39406734be322956a69f0931c73bb15"
+dependencies = [
+ "libc",
  "objc2-core-foundation",
 ]
 
@@ -3325,7 +3354,7 @@ dependencies = [
 
 [[package]]
 name = "quiver-launcher"
-version = "4.0.0-beta.2"
+version = "4.0.0-beta.7"
 dependencies = [
  "base64 0.22.1",
  "bzip2 0.6.1",
@@ -3338,6 +3367,7 @@ dependencies = [
  "gtk",
  "hex",
  "image",
+ "junction",
  "keyring",
  "libc",
  "lzma-rust2 0.23.0",
@@ -3350,7 +3380,9 @@ dependencies = [
  "serde",
  "serde_json",
  "sevenz-rust2",
+ "sha1",
  "sha2 0.10.9",
+ "sysinfo",
  "tar",
  "tauri",
  "tauri-build",
@@ -3364,6 +3396,7 @@ dependencies = [
  "wayland-backend",
  "wayland-client",
  "wayland-protocols",
+ "windows-sys 0.61.2",
  "winreg",
  "zip",
 ]
@@ -4357,6 +4390,20 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 3.0.6",
+]
+
+[[package]]
+name = "sysinfo"
+version = "0.39.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d2071df9448915b71c4fe6d25deaf1c22f12bd234f01540b77312bb8e41361e6"
+dependencies = [
+ "libc",
+ "memchr",
+ "ntapi",
+ "objc2-core-foundation",
+ "objc2-io-kit",
+ "windows",
 ]
 
 [[package]]

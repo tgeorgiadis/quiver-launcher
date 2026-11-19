@@ -5,6 +5,7 @@
  * never touched here.
  */
 import type { Entry } from "@quiverlauncher/api";
+import { isOwn } from "./custom";
 import { forPlatforms, type Platform } from "./platforms";
 import type { CustomApp, LibraryItem } from "./store";
 
@@ -84,10 +85,18 @@ export function applyServer(local: LibraryItem[], server: ServerItem[], account:
   return [...items.values()];
 }
 
+/**
+ * Whether the account can store an app from this host. It knows github.com and
+ * gitlab.com; a self-hosted GitHub or GitLab, and every other host, stays on
+ * this computer until the account stores a host with an app.
+ */
+export const syncableCustom = (custom: Pick<CustomApp, "provider" | "host">) =>
+  (custom.provider === "github" || custom.provider === "gitlab") && !custom.host;
+
 /** What still has to reach the account. */
 export function changesFrom(local: LibraryItem[], account: string): Change[] {
   return local
-    .filter((i) => i.pending && i.account === account && !i.local)
+    .filter((i) => i.pending && i.account === account && !i.local && (!i.custom || syncableCustom(i.custom)))
     .map(({ id, pending = {}, overrides = {}, removed, custom }): Change => {
       if (removed) return { key: id, removed: true };
       const added = custom ? { add: true as const, custom } : { add: true as const, entryId: id };
@@ -106,7 +115,7 @@ export function changesFrom(local: LibraryItem[], account: string): Change[] {
  * A playlist in the library (a collection, on the site). It shows the apps
  * picked for it by hand, and the apps that match every filter it sets: any of
  * its tags (the player's or the catalog's), consoles (or a maker's, as
- * "maker:Nintendo"), platforms and project types, its AI use, installed or not, and words
+ * "maker:Nintendo"), platforms and project types, its AI use, installed or not, who manages it, and words
  * in the app's name or its games' (Zelda). Without filters it's just the picked apps. A followed playlist mirrors one someone
  * shared, and its apps come from the site.
  */
@@ -119,6 +128,8 @@ export type Collection = {
   installed?: "yes" | "no";
   projectTypes?: string[];
   ai?: "no-generated" | "no-ai";
+  /** Who looks after its apps: Quiver, or the player (added from this computer). Each computer answers this for its own apps. */
+  managed?: "quiver" | "manual";
   /** Words the app's name or one of its games' has, all of them, like "zelda". Kept on this device; the site doesn't store it yet. */
   search?: string;
   /** Platforms the app has a release for, any of them. */
@@ -164,13 +175,15 @@ export function applyServerCollections(local: Collection[], server: ServerCollec
   return [...mine.values()];
 }
 
-type Filters = Pick<Collection, "tags" | "consoles" | "installed" | "projectTypes" | "ai" | "search" | "platforms">;
+type Filters = Pick<Collection, "tags" | "consoles" | "installed" | "projectTypes" | "ai" | "managed" | "search" | "platforms">;
 /** What a playlist or the library filters ask of an app. */
 export type AppFacts = {
   id?: string;
   tags: string[];
   consoles: string[];
   installed: boolean;
+  /** The player looks after it here: added from this computer, or linked to a catalog app and still played from its own files. */
+  manual?: boolean;
   projectType?: string;
   aiLevel?: string;
   /** The platforms it has releases for (its entry's supportedOS). */
@@ -183,7 +196,7 @@ const wordsOf = (search?: string) => (search ?? "").toLowerCase().split(/\s+/).f
 
 /** Whether any filter is set; without one, a playlist is only its picked apps. */
 export const hasFilters = (c: Filters) =>
-  Boolean(c.tags.length || c.consoles.length || c.installed || c.projectTypes?.length || c.ai || c.platforms?.length || wordsOf(c.search).length);
+  Boolean(c.tags.length || c.consoles.length || c.installed || c.projectTypes?.length || c.ai || c.managed || c.platforms?.length || wordsOf(c.search).length);
 
 /**
  * Whether an app matches every filter that's set. `makers` gives each console's
@@ -199,6 +212,7 @@ export function matches(c: Filters, app: AppFacts, makers: Record<string, string
     (!c.tags.length || c.tags.some((t) => tags.has(t.toLowerCase()))) &&
     (!c.consoles.length || c.consoles.some(consoleOk)) &&
     (!c.installed || (c.installed === "yes") === app.installed) &&
+    (!c.managed || (c.managed === "manual") === Boolean(app.manual)) &&
     (!c.projectTypes?.length || c.projectTypes.includes(app.projectType ?? "")) &&
     (!c.ai || (c.ai === "no-ai" ? !app.aiLevel || app.aiLevel === "none" : app.aiLevel !== "generated")) &&
     (!c.platforms?.length || forPlatforms({ supportedOS: app.platforms ?? [] }, c.platforms)) &&
@@ -209,4 +223,26 @@ export function matches(c: Filters, app: AppFacts, makers: Record<string, string
 /** Whether an app is on a playlist: picked for it, or matching its filters. */
 export function inCollection(c: Filters & Pick<Collection, "apps">, app: AppFacts, makers: Record<string, string> = {}) {
   return Boolean(app.id && c.apps?.includes(app.id)) || (hasFilters(c) && matches(c, app, makers));
+}
+
+/**
+ * The apps picked for a playlist that aren't in the library and still show on it: the catalog's, which have a page
+ * to open and add them from. Not one the player added themselves and has since removed (or that a playlist kept
+ * from before it was removed): it has no page and can't be added from here, so it would be a card nothing can be
+ * done with.
+ */
+export const pickedOutside = (c: Pick<Collection, "apps"> | undefined, inLibrary: (id: string) => boolean, catalog: Record<string, unknown>) =>
+  (c?.apps ?? []).filter((id) => !inLibrary(id) && Boolean(catalog[id]) && !isOwn(id));
+
+/**
+ * The playlists once an app the player added themselves leaves the library: it comes off each one it was picked
+ * for, and isn't the icon of any. Only the playlists changed are new objects, to save to `account` when there is one.
+ */
+export function withoutApp(collections: Collection[], id: string, account?: string): Collection[] {
+  return collections.map((c) => {
+    if (c.removed || c.follows || !(c.apps?.includes(id) || c.icon === id)) return c;
+    const { icon, ...rest } = c;
+    const synced = c.account ?? account;
+    return { ...rest, ...(icon && icon !== id ? { icon } : {}), apps: c.apps?.filter((a) => a !== id), account: synced, pending: synced ? true : undefined };
+  });
 }

@@ -36,8 +36,6 @@ jobs:
       # The translation catalogs list every string in the code: a string added without running extract fails here.
       - run: pnpm --filter @quiverlauncher/i18n check
       - run: cargo test --manifest-path apps/launcher/src-tauri/Cargo.toml
-      # The end-to-end tests aren't run here: on the runner, slow and drawing without a GPU, one of them or another
-      # failed most runs for reasons of timing, not of the app. They run in WSL (e2e/wsl.sh).
 
   # Every screen at Android phones' sizes (e2e/phone.test.js): the web side alone, so no Rust build.
   phone:
@@ -49,8 +47,9 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: pnpm }
       - run: pnpm install --frozen-lockfile
-      # Its system libraries come from Ubuntu's mirror too.
-      - run: pnpm --filter @quiver/e2e exec playwright install --with-deps chromium
+      # Chromium alone: the runner's image has the libraries it needs already. --with-deps added only fonts for scripts
+      # these English screens don't show, and Ubuntu's mirror stalled on them past the step's 8 minutes three times.
+      - run: pnpm --filter @quiver/e2e exec playwright install chromium
         timeout-minutes: 8
       - run: pnpm --filter @quiver/e2e phone
       # To look over, failed or not.
@@ -113,9 +112,10 @@ jobs:
       - run: pnpm install --frozen-lockfile
       # Unsigned until there are signing keys.
       - run: pnpm --filter @quiver/launcher tauri build --bundles nsis
-        # Usage data (telemetry.ts): the PostHog project token, a repository variable; unset, the build sends nothing.
+        # Usage data and error reports (telemetry.ts), as in a release.
         env:
-          VITE_POSTHOG_PROJECT_TOKEN: ${{ vars.POSTHOG_PROJECT_TOKEN }}
+          VITE_USAGE_DATA: "1"
+          VITE_SENTRY_DSN: https://84d1ea0079a275f2356a6605b1823ff5@o4512369991942144.ingest.de.sentry.io/4512370215551056
       - uses: actions/upload-artifact@v4
         with:
           name: Quiver Launcher Windows installer
@@ -161,7 +161,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: sh apps/launcher/scripts/tauri-cef.sh build --bundles appimage
         env:
-          VITE_POSTHOG_PROJECT_TOKEN: ${{ vars.POSTHOG_PROJECT_TOKEN }}
+          VITE_USAGE_DATA: "1"
+          VITE_SENTRY_DSN: https://84d1ea0079a275f2356a6605b1823ff5@o4512369991942144.ingest.de.sentry.io/4512370215551056
       - if: always() && steps.dist.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with: { path: ~/.cache/cef, key: "${{ steps.dist.outputs.cache-primary-key }}" }
@@ -171,7 +172,7 @@ jobs:
         run: |
           export QUIVER_DATA=$RUNNER_TEMP/quiver-smoke
           # A smoke test isn't usage: its events go nowhere.
-          export QUIVER_POSTHOG_HOST=http://127.0.0.1:9
+          export QUIVER_USAGE_HOST=http://127.0.0.1:9
           # Output goes to a file so nothing left running holds the step open.
           status=0; xvfb-run -a timeout 15 apps/launcher/src-tauri/target/release/bundle/appimage/*.AppImage > $RUNNER_TEMP/app.log 2>&1 || status=$?
           cat $RUNNER_TEMP/app.log $QUIVER_DATA/quiver.log 2>/dev/null || true

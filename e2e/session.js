@@ -20,8 +20,8 @@ const binary = resolve(import.meta.dirname, `../apps/launcher/src-tauri/target/d
 const windows = process.platform === "win32";
 
 /**
- * Each copy still running, as what stops it. A test file that ends without closing one (stopped by run.js at its
- * failures or by Ctrl+C, which skips after(), or a test that never closed what it launched) stops it on its way out.
+ * Each copy still running, as what stops it. A test file that ends without closing one (stopped by Ctrl+C, which
+ * skips after(), or a test that never closed what it launched) stops it on its way out.
  * Left running, the app and its driver held the file's output open, so `node --test` waited on the file for good.
  */
 const running = new Set();
@@ -32,8 +32,8 @@ for (const signal of ["SIGINT", "SIGTERM"]) process.once(signal, () => process.e
  * One running copy of the app. Pass `api` to share a mock catalog between
  * copies, and `data` to reopen a copy's data folder. Each copy takes ports no
  * other is using, so any number can run at once. The first start's setup
- * (setup.tsx) is taken as done, as the tests start from the library, unless
- * `setup`: setup.test.js goes through it.
+ * (setup.tsx) is taken as done, and how apps update (app-updates.tsx) as
+ * answered, as the tests start from the library, unless `setup`.
  */
 export async function launch({ env: extra = {}, api: shared, data = mkdtempSync(join(tmpdir(), "quiver-data-")), setup = false } = {}) {
   if (!setup) {
@@ -41,7 +41,7 @@ export async function launch({ env: extra = {}, api: shared, data = mkdtempSync(
     const file = join(data, "settings.json");
     const saved = existsSync(file) ? JSON.parse(readFileSync(file, "utf8")) : {};
     mkdirSync(data, { recursive: true });
-    writeFileSync(file, JSON.stringify({ ...saved, setupDone: true }));
+    writeFileSync(file, JSON.stringify({ appUpdatesAsked: true, ...saved, setupDone: true }));
   }
   const api = shared ?? (await startMockApi());
   const port = await freePort();
@@ -56,8 +56,8 @@ export async function launch({ env: extra = {}, api: shared, data = mkdtempSync(
     QUIVER_GITLAB_API: api.gitlab,
     QUIVER_THUNDERSTORE: api.thunderstore,
     QUIVER_GAMEBANANA: api.gamebanana,
-    // Usage data goes to the mock too, never to PostHog (the e2e build has a test token).
-    QUIVER_POSTHOG_HOST: api.posthog,
+    // Usage data goes to the mock too, never to the website.
+    QUIVER_USAGE_HOST: api.usage,
     QUIVER_BROWSER: resolve(import.meta.dirname, "fake-browser.js"),
     QUIVER_SITE: api.site,
     QUIVER_UPDATE_API: api.updates,
@@ -66,7 +66,7 @@ export async function launch({ env: extra = {}, api: shared, data = mkdtempSync(
     QUIVER_V3_DATA: join(data, "none"),
     // On it, not on a Wayland desktop that GTK would find on its own (WSLg's, even with WAYLAND_DISPLAY unset).
     ...(xvfb && { DISPLAY: xvfb.display, GDK_BACKEND: "x11" }),
-    // WebKitGTK's storage (localStorage, where PostHog keeps who it's sending as) beside the
+    // WebKitGTK's storage (localStorage, where usage data keeps its identifier) beside the
     // data folder rather than shared by every copy, as on Windows, so copies running at once
     // don't share it.
     ...(!windows && { XDG_DATA_HOME: `${data}-webview` }),
@@ -123,6 +123,25 @@ export async function launch({ env: extra = {}, api: shared, data = mkdtempSync(
       },
       true,
     );
+  // A card's own click goes to its art, where a player's would. WebDriver clicks an element's middle, which with the
+  // card's text under its art is the foot of the art, where Get or Play sits (app.css): it was refused as intercepted.
+  // Something else really over the art (a dialog) still is, as this leaves those clicks to WebDriver.
+  await app.overwriteCommand(
+    "click",
+    async function (click, options) {
+      if (options?.x || options?.y || !String(this.selector).endsWith(".card-open")) return click(options);
+      await this.waitForExist();
+      const y = await app
+        .execute((el) => {
+          el.scrollIntoView({ block: "center" });
+          const { left, top, width, height } = el.getBoundingClientRect();
+          return el.contains(document.elementFromPoint(left + width / 2, top + height / 4)) ? -Math.round(height / 4) : 0;
+        }, this)
+        .catch(() => 0);
+      return click(y ? { ...options, y } : options);
+    },
+    true,
+  );
   return {
     app,
     api,
@@ -131,9 +150,20 @@ export async function launch({ env: extra = {}, api: shared, data = mkdtempSync(
     // The pointer goes to a card as a player's would: a library card shows its buttons on hover.
     async card(slug) {
       const card = await app.$(`article[data-slug="${slug}"]`);
-      // Not one under an open page: moving to it would be refused, after several tries.
-      if (await card.isDisplayed()) await card.scrollIntoView({ block: "center" }).then(() => card.moveTo()).catch(() => {});
+      // Not one under an open page: moving to it would be refused, after several tries. And not with the card's own
+      // commands: for a card gone by then (a search narrowing the catalog), those look for it again for 20 seconds, as
+      // long as an `until` waiting for it to go.
+      if (await card.isDisplayed())
+        await app
+          .execute((el) => el.scrollIntoView({ block: "center" }), card)
+          .then(() => app.action("pointer", { parameters: { pointerType: "mouse" } }).move({ origin: card }).perform())
+          .catch(() => {});
       return card;
+    },
+    // Waits for a button on a card, which shows under the pointer. Just after going to a page the card may not have
+    // shown yet, or the catalog coming in moves it from under the pointer, so the pointer goes back to it as it waits.
+    async untilCardShows(slug, button, timeout = 20000) {
+      await app.waitUntil(async () => (await (await this.card(slug)).$(button)).isDisplayed(), { timeout, interval: 200, timeoutMsg: `${button} on ${slug} still not displayed after ${timeout}ms` });
     },
     until: (check, timeout = 20000) => app.waitUntil(check, { timeout, interval: 200 }),
     // The library's tabs and playlists, as its tab row lists them or, where they don't fit beside the tools, its Show
@@ -150,6 +180,19 @@ export async function launch({ env: extra = {}, api: shared, data = mkdtempSync(
         return nav ? nav.querySelector("button[aria-pressed=true]")?.innerText.trim() : document.querySelector(".library-show select")?.selectedOptions[0]?.label;
       }),
     async showTab(name) {
+      // Whether the tabs fit is measured again as the library shows, so back from a page the row can fold into the menu
+      // just after it was found. It has settled when two looks agree.
+      const shape = () => app.execute(() => (document.querySelector("nav[aria-label=Playlists]") ? "row" : document.querySelector(".library-show select") ? "menu" : null));
+      let last;
+      await app.waitUntil(
+        async () => {
+          const now = await shape();
+          const settled = now && now === last;
+          last = now;
+          return settled;
+        },
+        { interval: 200 },
+      );
       const nav = await app.$("nav[aria-label=Playlists]");
       if (await nav.isExisting()) await (await nav.$(`button=${name}`)).click();
       else await (await app.$(".library-show select")).selectByVisibleText(name);

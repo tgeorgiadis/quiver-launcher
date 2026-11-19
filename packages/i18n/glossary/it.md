@@ -9,7 +9,7 @@ Address the player as **tu**, friendly and plain. Sentence case.
 | playlist | playlist | |
 | Browse | Esplora | the catalog page |
 | catalog | catalogo | |
-| Get | Ottieni | the button that installs an app |
+| Add / Install | Aggiungi / Installa | the buttons that put an app in the library, then install it |
 | Play / Play anyway | Gioca / Gioca comunque | |
 | install / uninstall | installare / disinstallare | |
 | download | download / scaricare | Downloads page: Download |
@@ -18,8 +18,10 @@ Address the player as **tu**, friendly and plain. Sentence case.
 | Change version / Choose a version | Cambia versione / Scegli una versione | |
 | pinned | fissata | |
 | withdrawn | ritirata | |
-| verified / unverified / blocked (a release) | verificata / non verificata / bloccata | |
+| available / not offered / blocked (a release) | disponibile / non proposta / bloccata | |
 | preview release | versione di anteprima | |
+| pre-release | Anteprima | a release its developer marked as one: an early or experimental build |
+| main release | versione principale | a release not marked as a pre-release; never "stable" |
 | play time / recently played | tempo di gioco / giocati di recente | |
 | controller / keyboard | controller / tastiera | |
 | Settings | Impostazioni | |
@@ -31,6 +33,7 @@ Address the player as **tu**, friendly and plain. Sentence case.
 | usage data | dati di utilizzo | |
 | sign in / sign out / account | accedi / esci / account | |
 | feedback / player | feedback / giocatore | |
+| PC specs | specifiche del PC | the computer a player tried an app on: system, processor, graphics card, memory |
 | mod | mod | |
 | launch options / launch flags | opzioni di avvio / parametri di avvio | |
 | backup (of the library) | backup | |
@@ -41,6 +44,9 @@ Address the player as **tu**, friendly and plain. Sentence case.
 | port / standalone game | port / gioco autonomo | |
 | Installed (a version) / (a tab) / (an app) | Installata / Installati / Installato | separate strings, by context |
 | Update (a card's badge) / (a button) | Aggiornamento / Aggiorna | separate strings, by context |
+| discussion / comment | discussione / commento | Community board: Community |
+| Follow / Unfollow (a discussion) | Segui / Non seguire più | |
+| Pin / Lock / Report (a discussion) | Fissa in alto / Chiudi / Segnala | |
 
 Left as they are: Quiver, Quiver Launcher, GitHub, GitLab, Steam, Steam Deck,
 Flatpak, AppImage, Thunderstore, GameBanana, console names, and controller

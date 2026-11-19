@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
 import type { Entry } from "@quiverlauncher/api";
 import { downloadsLine, downloadsOf, sizeLabel } from "./downloads";
-import type { Install, Job } from "./store";
+import { forHereKey, type Install, type Job } from "./store";
 
-const entry = (id: string, version: string, releasedAt: number) => ({ id, verified: { version, releasedAt } }) as unknown as Entry;
+const entry = (id: string, version: string, releasedAt: number) =>
+  ({ id, verified: { version, releasedAt }, forHere: { of: forHereKey({ version }, {} as Install), release: { version, releasedAt } } }) as unknown as Entry;
 const install = (version: string, releasedAt: number, updates?: Install["updates"]): Install => ({ version, releasedAt, folder: "x", executables: [], ...(updates ? { updates } : {}) });
 const name = (id: string) => ({ a: "Alpha", b: "Beta", c: "Gamma" })[id] ?? id;
 

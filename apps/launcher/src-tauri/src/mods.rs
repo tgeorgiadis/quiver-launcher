@@ -292,6 +292,8 @@ pub fn install(app: &Path, config: &Config, package: &Package, download: &Path, 
         let base = if config.layout.as_deref() == Some("folderPerMod") { PathBuf::from(folder_name(&package.name)) } else { PathBuf::new() };
         let mut files = Vec::new();
         collect(&staging, &staging, &mut files).map_err(|e| e.to_string())?;
+        // A folder lists its files in no set order on Linux; a mod's record shouldn't depend on it.
+        files.sort();
         if files.is_empty() {
             return Err(format!("{name} has nothing in it to install."));
         }

@@ -1,0 +1,71 @@
+/* Quiver's design tokens, for Quiver Launcher and quiverlauncher.com: the colour
+   roles (dark, and light under data-theme), and the type, spacing, corner and
+   shadow scales. Each app imports this file first and takes these from it. A
+   colour is named for its job, so a rule reads var(--muted), never a hex code. */
+:root {
+  --bg: #090f17;
+  --panel: #131922;
+  --card: #141a23;
+  --field: #212831;
+  --line: #262d36;
+  --fg: #e8eaee;
+  --strong: #fff;
+  --muted: #8f959d;
+  --accent: #38bdf8;
+  --on-accent: #04121b;
+  --link: #7dd3fc;
+  --green: #8ac3a2;
+  --caution: #d7b56a;
+  --danger: #e38c87;
+  --shadow: #0009;
+
+  /* Type: 11 small capitals, 12 secondary, 13 controls, 14 body, 16 titles, 18 sections, 22 pages, 28 detail titles, 38 hero. */
+  --size-11: 11px;
+  --size-12: 12px;
+  --size-13: 13px;
+  --size-14: 14px;
+  --size-16: 16px;
+  --size-18: 18px;
+  --size-22: 22px;
+  --size-28: 28px;
+  --size-38: 38px;
+  --leading-text: 1.5;
+  --leading-heading: 1.2;
+
+  /* Padding, margin and gap. */
+  --space-4: 4px;
+  --space-8: 8px;
+  --space-12: 12px;
+  --space-16: 16px;
+  --space-24: 24px;
+  --space-32: 32px;
+  --space-48: 48px;
+
+  /* Corners: 4 small things inside others, 8 controls and cards, 12 panels and dialogs, 16 the hero and large art. */
+  --radius-4: 4px;
+  --radius-8: 8px;
+  --radius-12: 12px;
+  --radius-16: 16px;
+  --radius-pill: 999px;
+
+  /* The only two shadows: menus and popovers, and dialogs. */
+  --shadow-menu: 0 4px 16px var(--shadow);
+  --shadow-dialog: 0 16px 48px var(--shadow);
+}
+:root[data-theme="light"] {
+  --bg: #f4f5f7;
+  --panel: #fff;
+  --card: #fff;
+  --field: #e8eaee;
+  --line: #dcdee2;
+  --fg: #121821;
+  --strong: #0b0c0e;
+  --muted: #5b616b;
+  --accent: #0284c7;
+  --on-accent: #fff;
+  --link: #0369a1;
+  --green: #2e7d52;
+  --caution: #8a5d00;
+  --danger: #b93a30;
+  --shadow: #0f172a29;
+}

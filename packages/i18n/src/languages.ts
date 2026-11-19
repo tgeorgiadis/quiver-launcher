@@ -16,6 +16,8 @@ export const LANGUAGES = [
   { code: "ru", name: "Русский" },
   { code: "it", name: "Italiano" },
   { code: "ko", name: "한국어" },
+  { code: "zh-CN", name: "简体中文" },
+  { code: "zh-TW", name: "繁體中文" },
 ] as const;
 
 export type Language = (typeof LANGUAGES)[number]["code"];

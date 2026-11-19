@@ -26,17 +26,22 @@ async function start() {
   return { vite, browser, url: vite.resolvedUrls.local[0] };
 }
 
-/** An app with `state` as its saved files (settings, library, installs…), opened at the window's size. */
-export async function openApp({ state = {}, width = 1280, height = 800 } = {}) {
+/** An app with `state` as its saved files (settings, library, installs…), opened at the window's size. `prepare` sets up the mock catalog first. `ready` is what shows when it has opened. */
+export async function openApp({ state = {}, width = 1280, height = 800, config = {}, prepare, ready = ".topbar" } = {}) {
   shared ??= await start();
   const api = await startMockApi();
+  prepare?.(api);
   const context = await shared.browser.newContext({ viewport: { width, height } });
+  // A wrong selector fails in good time, rather than after Playwright's usual 30 seconds.
+  context.setDefaultTimeout(10000);
+  // But a first load can take far longer, each test file's server preparing the launcher's files at once.
+  context.setDefaultNavigationTimeout(90000);
   const page = await context.newPage();
   const errors = [];
   page.on("pageerror", (e) => errors.push(e.message));
-  await page.addInitScript(standInForRust, { api: api.api, state, config: { convex: api.convex, accountApi: api.account, githubApi: api.github, gitlabApi: api.gitlab } });
+  await page.addInitScript(standInForRust, { api: api.api, state, config: { convex: api.convex, accountApi: api.account, githubApi: api.github, gitlabApi: api.gitlab, ...config } });
   await page.goto(shared.url);
-  await page.locator(".topbar").waitFor();
+  await page.locator(ready).first().waitFor();
   /** WebdriverIO's execute, for reach.js: a function and its arguments, run in the page. */
   const execute = (fn, ...args) => page.evaluate(({ fn, args }) => (0, eval)(`(${fn})`)(...args), { fn: fn.toString(), args });
   const emit = (event, payload) => page.evaluate(([event, payload]) => window.__TAURI_INTERNALS__.invoke("plugin:event|emit", { event, payload }), [event, payload]);

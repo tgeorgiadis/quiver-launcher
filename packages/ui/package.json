@@ -11,6 +11,9 @@
     "./markdown": "./src/markdown.tsx",
     "./discover": "./src/discover.tsx",
     "./featured": "./src/featured.ts",
+    "./controls": "./src/controls.tsx",
+    "./tokens.css": "./src/tokens.css",
+    "./controls.css": "./src/controls.css",
     "./catalog.css": "./src/catalog.css",
     "./fonts.css": "./src/fonts.css"
   },

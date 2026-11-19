@@ -83,8 +83,8 @@ pub fn file_name(name: &str) -> String {
 }
 
 /// Downloads an image and saves it as PNG (or ICO on Windows), at most 256 pixels.
-pub async fn save_icon(url: &str, path: &Path) -> Result<PathBuf, String> {
-    let image = download_image(url).await?;
+pub async fn save_icon(url: &str, data: &Path, path: &Path) -> Result<PathBuf, String> {
+    let image = download_image(url, data).await?;
     let image = image.resize(256, 256, image::imageops::FilterType::Lanczos3);
     let path = path.with_extension(if cfg!(windows) { "ico" } else { "png" });
     std::fs::create_dir_all(path.parent().unwrap()).map_err(|e| e.to_string())?;
@@ -93,7 +93,11 @@ pub async fn save_icon(url: &str, path: &Path) -> Result<PathBuf, String> {
     Ok(path)
 }
 
-pub async fn download_image(url: &str) -> Result<image::DynamicImage, String> {
+/// An image from its address; one of the player's own pictures (custom_art.rs) is here already.
+pub async fn download_image(url: &str, data: &Path) -> Result<image::DynamicImage, String> {
+    if let Some(file) = crate::custom_art::file_of_address(data, url) {
+        return image::open(file).map_err(|e| e.to_string());
+    }
     if !url.starts_with("https://") && !url.starts_with("http://") {
         return Err("Unsupported image address".into());
     }

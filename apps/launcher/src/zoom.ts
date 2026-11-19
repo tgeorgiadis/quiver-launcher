@@ -7,6 +7,29 @@
  */
 export const zoom = () => Number(getComputedStyle(document.documentElement).zoom) || 1;
 
+/** The interface sizes to pick from (Settings), the page's zoom at each. */
+export const INTERFACE_SIZES = [0.9, 1, 1.25, 1.5, 1.75, 2];
+
+/**
+ * The fewest of the page's pixels across that the zoom leaves it, where the top bar still fits in every language
+ * (German's the longest, at 1039). @media goes by the window, not the zoomed page, so it keeps the wide layout with
+ * ever less room for it, and the bar runs off the screen.
+ */
+const NARROWEST_PAGE = 1060;
+
+/** The size to pick nearest a saved one: Large (1.15) and Extra large (1.3) from before there were percentages. */
+export const nearestInterfaceSize = (scale: number) => INTERFACE_SIZES.reduce((best, size) => (Math.abs(size - scale) < Math.abs(best - scale) ? size : best));
+
+/**
+ * The page's zoom: the interface size, and in TV mode a size larger again, read from across a room, and as much larger
+ * as the window is past 1080p, which a 4K TV with no display scale of its own would otherwise show at half the size.
+ * No further than the window has room for.
+ */
+export function pageZoom(scale: number, tv: boolean, width: number, height: number) {
+  const wanted = tv ? scale * 1.15 * Math.max(1, Math.min(width / 1920, height / 1080)) : scale;
+  return Math.min(wanted, Math.max(1, width / NARROWEST_PAGE));
+}
+
 let zoomedBoxes: boolean | undefined;
 /** How many of a box's pixels (getBoundingClientRect's) make one of the page's: the zoom in Chromium, 1 in WebKit. */
 export function boxZoom() {

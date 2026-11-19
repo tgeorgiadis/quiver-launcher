@@ -3,7 +3,7 @@
  * direction, across every screen, instead of per-screen focus code. Keys and
  * controller buttons map to actions through the player's bindings (Settings),
  * as in Quiver Launcher 3: Confirm presses (and plays a library card), Back closes (Escape) or goes back a page, Options
- * opens the focused library card's or sidebar row's menu (or gets the app a card or page is of), Back to
+ * opens the focused card's or sidebar row's menu, Quick action presses the main button of the card or page (Get, Play), Back to
  * top goes to the top of a long page, the four directions move, and Scroll
  * up and down scroll what the focus is in (smoothly while the right stick is
  * held; a page at a time from the keys). A mouse's side buttons bind with the keys.
@@ -15,7 +15,7 @@ import { closePicker, openPicker, pickerPanel } from "./select-picker";
 import { boxZoom, windowBox, zoom as interfaceZoom } from "./zoom";
 
 type Direction = "up" | "down" | "left" | "right";
-export const ACTIONS = ["confirm", "back", "forward", "options", "top", "up", "down", "left", "right", "scrollUp", "scrollDown", "prevTab", "nextTab", "prevLetter", "nextLetter"] as const;
+export const ACTIONS = ["confirm", "back", "forward", "options", "quick", "top", "up", "down", "left", "right", "scrollUp", "scrollDown", "prevTab", "nextTab", "prevLetter", "nextLetter"] as const;
 export type Action = (typeof ACTIONS)[number];
 export type Bindings = Record<Action, string[]>;
 /** Each action's name, in the language shown when it's read, not when the module loads (before one is picked). */
@@ -24,6 +24,7 @@ export const ACTION_NAMES: Record<Action, string> = {
   get back() { return t`Cancel / Back`; },
   get forward() { return t({ message: "Forward", comment: "Action that opens again the page Back last left" }); },
   get options() { return t({ message: "Options", comment: "Controller action that opens the focused item's menu" }); },
+  get quick() { return t({ message: "Quick action", comment: "Controller action that presses the main button of the focused card or app's page, such as Get or Play" }); },
   get top() { return t`Back to top`; },
   get up() { return t`Navigate up`; },
   get down() { return t`Navigate down`; },
@@ -41,6 +42,7 @@ export const DEFAULT_KEYS: Bindings = {
   back: ["Escape", "Alt+ArrowLeft", "MouseBack"],
   forward: ["Alt+ArrowRight", "MouseForward"],
   options: ["O"],
+  quick: ["G"],
   top: ["Home"],
   up: ["ArrowUp"],
   down: ["ArrowDown"],
@@ -60,6 +62,7 @@ export const DEFAULT_PAD: Bindings = {
   // None: a controller's buttons are all taken. The player can give it one in Settings.
   forward: [],
   options: ["North"],
+  quick: ["West"],
   top: ["RightThumb"],
   up: ["DPadUp", "LeftStickUp"],
   down: ["DPadDown", "LeftStickDown"],
@@ -157,7 +160,7 @@ const finish = (binding: string | null) => {
 };
 
 // Not one that's disabled, which can't take the focus: the d-pad stopped at a platform's box that must stay ticked.
-const FOCUSABLE = ":is(button, input, select, textarea):not(:disabled), a[href], [tabindex]:not([tabindex='-1'])";
+const FOCUSABLE = ":is(button, input, select, textarea):not(:disabled), a[href], [tabindex]:not([tabindex='-1']), .clip-fold";
 
 /** Showing, so it can have the focus. A library card's buttons are hidden until the card has focus. */
 const shown = (el: Element) => el.isConnected && el.getClientRects().length > 0 && getComputedStyle(el).visibility !== "hidden";
@@ -169,7 +172,7 @@ const shown = (el: Element) => el.isConnected && el.getClientRects().length > 0 
  */
 function playOf(el: EventTarget | null) {
   if (!(el instanceof HTMLElement)) return null;
-  // Not Add, on a card for an app installed here but not in the library, which Options presses (quickButton).
+  // Not Add, on a card for an app installed here but not in the library, which Quick action presses (quickButton).
   if (el.matches(".library-tile .card-open")) return el.closest("article")?.querySelector<HTMLElement>(".tile-play:not(.tile-add)") ?? null;
   return null;
 }
@@ -178,21 +181,20 @@ function playOf(el: EventTarget | null) {
 export const confirmButton = (el: EventTarget | null) => playOf(el);
 
 /**
- * What Options presses, from wherever the focus is, without moving to it: the
- * main button under a card (Get, Play), or on a library card for an app not in
- * the library (Add), or an app's page's own, from anywhere on the page. Confirm
+ * What Quick action presses, from wherever the focus is, without moving to it:
+ * the main button under a card (Get, Play), or on a library card for an app not
+ * in the library (Add), or an app's page's own, from anywhere on the page. Confirm
  * on a card opens its page, as a store's does, so a stray press never starts a
  * download. Not from a text field or a form over the page.
  */
 export function quickButton(el: EventTarget | null) {
-  // Not a card with a menu (the library's, TV mode's library's): Options opens that, and Confirm presses its Play.
-  if (!(el instanceof HTMLElement) || takesText(el) || el.closest('[role="dialog"]') || el.closest("[data-menu]")) return null;
-  if (el.matches("article .card-open")) return el.closest("article")?.querySelector<HTMLElement>(".card-action .primary:not(:disabled), .tile-add") ?? null;
+  if (!(el instanceof HTMLElement) || takesText(el) || el.closest('[role="dialog"]')) return null;
+  if (el.matches("article .card-open")) return el.closest("article")?.querySelector<HTMLElement>(".card-action .primary:not(:disabled), .tile-play:not(:disabled)") ?? null;
   return el.closest(".app-page")?.querySelector<HTMLElement>(".app-actions .primary:not(:disabled)") ?? null;
 }
 
 /**
- * The only button under a card, which Options on the card presses, or Get and its arrow: so the arrows go card to card
+ * The only button under a card, which Quick action on the card presses, or Get and its arrow: so the arrows go card to card
  * past them. The arrow's choices are on the app's page too.
  */
 function pressedByCard(el: HTMLElement) {
@@ -249,8 +251,8 @@ let pointing = false;
 /** The focus on `el`, by a controller or the keys: with its ring. */
 const show = (el: HTMLElement, preventScroll = false) => el.focus({ preventScroll, focusVisible: true } as FocusOptions);
 
-/** The bar across the top, above the page: the launcher's, or TV mode's own while TV mode shows (tv.tsx). */
-const topBar = () => [...document.querySelectorAll<HTMLElement>(".topbar, .tv-bar")].find((bar) => bar.getClientRects().length > 0) ?? null;
+/** The bar across the top, above the page. */
+const topBar = () => document.querySelector<HTMLElement>(".topbar");
 /** What scrolls the page: main, under the top bar (app.css), the window itself not scrolling. */
 export const pageArea = () => document.querySelector<HTMLElement>(".shell > main") ?? document.documentElement;
 
@@ -289,10 +291,66 @@ function ahead(direction: Direction, current: HTMLElement, among: HTMLElement[])
  */
 const AREAS = ".topbar, .library-sidebar, .settings-nav, .menu.floating";
 
+/** Where a library starts for the d-pad: Continue playing's Play, else the app open beside its sidebar, else its first card. */
+const libraryStart = (all: HTMLElement[]) => all.find((el) => el.matches(".continue-play, .library-sidebar [aria-current], .library-grid .card-open"));
+
+let readied = false;
+/**
+ * With a controller there as the library comes, the focus on its start, once, so Confirm plays at once. Not over what
+ * already has it, and called again while there's nothing to put it on yet.
+ */
+export function readyFocus() {
+  if (readied) return;
+  const now = document.activeElement;
+  if (now && now !== document.body) return void (readied = true);
+  const start = libraryStart(candidates());
+  if (!start) return;
+  readied = true;
+  moveFocus(start);
+}
+
+/** Going up or down into one of these from outside it, what the step lands on, wherever it came from across the screen. */
+const LANDINGS = [
+  [".continue-action", ".continue-play"],
+  [".library-bar, .sidebar-top", ".search input"],
+] as const;
+
+/**
+ * What a step to `best` lands on instead, of `all`: a list beside the page, from outside it, at what it has selected;
+ * Continue playing's Play rather than past it; and the LANDINGS.
+ */
+function landing(direction: Direction, current: HTMLElement, best: HTMLElement, all: HTMLElement[]) {
+  const vertical = direction === "up" || direction === "down";
+  const among = (el: HTMLElement | null) => (el && all.includes(el) ? el : undefined);
+  const list = best.closest(".settings-nav, .library-sidebar");
+  if (list && !list.contains(current) && !(vertical && best.closest(".sidebar-top"))) return among(list.querySelector<HTMLElement>("[aria-current]")) ?? best;
+  if (!vertical) return best;
+  // Up from the library's search, on its row under the tabs and tools: the sort, the tools' first, rather than
+  // whichever tab is over the search. Not while a search orders by relevance, when the sort waits.
+  if (direction === "up" && current.closest(".library-bar .search-row")) {
+    const sort = among(document.querySelector<HTMLElement>(".library-sort select"));
+    if (sort) return sort;
+  }
+  const play = among(document.querySelector<HTMLElement>(".continue-play"));
+  if (play && !current.closest(".continue-action")) {
+    const [from, over, to] = [current, play, best].map((el) => el.getBoundingClientRect());
+    if (direction === "down" ? from.bottom <= over.top && to.top >= over.bottom : from.top >= over.bottom && to.bottom <= over.top) return play;
+  }
+  for (const [zone, target] of LANDINGS) {
+    const into = best.closest(zone);
+    if (into && !into.contains(current)) return among(into.querySelector<HTMLElement>(target)) ?? best;
+  }
+  return best;
+}
+
 export function move(direction: Direction) {
   const all = candidates();
   const current = document.activeElement as HTMLElement | null;
-  if (!current || !all.includes(current)) return all[0] && show(all[0]);
+  if (!current || !all.includes(current)) {
+    const outside = topBar();
+    const start = libraryStart(all) ?? all.find((el) => !outside?.contains(el)) ?? all[0];
+    return start && show(start);
+  }
   // From the button of a panel it has open (library.tsx's Popover, put at the
   // page's end, outside the sidebar the button is in): into the panel, when
   // it's that way. Anywhere else, the panel closes as the focus leaves it.
@@ -337,17 +395,25 @@ export function move(direction: Direction) {
     return el.closest(AREAS) !== area || Math.max(r.top - from.bottom, from.top - r.bottom) <= Math.max(from.height, 48);
   };
   const among = vertical ? allowed.filter((el) => el.closest(AREAS) === area) : inBar ? all.filter((el) => bar.contains(el)) : allowed.filter(near);
-  let best = ahead(direction, current, among);
+  const land = (el: HTMLElement | undefined) => el && landing(direction, current, el, all);
+  // Sideways, what's on its line first, however far along: from Search, the playlists on its row, not Continue playing's
+  // buttons above it, nearer by a little.
+  const level = vertical ? [] : among.filter((el) => {
+    const r = el.getBoundingClientRect();
+    return r.bottom > from.top && r.top < from.bottom;
+  });
+  let best = land((level.length ? ahead(direction, current, level) : undefined) ?? ahead(direction, current, among));
   // Past more than a step of what's between (a README's text, a release's notes), a step's
   // scroll instead, until the next control is near: so the d-pad reads through it. Not past a dropdown's
   // list's last option, which would scroll the page from under it.
   if (vertical && !inBar && !pickerPanel() && step(current, direction === "down" ? 1 : -1, best)) return;
-  if (!best && vertical) best = ahead(direction, current, all);
+  if (!best && vertical) best = land(ahead(direction, current, all));
   const intoBar = !inBar && best !== undefined && !!bar?.contains(best);
   if (best) {
     // Not with the focus's own scroll, which jumps it into view: eased there instead. Measured for that before the
     // focus moves, which restyles the card it goes to: measured after, the page was laid out again mid-step.
-    reveal(best);
+    // Continue playing all in view, not just its buttons at its foot: the next step up isn't a scroll to the rest.
+    reveal(best.closest<HTMLElement>(".continue") ?? best);
     show(best, true);
   }
   // Up into the top bar takes the page to its top, where its title and art are.
@@ -471,7 +537,8 @@ function wheeled(e: WheelEvent) {
  */
 function reveal(el: HTMLElement) {
   const area = scrollArea(el);
-  if (area === undefined) return;
+  // Held in sight over what scrolls (a release's notes' buttons, app.css): nothing to bring into view.
+  if (area === undefined || el.closest(".changelog-foot")) return;
   const zoom = boxZoom();
   const r = el.getBoundingClientRect();
   for (const scroller of new Set([scrolling(area), pageArea()])) {
@@ -584,6 +651,9 @@ function step(current: HTMLElement, way: 1 | -1, target: HTMLElement | undefined
   if (area === undefined || !canScroll(area, way)) return false;
   const box = viewOf(area);
   const by = Math.round((box.bottom - box.top) * 0.4);
+  // Nothing more above on the page, with less than a step to its top: on to the top bar, which takes it there, not a
+  // press that only scrolls with the focus left where it is.
+  if (!target && way < 0 && !area && topBar() && scrolling(area).scrollTop * boxZoom() <= by) return false;
   const r = target?.getBoundingClientRect();
   const there = r && viewOf(area, r);
   const past = !r || !there ? Infinity : way > 0 ? r.top - there.bottom : there.top - r.bottom;
@@ -606,7 +676,7 @@ function page(way: 1 | -1) {
 
 /**
  * What the buttons would do now, for the hints along the bottom
- * (pad-hints.tsx), as act() would: Confirm and Options on the focused
+ * (pad-hints.tsx), as act() would: Confirm, Options and Quick action on the focused
  * control, Back where there's something to go back from, Back to top on a
  * scrolled page, and Scroll on one that scrolls.
  */
@@ -625,12 +695,13 @@ export function buttonsNow(): [Action, string][] {
             ? t({ message: "Open", comment: "Controller hint: what Confirm does on an app card" })
             : t({ message: "Select", comment: "Controller hint: what Confirm does on any other control" });
     now.push(["confirm", does]);
-    const get = quickButton(focused);
     if (focused.closest("[data-menu]")) now.push(["options", t({ message: "Menu", comment: "Controller hint: what Options does, opening a menu" })]);
-    else if (get) now.push(["options", get.innerText.trim() || t({ message: "Get", comment: "Controller hint: what Options does on a catalog card or an app's page, installing the app" })]);
     // A game's card (library-tile.tsx): the list of its ports, which Confirm opens too where none is installed to play.
     else if (focused.closest(".game-tile")) now.push(["options", t`Ways to play`]);
     else if (focused.closest("article")?.querySelector(".card-open")) now.push(["options", t({ message: "Details", comment: "Controller hint: what Options does on an app card, opening its page" })]);
+    // Not what Confirm says already, on a library card.
+    const get = quickButton(focused);
+    if (get && get !== play) now.push(["quick", get.innerText.trim() || t({ message: "Install", comment: "Controller hint: what Quick action does on a catalog card or an app's page, installing the app" })]);
   }
   if (backGoes()) now.push(["back",t({ message: "Back", comment: "Controller hint: what Back does, closing or going back" })]);
   // Tabs showing (an app's page's, TV mode's, the top bar's): LB and RB change them, said here as by the tabs themselves.
@@ -1095,12 +1166,14 @@ function act(action: Action) {
   else if (action === "back") pressEscape();
   // The pages are App.tsx's: it reopens the one Back last left.
   else if (action === "forward") window.dispatchEvent(new Event(FORWARD));
-  // A library card's or sidebar row's menu, else a card's or an app page's Get (or Play), else the focused app's page.
+  // A card's or sidebar row's menu, else the focused app's page.
   else if (action === "options") {
     const owner = focused?.closest("[data-menu]");
     if (owner) owner.dispatchEvent(new KeyboardEvent("keydown", { key: "ContextMenu", bubbles: true }));
-    else (quickButton(focused) ?? focused?.closest("article")?.querySelector<HTMLElement>(".card-open"))?.click();
+    else focused?.closest("article")?.querySelector<HTMLElement>(".card-open")?.click();
   }
+  // A card's or an app page's Get (or Play).
+  else if (action === "quick") quickButton(focused)?.click();
   else if (action === "top") toTop(focused);
   else if (action === "prevTab" || action === "nextTab") nextTab(action === "prevTab" ? -1 : 1);
   else if (action === "prevLetter" || action === "nextLetter") jump(action === "prevLetter" ? -1 : 1);
@@ -1221,8 +1294,6 @@ export function moveFocus(el: HTMLElement) {
   reveal(el);
 }
 
-/** A text field to type in, as Confirm on it does: with Steam's keyboard where there's one. */
-export const typeInto = (field: HTMLInputElement | HTMLTextAreaElement) => edit(field);
 
 const MODIFIERS = new Set(["Control", "Shift", "Alt", "Meta"]);
 /** A Steam Deck's own controls come as Steam's desktop layout's keys: its A Enter, B Escape, Y Space. */
@@ -1244,6 +1315,8 @@ export function startSpatialNavigation() {
   window.addEventListener(
     "keydown",
     (e) => {
+      // Some keydowns name no key, as autofill's can: nothing was pressed.
+      if (!e.key) return;
       if (capture?.kind === "pad" && e.key === "Escape") {
         e.stopImmediatePropagation();
         return finish(null);
@@ -1345,7 +1418,7 @@ export function startSpatialNavigation() {
     if (!action) return;
     if (scroll) return glide(scroll);
     act(action);
-    if (action === "confirm" || action === "back" || action === "forward" || action === "options" || action === "top" || action === "prevTab" || action === "nextTab") return;
+    if (action === "confirm" || action === "back" || action === "forward" || action === "options" || action === "quick" || action === "top" || action === "prevTab" || action === "nextTab") return;
     const again = (delay: number) => repeats.set(key, setTimeout(() => (act(action), again(120)), delay));
     again(300);
   });

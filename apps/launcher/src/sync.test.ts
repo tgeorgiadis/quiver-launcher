@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 import type { LibraryItem } from "./store";
-import { applyServer, applyServerCollections, changesFrom, inCollection, joinAccount, type ServerItem } from "./sync";
+import { applyServer, applyServerCollections, changesFrom, inCollection, joinAccount, pickedOutside, withoutApp, type Collection, type ServerItem } from "./sync";
 
 const item = (id: string, extra: Partial<LibraryItem> = {}): LibraryItem => ({ id, slug: id, addedAt: 1, ...extra });
 const server = (key: string, extra: Partial<ServerItem> = {}): ServerItem => ({
@@ -82,6 +82,27 @@ test("a playlist's words and icon stay on this device when the account's copy of
   expect(playlist).toMatchObject({ name: "Zelda games", search: "zelda", icon: "entry_a" });
 });
 
+test("a playlist's Managed by holds the apps this computer says the player, or Quiver, looks after", () => {
+  const app = { id: "a", tags: [], consoles: [], installed: false };
+  const manual = { ...app, manual: true };
+  expect(inCollection({ tags: [], consoles: [], managed: "manual" }, manual)).toBe(true);
+  expect(inCollection({ tags: [], consoles: [], managed: "manual" }, app)).toBe(false);
+  expect(inCollection({ tags: [], consoles: [], managed: "quiver" }, app)).toBe(true);
+  expect(inCollection({ tags: [], consoles: [], managed: "quiver" }, manual)).toBe(false);
+  // With another filter, an app has to match both.
+  expect(inCollection({ tags: ["fav"], consoles: [], managed: "manual" }, manual)).toBe(false);
+  // Hand-picked apps stay on it whoever manages them.
+  expect(inCollection({ tags: [], consoles: [], managed: "manual", apps: ["a"] }, app)).toBe(true);
+});
+
+test("a playlist's Managed by syncs like its other filters: the account's, unless changed here", () => {
+  const local = [{ key: "m", name: "Mine", tags: [], consoles: [], managed: "manual" as const, order: 0, account: "me" }];
+  const server = (managed?: "quiver" | "manual") => [{ key: "m", name: "Mine", tags: [], consoles: [], managed, order: 0, removed: false, updatedAt: 2 }];
+  expect(applyServerCollections(local, server("quiver"), "me")[0].managed).toBe("quiver");
+  expect(applyServerCollections(local, server(), "me")[0].managed).toBeUndefined();
+  expect(applyServerCollections([{ ...local[0], pending: true }], server("quiver"), "me")[0].managed).toBe("manual");
+});
+
 test("a playlist's platforms sync like its other filters: the account's, unless changed here", () => {
   const local = [{ key: "p", name: "Phone", tags: [], consoles: [], platforms: ["android" as const], order: 0, account: "me" }];
   const server = (platforms?: ("android" | "linux")[]) => [{ key: "p", name: "Phone", tags: [], consoles: [], platforms, order: 0, removed: false, updatedAt: 2 }];
@@ -124,4 +145,31 @@ test("the consoles the player picked sync like tags: sent when changed here, the
   // Signing in sends the pick with the app.
   const joined = joinAccount([item("a", { overrides: { consoles: ["ps4"] } })], "me");
   expect(changesFrom(joined, "me")).toEqual([{ key: "a", add: true, entryId: "a", consoles: ["ps4"] }]);
+});
+
+test("a playlist shows a picked catalog app that isn't in the library, not one the player added and has since removed (issue 435)", () => {
+  const catalog = { zelda: {}, "github:me/port": {}, "local:abc": {}, mine: {} };
+  const playlist = { apps: ["mine", "zelda", "github:me/port", "local:abc", "unknown"] };
+  // In the library still: shown as the library's, whatever it is.
+  expect(pickedOutside(playlist, (id) => id === "mine" || id === "github:me/port", catalog)).toEqual(["zelda"]);
+  // Removed from it: the catalog's app can be opened and added again, the player's own can't.
+  expect(pickedOutside(playlist, () => false, catalog)).toEqual(["mine", "zelda"]);
+  expect(pickedOutside(undefined, () => false, catalog)).toEqual([]);
+});
+
+test("removing an app the player added takes it off their playlists, to save to the account", () => {
+  const list = (key: string, extra: Partial<Collection> = {}): Collection => ({ key, name: key, tags: [], consoles: [], order: 0, ...extra });
+  const untouched = list("other", { apps: ["zelda"] });
+  const followed = list("followed", { follows: "someones" });
+  const [switchList, guest, other, theirs] = withoutApp(
+    [list("switch", { apps: ["zelda", "github:me/port"], icon: "github:me/port", account: "me" }), list("guest", { apps: ["github:me/port"] }), untouched, followed],
+    "github:me/port",
+    "me",
+  );
+  expect(switchList).toEqual(list("switch", { apps: ["zelda"], account: "me", pending: true }));
+  expect(guest).toEqual(list("guest", { apps: [], account: "me", pending: true }));
+  expect(other).toBe(untouched);
+  expect(theirs).toBe(followed);
+  // Signed out: nothing to save.
+  expect(withoutApp([list("guest", { apps: ["local:abc"] })], "local:abc")[0].pending).toBeUndefined();
 });

@@ -17,6 +17,17 @@ type Runner = LaunchOptions["runner"];
 const runnerValue = (runner: Runner) => (!runner ? "" : runner.kind === "proton" ? `proton:${runner.path}` : runner.kind);
 const runnerFrom = (value: string): Runner =>
   value === "direct" || value === "wine" ? { kind: value } : value.startsWith("proton:") ? { kind: "proton", path: value.slice(7) } : undefined;
+/**
+ * Whether an app's program is a Windows one, which on Linux runs through Wine or a Proton: the program the player
+ * chose, by its name as launch reads it, else the release they installed. Only then is there a runner to choose.
+ */
+export const windowsProgram = (executable: string | undefined, wine: boolean | undefined) => (executable ? /\.(exe|bat)$/i.test(executable) : Boolean(wine));
+/**
+ * Whether the program the player chose is outside the app's folder, kept by its full path: a game the app's own
+ * installer put on another drive, say. Moving, renaming, updating and uninstalling the app leave it where it is. An
+ * app the player added (`program`) always keeps a full path, and has no folder of Quiver's.
+ */
+export const outsideFolder = (executable: string | undefined, program?: string) => Boolean(executable && !program && /^([a-z]:[\\/]|[\\/])/i.test(executable));
 /** A Proton's name from its folder. */
 const folderName = (path: string) => path.replace(/[/\\]+$/, "").split(/[/\\]/).pop() || path;
 
@@ -54,10 +65,13 @@ export function RunnerSelect({ value, onChange, onError, automatic, direct }: { 
 
 /** What Automatic runs Windows programs with here, by name: a Proton Steam has, else Wine; null with neither, undefined until known. */
 export function useAutomaticRunner() {
+  const { config } = useLauncher();
   const [name, setName] = useState<string | null>();
+  // Only Linux runs Windows programs through a runner: elsewhere there's nothing to look for.
+  const linux = config.os === "linux";
   useEffect(() => {
-    native.automaticRunner().then(setName, () => setName(null));
-  }, []);
+    if (linux) native.automaticRunner().then(setName, () => setName(null));
+  }, [linux]);
   return name;
 }
 
@@ -143,6 +157,8 @@ export function LaunchOptionsButton({ id }: { id: string }) {
     );
   };
   const unclosed = (command.match(/"/g)?.length ?? 0) % 2 === 1 || (command.match(/'/g)?.length ?? 0) % 2 === 1;
+  // A Linux program runs as itself: a runner would only break it, so there's none to choose, and none is kept.
+  const runs = linux && windowsProgram(executable, install.wine);
   return (
     <form
       className="panel-form launch-options"
@@ -150,7 +166,7 @@ export function LaunchOptionsButton({ id }: { id: string }) {
       onSubmit={(e) => {
         e.preventDefault();
         if (unclosed) return;
-        setLaunch(id, { executable, runner, command: command.trim() || undefined });
+        setLaunch(id, { executable, runner: runs ? runner : undefined, command: command.trim() || undefined });
         setOpen(false);
       }}
     >
@@ -168,6 +184,11 @@ export function LaunchOptionsButton({ id }: { id: string }) {
             t`Starts the program Quiver finds in its folder.`
           )}
         </p>
+        {outsideFolder(executable, install.program) && (
+          <p className="muted small">
+            <Trans>It&apos;s outside the app&apos;s folder, so moving, renaming, updating or uninstalling the app leaves it where it is.</Trans>
+          </p>
+        )}
         <div className="row">
           <button type="button" onClick={choose}>
             <Trans>Choose program…</Trans>
@@ -179,7 +200,7 @@ export function LaunchOptionsButton({ id }: { id: string }) {
           )}
         </div>
       </div>
-      {linux && (
+      {runs && (
         <label>
           <span className="field-label">
             <Trans>Run with</Trans>

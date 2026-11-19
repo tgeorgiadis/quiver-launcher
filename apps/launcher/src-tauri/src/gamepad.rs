@@ -12,6 +12,9 @@
 //! Only while Quiver's window is in front: behind it (a game started from
 //! Quiver, say) the controllers are let go, so the game has them to itself.
 //! On Windows SDL holds some (DirectInput ones, wheels among them) exclusively.
+//! Except while a game Quiver started runs, for the buttons that close it (Start + Select unless others are chosen)
+//! (session.rs): then they're read in the background, sending nothing, and
+//! without DirectInput.
 use std::sync::Mutex;
 
 /// Names of the connected controllers, and the labels of the one used last.
@@ -72,7 +75,7 @@ mod sdl {
     use std::collections::{BTreeMap, HashMap, HashSet};
     use std::ffi::CStr;
     use std::sync::atomic::{AtomicBool, Ordering};
-    use std::time::Duration;
+    use std::time::{Duration, Instant};
     use tauri::{AppHandle, Emitter, Manager, WindowEvent};
 
     #[derive(serde::Serialize, Clone)]
@@ -99,8 +102,9 @@ mod sdl {
             });
         }
         std::thread::spawn(move || loop {
-            if FOCUSED.load(Ordering::Relaxed) {
-                if !read(&app) {
+            let behind = !FOCUSED.load(Ordering::Relaxed);
+            if !behind || crate::session::watching() {
+                if !read(&app, behind) {
                     return;
                 }
             } else {
@@ -109,9 +113,19 @@ mod sdl {
         });
     }
 
-    /// Reads controllers while Quiver is in front; false if SDL can't start.
+    /// Whether to go on reading: in front, or `behind` while a game wants watching.
+    fn reading(behind: bool) -> bool {
+        let focused = FOCUSED.load(Ordering::Relaxed);
+        if behind {
+            !focused && crate::session::watching()
+        } else {
+            focused
+        }
+    }
+
+    /// Reads controllers while Quiver is in front, or `behind` it during a game; false if SDL can't start.
     /// SDL and every call to it stay on this one thread.
-    fn read(app: &AppHandle) -> bool {
+    fn read(app: &AppHandle, behind: bool) -> bool {
         // Steam running turns a Steam Deck's controls (and a Steam Controller's) into its desktop layout's keys and
         // mouse for a program it didn't start: the d-pad the arrow keys, A Enter, B Escape. Read here as well, each
         // press came twice, and with Steam's keyboard or overlay up, a press there moved Quiver too. So they're left
@@ -130,18 +144,30 @@ mod sdl {
                 SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_STEAMDECK, c"0".as_ptr());
                 SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_STEAM, c"0".as_ptr());
             }
+            // Behind a game: SDL hears controllers though Quiver isn't in front, and leaves DirectInput's alone, which it
+            // would hold for itself (Xbox, PlayStation and Switch pads come through its other ways).
+            SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, if behind { c"1".as_ptr() } else { c"0".as_ptr() });
+            #[cfg(windows)]
+            SDL_SetHint(SDL_HINT_JOYSTICK_DIRECTINPUT, if behind { c"0".as_ptr() } else { c"1".as_ptr() });
             if !SDL_Init(SDL_INIT_GAMEPAD) {
                 return false;
             }
         }
         let mut open = BTreeMap::<SDL_JoystickID, *mut SDL_Gamepad>::new();
         let mut held = Held::default();
+        let mut in_game = InGame::default();
+        // Behind a game, nothing goes to the page: the game has the controllers.
         let send = |key: &'static str, down: bool| {
-            let _ = app.emit("pad", Pad { key, down });
+            if !behind {
+                let _ = app.emit("pad", Pad { key, down });
+            }
         };
         // The controller used last, whose labels the UI shows: the first connected until another's button is pressed.
         let mut active = None::<SDL_JoystickID>;
         let update = |open: &BTreeMap<SDL_JoystickID, *mut SDL_Gamepad>, active: &mut Option<SDL_JoystickID>| {
+            if behind {
+                return;
+            }
             if !active.is_some_and(|id| open.contains_key(&id)) {
                 *active = open.keys().next().copied();
             }
@@ -173,7 +199,7 @@ mod sdl {
             }
         }
         update(&open, &mut active);
-        while FOCUSED.load(Ordering::Relaxed) {
+        while reading(behind) {
             let mut event = SDL_Event::default();
             // SAFETY: SDL fills in the event; its type says which of the union's fields it is.
             while unsafe { SDL_PollEvent(&mut event) } {
@@ -216,6 +242,7 @@ mod sdl {
                     _ => {}
                 }
             }
+            in_game.tick(app, &held);
             // Often enough to feel instant; with none connected, often enough to see one arrive.
             std::thread::sleep(Duration::from_millis(if open.is_empty() { 250 } else { 10 }));
         }
@@ -231,6 +258,42 @@ mod sdl {
             SDL_Quit();
         }
         true
+    }
+
+    /// How long the buttons are held to close the game.
+    const CLOSE_HOLD: Duration = Duration::from_secs(1);
+
+    /// While a game the launcher started runs (session.rs): the buttons chosen in Settings (Start + Select at first),
+    /// held together on one controller for a second, close it, for games with no way to quit.
+    #[derive(Default)]
+    struct InGame {
+        /// Since when the buttons have been held, and whether that hold has acted already.
+        combo: Option<(Instant, bool)>,
+    }
+
+    impl InGame {
+        fn tick(&mut self, app: &AppHandle, held: &Held) {
+            let buttons = crate::session::close_buttons();
+            if !held.combo(&buttons) {
+                self.combo = None;
+            } else if let Some((since, done)) = self.combo.as_mut() {
+                if !*done && since.elapsed() >= CLOSE_HOLD {
+                    *done = true;
+                    // What it did, in quiver.log: Steam's Game Mode can't be watched any other way.
+                    let path = app.state::<crate::Data>().0.join("quiver.log");
+                    let what = if !crate::session::CLOSE_COMBO.load(Ordering::Relaxed) {
+                        "closing a game with them is off in Settings"
+                    } else if crate::session::close_game(&path) {
+                        "closing the game"
+                    } else {
+                        "no game started from Quiver is running"
+                    };
+                    crate::append_log(&path, &format!("{} held: {what}", buttons.join(" + ")));
+                }
+            } else {
+                self.combo = Some((Instant::now(), false));
+            }
+        }
     }
 
     /// Opens a controller to hear from it, unless it's open already.
@@ -377,6 +440,11 @@ mod sdl {
         fn all(&mut self) -> HashSet<&'static str> {
             self.0.drain().flat_map(|(_, keys)| keys).collect()
         }
+
+        /// All these buttons held together on one controller.
+        fn combo(&self, buttons: &[String]) -> bool {
+            !buttons.is_empty() && self.0.values().any(|keys| buttons.iter().all(|b| keys.contains(b.as_str())))
+        }
     }
 
     #[cfg(test)]
@@ -404,6 +472,22 @@ mod sdl {
             assert!(!held.set(1, "South", false));
             assert!(held.set(2, "South", false));
             assert!(!held.set(1, "DPadUp", false), "never down");
+        }
+
+        #[test]
+        fn the_buttons_close_a_game_only_held_on_one_controller() {
+            let start_select = ["Start".to_string(), "Select".to_string()];
+            let mut held = Held::default();
+            held.set(1, "Start", true);
+            held.set(2, "Select", true);
+            assert!(!held.combo(&start_select));
+            held.set(1, "Select", true);
+            assert!(held.combo(&start_select));
+            let sticks = ["LeftThumb".to_string(), "RightThumb".to_string()];
+            assert!(!held.combo(&sticks), "other buttons chosen");
+            held.set(2, "LeftThumb", true);
+            held.set(2, "RightThumb", true);
+            assert!(held.combo(&sticks));
         }
 
         #[test]

@@ -26,7 +26,8 @@ export function install(app) {
     // The controller's own eased scrolls (spatial.ts) go at once for a player who'd rather less moved.
     const matchMedia = window.matchMedia.bind(window);
     window.matchMedia = (query) => (/prefers-reduced-motion:\s*reduce/.test(query) ? { ...matchMedia(query), matches: true, media: query } : matchMedia(query));
-    const FOCUSABLE = "button:not(:disabled), input, select, textarea, a[href], [tabindex]:not([tabindex='-1'])";
+    // Not the logo, the mouse's way to the library, which the Library tab beside it is for the d-pad.
+    const FOCUSABLE = "button:not(:disabled, .brand), input, select, textarea, a[href], [tabindex]:not([tabindex='-1'])";
     const DIRECTIONS = ["DPadUp", "DPadDown", "DPadLeft", "DPadRight"];
     const scope = () => {
       const dialogs = document.querySelectorAll('[role="dialog"]');

@@ -1,0 +1,114 @@
+/* The basic controls of Quiver Launcher and quiverlauncher.com (controls.tsx): button, field, panel and dialog,
+   as docs/standards/design.md in the website's repository describes them. Every colour and size is a token
+   (tokens.css), so an app imports that first. A page without React uses the same classes on its own markup. */
+
+/* Button: neutral unless it's the view's one main action. 13px/600, 36px tall, 8px corners. */
+.ql-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-8);
+  min-height: 36px;
+  padding: var(--space-8) var(--space-16);
+  border: 0;
+  border-radius: var(--radius-8);
+  background: var(--field);
+  color: var(--fg);
+  font: inherit;
+  font-size: var(--size-13);
+  font-weight: 600;
+  line-height: var(--leading-heading);
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.16s, color 0.16s;
+}
+.ql-button > svg { flex: none; }
+.ql-button:hover { background: color-mix(in srgb, var(--fg) 10%, var(--field)); color: var(--strong); }
+.ql-button:active { transform: translateY(1px); }
+.ql-button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.ql-button.main { background: var(--accent); color: var(--on-accent); }
+.ql-button.main:hover { background: var(--link); color: var(--on-accent); }
+.ql-button.danger { color: var(--danger); }
+.ql-button.danger:hover { background: color-mix(in srgb, var(--danger) 16%, var(--field)); color: var(--danger); }
+/* Reads as a link: for low-key actions beside or under the real buttons. */
+.ql-button.text {
+  min-height: 0;
+  padding: 0;
+  border-radius: var(--radius-4);
+  background: none;
+  color: var(--link);
+  font-weight: 500;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.ql-button.text:hover { background: none; color: var(--strong); }
+.ql-button.wide { width: 100%; }
+/* Off, or busy (its label says what's happening). A link can't be disabled, so it says so with aria-disabled. */
+.ql-button:disabled, .ql-button[aria-disabled="true"] { opacity: 0.5; cursor: not-allowed; transform: none; }
+.ql-button[aria-disabled="true"] { pointer-events: none; }
+.ql-button[aria-busy="true"] { cursor: progress; }
+
+/* Field: its label above an input, select or textarea, a hint or what's wrong under it. */
+.ql-field { display: grid; gap: var(--space-4); min-width: 0; color: var(--fg); font-size: var(--size-13); }
+.ql-field-label { font-weight: 500; }
+.ql-field > :is(input:where(:not([type="checkbox"], [type="radio"], [type="range"])), select, textarea) {
+  width: 100%;
+  min-width: 0;
+  height: 36px;
+  padding: 0 var(--space-12);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-8);
+  background: var(--field);
+  color: var(--fg);
+  font: inherit;
+  font-size: var(--size-13);
+  line-height: var(--leading-heading);
+  outline: 0;
+}
+.ql-field > textarea { height: auto; min-height: 72px; padding-block: var(--space-8); line-height: var(--leading-text); resize: vertical; }
+.ql-field > :is(input, select, textarea):hover { border-color: var(--muted); }
+/* A typed-in field shows the focus on its border, as thick as the outline other controls get. */
+.ql-field > :is(input:where(:not([type="checkbox"], [type="radio"], [type="range"])), select, textarea):focus-visible {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+.ql-field > :is(input, select, textarea):disabled { opacity: 0.5; cursor: not-allowed; }
+.ql-field > [aria-invalid="true"] { border-color: var(--danger); }
+.ql-field-hint { color: var(--muted); font-size: var(--size-12); }
+.ql-field-error { color: var(--danger); font-size: var(--size-12); }
+
+/* Panel: a bordered section on the page, with a 16px title and 16px of padding. No shadow. */
+.ql-panel {
+  display: grid;
+  align-content: start;
+  gap: var(--space-12);
+  min-width: 0;
+  padding: var(--space-16);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-12);
+  background: var(--panel);
+}
+.ql-panel-title { margin: 0; color: var(--strong); font-size: var(--size-16); font-weight: 600; line-height: var(--leading-heading); overflow-wrap: anywhere; }
+
+/* Dialog: one question. A title, a sentence, and two buttons with the main one on the right. */
+dialog.ql-dialog {
+  width: min(440px, calc(100vw - 2 * var(--space-16)));
+  max-height: calc(100vh - 2 * var(--space-16));
+  margin: auto;
+  padding: var(--space-24);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-12);
+  background: var(--panel);
+  color: var(--fg);
+  box-shadow: var(--shadow-dialog);
+  overflow: auto;
+}
+dialog.ql-dialog:not([open]) { display: none; }
+.ql-dialog::backdrop { background: var(--shadow); }
+.ql-dialog-title { margin: 0 0 var(--space-8); color: var(--strong); font-size: var(--size-16); font-weight: 600; line-height: var(--leading-heading); }
+.ql-dialog-body { color: var(--fg); font-size: var(--size-14); line-height: var(--leading-text); }
+.ql-dialog .ql-actions { margin-top: var(--space-24); }
+
+/* A row of buttons answering a question, in a dialog or a panel: at the right, the main one last. */
+.ql-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--space-8); }

@@ -1,13 +1,12 @@
 /**
- * Builds the app for the journeys (a debug build, no installer) with a test
- * PostHog token, so usage data runs as in a release; session.js sends it to
- * the mock API, and a test token is never sent to PostHog itself.
+ * Builds the app for the journeys (a debug build, no installer) with usage data
+ * on, as in a release; session.js sends it to the mock API.
  */
 import { spawnSync } from "node:child_process";
 
 const { status } = spawnSync("pnpm", ["--filter", "@quiver/launcher", "tauri", "build", "--debug", "--no-bundle"], {
   stdio: "inherit",
   shell: process.platform === "win32",
-  env: { ...process.env, VITE_POSTHOG_PROJECT_TOKEN: "phc_test", VITE_POSTHOG_DEV: "" },
+  env: { ...process.env, VITE_USAGE_DATA: "1", VITE_USAGE_DEV: "", VITE_SENTRY_DSN: "" },
 });
 process.exit(status ?? 1);

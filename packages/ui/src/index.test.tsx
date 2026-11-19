@@ -1,15 +1,19 @@
 // @vitest-environment jsdom
-import { afterEach, describe, expect, it } from "vitest";
-import { cleanup, fireEvent, render } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { act, cleanup, fireEvent, render } from "@testing-library/react";
 import {
   Artwork,
   EntryCard,
   blurSource,
   cardSources,
   heroSources,
+  iconSources,
+  ownIcon,
   EntryCardContent,
   ReleaseBadge,
+  badgeState,
   Score,
+  ScrollingText,
   isNew,
   isStale,
   platformList,
@@ -25,7 +29,11 @@ const DAY = 24 * 60 * 60 * 1000;
 describe("tagLabel", () => {
   it("title-cases plain tags", () => {
     expect(tagLabel("harbour masters")).toBe("Harbour Masters");
-    expect(tagLabel("decomp")).toBe("Decomp");
+    expect(tagLabel("recomp")).toBe("Recomp");
+  });
+  it("calls a decomp the source port a player installs", () => {
+    expect(tagLabel("decomp")).toBe("Source port");
+    expect(tagLabel("decompilation")).toBe("Source port");
   });
   it("keeps short joining words lowercase except at the start", () => {
     expect(tagLabel("plants vs zombies")).toBe("Plants vs Zombies");
@@ -155,6 +163,36 @@ const entry: CardEntry & { slug: string } = {
   libraryArt: { header: "header.png" },
 };
 
+describe("ScrollingText", () => {
+  it("scrolls a title that doesn't fit while the button it's in is hovered, with no card around it", () => {
+    vi.useFakeTimers();
+    const widths = { scrollWidth: 300, clientWidth: 200 };
+    for (const [name, value] of Object.entries(widths)) Object.defineProperty(HTMLElement.prototype, name, { configurable: true, get: () => value });
+    try {
+      const { container } = render(
+        <button>
+          <ScrollingText text="The Legend of Zelda: Ocarina of Time 3D" />
+        </button>,
+      );
+      // A card's name cut short says itself in full over its picture too, where a mouse more often is.
+      const card = render(<EntryCard entry={entry} />).container;
+      expect(card.querySelector(".card-cover")?.getAttribute("title")).toBe("Test Port");
+      const text = container.querySelector(".scrolling-text")!;
+      // The whole title on a mouse's tooltip too, cut off as it is.
+      expect(text.getAttribute("title")).toBe("The Legend of Zelda: Ocarina of Time 3D");
+      expect(text.classList.contains("overflows")).toBe(true);
+      fireEvent.pointerEnter(container.querySelector("button")!);
+      act(() => void vi.advanceTimersByTime(700));
+      expect(text.classList.contains("active")).toBe(true);
+      fireEvent.pointerLeave(container.querySelector("button")!);
+      expect(text.classList.contains("active")).toBe(false);
+    } finally {
+      for (const name of Object.keys(widths)) delete (HTMLElement.prototype as unknown as Record<string, unknown>)[name];
+      vi.useRealTimers();
+    }
+  });
+});
+
 describe("EntryCard", () => {
   it("shows the box art over the catalog's details, and opens it from its button", () => {
     let opened = 0;
@@ -173,9 +211,11 @@ describe("EntryCard", () => {
     expect(card.querySelector(".card-subtitle")?.textContent).toBe("Test Game");
     expect(card.querySelector(".card-bottom .score.positive")?.textContent).toBe("Runs well · 3 run well, 1 with issues");
     expect(card.querySelector(".cover-strip .ai-chip")?.textContent).toBe("AI-assisted");
-    expect(card.querySelector(".cover-strip .platform-icons")?.getAttribute("aria-label")).toBe("Windows, Linux");
+    expect(card.querySelector(".cover-platforms .platform-icons")?.getAttribute("aria-label")).toBe("Windows, Linux");
     // A shelf of the newest says New; a badge on every recent box was noise.
     expect(card.querySelector(".cover-badge")).toBeNull();
+    // Its name fits: no tooltip over the picture.
+    expect(card.querySelector(".card-cover")?.hasAttribute("title")).toBe(false);
     expect(card.querySelector(".card-action")?.textContent).toBe("Get");
     fireEvent.click(getByRole("button", { name: "Test Port" }));
     expect(opened).toBe(1);
@@ -203,6 +243,8 @@ describe("EntryCard", () => {
     expect(card.querySelector(".cover-badge")?.textContent).toBe("New");
     expect(card.querySelector(".artwork.cover-photo img")?.getAttribute("src")).toBe("header.png");
     expect(card.querySelector(".release-age.stale")?.textContent).toBe(" No release in 1 yr+");
+    // Its name fits: no tooltip over the picture.
+    expect(card.querySelector(".card-cover")?.hasAttribute("title")).toBe(false);
     expect(card.querySelector(".card-action")?.textContent).toBe("Get");
     fireEvent.click(getByRole("button", { name: "Test Port" }));
     expect(opened).toBe(1);
@@ -229,8 +271,18 @@ describe("EntryCard", () => {
     cleanup();
     const none = render(<EntryCard entry={entry} look={look} consoleNames={names} details={["rating"]} />).container;
     expect(none.querySelector(".card-title")?.textContent).toBe("Test Port");
-    expect(none.querySelector(".card-kind, .ai-chip, .platform-icons, .cover-strip, .card-subtitle, .based-on, .release-age, .cover-badge")).toBeNull();
+    expect(none.querySelector(".card-kind, .ai-chip, .platform-icons, .cover-strip, .cover-platforms, .card-subtitle, .based-on, .release-age, .cover-badge")).toBeNull();
     expect(none.querySelector(".card-bottom .score")?.textContent).toBe("Runs well · 3 run well, 1 with issues");
+  });
+
+  it.each(["box", "wide"] as const)("marks an app with Easy setup on a %s card, while that detail is on", (look) => {
+    const easy = { ...entry, launcher: { ...entry.launcher, setupFiles: [{ id: "rom", label: "Game ROM", accepted: [] }] } } as typeof entry;
+    const on = render(<EntryCard entry={easy} look={look} details={["setup"]} />).container;
+    expect(on.querySelector(".easy-chip")?.textContent).toBe("Easy setup");
+    cleanup();
+    expect(render(<EntryCard entry={easy} look={look} details={["ai"]} />).container.querySelector(".easy-chip")).toBeNull();
+    cleanup();
+    expect(render(<EntryCard entry={entry} look={look} details={["setup"]} />).container.querySelector(".easy-chip")).toBeNull();
   });
 
   it("shows a given badge in place of New, and leaves tags that aren't consoles to tagLabel", () => {
@@ -262,6 +314,52 @@ describe("EntryCardContent", () => {
   });
 });
 
+describe("the app's icon beside its name", () => {
+  const own = "https://raw.githubusercontent.com/a/b/main/icon.png";
+  const title = (e: CardEntry, details?: Parameters<typeof EntryCardContent>[0]["details"], look: "box" | "wide" = "box") =>
+    render(<EntryCardContent entry={e} details={details} look={look} />).container.querySelector(".card-title")!;
+
+  it("is the app's own icon, never its game's", () => {
+    expect(ownIcon({ artwork: own })).toBe(own);
+    expect(ownIcon({ artwork: own, artworkFromGame: true })).toBeUndefined();
+    expect(ownIcon({})).toBeUndefined();
+  });
+
+  it("asks for a small copy, else the picture itself", () => {
+    const resized = (w: number) => `https://quiverlauncher.com/cdn-cgi/image/width=${w},quality=85,format=auto,fit=scale-down/${own}`;
+    expect(iconSources(own)).toEqual([{ src: resized(48), srcSet: `${resized(48)} 1x, ${resized(96)} 2x` }, { src: own }]);
+    expect(iconSources("https://example.com/app.ico")).toEqual([{ src: "https://example.com/app.ico" }]);
+  });
+
+  it("shows before the name when asked for, in either look", () => {
+    for (const look of ["box", "wide"] as const) {
+      const shown = title({ ...entry, artwork: own }, ["icon"], look);
+      expect(shown.classList.contains("with-icon")).toBe(true);
+      expect(shown.querySelector(".card-icon img")?.getAttribute("src")).toContain(own);
+      expect(shown.textContent).toBe("Test Port");
+      cleanup();
+    }
+  });
+
+  it("isn't there for a game's icon, or without the detail", () => {
+    expect(title({ ...entry, artwork: own, artworkFromGame: true }, ["icon"]).querySelector(".card-icon")).toBeNull();
+    cleanup();
+    expect(title({ ...entry, artwork: own }, ["subtitle"]).querySelector(".card-icon")).toBeNull();
+  });
+
+  it("is there where no details are given, as on the website", () => {
+    expect(title({ ...entry, artwork: own }).querySelector(".card-icon img")?.getAttribute("src")).toContain(own);
+    cleanup();
+    expect(title({ ...entry, artwork: own, artworkFromGame: true }).querySelector(".card-icon")).toBeNull();
+  });
+
+  it("goes when its picture can't be loaded", () => {
+    const shown = title({ ...entry, artwork: "https://example.com/app.ico" }, ["icon"]);
+    fireEvent.error(shown.querySelector(".card-icon img")!);
+    expect(shown.querySelector(".card-icon")).toBeNull();
+  });
+});
+
 describe("ReleaseBadge", () => {
   it("says whether Quiver verified a release, in its colour and with its shield", () => {
     const { container } = render(
@@ -269,13 +367,20 @@ describe("ReleaseBadge", () => {
         <ReleaseBadge state="verified" />
         <ReleaseBadge state="unverified" />
         <ReleaseBadge state="blocked" label="Withdrawn" title="Pulled by a maintainer" />
+        <ReleaseBadge state={badgeState({ state: "unverified", assets: [] })} />
+        <ReleaseBadge state={badgeState({ state: "unverified", assets: [{}] })} />
+        <ReleaseBadge state={badgeState({ state: "blocked", assets: [] })} />
       </>,
     );
     const badges = [...container.querySelectorAll(".release-badge")];
     expect(badges.map((b) => [b.className, b.textContent])).toEqual([
-      ["release-badge verified", "Verified"],
-      ["release-badge unverified", "Unverified"],
+      ["release-badge verified", "Available"],
+      ["release-badge unverified", "Not offered"],
       ["release-badge blocked", "Withdrawn"],
+      // Nothing to install isn't a wait: it says so in place of "Not offered".
+      ["release-badge empty", "No files"],
+      ["release-badge unverified", "Not offered"],
+      ["release-badge blocked", "Blocked"],
     ]);
     expect(badges.every((b) => b.querySelector("svg[aria-hidden=true]"))).toBe(true);
     expect(badges[2].getAttribute("title")).toBe("Pulled by a maintainer");

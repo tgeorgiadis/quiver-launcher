@@ -5,13 +5,13 @@
  * library while something is happening, and the Sidebar layout's foot.
  */
 import { useState, type ReactNode } from "react";
-import { ArrowLeft, Download, Play, ScrollText, X } from "lucide-react";
+import { ArrowLeft, Download, Play, ScrollText, TriangleAlert, X } from "lucide-react";
 import { plural, t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import { i18n } from "@quiverlauncher/i18n";
 import type { Entry } from "@quiverlauncher/api";
 import { Artwork, cardSources, coverOf } from "@quiverlauncher/ui";
-import { useLauncher } from "./store";
+import { updateFor, useLauncher } from "./store";
 import { downloadsLine, downloadsOf, sizeLabel, type Downloads } from "./downloads";
 import { useLauncherUpdate } from "./update";
 import { namesOf } from "./library-tile";
@@ -19,6 +19,8 @@ import { withOverrides } from "./library";
 import { dayLabel } from "./sidebar";
 import { versionLabel } from "./versions";
 import { native } from "./native";
+import { ChangelogDialog } from "./detail";
+import { isCustom, isLocal } from "./custom";
 
 /** What's downloading and waiting, and the apps by the player's names for them. */
 function useDownloads() {
@@ -178,6 +180,13 @@ export function DownloadsPage({
     const entry = entryOf(id);
     return entry && <DownloadRow key={id} entry={entry} detail={detail} onOpen={() => onOpen(catalog[id] ?? entry)} action={button ?? action(catalog[id] ?? entry)} />;
   };
+  const [changelog, setChangelog] = useState<{ id: string; to: string; have?: string } | null>(null);
+  const reading = changelog && entryOf(changelog.id);
+  /** What's new, over this page. An app the player added has no history on the site, so its own page, as for all its releases. */
+  const seeChangelog = (entry: Entry, to: string, have?: string) => {
+    if (isCustom(entry.id) || isLocal(entry.id)) onOpen(catalog[entry.id] ?? entry, { releases: to });
+    else setChangelog({ id: entry.id, to, ...(have ? { have } : {}) });
+  };
   return (
     <section className="downloads-page" aria-label={t`Downloads`}>
       <button className="back-link" onClick={onBack}>
@@ -194,8 +203,16 @@ export function DownloadsPage({
               const going = job && !("error" in job) ? job : undefined;
               const received = going ? sizeLabel(going.received) : "";
               const size = going?.total ? sizeLabel(going.total) : undefined;
+              // Why it stopped, under its name, where there's room for it: the row's buttons are beside it.
+              const failed = job && "error" in job ? job.error : "";
               const detail = !going
-                ? t`Didn't finish`
+                ? failed
+                  ? (
+                    <span className="download-failed" title={failed}>
+                      <TriangleAlert size={14} aria-hidden="true" /> {failed}
+                    </span>
+                  )
+                  : t`Didn't finish`
                 : going.phase === "installing"
                   ? t`Installing`
                   : size
@@ -258,7 +275,7 @@ export function DownloadsPage({
               </li>
             )}
             {downloads.updates.map((id) => {
-              const out = versionLabel(catalog[id]?.verified?.version);
+              const out = versionLabel(updateFor(catalog[id], installs[id])?.version);
               const have = versionLabel(installs[id]?.version);
               const entry = entryOf(id);
               // Update only: Play comes once it's updated, under Recently finished. What's new in it first, if wanted.
@@ -267,11 +284,12 @@ export function DownloadsPage({
                 t`${out} is out. You have ${have}.`,
                 <span className="download-buttons">
                   {entry && catalog[id]?.verified && (
-                    <button onClick={() => onOpen(catalog[id] ?? entry, { releases: catalog[id].verified!.version })}>
+                    <button onClick={() => seeChangelog(entry, catalog[id].verified!.version, installs[id]?.version)}>
                       <ScrollText size={15} /> <Trans>See changelog</Trans>
                     </button>
                   )}
-                  <button className="primary wide" onClick={() => void get(catalog[id])}>
+                  {/* With more than one update, Update all above is the page's one filled button. */}
+                  <button className={downloads.updates.length > 1 ? "wide" : "primary wide"} onClick={() => void get(catalog[id])}>
                     <Download size={15} /> <Trans>Update to {out}</Trans>
                   </button>
                 </span>,
@@ -305,13 +323,13 @@ export function DownloadsPage({
                 f.id,
                 f.update ? t`Updated to ${version} · ${when}` : t`Installed ${version} · ${when}`,
                 <span className="download-buttons">
-                  {/* An update: what's new in it, its notes open on the app's Releases. */}
+                  {/* An update: what's new in it. */}
                   {f.update && entry && (
-                    <button onClick={() => onOpen(catalog[f.id] ?? entry, { releases: f.version })}>
+                    <button onClick={() => seeChangelog(entry, f.version)}>
                       <ScrollText size={15} /> <Trans>See changelog</Trans>
                     </button>
                   )}
-                  <button className="primary wide" onClick={() => void play(f.id)}>
+                  <button className="wide" onClick={() => void play(f.id)}>
                     <Play size={15} /> <Trans comment="Button: start the app">Play</Trans>
                   </button>
                 </span>,
@@ -324,6 +342,16 @@ export function DownloadsPage({
           </p>
         )}
       </DownloadSection>
+      {changelog && reading && (
+        <ChangelogDialog
+          entry={catalog[changelog.id] ?? reading}
+          to={changelog.to}
+          have={changelog.have}
+          onUpdate={downloads.updates.includes(changelog.id) && updateFor(catalog[changelog.id], installs[changelog.id])?.version === changelog.to ? () => (setChangelog(null), void get(catalog[changelog.id])) : undefined}
+          onAll={() => (setChangelog(null), onOpen(catalog[changelog.id] ?? reading, { releases: changelog.to }))}
+          onClose={() => setChangelog(null)}
+        />
+      )}
     </section>
   );
 }

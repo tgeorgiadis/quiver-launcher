@@ -6,8 +6,17 @@ type Props = {
   fallback: (error: Error, reset: () => void) => ReactNode;
   /** Shows the children again when this changes, such as on going to another page. */
   resetKey?: string;
+  /** Told after the error is written down and reported. */
+  onCaught?: () => void;
   children: ReactNode;
 };
+
+/** An error for quiver.log: WebKit's stack leaves out the message, which other browsers start it with. */
+export function errorText(error: unknown) {
+  if (!(error instanceof Error)) return String(error);
+  const stack = error.stack ?? "";
+  return stack.includes(error.message) ? stack : `${error.name}: ${error.message}\n${stack}`;
+}
 
 /**
  * Shows `fallback` where part of the window failed, and writes the error to
@@ -20,9 +29,9 @@ export class ErrorBoundary extends Component<Props, { error: Error | null }> {
     return { error: error instanceof Error ? error : new Error(String(error)) };
   }
   componentDidCatch(error: unknown, info: ErrorInfo) {
-    const text = error instanceof Error ? (error.stack ?? error.message) : String(error);
-    void native.logError(`ui: ${text}${info.componentStack ?? ""}`).catch(() => {});
+    void native.logError(`ui: ${errorText(error)}${info.componentStack ?? ""}`).catch(() => {});
     captureError(error, { handled: "error_boundary" });
+    this.props.onCaught?.();
   }
   componentDidUpdate(previous: Props) {
     if (this.state.error && previous.resetKey !== this.props.resetKey) this.reset();

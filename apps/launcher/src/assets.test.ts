@@ -1,6 +1,6 @@
-import { expect, test } from "vitest";
-import type { Asset } from "@quiverlauncher/api";
-import { assetFilterFor, bestAssets, installPreference, flatpakAsset, hasBuildFor, installable, installFormat, isFlatpakAsset, pickedBefore, runsHere } from "./assets";
+import { describe, expect, it, test } from "vitest";
+import type { Asset, Os } from "@quiverlauncher/api";
+import { installPreference, flatpakAsset, isFlatpakAsset, assetFilterFor, bestAssets, hasBuildFor, installable, installFormat, otherSystems, pickedBefore, releaseFor, runsHere } from "./assets";
 
 const asset = (filename: string, os: Asset["os"], architecture: Asset["architecture"] = "x64"): Asset => ({
   id: filename, url: `https://example.com/${filename}`, filename, os, architecture, format: "",
@@ -130,6 +130,19 @@ test("a Windows installer (MSI) installs on Windows when there's nothing to unpa
   expect(assetFilterFor("GameB-1.0.msi", ["GameA-1.0.msi", "GameB-1.0.msi"])).toBe("gameb");
 });
 
+test("a release whose only file is a Windows script (an installer that builds the app) installs on Windows only", () => {
+  const script = asset("GT5-Installer.bat", "windows", "unknown");
+  expect(bestAssets([script], "windows", "x64").map((a) => a.filename)).toEqual(["GT5-Installer.bat"]);
+  expect(bestAssets([asset("Start.cmd", "windows", "unknown")], "windows", "x64").map((a) => a.filename)).toEqual(["Start.cmd"]);
+  // A program or an archive comes first.
+  expect(bestAssets([script, asset("Game-win64.zip", "windows")], "windows", "x64").map((a) => a.filename)).toEqual(["Game-win64.zip"]);
+  expect(bestAssets([script, asset("Game.exe", "windows")], "windows", "x64").map((a) => a.filename)).toEqual(["Game.exe"]);
+  // Wine has no PowerShell, which these scripts mostly use.
+  expect(bestAssets([script], "linux", "x64")).toEqual([]);
+  expect(runsHere(script, "linux", "x64")).toBe(false);
+  expect(installFormat("GT5-Installer.bat")).toBe("executable");
+});
+
 test("an update installs the kind it installed before", () => {
   const files = [asset("Game-2.0-x64.msi", "windows"), asset("Game-2.0-win64.zip", "windows")];
   expect(bestAssets(files, "windows", "x64", undefined, "msi").map((a) => a.filename)).toEqual(["Game-2.0-x64.msi"]);
@@ -244,4 +257,45 @@ test("the legacy Flatpak checkbox is preserved until explicitly replaced, includ
   expect(installPreference({ preferFlatpak: true })).toBe("flatpak");
   for (const preferredInstallFormat of ["automatic", "archive", "appimage", "flatpak"] as const)
     expect(installPreference({ preferredInstallFormat, preferFlatpak: true })).toBe(preferredInstallFormat);
+});
+
+describe("releaseFor", () => {
+  const build = (version: string, ...systems: Os[]) => ({ version, assets: systems.map((os) => asset(os === "linux" ? `Game-${version}.AppImage` : `Game-${version}-${os}.zip`, os)) });
+  // As Wario Land 4's: the newest release is Linux's alone.
+  const releases = [build("linux-v0.1.0", "linux"), build("v0.3.2", "windows"), build("v0.3.1", "windows")];
+
+  it("passes over another system's release", () => {
+    expect(releaseFor(releases, "windows", "x64")?.version).toBe("v0.3.2");
+    expect(releaseFor(releases, "windows", "x64", { platform: "windows", kind: "files" })?.version).toBe("v0.3.2");
+  });
+
+  it("finds nothing when no release has a build for it", () => {
+    expect(releaseFor([build("linux-v0.1.0", "linux")], "windows", "x64", { platform: "windows" })).toBeUndefined();
+  });
+
+  it("keeps a Linux install to the build it has", () => {
+    const windowsNewest = [build("v2", "windows"), build("v1", "linux")];
+    expect(releaseFor(windowsNewest, "linux", "x64", { platform: "linux" })?.version).toBe("v1");
+    expect(releaseFor(releases, "linux", "x64", { platform: "windows" })?.version).toBe("v0.3.2");
+    expect(releaseFor([build("v1", "linux")], "linux", "x64", { platform: "windows" })).toBeUndefined();
+  });
+
+  it("lets Linux take Windows' build where no release has its own, or for a new install", () => {
+    expect(releaseFor([build("v2", "windows")], "linux", "x64", { platform: "linux" })?.version).toBe("v2");
+    expect(releaseFor([build("v2", "windows"), build("v1", "linux")], "linux", "x64")?.version).toBe("v2");
+  });
+});
+
+test("otherSystems names the systems of a release with nothing for this computer", () => {
+  const linux = asset("Game.AppImage", "linux");
+  const windows = asset("Game-win.zip", "windows");
+  expect(otherSystems([linux], "windows", "x64")).toEqual(["linux"]);
+  expect(otherSystems([linux, asset("Game.apk", "android")], "windows", "x64")).toEqual(["linux", "android"]);
+  // Nothing to say of one that runs here, through Wine, on another architecture, or with no files.
+  expect(otherSystems([linux, windows], "windows", "x64")).toEqual([]);
+  expect(otherSystems([windows], "linux", "x64")).toEqual([]);
+  expect(otherSystems([windows], "windows", "arm64")).toEqual([]);
+  expect(otherSystems([], "windows", "x64")).toEqual([]);
+  // Nor do a checksum or a file with no platform count as a system.
+  expect(otherSystems([linux, asset("Game.sha256", "windows"), asset("art.png", "unknown")], "windows", "x64")).toEqual(["linux"]);
 });

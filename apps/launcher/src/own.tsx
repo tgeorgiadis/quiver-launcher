@@ -1,21 +1,23 @@
 /**
- * Adding an app the catalog doesn't list: a GitHub or GitLab repository, a
+ * Adding an app the catalog doesn't list: a repository on any supported host, a
  * program already on this computer, or a folder to fill. Each can take the
  * artwork and consoles of the game it plays, matched by its name.
  */
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { ArrowLeft, FolderPlus, GitBranch, MonitorPlay } from "lucide-react";
+import { ArrowLeft, FolderPlus, Gamepad2, GitBranch, Link2, MonitorPlay } from "lucide-react";
 import { msg, t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import type { MessageDescriptor } from "@lingui/core";
 import { i18n } from "@quiverlauncher/i18n";
-import type { Entry, GameMatch } from "@quiverlauncher/api";
+import { defaultHost, providerChoices, type Entry, type GameMatch } from "@quiverlauncher/api";
+import { syncableCustom } from "./sync";
 import { Artwork, fullDate } from "@quiverlauncher/ui";
 import { useLauncher, type GameArt, type RepositoryPreview } from "./store";
 import { native } from "./native";
 import { assetFilterFor } from "./assets";
 import { gameArt, gamesNamed } from "./custom";
 import { closesOutside } from "./overlay";
+import { PanelFormHead } from "./detail";
 
 type Step = "choose" | "repository" | "program" | "folder";
 
@@ -60,7 +62,7 @@ function Choose({ onPick }: { onPick: (step: Step) => void }) {
       <p className="muted">
         <Trans>For an app the catalog doesn't have. It's yours alone; to add one for everyone, suggest it on quiverlauncher.com.</Trans>
       </p>
-      {option("repository", <GitBranch size={22} />, t`From GitHub or GitLab`, t`Installs from the repository's releases, and updates like other apps.`)}
+      {option("repository", <GitBranch size={22} />, t`From a git repository`, t`Installs from the repository's releases, and updates like other apps.`)}
       {option("program", <MonitorPlay size={22} />, t`A program on this computer`, t`Starts it where it is. Nothing is downloaded, moved or deleted.`)}
       {option("folder", <FolderPlus size={22} />, t`A folder you fill yourself`, t`Makes a folder in your apps folder to put the app in.`)}
     </>
@@ -83,9 +85,12 @@ type Done = { onBack: () => void; onDone: (entry: Entry) => void };
 function FromRepository({ onBack, onDone }: Done) {
   const { lookUpRepository, addCustomApp } = useLauncher();
   const [input, setInput] = useState("");
+  const [forge, setForge] = useState("auto");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [preview, setPreview] = useState<RepositoryPreview | null>(null);
+  // The catalog lists several of the repository's apps: the player says which.
+  const [several, setSeveral] = useState<Entry[]>([]);
   const [name, setName] = useState("");
   const [file, setFile] = useState<string | undefined>();
   const [art, setArt] = useState<GameArt | null>(null);
@@ -98,6 +103,20 @@ function FromRepository({ onBack, onDone }: Done) {
       live.current = false;
     };
   }, []);
+  if (several.length)
+    return (
+      <div className="pick-listed">
+        <Heading title={t`Which app?`} onBack={() => setSeveral([])} />
+        <p className="muted">
+          <Trans>Quiver&apos;s catalog lists more than one app from this repository.</Trans>
+        </p>
+        {several.map((entry) => (
+          <button type="button" key={entry.id} onClick={() => onDone(entry)}>
+            {entry.projectName}
+          </button>
+        ))}
+      </div>
+    );
   if (!preview)
     return (
       <form
@@ -105,20 +124,32 @@ function FromRepository({ onBack, onDone }: Done) {
           e.preventDefault();
           setBusy(true);
           setError(null);
-          lookUpRepository(input).then((r) => {
+          lookUpRepository(input, forge === "auto" ? undefined : forge).then((r) => {
             if (!live.current) return;
             setBusy(false);
             if ("error" in r) return setError(r.error);
             // The catalog lists it: its own page, with checked releases.
-            if ("listed" in r) return onDone(r.listed);
+            if ("listed" in r) return r.listed.length > 1 ? setSeveral(r.listed) : onDone(r.listed[0]);
             setPreview(r.preview);
             setName(r.preview.app.name);
             setFile(r.preview.files[0]?.filename);
           });
         }}
       >
-        <Heading title={t`From GitHub or GitLab`} onBack={onBack} />
-        <input autoFocus aria-label={t`Repository`} placeholder={t`owner/name, or a github.com or gitlab.com address`} value={input} onChange={(e) => setInput(e.target.value)} />
+        <Heading title={t`From a git repository`} onBack={onBack} />
+        <input autoFocus aria-label={t`Repository`} placeholder={t`owner/name, or a repository address (github.com, gitlab.com, codeberg.org, …)`} value={input} onChange={(e) => setInput(e.target.value)} />
+        <label className="field">
+          <Trans>Where it&apos;s hosted</Trans>
+          <select value={forge} onChange={(e) => setForge(e.target.value)}>
+            <option value="auto">{t`Detect it`}</option>
+            {providerChoices.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
+            <option value="feed">{t`Release feed`}</option>
+          </select>
+        </label>
         {error && <p className="job-error">{error}</p>}
         <button className="primary" disabled={busy || !input.trim()}>
           {busy ? t`Looking it up…` : t`Look it up`}
@@ -139,7 +170,7 @@ function FromRepository({ onBack, onDone }: Done) {
         onDone(addCustomApp({ ...preview.app, name: name.trim(), ...(assetFilter ? { assetFilter } : {}) }, latest, art ?? undefined));
       }}
     >
-      <Heading title={`${preview.app.provider === "gitlab" ? "gitlab.com" : "github.com"}/${preview.app.repository}`} onBack={onBack} />
+      <Heading title={`${preview.app.host ?? defaultHost(preview.app.provider) ?? preview.app.provider}/${preview.app.repository}`} onBack={onBack} />
       <label className="field">
         <Trans comment="The app's name, a form field">Name</Trans>
         <input aria-label={t({ message: "Name", comment: "The app's name, a form field" })} maxLength={200} value={name} onChange={(e) => setName(e.target.value)} />
@@ -149,6 +180,11 @@ function FromRepository({ onBack, onDone }: Done) {
         {" · "}
         <Trans>Quiver hasn't checked this app.</Trans>
       </p>
+      {!syncableCustom(preview.app) && (
+        <p className="muted">
+          <Trans>This app stays on this computer: account sync doesn't support this kind of host yet.</Trans>
+        </p>
+      )}
       {latest && files.length === 0 && (
         <p className="job-error">
           <Trans>None of this release's files are for this computer.</Trans>
@@ -277,11 +313,11 @@ function FromFolder({ onBack, onDone }: Done) {
  * catalog apps have. The best match is picked for the player; they can pick
  * another or none.
  */
-function ArtMatch({ name, value, onChange }: { name: string; value: GameArt | null; onChange: (art: GameArt | null) => void }) {
+function ArtMatch({ name, value, keep = false, onChange }: { name: string; value: GameArt | null; keep?: boolean; onChange: (art: GameArt | null) => void }) {
   const { client } = useLauncher();
   const [matches, setMatches] = useState<GameMatch[]>([]);
-  // Undefined until the player picks: until then the best match is picked for them.
-  const picked = useRef<string | null | undefined>(undefined);
+  // Undefined until the player picks: until then the best match is picked for them. `keep`: what's there is theirs already.
+  const picked = useRef<string | null | undefined>(keep ? (value?.game.slug ?? null) : undefined);
   const latest = useRef(0);
   function choose(slug: string | null) {
     const request = ++latest.current;
@@ -331,5 +367,138 @@ function ArtMatch({ name, value, onChange }: { name: string; value: GameArt | nu
         </span>
       </button>
     </fieldset>
+  );
+}
+
+/** The game an app the player added plays, searched for by name; its artwork, consoles and "Based on" come with it. */
+export function ChangeGame({ id }: { id: string }) {
+  const { library, catalog, setGame } = useLauncher();
+  const current = library.find((i) => i.id === id)?.art ?? null;
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const [art, setArt] = useState(current);
+  if (!open)
+    return (
+      <button
+        className="panel-action opens"
+        onClick={() => {
+          setSearch(current?.game.title ?? catalog[id]?.projectName ?? "");
+          setArt(current);
+          setOpen(true);
+        }}
+      >
+        <Gamepad2 size={16} aria-hidden="true" /> <Trans>Change game</Trans>
+      </button>
+    );
+  return (
+    <form
+      className="panel-form change-game"
+      aria-label={t`Change game`}
+      onSubmit={(e) => {
+        e.preventDefault();
+        setGame(id, art);
+        setOpen(false);
+      }}
+    >
+      <PanelFormHead title={t`Change game`} onClose={() => setOpen(false)} />
+      <label className="panel-field">
+        <span className="field-label">
+          <Trans>Game</Trans>
+        </span>
+        <input aria-label={t`Search for a game`} value={search} onChange={(e) => setSearch(e.target.value)} />
+      </label>
+      <ArtMatch name={search} value={art} keep onChange={setArt} />
+      <div className="row">
+        <button className="primary">
+          <Trans>Save</Trans>
+        </button>
+        <button type="button" onClick={() => setOpen(false)}>
+          <Trans>Cancel</Trans>
+        </button>
+      </div>
+    </form>
+  );
+}
+
+/**
+ * Puts a local app under the catalog's app it is: that app's page, artwork and reviews. Found among its game's apps and
+ * by name, and only ever the player's say-so, as names alone match too loosely. Its files stay theirs (`switchToCatalog`).
+ */
+export function LinkToCatalog({ id }: { id: string }) {
+  const { client, library, catalog, switchToCatalog } = useLauncher();
+  const item = library.find((i) => i.id === id);
+  const slug = item?.art?.game.slug;
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const [found, setFound] = useState<Entry[]>([]);
+  const [chosen, setChosen] = useState<Entry | null>(null);
+  useEffect(() => {
+    if (!open) return;
+    let live = true;
+    const timer = setTimeout(() => {
+      const named = search.trim() ? client.apps({ search: search.trim() }).then((page) => page.items) : Promise.resolve([]);
+      const ofGame = slug ? client.game(slug).then((detail) => detail?.entries ?? []) : Promise.resolve([]);
+      Promise.all([ofGame.catch((): Entry[] => []), named.catch((): Entry[] => [])]).then((lists) => {
+        if (!live) return;
+        const all = lists.flat().filter((e) => !library.some((i) => i.id === e.id));
+        setFound(all.filter((e, i) => all.findIndex((o) => o.id === e.id) === i).slice(0, 8));
+      });
+    }, 300);
+    return () => {
+      live = false;
+      clearTimeout(timer);
+    };
+  }, [open, search, slug]); // eslint-disable-line react-hooks/exhaustive-deps
+  if (!open)
+    return (
+      <button
+        className="panel-action opens"
+        onClick={() => {
+          setSearch(catalog[id]?.projectName ?? "");
+          setChosen(null);
+          setOpen(true);
+        }}
+      >
+        <Link2 size={16} aria-hidden="true" /> <Trans>Link to a catalog app</Trans>
+      </button>
+    );
+  const close = () => setOpen(false);
+  return (
+    <form
+      className="panel-form link-catalog"
+      aria-label={t`Link to a catalog app`}
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (chosen) switchToCatalog(id, chosen);
+      }}
+    >
+      <PanelFormHead title={t`Link to a catalog app`} onClose={close} />
+      <label className="panel-field">
+        <span className="field-label">
+          <Trans>App</Trans>
+        </span>
+        <input aria-label={t`Search the catalog`} value={search} onChange={(e) => setSearch(e.target.value)} />
+      </label>
+      <div className="pick-listed">
+        {found.map((entry) => (
+          <button type="button" key={entry.id} aria-pressed={chosen?.id === entry.id} onClick={() => setChosen(entry)}>
+            {entry.projectName}
+          </button>
+        ))}
+      </div>
+      {chosen && (
+        <p className="muted small">
+          <Trans>This app gets that app&apos;s page, artwork and reviews. Its files stay yours: Quiver won&apos;t update, move or delete them, so you&apos;d get new versions yourself.</Trans>
+        </p>
+      )}
+      <div className="row">
+        <button className="primary" disabled={!chosen}>
+          <Trans>Link</Trans>
+        </button>
+        <button type="button" onClick={close}>
+          <Trans>Cancel</Trans>
+        </button>
+      </div>
+    </form>
   );
 }

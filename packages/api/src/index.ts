@@ -2,6 +2,7 @@
  * The quiverlauncher.com catalog API (https://api.quiverlauncher.com/api/v1),
  * typed after the site's public DTOs. Unknown fields are ignored.
  */
+import { ApiError } from "./errors";
 export type Os = "windows" | "linux" | "macos" | "android" | "ios" | "unknown";
 export type Architecture = "x64" | "x86" | "arm64" | "arm" | "universal" | "unknown";
 export type ProjectType = "port" | "tool" | "emulator" | "game";
@@ -14,6 +15,62 @@ export type InstallSettings = {
   preferredExecutables?: Partial<Record<"windows" | "linux" | "macos", string[]>>;
   /** Where its mods go, and the Thunderstore communities and GameBanana games they come from. */
   mods?: ModSettings;
+  /** What the player brings of their own, such as their copy of the game, and how the app gets it. */
+  setupFiles?: SetupFile[];
+  /** Where the app keeps its saves, for the launcher's save backups. */
+  saves?: SaveSettings;
+};
+
+/** One place an app keeps saves: `path` under `root` (the app's folder, or one of the system's folders for apps' data). */
+export type SaveLocation = {
+  root: "app" | "data" | "config" | "localData" | "documents" | "home";
+  /** A folder, a file, or files matching one `*` in the last part ("saves/*.sav"). */
+  path: string;
+  /** The systems it applies to; every system when missing. */
+  os?: ("windows" | "linux" | "macos")[];
+  /** "settings": the app's settings rather than progress. */
+  kind?: "settings";
+};
+export type SaveSettings = {
+  locations: SaveLocation[];
+  /** Whether a save made on one system loads on another. Missing: nobody has checked. */
+  crossPlatform?: boolean;
+};
+
+/** A dump an app takes of the player's copy, as No-Intro, Redump or the app's own list gives it. */
+export type SetupDump = { algo: "sha1" | "sha256"; value: string; label?: string };
+/**
+ * Something the player provides for an app: their own copy of its game (a ROM, a disc image, or a folder of the
+ * game's files). The launcher checks it and gets it to the app: puts it at `destination` (under `root`), passes its
+ * path after `flag` or as an argument of its own (`positional`), or puts it in the environment variable `env`.
+ */
+export type SetupFile = {
+  id: string;
+  /** What to provide: "Super Mario 64 ROM". */
+  label: string;
+  /** Said when asking for it. */
+  prompt?: string;
+  /** Unset means it's needed to play. */
+  required?: boolean;
+  kind?: "file" | "folder";
+  /** Relative, with / between folders. */
+  destination?: string;
+  /** What `destination` is in: the app's folder (unset), or the system's folders for apps' data, settings and local data. */
+  root?: "app" | "data" | "config" | "localData";
+  /** "--iso"; ending in "=" joins it to the path. */
+  flag?: string;
+  /**
+   * Its path is an argument of its own, with no flag in front (`game.exe C:\roms\game.z64`), before any flags. A
+   * `flag` wins. Launchers from before it ignore it: they don't ask for the copy, and start the game as they did.
+   */
+  positional?: boolean;
+  env?: string;
+  /** For a folder: names it holds, to tell it's the right one. */
+  contains?: string[];
+  /** Without a dot. */
+  extensions?: string[];
+  /** Any one of them is a copy it takes. Empty: no dump is published, so any copy of the right kind is taken. */
+  accepted: SetupDump[];
 };
 
 /** A site to get mods from: "thunderstore" or "gamebanana" (the site keeps any it was given; the launcher skips ones it has no provider for). */
@@ -58,7 +115,10 @@ export type Entry = {
   /** The version of its game it's based on: the PlayStation version, a Director's Cut. */
   basedOn?: BasedOn;
   libraryArt?: LibraryArt;
+  /** Its square icon: its own, else its game's. */
   artwork?: string;
+  /** `artwork` is its game's icon, as it has none of its own. */
+  artworkFromGame?: boolean;
   tags: string[];
   launcher: InstallSettings;
   projectType: ProjectType;
@@ -72,7 +132,10 @@ export type Entry = {
   lastReleaseAt?: number;
   lastReleaseVersion?: string;
   aiLevel?: "none" | "assisted" | "generated";
+  /** The newest approved main release; a pre-release only for a project that publishes nothing else. */
   verified?: Verified;
+  /** The newest approved pre-release, when it's newer than `verified`: for players who chose pre-releases. */
+  verifiedPrerelease?: Verified;
   developer?: { key: string; name: string };
 };
 
@@ -136,7 +199,19 @@ export type Release = {
   prerelease: boolean;
   notes?: string;
   assets: Asset[];
+  /**
+   * The release's files the site doesn't offer this app's players (a maintainer didn't tick them), for a player to
+   * pick by hand with Show all files. Each has the checksum Quiver saw as `unverifiedChecksum`: never an update, and
+   * installed only once the player confirms. Missing from a site older than them, and when there are none.
+   */
+  otherAssets?: Asset[];
   installationOverride?: InstallSettings;
+  /**
+   * The repository ("owner/name") its host says the release is in, for a release read from the host itself. It
+   * differs from the one asked for when the repository was renamed or moved to another owner since, as the host
+   * still answers to the old name.
+   */
+  repository?: string;
 };
 
 export type Withdrawn = { version: string; reason: string; at: number };
@@ -196,6 +271,12 @@ export type UnverifiedRelease = {
   scan?: ReleaseScan;
   /** With the checksums pinned when Quiver first saw them (none from a site older than blocked installs, when blocked). */
   assets: Asset[];
+  /**
+   * The release's files the site doesn't offer this app's players (a maintainer didn't tick them), for a player to
+   * pick by hand with Show all files. Each has the checksum Quiver saw as `unverifiedChecksum`: never an update, and
+   * installed only once the player confirms. Missing from a site older than them, and when there are none.
+   */
+  otherAssets?: Asset[];
   installationOverride?: InstallSettings;
   upstreamUrl?: string;
 };
@@ -219,13 +300,19 @@ export type HistoryRelease = {
   scan?: ReleaseScan;
   /** With the checksums Quiver pinned. */
   assets: Asset[];
+  /**
+   * The release's files the site doesn't offer this app's players (a maintainer didn't tick them), for a player to
+   * pick by hand with Show all files. Each has the checksum Quiver saw as `unverifiedChecksum`: never an update, and
+   * installed only once the player confirms. Missing from a site older than them, and when there are none.
+   */
+  otherAssets?: Asset[];
   installationOverride?: InstallSettings;
   upstreamUrl?: string;
 };
 
 export type Detail = {
   entry: Entry;
-  project: { name: string; description: string; repository?: string; provider: string; website?: string; author?: string; aiUse?: AiUse };
+  project: { name: string; description: string; repository?: string; provider: string; host?: string; website?: string; author?: string; aiUse?: AiUse };
   withdrawn: Withdrawn[];
   checking?: Checking;
   /** YouTube videos for the app's Media tab, in the order staff set. Missing from a site that has none yet. */
@@ -250,7 +337,7 @@ export type SharedList = {
   name: string;
   description?: string;
   owner: { name: string; avatar?: string };
-  items: ({ kind: "entry"; entry: Entry } | { kind: "custom"; custom: { provider: "github" | "gitlab"; repository: string; name: string }; url: string })[];
+  items: ({ kind: "entry"; entry: Entry } | { kind: "custom"; custom: { provider: string; host?: string; repository: string; name: string }; url: string })[];
   /** Apps on it that left the catalog. */
   unavailable: number;
   createdAt: number;
@@ -283,6 +370,48 @@ export type Feedback = {
   /** Only on the player's own, while others can't see it. */
   underReview?: boolean;
   moderatorHidden?: boolean;
+  /** Public answers from the app's verified developer: shown with a Developer tag. Missing from older sites. */
+  replies?: FeedbackReply[];
+  /** The developer says a released update fixed it: shown folded away, and it no longer counts toward the rating. */
+  fixed?: { version: string; at: number };
+  /** Its author said it's still broken after the developer's fix. */
+  disputed?: boolean;
+  /**
+   * The computer it was tried on, as Quiver Launcher read it. Everyone gets them unless the author unticked them;
+   * the author, the app's developer and Quiver staff get them either way. Missing from older sites.
+   */
+  specs?: FeedbackSpecs;
+  /** With specs: whether everyone may see them. */
+  specsPublic?: boolean;
+};
+
+/** The PC specs sent with feedback: the system and its version ("Windows 11", "SteamOS 3.7.13"), processor, graphics card and memory in GB. */
+export type FeedbackSpecs = { osVersion?: string; cpu?: string; gpu?: string; ramGb?: number };
+
+/** A developer's answer to feedback on their app. */
+export type FeedbackReply = {
+  id: string;
+  userId: string;
+  author: string;
+  avatar?: string;
+  badge: "developer";
+  body: string;
+  createdAt: number;
+  updatedAt: number;
+};
+
+/** A developer's public profile (/developers/{key} on the site). */
+export type DeveloperProfile = {
+  key: string;
+  name: string;
+  bio?: string;
+  avatar?: string;
+  links: { label: string; url: string }[];
+  /** Quiver's maintainers marked them a trusted creator. */
+  trusted?: { at: number; note?: string };
+  followers: number;
+  /** Someone proved they develop these apps. */
+  verified: boolean;
 };
 
 /** An app in the release status feed: enough to match a repository to its catalog entry. */
@@ -300,7 +429,7 @@ export type Announcement = {
   editedAt?: number;
 };
 
-export type ReleaseStatus = { id: string; slug: string; provider: string; repository?: string };
+export type ReleaseStatus = { id: string; slug: string; provider: string; host?: string; repository?: string };
 
 export type Page<T> = { items: T[]; nextCursor: string | null; isDone: boolean };
 
@@ -311,10 +440,20 @@ export type AppQuery = {
   projectType?: ProjectType;
   /** Apps of any of these kinds, such as a player's saved filters; replaces `projectType`. */
   projectTypes?: ProjectType[];
+  /** Apps for any of these platforms; replaces `os`. */
+  platforms?: Os[];
   /** A console id, or "maker:Nintendo" for every console a maker made. */
   console?: string;
+  /** Apps for any of these consoles (ids, or "maker:Nintendo"); replaces `console`. The site takes at most MAX_SYSTEMS. */
+  consoles?: string[];
   sort?: Sort;
   ai?: "no-generated" | "no-ai";
+  /** Only apps with Easy setup: their game files found and put in place by the launcher. */
+  setup?: "easy";
+  /** Only this developer's apps (an app's `developer.key`). */
+  developer?: string;
+  /** Leaves out these developers' apps (keys); the site takes at most 50. Ignored with `developer`. */
+  hideDevelopers?: string[];
   cursor?: string | null;
   limit?: number;
 };
@@ -332,11 +471,18 @@ export type Readme = { markdown: string; rawBase?: string; htmlBase?: string };
  */
 export type DownloadProblem = { version: string; file: string; problem: "missing" | "mismatch" };
 
-export class ApiError extends Error {
-  constructor(readonly status: number, message: string) {
-    super(message);
-  }
-}
+/**
+ * Where Quiver Launcher saw an app keep its saves: the system, and each folder as a path under one of the
+ * system's folders ("data/Game/saves"). Nothing about the player or the computer.
+ */
+export type SaveLocationsReport = { os: "windows" | "linux" | "macos"; places: string[] };
+/**
+ * The catalog names programs that start an app, and the app's folder holds none of them: the programs it does
+ * hold, by their paths in the folder, for the version installed. Nothing about the player or the computer.
+ */
+export type StartProgramReport = { os: "windows" | "linux" | "macos"; version: string; programs: string[] };
+
+export { ApiError } from "./errors";
 
 export const DEFAULT_API = "https://api.quiverlauncher.com/api/v1";
 /**
@@ -351,6 +497,8 @@ export type ClientOptions = {
   fetch?: typeof globalThis.fetch;
   /** Called once, when the default address can't be reached and FALLBACK_API answered instead. */
   onFallback?: (error: unknown) => void;
+  /** Called once, the first time neither the default address nor FALLBACK_API answered. */
+  onUnreachable?: (error: unknown) => void;
   /** How long a call waits for an answer before giving up on it; 20 seconds unless a test says otherwise. */
   timeoutMs?: number;
 };
@@ -363,14 +511,19 @@ export type Client = {
   /** Null when the site has no README for the app. */
   readme(slug: string): Promise<Readme | null>;
   releaseStatus(cursor?: string | null): Promise<Page<ReleaseStatus>>;
-  /** Approved releases, newest first: the first is what a player gets. */
-  releases(slug: string, limit?: number, cursor?: string | null): Promise<Page<Release>>;
+  /**
+   * Approved releases, newest first: the first is what a player gets. Pre-releases newer than the newest main release
+   * are left out unless `prereleases` asks for them (a project with no main release lists them either way).
+   */
+  releases(slug: string, limit?: number, cursor?: string | null, prereleases?: boolean): Promise<Page<Release>>;
   /** Releases Quiver hasn't verified for the app, newest first. A 404 ApiError from a site that doesn't list them yet. */
   unverifiedReleases(slug: string): Promise<UnverifiedRelease[]>;
   /** Every release of the app's repository, newest first, each with its state. A 404 ApiError from a site that doesn't list them yet. */
   releaseHistory(slug: string, limit?: number, cursor?: string | null): Promise<Page<HistoryRelease>>;
   /** What players said, newest first. */
   reviews(slug: string, cursor?: string | null, limit?: number): Promise<Page<Feedback>>;
+  /** A developer's profile; null when there's none, or the site has no profiles yet. */
+  developer(key: string): Promise<DeveloperProfile | null>;
   /** Up to four original games whose titles match a search of 2 or more characters; none from a site without game search. */
   matchingGames(search: string): Promise<GameMatch[]>;
   /** Null when there's no such game. */
@@ -385,6 +538,16 @@ export type Client = {
    * install, never retried. A 404 ApiError when the site doesn't offer that file.
    */
   downloadProblem(app: Pick<Entry, "slug" | "catalogId">, report: DownloadProblem): Promise<void>;
+  /**
+   * Tells the site where the launcher saw an app keep its saves, which it counts for the staff who list each app's
+   * save locations. A 404 ApiError when the site doesn't know the app or takes none of the places.
+   */
+  saveLocations(app: Pick<Entry, "slug" | "catalogId">, report: SaveLocationsReport): Promise<void>;
+  /**
+   * Tells the site that none of the programs the catalog names for an app is in its folder, so staff can be
+   * suggested the right one. A 404 ApiError when the site doesn't know the app.
+   */
+  startProgram(app: Pick<Entry, "slug" | "catalogId">, report: StartProgramReport): Promise<void>;
 };
 
 export function createClient(base: string = DEFAULT_API, options: ClientOptions = {}): Client {
@@ -405,6 +568,7 @@ export function createClient(base: string = DEFAULT_API, options: ClientOptions 
     }
   }
   let origin = base;
+  let unreachable = false;
   /**
    * When api.quiverlauncher.com gives no answer at all (no connection, a failed
    * TLS handshake, no answer in time, or the 499 its proxy sometimes sends) or
@@ -433,6 +597,10 @@ export function createClient(base: string = DEFAULT_API, options: ClientOptions 
         origin = FALLBACK_API;
         return other;
       }
+      if (!unreachable) {
+        unreachable = true;
+        options.onUnreachable?.(problem);
+      }
     }
     // The player's real problem is the first one.
     if (failed) return failed;
@@ -456,29 +624,51 @@ export function createClient(base: string = DEFAULT_API, options: ClientOptions 
     apps(q: AppQuery = {}) {
       const params = new URLSearchParams({ limit: String(q.limit ?? 48) });
       if (q.search?.trim()) params.set("search", q.search.trim());
-      if (q.os) params.set("os", q.os);
+      // One of each goes as the older single parameter, the same address (and cached page) as before.
+      const oses = q.platforms ?? (q.os ? [q.os] : []);
+      if (oses.length > 1) params.set("platforms", oses.join(","));
+      else if (oses[0]) params.set("os", oses[0]);
       const types = q.projectTypes ?? (q.projectType ? [q.projectType] : []);
       if (types.length > 1) params.set("projectTypes", types.join(","));
       else if (types[0]) params.set("projectType", types[0]);
-      if (q.console?.startsWith("maker:")) params.set("maker", q.console.slice(6));
-      else if (q.console) params.set("console", q.console);
+      const systems = q.consoles ?? (q.console ? [q.console] : []);
+      if (systems.length > 1) {
+        const ids = systems.filter((s) => !s.startsWith("maker:"));
+        const makers = systems.filter((s) => s.startsWith("maker:")).map((s) => s.slice(6));
+        if (ids.length) params.set("consoles", ids.join(","));
+        if (makers.length) params.set("makers", makers.join(","));
+      } else if (systems[0]?.startsWith("maker:")) params.set("maker", systems[0].slice(6));
+      else if (systems[0]) params.set("console", systems[0]);
       if (q.sort) params.set("sort", q.sort);
       if (q.ai) params.set("ai", q.ai);
+      if (q.setup) params.set("setup", q.setup);
+      if (q.developer) params.set("developer", q.developer);
+      else if (q.hideDevelopers?.length) params.set("hideDevelopers", q.hideDevelopers.slice(0, 50).join(","));
       if (q.cursor) params.set("cursor", q.cursor);
       return get<Page<Entry>>(`/apps?${params}`);
     },
-    app: (slug: string) => get<Detail>(app(slug)),
+    // No slug would ask for /apps/, which answers with the catalog's first page rather than a 404; an answer with no
+    // entry in it (that page, or anything else) isn't the app either.
+    app: async (slug: string) => {
+      if (!slug) throw new ApiError(404, "App not found");
+      const detail = await get<Detail>(app(slug));
+      if (!Array.isArray(detail?.entry?.games)) throw new ApiError(404, "App not found");
+      return detail;
+    },
     facets: () => get<Facets>("/facets"),
     readme: (slug: string) => get<Readme>(`${app(slug)}/readme`).catch(notFound<Readme>),
     releaseStatus: (cursor?: string | null) =>
       get<Page<ReleaseStatus>>(`/release-status?limit=100${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`),
-    releases: (slug: string, limit = 5, cursor?: string | null) =>
-      get<Page<Release>>(`${app(slug)}/releases?limit=${limit}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`),
+    releases: (slug: string, limit = 5, cursor?: string | null, prereleases?: boolean) =>
+      get<Page<Release>>(
+        `${app(slug)}/releases?limit=${limit}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}${prereleases ? "&prereleases=include" : ""}`,
+      ),
     unverifiedReleases: (slug: string) => get<{ items: UnverifiedRelease[] }>(`${app(slug)}/unverified-releases`).then((r) => r.items),
     releaseHistory: (slug: string, limit = 10, cursor?: string | null) =>
       get<Page<HistoryRelease>>(`${app(slug)}/release-history?limit=${limit}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`),
     reviews: (slug: string, cursor?: string | null, limit = 12) =>
       get<Page<Feedback>>(`${app(slug)}/reviews?limit=${limit}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`),
+    developer: (key: string) => get<DeveloperProfile>(`/developers/${encodeURIComponent(key)}`).catch(notFound<DeveloperProfile>),
     async matchingGames(search: string) {
       const text = search.trim().slice(0, 200);
       if (text.length < 2) return [];
@@ -499,207 +689,57 @@ export function createClient(base: string = DEFAULT_API, options: ClientOptions 
       const path = `${catalogId ? `/catalog-entries/${encodeURIComponent(catalogId)}` : app(slug)}/download-problem`;
       await answer(await request(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(report) }));
     },
+    async saveLocations({ slug, catalogId }, report) {
+      const path = `${catalogId ? `/catalog-entries/${encodeURIComponent(catalogId)}` : app(slug)}/save-locations`;
+      await answer(await request(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(report) }));
+    },
+    async startProgram({ slug, catalogId }, report) {
+      const path = `${catalogId ? `/catalog-entries/${encodeURIComponent(catalogId)}` : app(slug)}/start-program`;
+      await answer(await request(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(report) }));
+    },
   };
 }
 
 /** Which computer a release file is for, from its name. */
-export function inferPlatform(filename: string): { os: Os; architecture: Architecture } {
-  const s = filename.toLowerCase();
-  const os: Os = /windows|(?<!dar)win(?:32|64)|(?:^|[^a-z])win(?:[^a-z]|$)|\.exe$|\.msi$/.test(s)
-    ? "windows"
-    : /linux|appimage|flatpak|steamdeck|\.deb$|\.rpm$/.test(s)
-      ? "linux"
-      : /macos|darwin|osx|(?:^|[^a-z])mac(?:[^a-z]|$)|\.dmg$/.test(s)
-        ? "macos"
-        : /android|\.apk$/.test(s)
-          ? "android"
-          : /(?:^|[^a-z])ios(?:[^a-z]|$)|iphone|ipados|\.ipa$/.test(s)
-            ? "ios"
-            : "unknown";
-  // "win64" and "linux64" name the architecture too; "darwin64" isn't Windows.
-  const architecture: Architecture = /aarch64|arm64/.test(s)
-    ? "arm64"
-    : /x86[_-]64|amd64|x64|(?<!dar)win(?:dows)?[ _.-]?64|linux[ _.-]?64|(?:^|[^a-z0-9])64[ _-]?bit/.test(s)
-      ? "x64"
-      : /i[3-6]86|ia32|x86|(?<!dar)win(?:dows)?[ _.-]?32|linux[ _.-]?32|(?:^|[^a-z0-9])32[ _-]?bit/.test(s)
-        ? "x86"
-        : /universal/.test(s)
-          ? "universal"
-          : // "arm" only as its own word or armv7/armhf/armel, so "harmony" doesn't count.
-            /(?:^|[^a-z])arm(?:v\d|hf|el|[^a-z]|$)/.test(s)
-            ? "arm"
-            : "unknown";
-  return { os, architecture };
-}
+export { inferPlatform } from "./platform";
 
-/** "owner/repo" from a GitHub address or the bare name; null if it isn't one. */
-export function githubRepository(input: string): string | null {
-  const m = input.trim().match(/^(?:https:\/\/github\.com\/)?([a-z0-9_][a-z0-9_.-]*)\/([a-z0-9_][a-z0-9_.-]*?)(?:\.git)?\/?$/i);
-  return m && m[2] !== ".." ? `${m[1]}/${m[2]}` : null;
-}
-
-/**
- * A repository from what a player pastes: a github.com or gitlab.com address
- * (any page of it), or "owner/name" for GitHub. Null if it isn't one.
- */
-export function parseRepository(input: string): { provider: "github" | "gitlab"; repository: string } | null {
-  const text = input.trim().replace(/^(?:https?:\/\/)?(?:www\.)?/i, "");
-  const lab = text.match(/^gitlab\.com\/(.+?)(?:\/-\/.*)?\/?$/i);
-  if (lab) {
-    const path = lab[1].replace(/\.git$/i, "");
-    const parts = path.split("/");
-    const ok = parts.length >= 2 && parts.every((p) => /^[a-z0-9_][a-z0-9_.-]*$/i.test(p) && p !== "..");
-    return ok ? { provider: "gitlab", repository: path } : null;
-  }
-  const hub = text.match(/^github\.com\/([^/]+)\/([^/?#]+)/i);
-  const repository = githubRepository(hub ? `${hub[1]}/${hub[2]}` : text);
-  return repository ? { provider: "github", repository } : null;
-}
-
-/**
- * Why GitHub refused, worded for players. Without a token GitHub allows a
- * network 60 requests an hour (a token, 5,000), and its answer says when
- * that starts again.
- */
-function githubError(response: Response, token: boolean): ApiError {
-  const { status, headers } = response;
-  if (status === 401 && token) return new ApiError(status, "GitHub didn't accept your GitHub token. Change or remove it in Settings.");
-  if (status === 403 || status === 429) {
-    const reset = Number(headers.get("x-ratelimit-reset"));
-    if (headers.get("x-ratelimit-remaining") === "0" && reset > 0) {
-      const at = new Date(reset * 1000).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
-      return new ApiError(
-        status,
-        token
-          ? `Your GitHub token's limit of requests is used up until ${at}. Try again then.`
-          : `GitHub's limit of requests from this network is used up until ${at}. Try again then, or add a GitHub token in Settings to raise the limit.`,
-      );
-    }
-    const wait = Number(headers.get("retry-after"));
-    if (wait > 0) return new ApiError(status, `GitHub is limiting requests from this network. Try again in ${Math.ceil(wait / 60)} min.`);
-  }
-  return new ApiError(status, `GitHub answered ${status}. Try again later.`);
-}
-
-/** How many requests GitHub allows an hour, how many are left, and when it starts again. */
+/** How many requests a host allows an hour, how many are left, and when it starts again. */
 export type RateLimit = { limit: number; remaining: number; resetAt: number };
 
-/**
- * Releases straight from GitHub, for custom apps the catalog doesn't list.
- * Nobody has checked these; GitHub's own SHA-256 digest still guards the
- * download when it has one. With the player's token, GitHub counts requests
- * against it rather than the network.
- */
-type RawRelease = {
-  tag_name: string;
-  draft: boolean;
-  prerelease: boolean;
-  published_at: string;
-  body?: string;
-  assets: { id: number; name: string; browser_download_url: string; size: number; digest?: string }[];
-};
-
-const fromGithub = (r: RawRelease): Release => ({
-  id: r.tag_name,
-  version: r.tag_name,
-  releasedAt: Date.parse(r.published_at) || 0,
-  prerelease: r.prerelease,
-  notes: r.body,
-  assets: r.assets.map((a) => ({
-    id: String(a.id),
-    url: a.browser_download_url,
-    filename: a.name,
-    ...inferPlatform(a.name),
-    format: a.name.split(".").pop() ?? "unknown",
-    size: a.size,
-    ...(/^sha256:[0-9a-f]{64}$/i.test(a.digest ?? "") ? { checksum: a.digest!.toLowerCase() } : {}),
-  })),
-});
-
-export function createGithub(base = "https://api.github.com", token?: string) {
-  const auth: Record<string, string> = token?.trim() ? { Authorization: `Bearer ${token.trim()}` } : {};
-  const fail = (response: Response) => githubError(response, Boolean(auth.Authorization));
-  return {
-    /**
-     * Every release, newest first, except drafts; up to `count` of them, stable
-     * ones first. When those are all pre-releases and there are more, the
-     * repository's latest release is added in front, so a run of betas doesn't
-     * hide the stable release players should get.
-     */
-    async releases(repository: string, count = 10): Promise<Release[]> {
-      const headers = { Accept: "application/vnd.github+json", ...auth };
-      const response = await fetch(`${base}/repos/${repository}/releases?per_page=${count}`, { headers });
-      if (response.status === 404) throw new ApiError(404, "That repository wasn't found on GitHub.");
-      if (!response.ok) throw fail(response);
-      const raw: RawRelease[] = await response.json();
-      if (raw.length >= count && raw.every((r) => r.prerelease || r.draft)) {
-        // A 404 when the repository has no stable release at all.
-        const latest = await fetch(`${base}/repos/${repository}/releases/latest`, { headers });
-        if (latest.ok) raw.unshift(await latest.json());
-      }
-      return raw
-        .filter((r) => !r.draft && r.tag_name)
-        // Stable releases first: the first one is what a player gets.
-        .sort((a, b) => Number(a.prerelease) - Number(b.prerelease))
-        .map(fromGithub);
-    },
-    /** The repository's README, or null when it has none. */
-    async readme(repository: string): Promise<Readme | null> {
-      const response = await fetch(`${base}/repos/${repository}/readme`, { headers: { Accept: "application/vnd.github.raw", ...auth } });
-      if (response.status === 404) return null;
-      if (!response.ok) throw fail(response);
-      return {
-        markdown: await response.text(),
-        rawBase: `https://raw.githubusercontent.com/${repository}/HEAD/`,
-        htmlBase: `https://github.com/${repository}/blob/HEAD/`,
-      };
-    },
-    /** The hourly limit, for the token if there is one; asking doesn't count against it. A 401 ApiError when GitHub refuses the token. */
-    async rateLimit(): Promise<RateLimit> {
-      const response = await fetch(`${base}/rate_limit`, { headers: { Accept: "application/vnd.github+json", ...auth } });
-      if (!response.ok) throw fail(response);
-      const { resources } = (await response.json()) as { resources: { core: { limit: number; remaining: number; reset: number } } };
-      return { limit: resources.core.limit, remaining: resources.core.remaining, resetAt: resources.core.reset * 1000 };
-    },
-  };
-}
-
-export type Github = ReturnType<typeof createGithub>;
-
-/** Releases on GitLab, for catalog apps hosted there. GitLab gives no checksums. */
-export function createGitlab(base = "https://gitlab.com/api/v4") {
-  return {
-    async releases(repository: string, count = 30): Promise<Release[]> {
-      const response = await fetch(`${base}/projects/${encodeURIComponent(repository)}/releases?per_page=${count}`);
-      if (response.status === 404) throw new ApiError(404, "That repository wasn't found on GitLab.");
-      if (!response.ok) throw new ApiError(response.status, `GitLab answered ${response.status}. Try again later.`);
-      type Raw = {
-        tag_name: string;
-        released_at: string;
-        upcoming_release?: boolean;
-        description?: string;
-        assets?: { links?: { id: number; name: string; url: string; direct_asset_url?: string; filepath?: string }[] };
-      };
-      const raw: Raw[] = await response.json();
-      return raw.map((r) => ({
-        id: r.tag_name,
-        version: r.tag_name,
-        releasedAt: Date.parse(r.released_at) || 0,
-        prerelease: Boolean(r.upcoming_release),
-        notes: r.description,
-        assets: (r.assets?.links ?? []).map((a) => {
-          // A link's name is its title ("Windows build"); the file's own name is in its path.
-          const last = (s?: string) => (s ? decodeURIComponent(s.split(/[?#]/)[0].split("/").pop() ?? "") : "");
-          const filename = [last(a.filepath), last(a.direct_asset_url), last(a.url)].find((f) => /\.[a-z0-9]{1,8}$/i.test(f)) ?? a.name;
-          return {
-            id: String(a.id),
-            url: a.direct_asset_url ?? a.url,
-            filename,
-            ...inferPlatform(`${filename} ${a.name}`),
-            format: filename.split(".").pop() ?? "unknown",
-          };
-        }),
-      }));
-    },
-  };
-}
+/** The repository hosts, and the ways to name one. */
+export {
+  GITEA_HOSTS,
+  PROVIDERS,
+  bitbucketProvider,
+  bitbucketVersion,
+  createGithub,
+  createGitlab,
+  createProviders,
+  defaultHost,
+  detectProvider,
+  feedProvider,
+  giteaProvider,
+  githubProvider,
+  githubRepository,
+  gitlabProvider,
+  hostOf,
+  parseRepository,
+  providerById,
+  providerChoices,
+  providerFor,
+  providerForHost,
+  toRef,
+} from "./providers";
+export type {
+  Github,
+  Gitlab,
+  GitlabLimit,
+  GitlabLimitReader,
+  ParsedRepository,
+  ProviderAuth,
+  ProviderContext,
+  Providers,
+  ProviderTokenHelp,
+  RepositoryProvider,
+  RepositoryRef,
+} from "./providers";

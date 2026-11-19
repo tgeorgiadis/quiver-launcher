@@ -11,7 +11,7 @@ and headings, as in English.
 | playlist | playlist | the library's own lists |
 | Browse | Explorar | the catalog page |
 | catalog | catálogo | |
-| Get | Obter | the button that installs an app |
+| Add / Install | Adicionar / Instalar | the buttons that put an app in the library, then install it |
 | Play | Jogar | |
 | Play anyway | Jogar mesmo assim | |
 | install / uninstall | instalar / desinstalar | |
@@ -24,8 +24,10 @@ and headings, as in English.
 | Downgrade | Voltar à versão anterior | |
 | pinned (to a version) | fixado | |
 | withdrawn (release) | retirada | "A versão 1.2 foi retirada" |
-| verified | verificada | |
+| available / not offered (a release) | disponível / não oferecida | |
 | preview release | versão prévia | |
+| pre-release | Versão prévia | a release its developer marked as one: an early or experimental build |
+| main release | versão principal | a release not marked as a pre-release; never "stable" |
 | play time | tempo de jogo | |
 | recently played | jogados recentemente | |
 | controller | controle | |
@@ -39,6 +41,7 @@ and headings, as in English.
 | sign in / sign out | entrar / sair | |
 | account | conta | |
 | feedback | feedback | "Feedback de 3 jogadores" |
+| PC specs | especificações do PC | the computer a player tried an app on: system, processor, graphics card, memory |
 | player | jogador | prefer "você" where the English allows |
 | mod | mod (o mod, os mods) | |
 | launch options | opções de inicialização | |
@@ -60,6 +63,9 @@ and headings, as in English.
 | note (a player's) | comentário | |
 | Installed (a version) / (a tab) / (an app, a mod) | Instalada / Instalados / Instalado | separate strings, by context |
 | Update (a card's badge) / (a button) | Atualização / Atualizar | separate strings, by context |
+| discussion / comment | discussão / comentário | Community board: Comunidade |
+| Follow / Unfollow (a discussion) | Seguir / Deixar de seguir | |
+| Pin / Lock / Report (a discussion) | Fixar / Trancar / Denunciar | |
 
 Left as they are: Quiver, Quiver Launcher, GitHub, GitLab, Steam, Steam Deck,
 Flatpak, AppImage, Thunderstore, GameBanana, console names, and controller

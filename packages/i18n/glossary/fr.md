@@ -10,7 +10,7 @@ before « : ; ! ? », and « » for quotes.
 | playlist | playlist | |
 | Browse | Parcourir | the catalog page |
 | catalog | catalogue | |
-| Get | Obtenir | the button that installs an app |
+| Add / Install | Ajouter / Installer | the buttons that put an app in the library, then install it |
 | Play / Play anyway | Jouer / Jouer quand même | |
 | install / uninstall | installer / désinstaller | |
 | download | téléchargement / télécharger | Downloads page: Téléchargements |
@@ -19,8 +19,10 @@ before « : ; ! ? », and « » for quotes.
 | Change version / Choose a version | Changer de version / Choisir une version | |
 | pinned | épinglée | |
 | withdrawn | retirée | |
-| verified / unverified / blocked (a release) | vérifiée / non vérifiée / bloquée | |
+| available / not offered / blocked (a release) | disponible / non proposée / bloquée | |
 | preview release | version préliminaire | |
+| pre-release | Version préliminaire | a release its developer marked as one: an early or experimental build |
+| main release | version principale | a release not marked as a pre-release; never "stable" |
 | play time / recently played | temps de jeu / joués récemment | |
 | controller / keyboard | manette / clavier | |
 | Settings | Paramètres | |
@@ -32,6 +34,7 @@ before « : ; ! ? », and « » for quotes.
 | usage data | données d'utilisation | |
 | sign in / sign out / account | se connecter / se déconnecter / compte | |
 | feedback / player | avis / joueur | |
+| PC specs | configuration du PC | the computer a player tried an app on: system, processor, graphics card, memory |
 | mod | mod | |
 | launch options / launch flags | options de lancement / paramètres de lancement | |
 | backup (of the library) | sauvegarde | |
@@ -42,6 +45,9 @@ before « : ; ! ? », and « » for quotes.
 | port / standalone game | portage / jeu autonome | |
 | Installed (a version) / (a tab) / (an app) | Installée / Installés / Installé | separate strings, by context |
 | Update (a card's badge) / (a button) | Mise à jour / Mettre à jour | separate strings, by context |
+| discussion / comment | discussion / commentaire | Community board: Communauté |
+| Follow / Unfollow (a discussion) | Suivre / Ne plus suivre | |
+| Pin / Lock / Report (a discussion) | Épingler / Verrouiller / Signaler | |
 
 Left as they are: Quiver, Quiver Launcher, GitHub, GitLab, Steam, Steam Deck,
 Flatpak, AppImage, Thunderstore, GameBanana, console names, and controller
