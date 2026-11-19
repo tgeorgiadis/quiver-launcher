@@ -20,7 +20,7 @@ The launcher sends named events only (`apps/launcher/src/telemetry.ts`):
 - **Apps:** catalog apps installed, updated, launched, closed (with the seconds played), uninstalled, added and removed,
   by slug, and when launched or closed, the version. Apps players add are named only by kind. Installs cancelled and
   at what stage; failed installs and launches, why, and what kind of failure; an app's folder renamed and the apps
-  folder moved; an app's menu opened and its videos played.
+  folder moved; an app's menu opened and its videos played, and several apps changed at once from the library (what was changed and how many apps, not which).
 - **Mods:** the mods screen opened, and mods installed, updated, uninstalled or failing to install: the catalog app's
   slug, the mod's id at its source, and the source.
 - **Everything else:** screens opened (each once per launch), playlists made, shared and followed, searches that found

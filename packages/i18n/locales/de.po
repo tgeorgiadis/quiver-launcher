@@ -22,6 +22,16 @@ msgstr "(geändert)"
 msgid "{0, plural, one {# app for other platforms isn't shown.} other {# apps for other platforms aren't shown.}}"
 msgstr "{0, plural, one {# App für andere Plattformen wird nicht angezeigt.} other {# Apps für andere Plattformen werden nicht angezeigt.}}"
 
+#. placeholder {0}: ids.length
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "{0, plural, one {# app hidden from your library.} other {# apps hidden from your library.}}"
+msgstr "{0, plural, one {# App aus deiner Bibliothek ausgeblendet.} other {# Apps aus deiner Bibliothek ausgeblendet.}}"
+
+#. placeholder {0}: ids.length
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "{0, plural, one {# app shows in your library again.} other {# apps show in your library again.}}"
+msgstr "{0, plural, one {# App wird wieder in deiner Bibliothek angezeigt.} other {# Apps werden wieder in deiner Bibliothek angezeigt.}}"
+
 #. placeholder {0}: stays.length
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "{0, plural, one {# app stays at the top of the apps folder} other {# apps stay at the top of the apps folder}}"
@@ -49,10 +59,20 @@ msgstr "{0, plural, one {# Kommentar} other {# Kommentare}}"
 msgid "{0, plural, one {# file} other {# files}}"
 msgstr "{0, plural, one {# Datei} other {# Dateien}}"
 
+#. placeholder {0}: portable.length
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "{0, plural, one {# of them may keep your saves in its folder. They'll go to the trash too.} other {# of them may keep your saves in their folders. They'll go to the trash too.}}"
+msgstr "{0, plural, one {# davon speichert deine Spielstände vielleicht in seinem Ordner. Sie landen auch im Papierkorb.} other {# davon speichern deine Spielstände vielleicht in ihren Ordnern. Sie landen auch im Papierkorb.}}"
+
 #. placeholder {0}: library.apps.length
 #: ../../apps/launcher/src/old-library.tsx
 msgid "{0, plural, one {If you already installed it somewhere else, show Quiver the folder.} other {If you already installed them somewhere else, show Quiver the folder.}}"
 msgstr "{0, plural, one {Falls du sie schon woanders installiert hast, zeig Quiver den Ordner.} other {Falls du sie schon woanders installiert hast, zeig Quiver den Ordner.}}"
+
+#. placeholder {0}: gettable.length
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "{0, plural, one {Install # app} other {Install # apps}}"
+msgstr "{0, plural, one {# App installieren} other {# Apps installieren}}"
 
 #. placeholder {0}: bringing.apps.length
 #. placeholder {1}: bringing.path
@@ -95,6 +115,16 @@ msgstr "{0, plural, one {Diese App konnte nicht verschoben werden. Sie ist mit a
 #: ../../apps/launcher/src/App.tsx
 msgid "{0, plural, one {Unhide # app} other {Unhide all # apps}}"
 msgstr "{0, plural, one {# App einblenden} other {Alle # Apps einblenden}}"
+
+#. placeholder {0}: installed.length
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "{0, plural, one {Uninstall # app…} other {Uninstall # apps…}}"
+msgstr "{0, plural, one {# App deinstallieren…} other {# Apps deinstallieren…}}"
+
+#. placeholder {0}: updatable.length
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "{0, plural, one {Update # app} other {Update # apps}}"
+msgstr "{0, plural, one {# App aktualisieren} other {# Apps aktualisieren}}"
 
 #. placeholder {0}: space(free)
 #. placeholder {0}: space(state.free)
@@ -149,6 +179,10 @@ msgstr ""
 #: ../../apps/launcher/src/ways-to-play.tsx
 msgid "{apps, plural, one {# way to play} other {# ways to play}}"
 msgstr "{apps, plural, one {# Möglichkeit zum Spielen} other {# Möglichkeiten zum Spielen}}"
+
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "{away, plural, one {(# not showing)} other {(# not showing)}}"
+msgstr "{away, plural, one {(# nicht angezeigt)} other {(# nicht angezeigt)}}"
 
 #: ../../apps/launcher/src/detail.tsx
 msgid "{broken, plural, one {# broken} other {# broken}}"
@@ -207,6 +241,10 @@ msgstr "{count, plural, one {# Kopie} other {# Kopien}}"
 msgid "{count, plural, one {# discussion with new comments} other {# discussions with new comments}}"
 msgstr "{count, plural, one {# Diskussion mit neuen Kommentaren} other {# Diskussionen mit neuen Kommentaren}}"
 
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "{count, plural, one {# selected} other {# selected}}"
+msgstr "{count, plural, one {# ausgewählt} other {# ausgewählt}}"
+
 #: ../../apps/launcher/src/old-library.tsx
 msgid "{count, plural, one {Add # app} other {Add # apps}}"
 msgstr "{count, plural, one {# App hinzufügen} other {# Apps hinzufügen}}"
@@ -236,6 +274,26 @@ msgstr "{count, plural, one {Stellt ihre # App auf eine Seite, die alle mit dem 
 #: ../../apps/launcher/src/old-library.tsx
 msgid "{count, plural, one {Quiver Launcher 3 already installed # app in your library. Use that copy where it is, instead of downloading it again?} other {Quiver Launcher 3 already installed # apps in your library. Use those copies where they are, instead of downloading them again?}}"
 msgstr "{count, plural, one {Quiver Launcher 3 hat # App aus deiner Bibliothek bereits installiert. Diese Kopie dort verwenden, wo sie ist, statt sie noch einmal herunterzuladen?} other {Quiver Launcher 3 hat # Apps aus deiner Bibliothek bereits installiert. Diese Kopien dort verwenden, wo sie sind, statt sie noch einmal herunterzuladen?}}"
+
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "{count, plural, one {Remove # app from your library?} other {Remove # apps from your library?}}"
+msgstr "{count, plural, one {# App aus deiner Bibliothek entfernen?} other {# Apps aus deiner Bibliothek entfernen?}}"
+
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "{count, plural, one {Removing # app…} other {Removing # apps…}}"
+msgstr "{count, plural, one {# App wird entfernt…} other {# Apps werden entfernt…}}"
+
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "{count, plural, one {Uninstall # app and remove it from your library?} other {Uninstall and remove # apps from your library?}}"
+msgstr "{count, plural, one {# App deinstallieren und aus deiner Bibliothek entfernen?} other {# Apps deinstallieren und aus deiner Bibliothek entfernen?}}"
+
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "{count, plural, one {Uninstall # app?} other {Uninstall # apps?}}"
+msgstr "{count, plural, one {# App deinstallieren?} other {# Apps deinstallieren?}}"
+
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "{count, plural, one {Uninstalling # app…} other {Uninstalling # apps…}}"
+msgstr "{count, plural, one {# App wird deinstalliert…} other {# Apps werden deinstalliert…}}"
 
 #: ../../apps/launcher/src/old-library.tsx
 msgid "{count, plural, one {Use it} other {Use them}}"
@@ -304,6 +362,10 @@ msgstr "Der Entwickler hat {file} aus {listed} entfernt."
 #: ../../apps/launcher/src/detail.tsx
 msgid "{files, plural, one {# file} other {# files}}"
 msgstr "{files, plural, one {# Datei} other {# Dateien}}"
+
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "{files, plural, one {The files of the one installed go to the trash, and they all leave your library.} other {The files of the # installed go to the trash, and they all leave your library.}}"
+msgstr "{files, plural, one {Die Dateien der einen installierten App landen im Papierkorb, und alle verlassen deine Bibliothek.} other {Die Dateien der # installierten Apps landen im Papierkorb, und alle verlassen deine Bibliothek.}}"
 
 #: ../../apps/launcher/src/old-library.tsx
 msgid "{filters, plural, one {# tag filter, as a playlist} other {# tag filters, as playlists}}"
@@ -390,6 +452,10 @@ msgstr "Noch {left} von {most} Anfragen in dieser Stunde, bis {until}."
 msgid "{left} of {most} requests left this minute."
 msgstr "Noch {left} von {most} Anfragen in dieser Minute."
 
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "{listed} and {more} more"
+msgstr "{listed} und {more} weitere"
+
 #: ../../apps/launcher/src/mods.tsx
 msgid "{mb} MB"
 msgstr "{mb} MB"
@@ -426,6 +492,10 @@ msgstr "{months, plural, one {Vor # Mon. gespielt} other {Vor # Mon. gespielt}}"
 #: ../../apps/launcher/src/library.tsx
 msgid "{more, plural, one {and # more} other {and # more}}"
 msgstr "{more, plural, one {und # weitere} other {und # weitere}}"
+
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "{n, plural, one {# app selected} other {# apps selected}}"
+msgstr "{n, plural, one {# App ausgewählt} other {# Apps ausgewählt}}"
 
 #: ../../apps/launcher/src/recovery.tsx
 #: ../../apps/launcher/src/tag-settings.tsx
@@ -760,10 +830,12 @@ msgid "{years, plural, one {Played # yr ago} other {Played # yrs ago}}"
 msgstr "{years, plural, one {Vor # J. gespielt} other {Vor # J. gespielt}}"
 
 #: ../../apps/launcher/src/card-menu.tsx
+#: ../../apps/launcher/src/library-ticking.tsx
 msgid "+ New playlist…"
 msgstr "+ Neue Playlist…"
 
 #: ../../apps/launcher/src/card-menu.tsx
+#: ../../apps/launcher/src/library-ticking.tsx
 msgid "+ New tag…"
 msgstr "+ Neuer Tag…"
 
@@ -920,6 +992,7 @@ msgstr "Geteilte Playlist hinzufügen"
 
 #: ../../apps/launcher/src/card-menu.tsx
 #: ../../apps/launcher/src/detail.tsx
+#: ../../apps/launcher/src/library-ticking.tsx
 msgid "Add a tag"
 msgstr "Tag hinzufügen"
 
@@ -983,7 +1056,9 @@ msgstr "Zu meiner Bibliothek hinzufügen"
 
 #. Menu item opening the playlists to add an app to
 #. Menu item opening the playlists to add an app to
+#. Menu item opening the playlists to add an app to
 #: ../../apps/launcher/src/card-menu.tsx
+#: ../../apps/launcher/src/library-ticking.tsx
 #: ../../apps/launcher/src/library.tsx
 msgid "Add to playlist"
 msgstr "Zur Playlist hinzufügen"
@@ -1554,6 +1629,7 @@ msgstr "Kann nicht hinzugefügt werden: Quiver Launcher 3 weiß nicht, woher sie
 #: ../../apps/launcher/src/feedback.tsx
 #: ../../apps/launcher/src/file-picker.tsx
 #: ../../apps/launcher/src/launch-options.tsx
+#: ../../apps/launcher/src/library-ticking.tsx
 #: ../../apps/launcher/src/library.tsx
 #: ../../apps/launcher/src/mods.tsx
 #: ../../apps/launcher/src/own-copy-setup.tsx
@@ -2360,10 +2436,12 @@ msgstr "Lösche deinen Quiver Launcher 3-Ordner noch nicht. Verschieben kannst d
 msgid "Don't play yet"
 msgstr "Noch nicht spielen"
 
+#. Button: stops selecting apps in the library
 #. Closes a dialog
 #. Closes the thanks after a problem was reported
 #: ../../apps/launcher/src/announcements-ui.tsx
 #: ../../apps/launcher/src/correction.tsx
+#: ../../apps/launcher/src/library-ticking.tsx
 #: ../../apps/launcher/src/library.tsx
 msgid "Done"
 msgstr "Fertig"
@@ -2483,6 +2561,12 @@ msgstr "Bearbeiten"
 #: ../../apps/launcher/src/library.tsx
 msgid "Edit playlist"
 msgstr "Playlist bearbeiten"
+
+#. Controller hint, and a button over the apps selected in the library: what can change on all of them at once
+#: ../../apps/launcher/src/library-ticking.tsx
+#: ../../apps/launcher/src/spatial.ts
+msgid "Edit selected"
+msgstr "Auswahl bearbeiten"
 
 #: ../../apps/launcher/src/discussions.tsx
 msgid "Edit your comment"
@@ -2887,6 +2971,7 @@ msgstr "Aus Entdecken ausblenden"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/card-menu.tsx
+#: ../../apps/launcher/src/library-ticking.tsx
 msgid "Hide from library"
 msgstr "Aus Bibliothek ausblenden"
 
@@ -3136,6 +3221,7 @@ msgid "Install anyway"
 msgstr "Trotzdem installieren"
 
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/library-ticking.tsx
 msgid "Install automatically"
 msgstr "Automatisch installieren"
 
@@ -3790,6 +3876,12 @@ msgstr "Mods kommen in {modsPath} im Ordner der App. Dateien, die du selbst dort
 msgid "Mods to browse"
 msgstr "Mods zum Entdecken"
 
+#. Button over the selected apps: the rest of what can change on them
+#. Button over the selected apps: the rest of what can change on them
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "More"
+msgstr "Mehr"
+
 #. A shelf at the foot of an app's page: the best rated apps for other games on its console
 #: ../ui/src/discover.tsx
 msgid "More like this"
@@ -4045,6 +4137,7 @@ msgid "New name for {tag}"
 msgstr "Neuer Name für {tag}"
 
 #: ../../apps/launcher/src/card-menu.tsx
+#: ../../apps/launcher/src/library-ticking.tsx
 #: ../../apps/launcher/src/library.tsx
 msgid "New playlist"
 msgstr "Neue Playlist"
@@ -4208,6 +4301,10 @@ msgstr "Keine der Dateien von {name} {version} ist für deinen Computer gekennze
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "None of the files Quiver found look like {game}."
 msgstr "Keine der gefundenen Dateien sieht nach {game} aus."
+
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "None of them are installed."
+msgstr "Keine davon ist installiert."
 
 #: ../../apps/launcher/src/own.tsx
 msgid "None of this release's files are for this computer."
@@ -4399,7 +4496,9 @@ msgid "Off"
 msgstr "Aus"
 
 #. Updates: offer new releases to install
+#. Updates: offer new releases to install
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/library-ticking.tsx
 msgid "Offer them"
 msgstr "Anbieten"
 
@@ -4694,7 +4793,9 @@ msgstr "Läuft laut Spielern gut"
 msgid "Playlist name"
 msgstr "Name der Playlist"
 
+#. Button over the selected apps: puts them on playlists
 #: ../../apps/launcher/src/detail.tsx
+#: ../../apps/launcher/src/library-ticking.tsx
 #: ../../apps/launcher/src/library.tsx
 msgid "Playlists"
 msgstr "Playlists"
@@ -5154,8 +5255,10 @@ msgstr "Neu laden"
 
 #. Button: no background music, or no background picture
 #. Button: no background music, or no background picture
+#. Button: takes the selected apps out of the library
 #. Removes a followed playlist from the library
 #: ../../apps/launcher/src/cloud-saves-page.tsx
+#: ../../apps/launcher/src/library-ticking.tsx
 #: ../../apps/launcher/src/library.tsx
 #: ../../apps/launcher/src/own-copy-settings.tsx
 #: ../../apps/launcher/src/saves-tab.tsx
@@ -5179,6 +5282,10 @@ msgstr "Alle entfernen"
 msgid "Remove all copies"
 msgstr "Alle Kopien entfernen"
 
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "Remove apps"
+msgstr "Apps entfernen"
+
 #: ../../apps/launcher/src/detail.tsx
 msgid "Remove console {name}"
 msgstr "Konsole {name} entfernen"
@@ -5191,10 +5298,19 @@ msgstr "Alle Kopien von {name} aus deinem Konto entfernen? Spielstände auf dein
 msgid "Remove filter {on}"
 msgstr "Filter {on} entfernen"
 
+#. placeholder {0}: open.name
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "Remove from {0}"
+msgstr "Aus {0} entfernen"
+
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Remove from library"
 msgstr "Aus Bibliothek entfernen"
+
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "Remove from library…"
+msgstr "Aus Bibliothek entfernen…"
 
 #: ../../apps/launcher/src/detail.tsx
 msgid "Remove tag {tag}"
@@ -5580,9 +5696,21 @@ msgid "See which apps"
 msgstr "Welche Apps?"
 
 #. Controller hint: what Confirm does on any other control
+#. Controller hint: what Confirm does on any other control
+#. Menu item: selects an app in the library, to change several at once
+#: ../../apps/launcher/src/card-menu.tsx
 #: ../../apps/launcher/src/spatial.ts
 msgid "Select"
 msgstr "Auswählen"
+
+#. Selects every app the library shows
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "Select all"
+msgstr "Alle auswählen"
+
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "Selected apps"
+msgstr "Ausgewählte Apps"
 
 #. Button: send a correction to the maintainers
 #. Sends the maintainers which system a release file is for
@@ -5760,6 +5888,7 @@ msgstr "In Entdecken anzeigen"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/card-menu.tsx
+#: ../../apps/launcher/src/library-ticking.tsx
 msgid "Show in library"
 msgstr "In Bibliothek anzeigen"
 
@@ -6041,6 +6170,11 @@ msgstr "Startet sie dort, wo sie ist. Nichts wird heruntergeladen, verschoben od
 msgid "Starts the program you put in its folder, {folder}."
 msgstr "Startet das Programm, das du in ihren Ordner gelegt hast: {folder}."
 
+#. How the selected apps update: never, each staying on the version it has
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "Stay on the installed version"
+msgstr "Auf der installierten Version bleiben"
+
 #: ../../apps/launcher/src/App.tsx
 msgid "Stay signed in"
 msgstr "Angemeldet bleiben"
@@ -6069,6 +6203,10 @@ msgstr ""
 #: ../../apps/launcher/src/own-copy-settings.tsx
 msgid "Stop looking in {folder} for {console}"
 msgstr "Für {console} nicht mehr in {folder} suchen"
+
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "Stop selecting"
+msgstr "Auswahl beenden"
 
 #: ../../apps/launcher/src/library.tsx
 msgid "Stop sharing"
@@ -6135,11 +6273,15 @@ msgid "Tag"
 msgstr "Tag"
 
 #. Browse card detail: the app's tags, such as Recomp or its console, over its name
+#. Button over the selected apps: the player's tags to put on them
+#. Button over the selected apps: the player's tags to put on them
+#. Menu item opening the player's tags for an app
 #. Menu item opening the player's tags for an app
 #. Menu item opening the player's tags for an app
 #. Settings section: the player's own tags and the catalog's
 #: ../../apps/launcher/src/browse-cards.ts
 #: ../../apps/launcher/src/card-menu.tsx
+#: ../../apps/launcher/src/library-ticking.tsx
 #: ../../apps/launcher/src/tag-settings.tsx
 msgid "Tags"
 msgstr "Tags"
@@ -6364,6 +6506,10 @@ msgstr "Die geteilte Playlist ist auf dem neuesten Stand."
 msgid "The tags you gave your apps, including any brought over from Quiver Launcher 3. Renaming or deleting one changes it on every app that has it. The catalog's own tags aren't affected."
 msgstr "Die Tags, die du deinen Apps gegeben hast, auch die aus Quiver Launcher 3 übernommenen. Umbenennen oder Löschen ändert den Tag bei jeder App, die ihn hat. Die Tags des Katalogs bleiben unverändert."
 
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "Their files go to the trash. They stay in your library, so you can get them again."
+msgstr "Ihre Dateien landen im Papierkorb. Sie bleiben in deiner Bibliothek, sodass du sie wieder holen kannst."
+
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Theme"
 msgstr "Design"
@@ -6411,6 +6557,10 @@ msgstr "Diese Spielstände sind zu groß für Cloud-Spielstände ({max}). Sie we
 #: ../../apps/launcher/src/cloud-saves-page.tsx
 msgid "These saves are too big for cloud saves."
 msgstr "Diese Spielstände sind zu groß für Cloud-Spielstände."
+
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "They leave your library. Nothing is deleted."
+msgstr "Sie verlassen deine Bibliothek. Nichts wird gelöscht."
 
 #: ../../apps/launcher/src/account.tsx
 msgid "This account is suspended."
@@ -6641,6 +6791,7 @@ msgstr "Nicht mehr folgen"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/card-menu.tsx
+#: ../../apps/launcher/src/library-ticking.tsx
 #: ../../apps/launcher/src/mods.tsx
 msgid "Uninstall"
 msgstr "Deinstallieren"
@@ -6659,8 +6810,17 @@ msgstr "{name} deinstallieren?"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/card-menu.tsx
+#: ../../apps/launcher/src/library-ticking.tsx
 msgid "Uninstall and remove"
 msgstr "Deinstallieren und entfernen"
+
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "Uninstall and remove from library…"
+msgstr "Deinstallieren und aus Bibliothek entfernen…"
+
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "Uninstall apps"
+msgstr "Apps deinstallieren"
 
 #. Moderation action
 #: ../../apps/launcher/src/discussions.tsx
@@ -6680,6 +6840,13 @@ msgstr "Lösen und auf {version} zurückstufen"
 #: ../../apps/launcher/src/versions.ts
 msgid "Unpin and install {version}"
 msgstr "Lösen und {version} installieren"
+
+#. Controller hint: what Confirm does on an app selected in the library, taking it out of those selected
+#. Menu item: takes an app out of the apps selected in the library
+#: ../../apps/launcher/src/card-menu.tsx
+#: ../../apps/launcher/src/spatial.ts
+msgid "Unselect"
+msgstr "Auswahl aufheben"
 
 #: ../../apps/launcher/src/tag-settings.tsx
 msgid "Untick a tag to hide it on every app on this computer. Tick it to show it again. To hide one on a single app, untick it in that app's Tags menu."
@@ -6803,7 +6970,9 @@ msgid "Updated to {version} · {when}"
 msgstr "Auf {version} aktualisiert · {when}"
 
 #. How an installed app gets new releases
+#. How an installed app gets new releases
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/library-ticking.tsx
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Updates"
 msgstr "Updates"
@@ -6875,6 +7044,11 @@ msgstr "Meine Cloud-Spielstände verwenden"
 #: ../../apps/launcher/src/App.tsx
 msgid "Use my cloud saves anyway"
 msgstr ""
+
+#. How the selected apps update: whatever Settings, Updates says
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "Use my default"
+msgstr "Meine Standardeinstellung"
 
 #. Which releases an app gets: whatever Settings, Updates says, which is to include pre-releases
 #: ../../apps/launcher/src/App.tsx

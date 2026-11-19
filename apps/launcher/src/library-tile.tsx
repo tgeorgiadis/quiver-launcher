@@ -14,7 +14,7 @@
  * has it; a controller's Options button lists the ports instead.
  */
 import { memo, useLayoutEffect, useRef, useState, type ReactNode } from "react";
-import { ChevronDown, CloudDownload, Compass, Download, FolderOpen, History, Layers, Pin, Play, Plus, ShieldCheck, TriangleAlert } from "lucide-react";
+import { Check, ChevronDown, CloudDownload, Compass, Download, FolderOpen, History, Layers, Pin, Play, Plus, ShieldCheck, TriangleAlert } from "lucide-react";
 import { plural, t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import type { Entry } from "@quiverlauncher/api";
@@ -28,6 +28,7 @@ import { CopyStatus, PlaylistPicker, Popover } from "./library";
 import { CardMenu, GameMenu } from "./card-menu";
 import { gameVersionLabel } from "./game";
 import type { Stack } from "./group";
+import { useTicked } from "./library-ticking";
 import type { CardImage, CardSize, LibraryDetail, NameOrder } from "./view";
 
 /** The large name and the small one under it: the app's, and every game it's based on, as the catalog's cards list them. */
@@ -180,8 +181,13 @@ function TileTitle({ text, entry, details, image }: { text: string; entry?: Entr
 export function LibraryTile(props: TileProps) {
   const { config, installs, jobs, catalog, consoleNames, inCatalog } = useLauncher();
   const id = props.entry.id;
-  return <Tile {...props} os={config.os} install={installs[id]} job={jobs[id]} latest={catalog[id] ?? props.entry} consoleNames={consoleNames} listed={inCatalog.has(id)} />;
+  // Selecting many at once (library-ticking.tsx): only an app in the library.
+  const { ticking, ticked } = useTicked(props.inLibrary ? [id] : []);
+  return <Tile {...props} os={config.os} install={installs[id]} job={jobs[id]} latest={catalog[id] ?? props.entry} consoleNames={consoleNames} listed={inCatalog.has(id)} ticking={ticking && props.inLibrary} ticked={ticked} />;
 }
+
+/** Over the picture while the library is selecting: ticked or not. */
+const TickMark = ({ ticked }: { ticked: boolean }) => <span className="tick-mark" data-ticked={ticked || undefined} aria-hidden="true">{ticked && <Check size={16} strokeWidth={3} />}</span>;
 
 const Tile = memo(function Tile({
   entry,
@@ -203,7 +209,9 @@ const Tile = memo(function Tile({
   latest,
   consoleNames,
   listed,
-}: TileProps & { os: Config["os"]; install?: Install; job?: Job; latest: CatalogEntry; consoleNames: Record<string, string>; listed: boolean }) {
+  ticking,
+  ticked,
+}: TileProps & { os: Config["os"]; install?: Install; job?: Job; latest: CatalogEntry; consoleNames: Record<string, string>; listed: boolean; ticking: boolean; ticked: boolean }) {
   // What a press does, with the launcher as it is then.
   const now = useLauncherNow();
   const card = useRef<HTMLElement>(null);
@@ -281,11 +289,16 @@ const Tile = memo(function Tile({
       data-busy={busy || undefined}
       data-withdrawn={pulled ? "" : undefined}
       data-round={round || undefined}
+      data-tick={inLibrary ? entry.id : undefined}
+      data-ticked={ticked || undefined}
     >
       {/* TV mode's has no ⋯ button (a mouse's), and its menu, closed, gives the focus back to the card. */}
       {tv && inLibrary && <GameMenu entry={entry} onOpen={open} target={() => card.current} bare where="card" />}
-      <button type="button" className="card-open" onClick={open} aria-label={pulled ? t`${name}, ${pulledLabel} was withdrawn` : name}>
-        <span className="card-cover">{cover}</span>
+      <button type="button" className="card-open" onClick={open} aria-label={pulled ? t`${name}, ${pulledLabel} was withdrawn` : name} aria-pressed={ticking ? ticked : undefined}>
+        <span className="card-cover">
+          {cover}
+          {ticking && <TickMark ticked={ticked} />}
+        </span>
         <span className="card-body">
           {names ? (
             <>
@@ -600,7 +613,10 @@ export function GameTile(props: GameTileProps) {
   const one = ports.length === 1 ? ports[0] : undefined;
   const update = one && installs[one.id] && !jobs[one.id] && hasUpdate(catalog[one.id] ?? one, installs[one.id]) ? updateFor(catalog[one.id] ?? one, installs[one.id])?.version : undefined;
   const installed = ports.some((p) => Boolean(installs[p.id]));
-  return <Game {...props} copy={copy} gettable={gettable} ready={ready} busy={busy} installed={installed} version={version} update={update} state={state} consoleNames={consoleNames} />;
+  // Selecting many at once (library-ticking.tsx): the card stands for its ports in the library.
+  const mine = ports.filter((p) => props.inLibrary(p.id)).map((p) => p.id);
+  const { ticking, ticked } = useTicked(mine);
+  return <Game {...props} tick={mine.join(" ")} ticking={ticking && mine.length > 0} ticked={ticked} copy={copy} gettable={gettable} ready={ready} busy={busy} installed={installed} version={version} update={update} state={state} consoleNames={consoleNames} />;
 }
 
 const Game = memo(
@@ -624,7 +640,10 @@ const Game = memo(
     version,
     update,
     consoleNames,
-  }: GameTileProps & { copy: Copy; gettable: boolean; ready?: Entry; busy?: Entry; installed: boolean; version?: string; update?: string; state: string; consoleNames: Record<string, string> }) {
+    tick,
+    ticking,
+    ticked,
+  }: GameTileProps & { tick: string; ticking: boolean; ticked: boolean; copy: Copy; gettable: boolean; ready?: Entry; busy?: Entry; installed: boolean; version?: string; update?: string; state: string; consoleNames: Record<string, string> }) {
     const now = useLauncherNow();
     const article = useRef<HTMLElement>(null);
     const first = ports[0];
@@ -650,7 +669,7 @@ const Game = memo(
     const openMine = () => onOpen(mine);
     const cardButton = () => article.current?.querySelector<HTMLElement>(".card-open");
     return (
-      <article ref={article} className="entry-card library-tile game-tile" data-game={game.slug} data-letter={letter} data-copy={copy} data-installed={installed} data-busy={busy ? "" : undefined} data-round={(!busy && Boolean(ready)) || undefined}>
+      <article ref={article} className="entry-card library-tile game-tile" data-game={game.slug} data-letter={letter} data-copy={copy} data-installed={installed} data-busy={busy ? "" : undefined} data-round={(!busy && Boolean(ready)) || undefined} data-tick={tick || undefined} data-ticked={ticked || undefined}>
         {/* TV mode's has no ⋯ button (a mouse's), and its menu, closed, gives the focus back to the card. */}
         {tv && menu && <GameMenu entry={mine} onOpen={openMine} target={() => article.current} bare where="card" heading={heading} pad={false} />}
         <Popover
@@ -669,6 +688,7 @@ const Game = memo(
                     {apps}
                   </span>
                 )}
+                {ticking && <TickMark ticked={ticked} />}
               </span>
               <span className="card-body">
                 {names ? (
@@ -740,6 +760,9 @@ const Game = memo(
     a.installed === b.installed &&
     a.version === b.version &&
     a.update === b.update &&
+    a.tick === b.tick &&
+    a.ticking === b.ticking &&
+    a.ticked === b.ticked &&
     a.stack.game.id === b.stack.game.id &&
     a.stack.game.title === b.stack.game.title &&
     a.stack.ports.length === b.stack.ports.length &&

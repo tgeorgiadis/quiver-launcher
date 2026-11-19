@@ -36,6 +36,7 @@ import { GameTile, LibraryTile } from "./library-tile";
 import { closesOutside } from "./overlay";
 import { boxZoom, windowBox, zoom } from "./zoom";
 import { LibraryBackground } from "./library-background";
+import { TickArea } from "./library-ticking";
 
 type Tab = "all" | "updates" | "hidden" | string;
 /** The library's filters, as the catalog's: one choice of each. */
@@ -519,6 +520,8 @@ export function LibraryPage({
       )}
     </>
   );
+  // The player's own playlist open, whose apps picked by hand the selected ones can come off.
+  const ownPlaylist = collection && !collection.follows ? collection.key : undefined;
   const empty = collection && !search && !filtering ? (collection.follows ? t`Nothing in this playlist.` : t`No apps in this playlist yet. Add some from each app's menu, or edit its filters.`) : t`Nothing here.`;
   if (sidebar && page) {
     // Under headings by console, or by when they were played or added; else one list.
@@ -536,6 +539,7 @@ export function LibraryPage({
     const open = listed.find((e) => e.id === selected) ?? listed[0];
     const installedOnly = filters.installed === "yes";
     return (
+      <TickArea shown={listed.flatMap((e) => (inLibrary.has(e.id) ? [e.id] : []))} playlist={ownPlaylist}>
       <SidebarLayout
         side={
           <>
@@ -661,6 +665,7 @@ export function LibraryPage({
         {open ? <div key={open.id}>{page(open)}</div> : <p className="empty">{empty}</p>}
         {dialogs}
       </SidebarLayout>
+      </TickArea>
     );
   }
   // The grid's sections, when it has them: by game only in the sidebar.
@@ -723,7 +728,7 @@ export function LibraryPage({
   // An empty library over apps still installed here: their section says it all.
   const nothing = items.length === 0 && !(loose.length && tab === "all" && !search && !filtering);
   return (
-    <>
+    <TickArea shown={items.flatMap((e) => (inLibrary.has(e.id) ? [e.id] : []))} playlist={ownPlaylist}>
       <LibraryBackground />
       {resume && <ContinuePlaying entry={resume} played={installs[resume.id].lastPlayed!} onOpen={() => onOpen(resume)} action={action(resume)} />}
       <div ref={bar} className={`library-bar${stacked ? " stacked" : ""}`}>
@@ -921,7 +926,7 @@ export function LibraryPage({
         </section>
       )}
       {dialogs}
-    </>
+    </TickArea>
   );
 }
 

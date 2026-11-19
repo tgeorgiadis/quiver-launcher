@@ -22,6 +22,16 @@ msgstr "(변경됨)"
 msgid "{0, plural, one {# app for other platforms isn't shown.} other {# apps for other platforms aren't shown.}}"
 msgstr "{0, plural, other {다른 플랫폼용 앱 #개가 숨겨져 있어요.}}"
 
+#. placeholder {0}: ids.length
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "{0, plural, one {# app hidden from your library.} other {# apps hidden from your library.}}"
+msgstr "{0, plural, other {앱 #개를 라이브러리에서 숨겼습니다.}}"
+
+#. placeholder {0}: ids.length
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "{0, plural, one {# app shows in your library again.} other {# apps show in your library again.}}"
+msgstr "{0, plural, other {앱 #개가 라이브러리에 다시 보입니다.}}"
+
 #. placeholder {0}: stays.length
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "{0, plural, one {# app stays at the top of the apps folder} other {# apps stay at the top of the apps folder}}"
@@ -49,10 +59,20 @@ msgstr "{0, plural, other {댓글 #개}}"
 msgid "{0, plural, one {# file} other {# files}}"
 msgstr "{0, plural, other {파일 #개}}"
 
+#. placeholder {0}: portable.length
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "{0, plural, one {# of them may keep your saves in its folder. They'll go to the trash too.} other {# of them may keep your saves in their folders. They'll go to the trash too.}}"
+msgstr "{0, plural, other {그중 #개는 세이브를 자기 폴더에 보관할 수 있습니다. 세이브도 휴지통으로 이동합니다.}}"
+
 #. placeholder {0}: library.apps.length
 #: ../../apps/launcher/src/old-library.tsx
 msgid "{0, plural, one {If you already installed it somewhere else, show Quiver the folder.} other {If you already installed them somewhere else, show Quiver the folder.}}"
 msgstr "{0, plural, other {이미 다른 곳에 설치했다면 Quiver에 그 폴더를 알려 주세요.}}"
+
+#. placeholder {0}: gettable.length
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "{0, plural, one {Install # app} other {Install # apps}}"
+msgstr "{0, plural, other {앱 #개 설치}}"
 
 #. placeholder {0}: bringing.apps.length
 #. placeholder {1}: bringing.path
@@ -95,6 +115,16 @@ msgstr "{0, plural, other {이 앱은 옮기지 못했어요. 모든 파일과 �
 #: ../../apps/launcher/src/App.tsx
 msgid "{0, plural, one {Unhide # app} other {Unhide all # apps}}"
 msgstr "{0, plural, other {앱 #개 모두 숨김 해제}}"
+
+#. placeholder {0}: installed.length
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "{0, plural, one {Uninstall # app…} other {Uninstall # apps…}}"
+msgstr "{0, plural, other {앱 #개 제거…}}"
+
+#. placeholder {0}: updatable.length
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "{0, plural, one {Update # app} other {Update # apps}}"
+msgstr "{0, plural, other {앱 #개 업데이트}}"
 
 #. placeholder {0}: space(free)
 #. placeholder {0}: space(state.free)
@@ -149,6 +179,10 @@ msgstr ""
 #: ../../apps/launcher/src/ways-to-play.tsx
 msgid "{apps, plural, one {# way to play} other {# ways to play}}"
 msgstr "{apps, plural, other {플레이 방법 #가지}}"
+
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "{away, plural, one {(# not showing)} other {(# not showing)}}"
+msgstr "{away, plural, other {(#개 숨겨짐)}}"
 
 #: ../../apps/launcher/src/detail.tsx
 msgid "{broken, plural, one {# broken} other {# broken}}"
@@ -207,6 +241,10 @@ msgstr "{count, plural, other {사본 #개}}"
 msgid "{count, plural, one {# discussion with new comments} other {# discussions with new comments}}"
 msgstr "{count, plural, other {새 댓글이 있는 토론 #개}}"
 
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "{count, plural, one {# selected} other {# selected}}"
+msgstr "{count, plural, other {#개 선택됨}}"
+
 #: ../../apps/launcher/src/old-library.tsx
 msgid "{count, plural, one {Add # app} other {Add # apps}}"
 msgstr "{count, plural, other {앱 #개 추가}}"
@@ -236,6 +274,26 @@ msgstr "{count, plural, other {링크가 있는 누구나 볼 수 있고 자신�
 #: ../../apps/launcher/src/old-library.tsx
 msgid "{count, plural, one {Quiver Launcher 3 already installed # app in your library. Use that copy where it is, instead of downloading it again?} other {Quiver Launcher 3 already installed # apps in your library. Use those copies where they are, instead of downloading them again?}}"
 msgstr "{count, plural, other {Quiver Launcher 3이 라이브러리의 앱 #개를 이미 설치했어요. 다시 다운로드하지 않고 지금 있는 위치에서 그대로 사용할까요?}}"
+
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "{count, plural, one {Remove # app from your library?} other {Remove # apps from your library?}}"
+msgstr "{count, plural, other {라이브러리에서 앱 #개를 삭제할까요?}}"
+
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "{count, plural, one {Removing # app…} other {Removing # apps…}}"
+msgstr "{count, plural, other {앱 #개 삭제 중…}}"
+
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "{count, plural, one {Uninstall # app and remove it from your library?} other {Uninstall and remove # apps from your library?}}"
+msgstr "{count, plural, other {앱 #개를 제거하고 라이브러리에서 삭제할까요?}}"
+
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "{count, plural, one {Uninstall # app?} other {Uninstall # apps?}}"
+msgstr "{count, plural, other {앱 #개를 제거할까요?}}"
+
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "{count, plural, one {Uninstalling # app…} other {Uninstalling # apps…}}"
+msgstr "{count, plural, other {앱 #개 제거 중…}}"
 
 #: ../../apps/launcher/src/old-library.tsx
 msgid "{count, plural, one {Use it} other {Use them}}"
@@ -304,6 +362,10 @@ msgstr "개발자가 {listed}에서 {file}을(를) 삭제했어요."
 #: ../../apps/launcher/src/detail.tsx
 msgid "{files, plural, one {# file} other {# files}}"
 msgstr "{files, plural, other {파일 #개}}"
+
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "{files, plural, one {The files of the one installed go to the trash, and they all leave your library.} other {The files of the # installed go to the trash, and they all leave your library.}}"
+msgstr "{files, plural, other {설치된 #개의 파일은 휴지통으로 이동하고, 모든 앱이 라이브러리에서 삭제됩니다.}}"
 
 #: ../../apps/launcher/src/old-library.tsx
 msgid "{filters, plural, one {# tag filter, as a playlist} other {# tag filters, as playlists}}"
@@ -390,6 +452,10 @@ msgstr "{until}까지 이번 시간 요청이 {most}회 중 {left}회 남았어�
 msgid "{left} of {most} requests left this minute."
 msgstr "이번 분 요청이 {most}회 중 {left}회 남았어요."
 
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "{listed} and {more} more"
+msgstr "{listed} 외 {more}개"
+
 #: ../../apps/launcher/src/mods.tsx
 msgid "{mb} MB"
 msgstr "{mb} MB"
@@ -426,6 +492,10 @@ msgstr "{months, plural, other {#개월 전 플레이}}"
 #: ../../apps/launcher/src/library.tsx
 msgid "{more, plural, one {and # more} other {and # more}}"
 msgstr "{more, plural, other {외 #개}}"
+
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "{n, plural, one {# app selected} other {# apps selected}}"
+msgstr "{n, plural, other {앱 #개 선택됨}}"
 
 #: ../../apps/launcher/src/recovery.tsx
 #: ../../apps/launcher/src/tag-settings.tsx
@@ -760,10 +830,12 @@ msgid "{years, plural, one {Played # yr ago} other {Played # yrs ago}}"
 msgstr "{years, plural, other {#년 전 플레이}}"
 
 #: ../../apps/launcher/src/card-menu.tsx
+#: ../../apps/launcher/src/library-ticking.tsx
 msgid "+ New playlist…"
 msgstr "+ 새 재생 목록…"
 
 #: ../../apps/launcher/src/card-menu.tsx
+#: ../../apps/launcher/src/library-ticking.tsx
 msgid "+ New tag…"
 msgstr "+ 새 태그…"
 
@@ -920,6 +992,7 @@ msgstr "공유 재생 목록 추가"
 
 #: ../../apps/launcher/src/card-menu.tsx
 #: ../../apps/launcher/src/detail.tsx
+#: ../../apps/launcher/src/library-ticking.tsx
 msgid "Add a tag"
 msgstr "태그 추가"
 
@@ -983,7 +1056,9 @@ msgstr "내 라이브러리에 추가"
 
 #. Menu item opening the playlists to add an app to
 #. Menu item opening the playlists to add an app to
+#. Menu item opening the playlists to add an app to
 #: ../../apps/launcher/src/card-menu.tsx
+#: ../../apps/launcher/src/library-ticking.tsx
 #: ../../apps/launcher/src/library.tsx
 msgid "Add to playlist"
 msgstr "재생 목록에 추가"
@@ -1554,6 +1629,7 @@ msgstr "추가할 수 없음: Quiver Launcher 3이 어디서 받은 앱인지 �
 #: ../../apps/launcher/src/feedback.tsx
 #: ../../apps/launcher/src/file-picker.tsx
 #: ../../apps/launcher/src/launch-options.tsx
+#: ../../apps/launcher/src/library-ticking.tsx
 #: ../../apps/launcher/src/library.tsx
 #: ../../apps/launcher/src/mods.tsx
 #: ../../apps/launcher/src/own-copy-setup.tsx
@@ -2360,10 +2436,12 @@ msgstr "Quiver Launcher 3 폴더는 아직 지우지 마세요. 설정 › 앱 �
 msgid "Don't play yet"
 msgstr "아직 플레이하지 않기"
 
+#. Button: stops selecting apps in the library
 #. Closes a dialog
 #. Closes the thanks after a problem was reported
 #: ../../apps/launcher/src/announcements-ui.tsx
 #: ../../apps/launcher/src/correction.tsx
+#: ../../apps/launcher/src/library-ticking.tsx
 #: ../../apps/launcher/src/library.tsx
 msgid "Done"
 msgstr "완료"
@@ -2483,6 +2561,12 @@ msgstr "편집"
 #: ../../apps/launcher/src/library.tsx
 msgid "Edit playlist"
 msgstr "재생 목록 편집"
+
+#. Controller hint, and a button over the apps selected in the library: what can change on all of them at once
+#: ../../apps/launcher/src/library-ticking.tsx
+#: ../../apps/launcher/src/spatial.ts
+msgid "Edit selected"
+msgstr "선택 항목 편집"
 
 #: ../../apps/launcher/src/discussions.tsx
 msgid "Edit your comment"
@@ -2887,6 +2971,7 @@ msgstr "둘러보기에서 숨기기"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/card-menu.tsx
+#: ../../apps/launcher/src/library-ticking.tsx
 msgid "Hide from library"
 msgstr "라이브러리에서 숨기기"
 
@@ -3136,6 +3221,7 @@ msgid "Install anyway"
 msgstr "그래도 설치"
 
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/library-ticking.tsx
 msgid "Install automatically"
 msgstr "자동으로 설치"
 
@@ -3790,6 +3876,12 @@ msgstr "모드는 앱 폴더의 {modsPath}에 들어가요. 직접 넣은 파일
 msgid "Mods to browse"
 msgstr "둘러볼 모드"
 
+#. Button over the selected apps: the rest of what can change on them
+#. Button over the selected apps: the rest of what can change on them
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "More"
+msgstr "더 보기"
+
 #. A shelf at the foot of an app's page: the best rated apps for other games on its console
 #: ../ui/src/discover.tsx
 msgid "More like this"
@@ -4045,6 +4137,7 @@ msgid "New name for {tag}"
 msgstr "{tag}의 새 이름"
 
 #: ../../apps/launcher/src/card-menu.tsx
+#: ../../apps/launcher/src/library-ticking.tsx
 #: ../../apps/launcher/src/library.tsx
 msgid "New playlist"
 msgstr "새 재생 목록"
@@ -4208,6 +4301,10 @@ msgstr "{name} {version}의 파일 중 이 컴퓨터용으로 표시된 파일�
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "None of the files Quiver found look like {game}."
 msgstr "Quiver가 찾은 파일 중 {game}처럼 보이는 파일이 없어요."
+
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "None of them are installed."
+msgstr "설치된 앱이 없습니다."
 
 #: ../../apps/launcher/src/own.tsx
 msgid "None of this release's files are for this computer."
@@ -4399,7 +4496,9 @@ msgid "Off"
 msgstr "끄기"
 
 #. Updates: offer new releases to install
+#. Updates: offer new releases to install
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/library-ticking.tsx
 msgid "Offer them"
 msgstr "알려 주기"
 
@@ -4694,7 +4793,9 @@ msgstr "플레이어 평가: 잘 실행됨"
 msgid "Playlist name"
 msgstr "재생 목록 이름"
 
+#. Button over the selected apps: puts them on playlists
 #: ../../apps/launcher/src/detail.tsx
+#: ../../apps/launcher/src/library-ticking.tsx
 #: ../../apps/launcher/src/library.tsx
 msgid "Playlists"
 msgstr "재생 목록"
@@ -5154,8 +5255,10 @@ msgstr "다시 불러오기"
 
 #. Button: no background music, or no background picture
 #. Button: no background music, or no background picture
+#. Button: takes the selected apps out of the library
 #. Removes a followed playlist from the library
 #: ../../apps/launcher/src/cloud-saves-page.tsx
+#: ../../apps/launcher/src/library-ticking.tsx
 #: ../../apps/launcher/src/library.tsx
 #: ../../apps/launcher/src/own-copy-settings.tsx
 #: ../../apps/launcher/src/saves-tab.tsx
@@ -5179,6 +5282,10 @@ msgstr "모두 삭제"
 msgid "Remove all copies"
 msgstr "모든 사본 삭제"
 
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "Remove apps"
+msgstr "앱 삭제"
+
 #: ../../apps/launcher/src/detail.tsx
 msgid "Remove console {name}"
 msgstr "콘솔 {name} 삭제"
@@ -5191,10 +5298,19 @@ msgstr "계정에서 {name}의 모든 사본을 삭제할까요? 컴퓨터에 �
 msgid "Remove filter {on}"
 msgstr "필터 {on} 삭제"
 
+#. placeholder {0}: open.name
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "Remove from {0}"
+msgstr "{0}에서 삭제"
+
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Remove from library"
 msgstr "라이브러리에서 삭제"
+
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "Remove from library…"
+msgstr "라이브러리에서 삭제…"
 
 #: ../../apps/launcher/src/detail.tsx
 msgid "Remove tag {tag}"
@@ -5580,9 +5696,21 @@ msgid "See which apps"
 msgstr "어떤 앱인지 보기"
 
 #. Controller hint: what Confirm does on any other control
+#. Controller hint: what Confirm does on any other control
+#. Menu item: selects an app in the library, to change several at once
+#: ../../apps/launcher/src/card-menu.tsx
 #: ../../apps/launcher/src/spatial.ts
 msgid "Select"
 msgstr "선택"
+
+#. Selects every app the library shows
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "Select all"
+msgstr "모두 선택"
+
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "Selected apps"
+msgstr "선택한 앱"
 
 #. Button: send a correction to the maintainers
 #. Sends the maintainers which system a release file is for
@@ -5760,6 +5888,7 @@ msgstr "둘러보기에 표시"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/card-menu.tsx
+#: ../../apps/launcher/src/library-ticking.tsx
 msgid "Show in library"
 msgstr "라이브러리에서 보기"
 
@@ -6041,6 +6170,11 @@ msgstr "현재 위치에서 실행해요. 아무것도 다운로드, 이동, 삭
 msgid "Starts the program you put in its folder, {folder}."
 msgstr "폴더({folder})에 넣은 프로그램을 실행해요."
 
+#. How the selected apps update: never, each staying on the version it has
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "Stay on the installed version"
+msgstr "설치된 버전 유지"
+
 #: ../../apps/launcher/src/App.tsx
 msgid "Stay signed in"
 msgstr "로그인 상태 유지"
@@ -6069,6 +6203,10 @@ msgstr ""
 #: ../../apps/launcher/src/own-copy-settings.tsx
 msgid "Stop looking in {folder} for {console}"
 msgstr "{console}용으로 {folder}에서 그만 찾기"
+
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "Stop selecting"
+msgstr "선택 끝내기"
 
 #: ../../apps/launcher/src/library.tsx
 msgid "Stop sharing"
@@ -6135,11 +6273,15 @@ msgid "Tag"
 msgstr "태그"
 
 #. Browse card detail: the app's tags, such as Recomp or its console, over its name
+#. Button over the selected apps: the player's tags to put on them
+#. Button over the selected apps: the player's tags to put on them
+#. Menu item opening the player's tags for an app
 #. Menu item opening the player's tags for an app
 #. Menu item opening the player's tags for an app
 #. Settings section: the player's own tags and the catalog's
 #: ../../apps/launcher/src/browse-cards.ts
 #: ../../apps/launcher/src/card-menu.tsx
+#: ../../apps/launcher/src/library-ticking.tsx
 #: ../../apps/launcher/src/tag-settings.tsx
 msgid "Tags"
 msgstr "태그"
@@ -6364,6 +6506,10 @@ msgstr "공유 재생 목록이 최신 상태예요."
 msgid "The tags you gave your apps, including any brought over from Quiver Launcher 3. Renaming or deleting one changes it on every app that has it. The catalog's own tags aren't affected."
 msgstr "앱에 붙인 태그입니다. Quiver Launcher 3에서 가져온 태그도 포함됩니다. 이름을 바꾸거나 삭제하면 그 태그가 있는 모든 앱에 적용됩니다. 카탈로그의 태그는 바뀌지 않습니다."
 
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "Their files go to the trash. They stay in your library, so you can get them again."
+msgstr "파일은 휴지통으로 이동합니다. 앱은 라이브러리에 남아 있어 다시 받을 수 있습니다."
+
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Theme"
 msgstr "테마"
@@ -6411,6 +6557,10 @@ msgstr "이 세이브는 클라우드 세이브에 넣기에는 너무 큽니다
 #: ../../apps/launcher/src/cloud-saves-page.tsx
 msgid "These saves are too big for cloud saves."
 msgstr "이 세이브는 클라우드 세이브에 넣기에는 너무 큽니다."
+
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "They leave your library. Nothing is deleted."
+msgstr "라이브러리에서 삭제됩니다. 아무것도 지워지지 않습니다."
 
 #: ../../apps/launcher/src/account.tsx
 msgid "This account is suspended."
@@ -6641,6 +6791,7 @@ msgstr "팔로우 취소"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/card-menu.tsx
+#: ../../apps/launcher/src/library-ticking.tsx
 #: ../../apps/launcher/src/mods.tsx
 msgid "Uninstall"
 msgstr "제거"
@@ -6659,8 +6810,17 @@ msgstr "{name}을(를) 제거할까요?"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/card-menu.tsx
+#: ../../apps/launcher/src/library-ticking.tsx
 msgid "Uninstall and remove"
 msgstr "제거 및 삭제"
+
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "Uninstall and remove from library…"
+msgstr "제거 및 라이브러리에서 삭제…"
+
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "Uninstall apps"
+msgstr "앱 제거"
 
 #. Moderation action
 #: ../../apps/launcher/src/discussions.tsx
@@ -6680,6 +6840,13 @@ msgstr "고정 해제 후 {version}(으)로 다운그레이드"
 #: ../../apps/launcher/src/versions.ts
 msgid "Unpin and install {version}"
 msgstr "고정 해제 후 {version} 설치"
+
+#. Controller hint: what Confirm does on an app selected in the library, taking it out of those selected
+#. Menu item: takes an app out of the apps selected in the library
+#: ../../apps/launcher/src/card-menu.tsx
+#: ../../apps/launcher/src/spatial.ts
+msgid "Unselect"
+msgstr "선택 해제"
 
 #: ../../apps/launcher/src/tag-settings.tsx
 msgid "Untick a tag to hide it on every app on this computer. Tick it to show it again. To hide one on a single app, untick it in that app's Tags menu."
@@ -6803,7 +6970,9 @@ msgid "Updated to {version} · {when}"
 msgstr "{version}(으)로 업데이트됨 · {when}"
 
 #. How an installed app gets new releases
+#. How an installed app gets new releases
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/library-ticking.tsx
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Updates"
 msgstr "업데이트"
@@ -6875,6 +7044,11 @@ msgstr "내 클라우드 세이브 사용"
 #: ../../apps/launcher/src/App.tsx
 msgid "Use my cloud saves anyway"
 msgstr ""
+
+#. How the selected apps update: whatever Settings, Updates says
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "Use my default"
+msgstr "내 기본값 사용"
 
 #. Which releases an app gets: whatever Settings, Updates says, which is to include pre-releases
 #: ../../apps/launcher/src/App.tsx
