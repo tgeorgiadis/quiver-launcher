@@ -33,6 +33,7 @@ mod steam;
 mod sync_folder;
 #[cfg(windows)]
 mod tray;
+mod tv;
 mod update;
 mod v3;
 mod window_state;
@@ -459,13 +460,16 @@ fn start(
     let wine = program == Path::new("wine");
     let mut command = host::command(&program);
     command.args(&args).envs(env).current_dir(&target.dir);
+    // Its output, in a log of its own (game-logs/), so a game that fails can say why (tv/session.rs).
+    let log = tv::session::GameLog::new(&data.0, folder);
+    let_it_come_to_the_front();
     let spawned: std::io::Result<session::Started> = sandbox::check(&program)
         .and_then(|_| {
             sandbox::game(command)
                 // The game outlives the launcher's console; it shouldn't hold it open.
                 .stdin(std::process::Stdio::null())
-                .stdout(std::process::Stdio::null())
-                .stderr(std::process::Stdio::null())
+                .stdout(log.stdio())
+                .stderr(log.stdio())
                 .spawn()
         })
         .map(session::Started::Child);
@@ -488,16 +492,22 @@ fn start(
                 // On the player's Discord profile while it runs (discord.rs).
                 presence.map(|game| app.state::<discord::Presence>().started(id, game)).is_some()
             });
+            // TV mode steps aside while it runs (tv/TvMode.tsx).
+            if let Some(id) = &id {
+                let _ = app.emit("app-started", id);
+            }
             // Its folder tells the game's other processes apart only when it's the app's own: a program elsewhere may sit
             // in a folder others share (/usr/bin, say), whose every program would count as the game.
             let own = app_folder.as_ref().is_some_and(|f| session::inside(&target.exe, f)).then(|| target.dir.clone());
-            session::track(game, own, move |seconds| {
+            let (dir, folder) = (target.dir.clone(), folder.to_string());
+            session::track(game, own, move |ended| {
+                tv::session::report(&app, &ended, id.clone(), folder, &log, &dir);
                 let Some(id) = id else { return };
                 app.state::<Running>().closed(&id);
                 if shown {
                     app.state::<discord::Presence>().closed(&id);
                 }
-                if let Some(seconds) = seconds {
+                if let Some(seconds) = ended.seconds {
                     let _ = app.emit("app-closed", Played { id, seconds });
                 }
             });
@@ -518,6 +528,24 @@ fn start(
             ),
             _ => format!("Couldn't start {}: {e}", target.exe.display()),
         })
+}
+
+/// Windows lets a window come in front only for a program the one in front started, and only soon after the player's
+/// last key or click there. A game started from a controller (no key or click), or by a script that starts it (a
+/// .bat starting Python starting the game's window, as Bloodborne's), opened behind Quiver, in TV mode's full
+/// screen. Quiver, in front as Play is pressed, lets whatever the game starts come in front.
+fn let_it_come_to_the_front() {
+    #[cfg(windows)]
+    {
+        #[link(name = "user32")]
+        extern "system" {
+            fn AllowSetForegroundWindow(process: u32) -> i32;
+        }
+        /// ASFW_ANY: any process.
+        const ANY: u32 = u32::MAX;
+        // SAFETY: a plain call with a constant; it fails harmlessly when Quiver isn't in front.
+        unsafe { AllowSetForegroundWindow(ANY) };
+    }
 }
 
 /// The Android app the player last started from Quiver, and when.
@@ -2524,7 +2552,16 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            tv::tv_launch_args,
+            tv::tv_focus,
+            tv::tv_use_monitor,
+            tv::tv_monitors,
+            tv::art::tv_fit_art,
+            tv::programs::tv_programs,
+            tv::romneed::tv_place_rom,
+            tv::romneed::tv_open_readme,
             session::close_combo,
+            session::select_pointer,
             config,
             pc_specs,
             cancel_install,

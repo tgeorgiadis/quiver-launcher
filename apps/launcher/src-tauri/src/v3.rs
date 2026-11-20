@@ -71,7 +71,8 @@ pub struct TagFilter {
 const UNKNOWN_VERSION: &str = "0.0.0";
 
 /// Where 3.x keeps apps.json: its installer's folder, or the XDG / Application
-/// Support fallback; then where a portable copy usually is, since a portable
+/// Support fallback; one installed to another folder or drive, which its
+/// updater's log names (`velopack_dirs`); then where a portable copy usually is, since a portable
 /// 3.x keeps its library beside itself (the folder of its AppImage, its .app or
 /// its unzipped Windows folder): the home folder, Downloads, Desktop,
 /// Applications, Games, Documents, and each folder in them.
@@ -87,6 +88,7 @@ fn data_dirs() -> Vec<PathBuf> {
         home.as_ref().map(|h| h.join(".local/share/QuiverLauncher")),
         home.as_ref().map(|h| h.join("Library/Application Support/QuiverLauncher")),
     ];
+    let elsewhere = env("LOCALAPPDATA").map(|d| velopack_dirs(&d.join("velopack").join("velopack_QuiverLauncher.log"))).unwrap_or_default();
     let portable = home.iter().flat_map(|h| {
         ["", "Downloads", "Desktop", "Applications", "Games", "Documents", "Apps", "AppImages"].map(|d| h.join(d))
     });
@@ -95,7 +97,25 @@ fn data_dirs() -> Vec<PathBuf> {
         // A folder of thousands (Downloads) is only looked through so far.
         std::iter::once(d.clone()).chain(children.take(200))
     });
-    known.into_iter().flatten().chain(nearby).collect()
+    known.into_iter().flatten().chain(elsewhere).chain(nearby).collect()
+}
+
+/// The folders 3.x ran from on Windows, latest first: it updates itself with Velopack, which notes its folder in its
+/// log every time it starts ("… using packages directory: E:\QuiverLauncher\packages"), wherever it was installed.
+fn velopack_dirs(log: &Path) -> Vec<PathBuf> {
+    let text = std::fs::read_to_string(log).unwrap_or_default();
+    let mut dirs: Vec<PathBuf> = Vec::new();
+    for line in text.lines().rev() {
+        let Some((_, rest)) = line.split_once("packages directory: ") else { continue };
+        let packages = PathBuf::from(rest.trim());
+        let named_packages = packages.file_name().is_some_and(|n| n.eq_ignore_ascii_case("packages"));
+        if let Some(root) = packages.parent().filter(|_| named_packages) {
+            if !dirs.iter().any(|d| d == root) {
+                dirs.push(root.to_path_buf());
+            }
+        }
+    }
+    dirs
 }
 
 /// A value by name in any letter case (3.x wrote both camelCase and PascalCase).
@@ -387,6 +407,25 @@ fn read_library(dir: &Path, apps: &[PathBuf], settings: &Value) -> Vec<OldApp> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    // Velopack's log, and its Windows paths, are Windows'.
+    #[cfg(windows)]
+    #[test]
+    fn finds_where_velopack_says_3x_ran_latest_first() {
+        let dir = tempfile::tempdir().unwrap();
+        let log = dir.path().join("velopack_QuiverLauncher.log");
+        std::fs::write(
+            &log,
+            "[lib-csharp:1] [00:10:00] [Information] Root directory is writable, using packages directory: C:\\Old\\QuiverLauncher\\packages\n\
+             [lib-csharp:2] [00:55:01] [Information] Root directory is writable, using packages directory: E:\\QuiverLauncher\\packages\n\
+             [lib-csharp:2] [00:55:01] [Information] Initialized WindowsVelopackLocator for QuiverLauncher v3.5.0\n\
+             [lib-csharp:3] [01:20:00] [Information] using packages directory: E:\\Somewhere\\cache\n\
+             [lib-csharp:4] [02:00:00] [Information] Root directory is writable, using packages directory: E:\\QuiverLauncher\\packages\n",
+        )
+        .unwrap();
+        assert_eq!(velopack_dirs(&log), vec![PathBuf::from(r"E:\QuiverLauncher"), PathBuf::from(r"C:\Old\QuiverLauncher")]);
+        assert!(velopack_dirs(&dir.path().join("none.log")).is_empty());
+    }
 
     fn library(dir: &Path, apps: &str) {
         std::fs::create_dir_all(dir).unwrap();

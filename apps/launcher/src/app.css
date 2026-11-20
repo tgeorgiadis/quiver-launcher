@@ -398,21 +398,21 @@ main.app-main { padding: 0 0 40px; }
  * that, not a set height for its art. Beside the library's sidebar, from a wider window, as the page is narrower there.
  */
 @media (min-width: 980px) {
-  .page-layer > .app-page:not(.game-page, [data-tv]) .backdrop-inner {
+  .page-layer > .app-page:not(.game-page) .backdrop-inner {
     display: grid; grid-template-columns: auto minmax(0, 1fr) auto; column-gap: 24px; row-gap: 10px; align-items: start;
     padding: 14px var(--gutter) 22px;
   }
-  .page-layer > .app-page:not(.game-page, [data-tv]) .app-backdrop.has-art .backdrop-inner { min-height: 0; }
-  .page-layer > .app-page:not(.game-page, [data-tv]) .back-link { grid-column: 1 / -1; grid-row: 1; justify-self: start; }
-  .page-layer > .app-page:not(.game-page, [data-tv]) .app-hero { display: contents; }
-  .page-layer > .app-page:not(.game-page, [data-tv]) .app-hero > .artwork { grid-column: 1; grid-row: 2 / span 2; width: 92px; height: 92px; }
-  .page-layer > .app-page:not(.game-page, [data-tv]) .app-heading { grid-column: 2; grid-row: 2; }
-  .page-layer > .app-page:not(.game-page, [data-tv]) .app-hero h1 { font-size: 34px; margin: 4px 0 6px; }
-  .page-layer > .app-page:not(.game-page, [data-tv]) .app-tagline { margin-bottom: 0; }
-  .page-layer > .app-page:not(.game-page, [data-tv]) .app-version { grid-column: 3; grid-row: 2; justify-self: end; max-width: none; }
-  .page-layer > .app-page:not(.game-page, [data-tv]) .app-main-actions { grid-column: 2; grid-row: 3; gap: 12px; }
-  .page-layer > .app-page:not(.game-page, [data-tv]) .app-feedback-spot { position: static; grid-column: 3; grid-row: 3; justify-self: end; }
-  .page-layer > .app-page:not(.game-page, [data-tv]) .feedback-box { padding: 7px 7px 7px 14px; }
+  .page-layer > .app-page:not(.game-page) .app-backdrop.has-art .backdrop-inner { min-height: 0; }
+  .page-layer > .app-page:not(.game-page) .back-link { grid-column: 1 / -1; grid-row: 1; justify-self: start; }
+  .page-layer > .app-page:not(.game-page) .app-hero { display: contents; }
+  .page-layer > .app-page:not(.game-page) .app-hero > .artwork { grid-column: 1; grid-row: 2 / span 2; width: 92px; height: 92px; }
+  .page-layer > .app-page:not(.game-page) .app-heading { grid-column: 2; grid-row: 2; }
+  .page-layer > .app-page:not(.game-page) .app-hero h1 { font-size: 34px; margin: 4px 0 6px; }
+  .page-layer > .app-page:not(.game-page) .app-tagline { margin-bottom: 0; }
+  .page-layer > .app-page:not(.game-page) .app-version { grid-column: 3; grid-row: 2; justify-self: end; max-width: none; }
+  .page-layer > .app-page:not(.game-page) .app-main-actions { grid-column: 2; grid-row: 3; gap: 12px; }
+  .page-layer > .app-page:not(.game-page) .app-feedback-spot { position: static; grid-column: 3; grid-row: 3; justify-self: end; }
+  .page-layer > .app-page:not(.game-page) .feedback-box { padding: 7px 7px 7px 14px; }
 }
 @media (min-width: 1400px) {
   .library-pane .app-page:not(.game-page) .backdrop-inner {
@@ -2362,99 +2362,6 @@ main:has(> div:not([hidden]) > .library-split) > div > .banner-stack > .banner.a
 }
 
 /*
- * TV mode (App.tsx's .tv-mode): the library and Browse across a TV or a Steam Deck, for a controller from the couch.
- */
-.tv-clock { font-size: 18px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.tv-leave { display: inline-flex; flex-shrink: 0; align-items: center; gap: 8px; height: 38px; padding: 0 14px; border-radius: 10px; background: var(--field); color: inherit; font-size: 14px; font-weight: 600; white-space: nowrap; }
-.tv-leave:hover { background: var(--field-hover); color: var(--strong); }
-/*
- * Moving costs nothing it needn't: the focus box is the focus's mark, so a card neither lifts, nor relights its frame,
- * nor fades its button in as the focus comes to it; its button shows at once. The library's own cards
- * (library-tile.tsx) don't darken their art either, with nothing over it to read but their buttons (a withdrawn
- * release's why aside).
- */
-.tv-mode .entry-card.box .card-cover { transition: none; }
-.tv-mode .entry-card.box:is(:hover:where(:not([data-navigating] *)), :focus-within) .card-cover { transform: none; border-color: var(--ql-card-line); box-shadow: 0 10px 24px var(--ql-card-shadow); }
-.tv-mode .entry-card.box :is(.card-action, .cover-strip, .cover-platforms) { transition: none; }
-.tv-mode .entry-card.box:is(:hover:where(:not([data-navigating] *)), :focus-within) .card-action { transform: none; }
-.tv-mode .layout-grid .library-tile, .tv-mode .layout-grid .library-tile .card-cover { transition: none; }
-.tv-mode .layout-grid .library-tile:is(:hover:where(:not([data-navigating] *)), :focus-within, [data-focus]) { transform: none; }
-.tv-mode .layout-grid .library-tile:is(:hover:where(:not([data-navigating] *)), [data-focus]) .card-cover { border-color: var(--ql-card-line); box-shadow: 0 10px 24px var(--ql-card-shadow); }
-.tv-mode .library-tile:not([data-withdrawn]) .card-cover::after { display: none; }
-/*
- * The bar is part of the page, not a banner over it, lined up with what's under
- * it. Its clock and way out fit beside its buttons, with the logo alone and the account's icon (its name is in its
- * menu), and its tabs read from across a room. Over the library's picture, a shade for the bar's words.
- */
-.shell.tv-mode > .topbar {
-  gap: 16px; padding-left: var(--gutter); border-top-color: transparent; border-bottom: 0;
-  background: linear-gradient(color-mix(in srgb, var(--bg) 75%, transparent), transparent);
-}
-.shell.tv-mode > .topbar:not(.with-window-controls) { padding-right: var(--gutter); }
-.shell.tv-mode > main:not(.app-main) { padding-top: 8px; }
-.tv-mode .brand > span { display: none; }
-.tv-mode .account-button > span { display: none; }
-/* :has, as the menu is over the page, outside the shell. */
-body:has(.tv-mode) .account-menu-name { display: block; }
-.tv-mode .topbar nav button { font-size: 17px; font-weight: 600; }
-.tv-mode .topbar nav button:is(.active, :hover) { background: none; }
-.tv-mode .topbar nav button.active { color: var(--accent); font-weight: 600; }
-.tv-mode .topbar nav button.active::after { bottom: 0; height: 4px; border-radius: 4px; }
-.tv-mode .topbar .tab-prompt { margin-top: 0; }
-/* The library's and Browse's tools, large enough to read and to find the focus on from across a room. */
-.tv-mode .library-bar { margin-bottom: 22px; }
-.tv-mode #library-filters { margin-top: -8px; }
-.tv-mode .page-tools { gap: 12px; }
-.tv-mode .page-tools > * { height: 46px; }
-.tv-mode :is(.library-search, .browse-search) { gap: 10px; height: 46px; padding: 0 14px; border: 1px solid var(--line-strong); border-radius: 12px; background: var(--field); }
-.tv-mode :is(.library-search, .browse-search):focus-within { border-color: var(--accent); }
-.tv-mode :is(.library-search, .browse-search) > svg { width: 18px; height: 18px; }
-.tv-mode :is(.library-search, .browse-search) input { font-size: 16px; }
-.tv-mode :is(.library-search, .browse-search) .search-clear { width: 30px; height: 30px; }
-.tv-mode .page-tools .quiet-select select { padding: 0 38px 0 16px; border: 1px solid var(--line-strong); border-radius: 12px; background: var(--field); color: var(--strong); font-size: 15px; font-weight: 600; }
-.tv-mode .page-tools .quiet-select select:is(:hover, :focus-visible) { background: var(--field-hover); }
-.tv-mode .page-tools .quiet-select select:disabled { background: transparent; color: var(--muted); }
-.tv-mode .page-tools .quiet-select > svg { right: 14px; }
-.tv-mode .page-tools .tool { padding: 0 18px; border-color: var(--line-strong); border-radius: 12px; background: var(--field); color: var(--strong); font-size: 15px; font-weight: 600; }
-.tv-mode .page-tools .tool:is(:hover, [aria-expanded="true"]) { background: var(--field-hover); }
-.tv-mode .page-tools .tool.on { background: var(--accent-soft); border-color: var(--accent); }
-.tv-mode .page-tools .tool.icon-only { width: 46px; padding: 0; }
-/* The tabs, where they fit beside the tools, as large: More and Add a playlist with them. */
-.tv-mode .library-bar .playlists { gap: 10px; }
-.tv-mode .library-bar .playlists button:not(.menu-button), .tv-mode .playlists .more-tabs select { height: 46px; padding: 0 20px; font-size: 15px; font-weight: 600; }
-.tv-mode .playlists .more-tabs select { padding-right: 40px; }
-.tv-mode .more-select > svg { right: 16px; }
-.tv-mode .library-bar .playlists .menu-button { width: 46px; height: 46px; }
-.tv-mode .library-show { gap: 12px; }
-.tv-mode .library-show .menu-button { width: 46px; height: 46px; border: 1px solid var(--line-strong); border-radius: 12px; background: var(--field); color: var(--strong); }
-.tv-mode .library-show .menu-button:is(:hover, [aria-expanded="true"]) { background: var(--field-hover); }
-.tv-mode .console-section h2 { font-size: 21px; color: var(--strong); }
-/* An app's page has no edge under the bar: its art comes in from the page's background. */
-.tv-mode .page-layer .app-backdrop { background: none; }
-.tv-mode .page-layer .backdrop-art { mask-image: linear-gradient(transparent, #000 96px); }
-/*
- * An app's page over TV mode (App.tsx's AppPage with `tv`): its art taller and plainer, its name and buttons larger
- * for across a room, its words a size up; Back (B) goes home, so it has no back link.
- */
-.app-page[data-tv] { --backdrop-art: 0.8; }
-.app-page[data-tv] .app-backdrop.has-art .backdrop-inner { min-height: 46vh; }
-.app-page[data-tv] .backdrop-inner { padding-top: 36px; }
-.app-page[data-tv] .app-hero h1 { font-size: 48px; }
-.app-page[data-tv] .app-tagline { max-width: 820px; font-size: 16.5px; }
-.app-page[data-tv] .app-actions button, .app-page[data-tv] .app-actions .row > button { min-height: 54px; padding: 0 28px; border-radius: 12px; font-size: 17px; }
-.app-page[data-tv] .app-actions .progress { width: 340px; height: 54px; border-radius: 12px; }
-.app-page[data-tv] .app-actions button.own-copy-chip { min-height: 40px; padding: 0 16px; border-radius: 999px; font-size: 15px; }
-.app-page[data-tv] .app-content { font-size: 15px; }
-.app-page[data-tv] .content-panel dl { font-size: 14px; }
-.tv-readme { width: 100%; justify-content: flex-start; padding: 18px 22px; border-radius: 12px; font-size: 16px; }
-/* A phone: Leave TV mode an icon (so it's on the screen, not past its edge), and no clock (the phone has its own). */
-@media (max-width: 600px) {
-  .tv-clock { display: none; }
-  .tv-leave { width: 36px; height: 36px; padding: 0; justify-content: center; }
-  .tv-leave-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-}
-
-/*
  * Beside a grid sorted by name (letter-index.tsx): its letters down its right, staying in sight as it scrolls, the
  * focused app's in the accent; and the letter the triggers came to, large for a moment in the middle of the screen.
  */
@@ -2489,11 +2396,6 @@ body:has(.tv-mode) .account-menu-name { display: block; }
 @media (prefers-reduced-motion: reduce) {
   .letter-big { animation-name: letter-big-still; }
   @keyframes letter-big-still { 0%, 75% { opacity: 1; } 100% { opacity: 0; } }
-}
-/* TV mode: a size up. A Steam Deck's short screen: closer together, so every letter fits. */
-.tv-mode .letter-index > button { width: 30px; height: 24px; font-size: 13px; }
-@media (max-height: 820px) {
-  .tv-mode .letter-index > button { height: 18px; font-size: 11px; }
 }
 .project-details dd.easy-setup {
   margin-top: 6px;
@@ -2581,7 +2483,6 @@ main:has(.tick-bar) { scroll-padding-bottom: 96px; }
 /* Scrolling, not squeezed: the headings keep their height. */
 .tick-menu > * { flex-shrink: 0; }
 .tick-menu button[aria-checked="mixed"] .game-menu-check { color: var(--muted); }
-.tv-mode .tick-bar .tool, .tv-mode .tick-bar .tick-done { height: 44px; font-size: 15px; }
 
 /* Settings › Apps folder: each console folder's name and place (console-folders.tsx), one line each in one box. */
 .console-folders { margin: 4px 0 8px; }

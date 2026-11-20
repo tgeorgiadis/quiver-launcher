@@ -63,6 +63,11 @@ and headings, as in English.
 | note (a player's) | comentário | |
 | Installed (a version) / (a tab) / (an app, a mod) | Instalada / Instalados / Instalado | separate strings, by context |
 | Update (a card's badge) / (a button) | Atualização / Atualizar | separate strings, by context |
+| TV mode | modo TV | "Modo TV" at the start of a sentence |
+| Discover (TV mode's tab) | Descobrir | not Explorar, which is the desktop catalog page |
+| Home (TV mode's tab) | Início | |
+| ROM | ROM (uma ROM) | |
+| stick (left / right) | analógico (esquerdo / direito) | |
 | discussion / comment | discussão / comentário | Community board: Comunidade |
 | Follow / Unfollow (a discussion) | Seguir / Deixar de seguir | |
 | Pin / Lock / Report (a discussion) | Fixar / Trancar / Denunciar | |

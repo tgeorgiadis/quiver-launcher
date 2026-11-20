@@ -10,18 +10,17 @@ import type { MessageDescriptor } from "@lingui/core";
 import { i18n } from "@quiverlauncher/i18n";
 import type { Entry } from "@quiverlauncher/api";
 import { CARD_DETAILS, EntryCardContent, OS_ICONS, OS_NAMES, blurSource, boxOf, cardSources, coverOf, type CardDetail, type CardLook } from "@quiverlauncher/ui";
-import { catalogOs, tvModeOn, useLauncher } from "./store";
+import { catalogOs, useLauncher } from "./store";
 import { CARD_LOOKS, DETAIL_NAMES, browseCardsOf, sampleEntry, savedBrowseCards, type BrowseCards } from "./browse-cards";
 import { PLATFORMS, platformsOf, savedPlatforms, type Platform } from "./platforms";
 import { SIDEBAR_SIZES } from "./sidebar";
 import { GRID_GROUP_BYS, GROUP_BYS, gridGroupBy, isGroupBy, type GroupBy } from "./group";
-import { CARD_IMAGES, CARD_SCALE, LAYOUTS, LIBRARY_DETAILS, NAME_ORDERS, PLAYLISTS_PLACES, SIDEBAR_MIN_WIDTH, TV_VIEW, artFor, savedView, viewOf, type CardImage, type CardSize, type LibraryDetail, type LibraryView, type PlaylistsPlace } from "./view";
+import { CARD_IMAGES, CARD_SCALE, LAYOUTS, LIBRARY_DETAILS, NAME_ORDERS, PLAYLISTS_PLACES, SIDEBAR_MIN_WIDTH, artFor, savedView, viewOf, type CardImage, type CardSize, type LibraryDetail, type LibraryView, type PlaylistsPlace } from "./view";
 
 /** This computer's library view, and a way to change it. */
 export function useLibraryView() {
-  const { settings, setSettings, config } = useLauncher();
-  const saved = viewOf(settings.library);
-  const view = tvModeOn(settings, config) ? { ...saved, ...TV_VIEW } : saved;
+  const { settings, setSettings } = useLauncher();
+  const view = viewOf(settings.library);
   return {
     view,
     // Sections by console were a switch before there were other sections.
@@ -32,7 +31,7 @@ export function useLibraryView() {
       const { byConsole: _, groupBy: __, ...others } = settings;
       setSettings({
         ...(groupBy === undefined ? settings : { ...others, ...(groupBy ? { groupBy } : {}) }),
-        library: savedView({ ...saved, ...rest }),
+        library: savedView({ ...view, ...rest }),
       });
     },
   };
@@ -81,24 +80,21 @@ export function useSidebarFits() {
  */
 export function ViewOptions({ groups }: { groups?: boolean }) {
   const { view, set } = useLibraryView();
-  const { settings, config } = useLauncher();
   const fits = useSidebarFits();
-  // TV mode's look decides these (TV_VIEW); the player's choices are kept for when it's left.
-  const tv = tvModeOn(settings, config);
   // Where the sidebar doesn't fit, the library is a grid; the choice is kept for a wider window.
   const layout = view.layout === "sidebar" && !fits ? "grid" : view.layout;
   const cards = layout !== "sidebar";
   return (
     <div className="view-options">
       {/* Where the sidebar doesn't fit, the grid is the only layout. */}
-      {fits && !tv && <Choice label={t({ message: "Layout", comment: "Library view option" })} options={LAYOUTS} icons={LAYOUT_ICONS} value={layout} onChange={(layout) => set({ layout })} />}
+      {fits && <Choice label={t({ message: "Layout", comment: "Library view option" })} options={LAYOUTS} icons={LAYOUT_ICONS} value={layout} onChange={(layout) => set({ layout })} />}
       {/* The grid's playlists: along the top, or down a panel beside it, where one fits. */}
-      {cards && fits && !tv && (
+      {cards && fits && (
         <Choice label={t({ message: "Playlists position", comment: "Library view option: where the grid's playlists go" })} options={PLAYLISTS_PLACES} icons={PLAYLISTS_ICONS} value={view.playlists} onChange={(playlists) => set({ playlists })} />
       )}
       {/* The sidebar has no cards. */}
-      {cards && !tv && <Choice label={t`Card image`} options={CARD_IMAGES} icons={IMAGE_ICONS} value={view.image} onChange={(image) => set({ image })} />}
-      {cards && !tv && <CardSizeSlider value={view.cardScale} onChange={(cardScale) => set({ cardScale })} />}
+      {cards && <Choice label={t`Card image`} options={CARD_IMAGES} icons={IMAGE_ICONS} value={view.image} onChange={(image) => set({ image })} />}
+      {cards && <CardSizeSlider value={view.cardScale} onChange={(cardScale) => set({ cardScale })} />}
       {cards && (
         <label className="toggle">
           <input type="checkbox" checked={view.names} onChange={(e) => set({ names: e.target.checked })} />

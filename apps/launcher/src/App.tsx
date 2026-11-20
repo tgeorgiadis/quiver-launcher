@@ -6,7 +6,7 @@ import { Plural, Trans } from "@lingui/react/macro";
 import { i18n } from "@quiverlauncher/i18n";
 import type { MessageDescriptor } from "@lingui/core";
 import { Artwork, EntryCard, OS_NAMES, PlatformIcons, ReleaseBadge, SourcedImage, heroSources } from "@quiverlauncher/ui";
-import { PORTABLE_FILE, availableOn, canGet, catalogOs, declinedUpdate, earlyGetOffer, earlyOffer, filesAddable, folderNameOf, hasUpdate, locatable, movable, noProgram, pulledVerified, renamable, rootOf, samePath, skipped, stillWaiting, tvModeOn, updateFor, updatesByItself, updatesOf, useLauncher, type AppMove, type Choice } from "./store";
+import { PORTABLE_FILE, availableOn, canGet, catalogOs, declinedUpdate, earlyGetOffer, earlyOffer, filesAddable, folderNameOf, hasUpdate, locatable, movable, noProgram, pulledVerified, renamable, rootOf, samePath, skipped, stillWaiting, updateFor, updatesByItself, updatesOf, useLauncher, type AppMove, type Choice } from "./store";
 import { TabPrompt } from "./pad-hints";
 import { Dialog, FilterPill, LibraryPage, MultiPill, Popover, consoleOptions, filterLabel, pickedLabel, projectTypeOptions, withOverrides, type MultiOption } from "./library";
 import { BrowseCardOptions, useBrowseCards, useLibraryView, useSidebarFits } from "./library-view";
@@ -48,11 +48,10 @@ import { Setup, showsSetup } from "./setup";
 import { savesChanged, savesOf, savesOn } from "./saves";
 import type { CloudUsage } from "./cloud-saves";
 import { SavesTab } from "./saves-tab";
-import { FilePicker } from "./file-picker";
 import { BrowseMenu, fileName } from "./card-menu";
 import { browseShown, hiddenMatches, toggleHidden, type HiddenView } from "./browse-hidden";
 import { closesOutside } from "./overlay";
-import { OwnCopyChips, OwnCopyPrompt } from "./own-copy-setup";
+import { OwnCopyChips } from "./own-copy-setup";
 import { copiesNeeded } from "./own-copy";
 import { GameCopiesNotice } from "./own-copy-settings";
 import { AppUpdatesNotice } from "./app-updates";
@@ -82,8 +81,7 @@ export function App() {
   useTray();
   useDiscordPresence();
   const { library, client, settings, setSettings, config, catalog } = useLauncher();
-  // TV mode, a larger look over the library and Browse: turned on, or by itself in Steam's Game Mode.
-  const tv = tvModeOn(settings, config);
+  // TV mode (tv/TvHost.tsx) shows over all this once turned on, or by itself in Steam's Game Mode.
   const setTv = (on: boolean) => setSettings({ ...settings, tvMode: on ? "on" : "off" });
   useAnnouncementsCheck(client);
   useTidyDismissals();
@@ -239,7 +237,7 @@ export function App() {
   useTopBarFit(topBar);
   return (
     <DiscussionNavProvider value={discussionNav}>
-    <div className={tv ? "shell tv-mode" : "shell"}>
+    <div className="shell">
       {resizeEdges(config.os, buttons, maximized) && <ResizeEdges />}
       <header ref={topBar} className={buttons === "none" ? "topbar" : "topbar with-window-controls"} onMouseDown={buttons === "window" ? (e) => moveWindow(e, movesByPage(config.x11, maximized)) : undefined}>
         {/* As on the website; it goes to the library. For a mouse: the Library tab beside it does the same for the d-pad and Tab. */}
@@ -249,21 +247,18 @@ export function App() {
             Quiver<span className="brand-label">LAUNCHER</span>
           </span>
         </button>
-        {/* data-tabs: a controller's shoulder buttons go between them, as between TV mode's tabs (spatial.ts). */}
+        {/* data-tabs: a controller's shoulder buttons go between them (spatial.ts). */}
         <nav data-tabs>
-          {tv && <TabPrompt step="prevTab" />}
           <button className={tab === "library" ? "active" : ""} aria-current={tab === "library" && !top ? "page" : undefined} onClick={() => switchTab("library")}>
             <Library size={16} aria-hidden="true" /> <Trans>Library</Trans> <span className="count">{library.length}</span>
           </button>
           <button className={tab === "browse" ? "active" : ""} aria-current={tab === "browse" && !top ? "page" : undefined} onClick={() => switchTab("browse")}>
             <Compass size={16} aria-hidden="true" /> <Trans comment="The tab with the catalog of apps">Browse</Trans>
           </button>
-          {tv && <TabPrompt step="nextTab" />}
         </nav>
-        {tv && <Clock />}
         <AccountButton onSignIn={() => setSigningIn(true)} />
         {/* The library as a grid or a list, from wherever the library is, as TV mode is beside it; none where the sidebar doesn't fit (a phone). */}
-        {tab === "library" && sidebarFits && !tv && (
+        {tab === "library" && sidebarFits && (
           <button
             className="icon layout-button"
             aria-label={sidebar ? t`Show the library as a grid` : t`Show the library as a list`}
@@ -273,18 +268,9 @@ export function App() {
             {sidebar ? <LayoutGrid size={19} /> : <PanelLeft size={19} />}
           </button>
         )}
-        {tv ? (
-          <button type="button" className="tv-leave" onClick={() => setTv(false)}>
-            <LogOut size={17} aria-hidden="true" />{" "}
-            <span className="tv-leave-label">
-              <Trans comment="Button: back from TV mode to the usual launcher">Leave TV mode</Trans>
-            </span>
-          </button>
-        ) : (
-          <button className="icon tv-button" aria-label={t`TV mode`} title={t`TV mode: for a controller, the couch and a Steam Deck`} onClick={() => setTv(true)}>
-            <Tv size={19} />
-          </button>
-        )}
+        <button className="icon tv-button" aria-label={t`TV mode`} title={t`TV mode: for a controller, the couch and a Steam Deck`} onClick={() => setTv(true)}>
+          <Tv size={19} />
+        </button>
         <CommunityButton open={top?.kind === "community"} onOpen={openCommunity} />
         <AnnouncementsButton onOpen={() => setAnnouncementsOpen(true)} />
         <DownloadsButton open={top?.kind === "downloads"} onOpen={openDownloads} />
@@ -320,7 +306,7 @@ export function App() {
             <div key={viewKey(view)} className="page-layer" hidden={i !== stack.length - 1}>
               <ErrorBoundary fallback={(error) => <PageProblem error={error} back={backFrom(i)} onBack={goBack} />}>
                 {view.kind === "app" ? (
-                  <AppPage entry={view.entry} at={view.at} tv={tv} back={backFrom(i)} onClose={goBack} onOpenGame={openGame} onOpenApp={openApp} onSignIn={() => setSigningIn(true)} />
+                  <AppPage entry={view.entry} at={view.at} back={backFrom(i)} onClose={goBack} onOpenGame={openGame} onOpenApp={openApp} onSignIn={() => setSigningIn(true)} />
                 ) : view.kind === "downloads" ? (
                   <DownloadsPage back={backFrom(i)} onBack={goBack} onOpen={openApp} action={downloadAction} />
                 ) : view.kind === "settings" ? (
@@ -339,7 +325,7 @@ export function App() {
         {/* Kept mounted under the pages too, so going back keeps the search, filters and scroll. */}
         <div hidden={Boolean(top)}>
           {/* A download under way always shows how it's going, over whichever banner has its turn. */}
-          {strip && <DownloadsStrip onOpen={openDownloads} active offerUpdates={tab === "library" && !tv} />}
+          {strip && <DownloadsStrip onOpen={openDownloads} active offerUpdates={tab === "library"} />}
           {/*
             One banner at a time, the most pressing first (app.css shows only the first that has something to say):
             the usage-data notice, the launcher's update, updates for apps, bringing over Quiver Launcher 3, then the
@@ -349,7 +335,7 @@ export function App() {
             <TelemetryNotice />
             <UpdateBanner />
             {/* The updates waiting: the library's to offer, not Browse's; in TV mode, the Downloads button's count says so. */}
-            {strip && tab === "library" && !tv && <DownloadsStrip onOpen={openDownloads} active={false} />}
+            {strip && tab === "library" && <DownloadsStrip onOpen={openDownloads} active={false} />}
             {/* Finishing an import shows the library, under whatever page is open. */}
             <OldLibrary
               onDone={() => {
@@ -407,13 +393,8 @@ export function App() {
       <AddFilesPrompt />
       <ChangeVersion />
       <ProgramPrompt />
-      <SavesConflictPrompt />
-      <SavesPlacesPrompt />
       <SavesFullPrompt onFreeUp={() => open({ kind: "settings", section: "cloud" })} />
-      <OwnCopyPrompt />
       <Notice />
-      {/* Over every dialog that asks for a file or a folder, in Steam's Game Mode. */}
-      <FilePicker />
     </div>
     </DiscussionNavProvider>
   );
@@ -1216,7 +1197,6 @@ function AppPage({
   entry: opened,
   back,
   at,
-  tv = false,
   onClose,
   onOpenGame,
   onOpenApp,
@@ -1227,11 +1207,6 @@ function AppPage({
   back?: string;
   /** Opened at its Releases, with that version's notes open, at its feedback, or at its README, rather than at the top of its Overview. */
   at?: PageAt;
-  /**
-   * Over TV mode: a larger header with its art, read from across a room, and only the buttons for playing it there
-   * (its folder and uninstalling are on its Manage tab); Back (B) goes home; the README waits to be asked for.
-   */
-  tv?: boolean;
   onClose?: () => void;
   onOpenGame: (game: GameLink) => void;
   /** Opens another app's page, from More like this. */
@@ -1295,7 +1270,6 @@ function AppPage({
     askManage(null);
   }, [managing]); // eslint-disable-line react-hooks/exhaustive-deps
   const readmeAsked = !!at && "readme" in at;
-  const [readme, setReadme] = useState(readmeAsked);
   // Every release, asked for once the player opens the Releases tab or points
   // at it: most visits never do, and an app's history is one of the site's
   // biggest reads.
@@ -1440,11 +1414,11 @@ function AppPage({
     </section>
   );
   return (
-    <section className="app-page" data-tv={tv || undefined} aria-label={entry.projectName}>
+    <section className="app-page" aria-label={entry.projectName}>
       <div className={`app-backdrop${hero ? " has-art" : ""}`}>
         {hero && <SourcedImage key={hero} className="backdrop-art" sources={heroSources(hero)} alt="" priority onFail={() => {}} />}
         <div className="backdrop-inner">
-          {onClose && !tv && (
+          {onClose && (
             <button className="back-link" onClick={onClose}>
               <ArrowLeft size={15} /> {back}
             </button>
@@ -1455,14 +1429,14 @@ function AppPage({
               <div className="eyebrow">{[eyebrow, PROJECT_TYPES[entry.projectType] && i18n._(PROJECT_TYPES[entry.projectType])].filter(Boolean).join(" / ").toLocaleUpperCase(i18n.locale)}</div>
               {/* In the library: a double click on its name, or the pencil beside it, renames it. */}
               <div className="app-title">
-                <h1 onDoubleClick={item && !tv ? () => askName(item.id) : undefined}>{entry.projectName}</h1>
-                {item && !tv && (
+                <h1 onDoubleClick={item ? () => askName(item.id) : undefined}>{entry.projectName}</h1>
+                {item && (
                   <button type="button" className="title-rename" aria-label={t`Rename ${app}`} title={t({ message: "Rename", comment: "Button beside an app's name on its page: gives it a name of the player's own" })} onClick={() => askName(item.id)}>
                     <Pencil size={15} aria-hidden="true" />
                   </button>
                 )}
                 {/* Signed in as one who looks after the catalog: its entry on the website's admin pages, to change it there. */}
-                {site && !tv && managesCatalog(user) && (
+                {site && managesCatalog(user) && (
                   <button
                     type="button"
                     className="title-rename title-admin"
@@ -1537,7 +1511,7 @@ function AppPage({
                 </p>
               </div>
             )}
-            <div className="app-actions" data-autofocus={tv || undefined}>
+            <div className="app-actions">
               <Action entry={entry} apart />
               {/* Already on this computer: an app needn't be in the library, or downloaded, for this. */}
               {!install && locatable(entry.id, install, job) && foldersOn(config.os) && !(job && "error" in job) && (
@@ -1545,7 +1519,7 @@ function AppPage({
                   <FolderSearch size={17} /> <Trans>Locate existing install…</Trans>
                 </button>
               )}
-              {install && foldersOn(config.os) && !tv && (
+              {install && foldersOn(config.os) && (
                 <button onClick={() => (setProblem(null), native.openFolder(entry.id).catch((e) => setProblem(String(e))))}>
                   <FolderOpen size={17} /> <Trans>Open folder</Trans>
                 </button>
@@ -1553,7 +1527,7 @@ function AppPage({
               {/* Out of Browse, as its card's menu has it. */}
               {site && !item && <BrowseHideButton entry={entry} />}
               {/* Its files go; the app stays in the library to get again. Taking it out is under Manage. */}
-              {install && !install.local && !(job && !("error" in job)) && !tv && (
+              {install && !install.local && !(job && !("error" in job)) && (
                 <button className="danger" onClick={() => confirmUninstall({ entry })}>
                   <Trash2 size={17} /> <Trans>Uninstall</Trans>
                 </button>
@@ -1729,14 +1703,7 @@ function AppPage({
               {site && <ProjectDetails entry={entry} detail={detail} source={source} />}
               {/* Under its facts, as on the website: something there wrong or missing, for maintainers to fix. */}
               {site && <CorrectionStatusPanel entry={entry} />}
-              {/* In TV mode, long and full of links: there when asked for. */}
-              {tv && !readme ? (
-                <button type="button" className="panel-action opens tv-readme" onClick={() => setReadme(true)}>
-                  <BookOpen size={18} aria-hidden="true" /> <Trans>Read the README</Trans>
-                </button>
-              ) : (
-                <Readme entry={entry} source={source} asked={readmeAsked} />
-              )}
+              <Readme entry={entry} source={source} asked={readmeAsked} />
             </>
           )}
           {tab === "media" && <MediaTab videos={media} slug={entry.slug} />}
@@ -2248,7 +2215,8 @@ function SavesFullPrompt({ onFreeUp }: { onFreeUp: () => void }) {
   );
 }
 
-function SavesConflictPrompt() {
+/** Shown over both modes (tv/TvHost.tsx), as Play waits for it. */
+export function SavesConflictPrompt() {
   const { savesConflict: conflict, catalog, installs, jobs, get } = useLauncher();
   if (!conflict) return null;
   // Saves from a newer version than the one installed: updating first is the way that can't go wrong, when there's an update.
@@ -2377,7 +2345,7 @@ function SavePlaces({ places }: { places: { template: string; path: string }[] }
 }
 
 /** Restore, for a backup whose saves were in a folder this computer hasn't kept that app's saves in: the player sees the folder and says whether to go ahead. */
-function SavesPlacesPrompt() {
+export function SavesPlacesPrompt() {
   const { savesPlaces: asked } = useLauncher();
   if (!asked) return null;
   const name = asked.name;
@@ -2406,11 +2374,16 @@ function SavesPlacesPrompt() {
 
 /** Play, for an app with more than one of its programs picked (its menu's Play with): which one starts. */
 function ProgramPrompt() {
-  const { choosingProgram: id, chooseProgram, installs, catalog, play } = useLauncher();
-  const install = id ? installs[id] : undefined;
-  const programs = install?.launch?.programs ?? [];
-  if (!id || !programs.length) return null;
+  const { choosingProgram: choice, chooseProgram, installs, catalog, play, setLaunch } = useLauncher();
+  if (!choice?.programs.length) return null;
+  const { id, programs, remember } = choice;
   const close = () => chooseProgram(null);
+  const start = (program: string) => {
+    close();
+    // Its program from now on: the app's folder didn't say which, so Play asked once.
+    if (remember && installs[id]) setLaunch(id, { ...installs[id].launch, executable: program });
+    void play(id, program);
+  };
   const name = catalog[id]?.projectName;
   return (
     <Dialog label={name ? t`Play ${name}` : t({ message: "Play", comment: "Button that starts an app" })} onClose={close}>
@@ -2420,14 +2393,18 @@ function ProgramPrompt() {
         </h2>
         <div className="choices">
           {programs.map((p, i) => (
-            <button key={p} autoFocus={i === 0} onClick={() => (close(), void play(id, p))}>
+            <button key={p} autoFocus={i === 0} onClick={() => start(p)}>
               <strong>{fileName(p)}</strong>
               {p !== fileName(p) && <span className="muted">{p}</span>}
             </button>
           ))}
         </div>
         <p className="muted small">
-          <Trans>The programs Play offers are under Play with in the app&apos;s menu.</Trans>
+          {remember ? (
+            <Trans>Its folder has more than one program, and the catalog doesn&apos;t say which starts it here. Play remembers the one you pick: change it in Launch options.</Trans>
+          ) : (
+            <Trans>The programs Play offers are under Play with in the app&apos;s menu.</Trans>
+          )}
         </p>
       </div>
     </Dialog>
@@ -2583,10 +2560,13 @@ function RenamePrompt() {
   const [name, setName] = useState("");
   const original = naming ? catalog[naming]?.projectName : undefined;
   const now = item?.overrides?.name ?? original ?? "";
-  useEffect(() => {
-    // Its name now fills the field as it opens, selected to type over.
+  // Its name now fills the field as it opens, selected to type over: before the field first shows, not a render
+  // after, when typing straight away would land after it.
+  const [opened, setOpened] = useState<string | null>(null);
+  if (opened !== naming) {
+    setOpened(naming);
     setName(now);
-  }, [naming]); // eslint-disable-line react-hooks/exhaustive-deps
+  }
   if (!naming || !item) return null;
   const app = now;
   const close = () => askName(null);
@@ -3045,14 +3025,4 @@ function useDebounced<T>(value: T, ms: number) {
     return () => clearTimeout(t);
   }, [value, ms]);
   return current;
-}
-
-/** The time, as a console's home screen shows it. */
-function Clock() {
-  const [now, setNow] = useState(() => new Date());
-  useEffect(() => {
-    const timer = setInterval(() => setNow(new Date()), 15_000);
-    return () => clearInterval(timer);
-  }, []);
-  return <span className="tv-clock">{now.toLocaleTimeString(i18n.locale, { hour: "numeric", minute: "2-digit" })}</span>;
 }

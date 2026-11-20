@@ -45,10 +45,17 @@ before « : ; ! ? », and « » for quotes.
 | port / standalone game | portage / jeu autonome | |
 | Installed (a version) / (a tab) / (an app) | Installée / Installés / Installé | separate strings, by context |
 | Update (a card's badge) / (a button) | Mise à jour / Mettre à jour | separate strings, by context |
+| TV mode / desktop mode | mode TV / mode bureau | |
+| Home / All / Discover (TV mode's tabs) | Accueil / Tout / Découvrir | |
+| program (the .exe that starts a game) | programme | |
+| bring over (a Quiver Launcher 3 library) | reprendre / la reprise | |
+| hold (a button) | maintenir | |
+| the launcher | le lanceur | |
+| ROM | ROM (une ROM) | |
 | discussion / comment | discussion / commentaire | Community board: Communauté |
 | Follow / Unfollow (a discussion) | Suivre / Ne plus suivre | |
 | Pin / Lock / Report (a discussion) | Épingler / Verrouiller / Signaler | |
 
 Left as they are: Quiver, Quiver Launcher, GitHub, GitLab, Steam, Steam Deck,
 Flatpak, AppImage, Thunderstore, GameBanana, console names, and controller
-buttons (A, B, LB, RB).
+buttons (A, B, LB, RB, LT, RT, Start, Select).

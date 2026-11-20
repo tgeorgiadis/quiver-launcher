@@ -16,7 +16,7 @@ import type { MessageDescriptor } from "@lingui/core";
 import { i18n } from "@quiverlauncher/i18n";
 import { listSlug, listUrl, type Entry, type SharedList } from "@quiverlauncher/api";
 import { OS_NAMES, PlatformIcons, SourcedImage, heroSources, tagLabel } from "@quiverlauncher/ui";
-import { hasUpdate, tvModeOn, updateFor, useLauncher, type LibraryItem } from "./store";
+import { hasUpdate, updateFor, useLauncher, type LibraryItem } from "./store";
 import { haloMoved, pageArea, readyFocus } from "./spatial";
 import { usePads } from "./pad-hints";
 import { jumpLetters, letterOf } from "./letters";
@@ -26,7 +26,8 @@ import { useAccount } from "./account";
 import { hasFilters, inCollection, matches, newKey, pickedOutside, type AppFacts, type Collection } from "./sync";
 import { isLocal, isOwn } from "./custom";
 import { withPictures, type Pictures } from "./custom-art";
-import { LIBRARY_SORTS, compareApps, isLibrarySort, type LibrarySort } from "./sort";
+import { LIBRARY_SORTS, byRelease, compareApps, isLibrarySort, type LibrarySort } from "./sort";
+import { useGameYears } from "./game-years";
 import { keepsTab, keptFilters, type LibraryFilters } from "./view";
 import { track } from "./telemetry";
 import { native } from "./native";
@@ -113,13 +114,11 @@ export function LibraryPage({
   /** An app's page, beside the sidebar in the Sidebar layout. */
   page?: (entry: Entry) => ReactNode;
 }) {
-  const { client, config, library: all, catalog, installs, jobs, get, add, settings, setSettings, collections, saveCollection, consoles, consoleNames, cache } = useLauncher();
+  const { client, library: all, catalog, installs, jobs, get, add, settings, setSettings, collections, saveCollection, consoles, consoleNames, cache } = useLauncher();
   const { view, groupBy, set: setView } = useLibraryView();
   // The cards' size, on the page (showCardScale), where View options' slider changes it as it moves. Up here, before
   // the sidebar's page returns early, so it's the same hooks either way.
   useEffect(() => showCardScale(view.cardScale), [view.cardScale]);
-  // TV mode's look: the cards as TV mode's own screen has them, and fewer stops on the way to them.
-  const tv = tvModeOn(settings, config);
   // The cards' Get or Play and opening, the same functions every render, so a card is drawn again only as its app changes.
   const latest = useRef({ action, onOpen });
   latest.current = { action, onOpen };
@@ -153,7 +152,7 @@ export function LibraryPage({
   const fits = useSidebarFits();
   const sidebar = view.layout === "sidebar" && fits && Boolean(page);
   // The grid's tabs and playlists down a panel on its left, where it fits; along the top where it doesn't, or in TV mode.
-  const panel = !sidebar && view.playlists === "side" && fits && !tv;
+  const panel = !sidebar && view.playlists === "side" && fits;
   // A right-click on the tabs, or the panel: a way to move them to the other place.
   const placeMenu = useRef<((x: number, y: number) => void) | null>(null);
   const openPlaceMenu = (e: { preventDefault: () => void; clientX: number; clientY: number; currentTarget: Element }) => {
@@ -171,10 +170,10 @@ export function LibraryPage({
   const { user, unshareList } = useAccount();
   // The tab and filters as the player left them, across Browse and restarts (kept below).
   const [tab, setTab] = useState<Tab>(() => (keepsTab(settings.libraryTab, collections) ? settings.libraryTab! : "all"));
-  // A controller there as the library comes, or TV mode: ready to play.
+  // A controller there as the library comes: ready to play.
   const pads = usePads();
   useEffect(() => {
-    if ((pads.length && !settings.padOff) || tv) readyFocus();
+    if (pads.length && !settings.padOff) readyFocus();
   });
   const [editing, setEditing] = useState<Collection | null>(null);
   const [sharing, setSharing] = useState<Collection | null>(null);
@@ -230,20 +229,18 @@ export function LibraryPage({
       const items = ([...el.children] as HTMLElement[]).filter((item) => !item.matches(".library-show"));
       return items.length ? items[items.length - 1].offsetLeft + items[items.length - 1].offsetWidth - items[0].offsetLeft : 0;
     };
-    // TV mode's tabs are larger (app.css), so each is measured for the look it's in, with the gap between them.
-    const big = Boolean(bar.current.closest(".tv-mode"));
-    const [look, gap] = [big ? "tv:" : "", big ? 10 : 6];
-    for (const el of row?.querySelectorAll<HTMLElement>(".playlist-tab") ?? []) tabWidths.current.set(look + el.dataset.tab!, el.offsetWidth);
+    const gap = 6;
+    for (const el of row?.querySelectorAll<HTMLElement>(".playlist-tab") ?? []) tabWidths.current.set(el.dataset.tab!, el.offsetWidth);
     const room = bar.current.clientWidth;
     // The row less the tools, the gap between them (.library-bar's), and Add a playlist after the tabs. The search
     // has a row of its own.
-    const left = room - across(tools) - 20 - (big ? 58 : 40);
+    const left = room - across(tools) - 20 - 40;
     // A tab and the gap after it (.playlists'); one not yet seen, about a playlist's.
-    const widths = tabKeys.current.map((key) => (tabWidths.current.get(look + key) ?? (big ? 180 : 140)) + gap);
+    const widths = tabKeys.current.map((key) => (tabWidths.current.get(key) ?? 140) + gap);
     let fit = widths.length;
     if (widths.reduce((sum, w) => sum + w, 0) > left) {
       // As many as fit with More beside them.
-      let used = (row?.querySelector<HTMLElement>(".more-tabs")?.offsetWidth ?? (big ? 140 : 110)) + gap;
+      let used = (row?.querySelector<HTMLElement>(".more-tabs")?.offsetWidth ?? 110) + gap;
       fit = 0;
       while (fit < widths.length && used + widths[fit] <= left) used += widths[fit++];
     }
@@ -297,7 +294,16 @@ export function LibraryPage({
     platforms: entry.supportedOS,
     names: [entry.projectName, ...entry.games.map((g) => g.title)],
   });
-  const sortFacts = (e: Entry) => ({ lastPlayed: installs[e.id]?.lastPlayed, installedAt: installs[e.id]?.installedAt, addedAt: inLibrary.get(e.id)?.addedAt, installed: Boolean(installs[e.id]) });
+  // The year each game first came out, looked up while a release date sort is on (game-years.ts).
+  const years = useGameYears(client, all.flatMap((item) => catalog[item.id]?.games.map((g) => g.slug) ?? []), byRelease(sort));
+  const sortFacts = (e: Entry) => ({
+    lastPlayed: installs[e.id]?.lastPlayed,
+    installedAt: installs[e.id]?.installedAt,
+    playTime: installs[e.id]?.playTime,
+    year: e.games[0] && years[e.games[0].slug],
+    addedAt: inLibrary.get(e.id)?.addedAt,
+    installed: Boolean(installs[e.id]),
+  });
   // What the tab holds before the search and filters: library apps, plus picked or listed apps not in the library.
   const candidates: { entry: Entry; item?: LibraryItem }[] = collection?.follows
     ? (loaded?.items ?? []).flatMap((i) => {
@@ -737,13 +743,11 @@ export function LibraryPage({
         inLibrary={(id) => inLibrary.has(id)}
         action={cardAction}
         onOpen={cardOpen}
-        tv={tv}
       />
     ) : (
       <LibraryTile
         key={entry.id}
         entry={entry}
-        tv={tv}
         letter={byLetter ? letterFor(entry) : undefined}
         image={view.image}
         size={view.size}
@@ -773,7 +777,7 @@ export function LibraryPage({
   // The library under the tabs, or beside the panel.
   const body = (
     <>
-      <PlaylistsTip panel={panel} fits={fits && !tv && !sidebar} onPanel={() => setView({ playlists: "side" })} />
+      <PlaylistsTip panel={panel} fits={fits && !sidebar} onPanel={() => setView({ playlists: "side" })} />
         {resume && <ContinuePlaying entry={resume} played={installs[resume.id].lastPlayed!} onOpen={() => onOpen(resume)} action={action(resume)} />}
         <div ref={bar} className={`library-bar${stacked ? " stacked" : ""}${panel ? " with-panel" : ""}`}>
           {!stacked && !panel && (
@@ -860,14 +864,12 @@ export function LibraryPage({
             <Popover label={t`View options`} icon={<LayoutGrid size={17} />} role="group" className="tool icon-only" panel="view-panel" align="end">
               {() => <ViewOptions groups={narrow} />}
             </Popover>
-            {!tv && (
-              <button className="primary add-app" onClick={onAdd}>
-                <Plus size={15} />{" "}
-                <span className="tool-label">
-                  <Trans>Add an app</Trans>
-                </span>
-              </button>
-            )}
+            <button className="primary add-app" onClick={onAdd}>
+              <Plus size={15} />{" "}
+              <span className="tool-label">
+                <Trans>Add an app</Trans>
+              </span>
+            </button>
           </div>
           {/* The search on a row of its own under the tabs and tools, centred and larger, so it's seen first. */}
           <div className="search-row">

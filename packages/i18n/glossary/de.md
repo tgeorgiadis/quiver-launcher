@@ -45,6 +45,14 @@ launchers do. Sentence case, with nouns capitalised as German needs.
 | port / standalone game | Port / eigenständiges Spiel | |
 | Installed (a version, a tab, an app) | Installiert | the same in all three |
 | Update (a card's badge) / (a button) | Update / Aktualisieren | |
+| TV mode / desktop mode | TV-Modus / Desktop-Modus | |
+| Home / Discover (TV mode's tabs) | Startseite / Entdecken | Discover is the same word as Browse; "in Discover": unter Entdecken |
+| Apps & Tools / Other (TV mode's tabs) | Apps & Tools / Sonstiges | |
+| bring over (a Quiver Launcher 3 library) | übernehmen | |
+| ROM | die ROM (eine ROM) | the original game, a copy the player owns |
+| hold (a button) | halten | |
+| Recycle Bin | Papierkorb | |
+| On / Off (a setting's value) | An / Aus | |
 | discussion / comment | Diskussion / Kommentar | Community board: Community |
 | Follow / Unfollow (a discussion) | Folgen / Nicht mehr folgen | |
 | Pin / Lock / Report (a discussion) | Anheften / Sperren / Melden | not “festgehalten”, which is for a release |

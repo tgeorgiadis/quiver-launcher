@@ -25,7 +25,7 @@ import { OverMenu, VersionsDialog, foldersOn } from "./detail";
 import { native, type Config } from "./native";
 import { CardArt, artSizes } from "./library-view";
 import { CopyStatus, PlaylistPicker, Popover } from "./library";
-import { CardMenu, GameMenu } from "./card-menu";
+import { CardMenu } from "./card-menu";
 import { gameVersionLabel } from "./game";
 import type { Stack } from "./group";
 import { useTicked } from "./library-ticking";
@@ -152,11 +152,6 @@ type TileProps = {
   onOpen: (entry: Entry) => void;
   /** The letter it files under in a library by name, for the triggers' jumps and the letters beside it. */
   letter?: string;
-  /**
-   * In TV mode's library: on focus its buttons alone (and a withdrawn release's why), the facts and the small
-   * buttons being for a mouse, and small from across a room; its menu from Options or a right-click.
-   */
-  tv?: boolean;
 };
 
 /**
@@ -210,7 +205,6 @@ const Tile = memo(function Tile({
   action,
   onOpen,
   letter,
-  tv = false,
   os,
   install,
   job,
@@ -301,8 +295,6 @@ const Tile = memo(function Tile({
       data-tick={inLibrary ? entry.id : undefined}
       data-ticked={ticked || undefined}
     >
-      {/* TV mode's has no ⋯ button (a mouse's), and its menu, closed, gives the focus back to the card. */}
-      {tv && inLibrary && <GameMenu entry={entry} onOpen={open} target={() => card.current} bare where="card" />}
       <button type="button" className="card-open" onClick={open} aria-label={pulled ? t`${name}, ${pulledLabel} was withdrawn` : name} aria-pressed={ticking ? ticked : undefined}>
         <span className="card-cover">
           {cover}
@@ -337,89 +329,83 @@ const Tile = memo(function Tile({
       </button>
       <div className="tile-overlay">
         {/* Its page in the catalog, in the top left corner, with Browse's compass, as Continue playing has it: not only from its menu. */}
-        {!tv && (
-          <button type="button" className="tile-icon tile-page" title={t`See it in the catalog`} onClick={open}>
-            <Compass size={17} />
-            <span className="sr-only">
-              <Trans>See {name} in the catalog</Trans>
-            </span>
-          </button>
-        )}
+        <button type="button" className="tile-icon tile-page" title={t`See it in the catalog`} onClick={open}>
+          <Compass size={17} />
+          <span className="sr-only">
+            <Trans>See {name} in the catalog</Trans>
+          </span>
+        </button>
         {/* A withdrawn release: why, in place of the rest, which the app's page has. */}
-        {(!tv || pulled) && (
-          <div className="tile-facts">
-            {pulled ? (
-              <span className="tile-withdrawn">
-                <strong>
-                  <Trans>{pulledLabel} was withdrawn.</Trans>
-                </strong>{" "}
-                {pulled.reason}
+        <div className="tile-facts">
+          {pulled ? (
+            <span className="tile-withdrawn">
+              <strong>
+                <Trans>{pulledLabel} was withdrawn.</Trans>
+              </strong>{" "}
+              {pulled.reason}
+            </span>
+          ) : (
+            <>
+              <span className="card-status">
+                <CopyStatus entry={entry} inLibrary={inLibrary} />
               </span>
-            ) : (
-              <>
-                <span className="card-status">
-                  <CopyStatus entry={entry} inLibrary={inLibrary} />
+              {/* Said under the name already, when the cards show the version there. */}
+              {install && !(names && details.includes("version")) && (
+                <span>
+                  <Trans>Installed {installedLabel}</Trans>
                 </span>
-                {/* Said under the name already, when the cards show the version there. */}
-                {install && !(names && details.includes("version")) && (
-                  <span>
-                    <Trans>Installed {installedLabel}</Trans>
-                  </span>
-                )}
-                {/* On the available version with a newer one not offered yet: that line says it all, without the same number twice. */}
-                {/* An update there is: said under the name already, when the cards show updates there. */}
-                {available && !(hasAvailable && newer) && !(names && details.includes("update") && install && update && !busy && !upToDate) && (
-                  // The version there is to have: in the update mark's blue, so it stands out from what's installed. Up to date: in green.
-                  <span className={upToDate ? "tile-current" : "tile-newer"}>
-                    {upToDate ? <Trans comment="On an app's card: the installed version is the newest there is">Up to date</Trans> : <Trans>Available {availableLabel}</Trans>}
-                  </span>
-                )}
-                {newer && (
-                  <span className="tile-unverified">
-                    {stillWaiting(latest.lastReleaseAt) ? <Trans>{newerLabel} not offered yet: less than 48 hours old</Trans> : <Trans>{newerLabel} not offered yet</Trans>}
-                  </span>
-                )}
-                {install?.unverified && (install.blocked || !hasNewest) && <span className="tile-unverified">{install.blocked ? t`Quiver blocked this version` : t`Installed before Quiver offered it`}</span>}
-                {pinned && (
-                  <span>
-                    <Trans>Staying on {installedLabel}</Trans>
-                  </span>
-                )}
-              </>
-            )}
-          </div>
-        )}
-        {!tv && (
-          <div className="tile-icons">
-            {update && !busy && !pulled && (
-              <button type="button" className="tile-icon tile-icon-update" title={t`Update to ${updateLabel}`} onClick={() => get(latest)}>
-                <CloudDownload size={17} />
-                <span className="sr-only">
-                  <Trans>Update to {updateLabel}</Trans>
+              )}
+              {/* On the available version with a newer one not offered yet: that line says it all, without the same number twice. */}
+              {/* An update there is: said under the name already, when the cards show updates there. */}
+              {available && !(hasAvailable && newer) && !(names && details.includes("update") && install && update && !busy && !upToDate) && (
+                // The version there is to have: in the update mark's blue, so it stands out from what's installed. Up to date: in green.
+                <span className={upToDate ? "tile-current" : "tile-newer"}>
+                  {upToDate ? <Trans comment="On an app's card: the installed version is the newest there is">Up to date</Trans> : <Trans>Available {availableLabel}</Trans>}
                 </span>
-              </button>
-            )}
-            {install && foldersOn(os) && (
-              <button
-                type="button"
-                className="tile-icon"
-                title={t`Open folder`}
-                onClick={() => void native.openFolder(entry.id).catch((e) => now.current.setNotice(String(e), { stays: true }))}
-              >
-                <FolderOpen size={17} />
-                <span className="sr-only">
-                  <Trans>Open folder</Trans>
+              )}
+              {newer && (
+                <span className="tile-unverified">
+                  {stillWaiting(latest.lastReleaseAt) ? <Trans>{newerLabel} not offered yet: less than 48 hours old</Trans> : <Trans>{newerLabel} not offered yet</Trans>}
                 </span>
-              </button>
-            )}
-            {inLibrary && (
-              <>
-                <PlaylistPicker id={entry.id} />
-                <CardMenu entry={entry} onOpen={open} />
-              </>
-            )}
-          </div>
-        )}
+              )}
+              {install?.unverified && (install.blocked || !hasNewest) && <span className="tile-unverified">{install.blocked ? t`Quiver blocked this version` : t`Installed before Quiver offered it`}</span>}
+              {pinned && (
+                <span>
+                  <Trans>Staying on {installedLabel}</Trans>
+                </span>
+              )}
+            </>
+          )}
+        </div>
+        <div className="tile-icons">
+          {update && !busy && !pulled && (
+            <button type="button" className="tile-icon tile-icon-update" title={t`Update to ${updateLabel}`} onClick={() => get(latest)}>
+              <CloudDownload size={17} />
+              <span className="sr-only">
+                <Trans>Update to {updateLabel}</Trans>
+              </span>
+            </button>
+          )}
+          {install && foldersOn(os) && (
+            <button
+              type="button"
+              className="tile-icon"
+              title={t`Open folder`}
+              onClick={() => void native.openFolder(entry.id).catch((e) => now.current.setNotice(String(e), { stays: true }))}
+            >
+              <FolderOpen size={17} />
+              <span className="sr-only">
+                <Trans>Open folder</Trans>
+              </span>
+            </button>
+          )}
+          {inLibrary && (
+            <>
+              <PlaylistPicker id={entry.id} />
+              <CardMenu entry={entry} onOpen={open} />
+            </>
+          )}
+        </div>
         <div className="tile-main">
           {busy ? (
             action(entry)
@@ -642,7 +628,6 @@ const Game = memo(
     action,
     onOpen,
     letter,
-    tv = false,
     copy,
     gettable,
     ready,
@@ -682,8 +667,6 @@ const Game = memo(
     const cardButton = () => article.current?.querySelector<HTMLElement>(".card-open");
     return (
       <article ref={article} className="entry-card library-tile game-tile" data-game={game.slug} data-letter={letter} data-copy={copy} data-installed={installed} data-busy={busy ? "" : undefined} data-round={(!busy && Boolean(ready)) || undefined} data-tick={tick || undefined} data-ticked={ticked || undefined}>
-        {/* TV mode's has no ⋯ button (a mouse's), and its menu, closed, gives the focus back to the card. */}
-        {tv && menu && <GameMenu entry={mine} onOpen={openMine} target={() => article.current} bare where="card" heading={heading} pad={false} />}
         <Popover
           label={title}
           panelLabel={t`Ways to play ${title}`}
@@ -733,12 +716,12 @@ const Game = memo(
           )}
         </Popover>
         <div className="tile-overlay">
-          {!tv && menu && (
+          {menu && (
             <div className="tile-icons">
               <CardMenu entry={mine} onOpen={openMine} heading={heading} pad={false} />
             </div>
           )}
-          {!tv && ready && (
+          {ready && (
             <div className="tile-facts">
               <span className="card-status">
                 <CopyStatus entry={ready} inLibrary={inLibrary(ready.id)} />
@@ -787,7 +770,6 @@ const Game = memo(
     a.marks === b.marks &&
     a.details === b.details &&
     a.letter === b.letter &&
-    a.tv === b.tv &&
     a.consoleNames === b.consoleNames &&
     a.action === b.action &&
     a.onOpen === b.onOpen,

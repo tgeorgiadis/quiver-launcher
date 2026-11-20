@@ -18,7 +18,7 @@ export const CLOSE_COMBOS = [
 ];
 
 export function ControlSettings() {
-  const { settings, setSettings } = useLauncher();
+  const { settings, setSettings, config } = useLauncher();
   const pads = usePads();
   // A controller's buttons as the one used last labels them (✕ ○ on a PlayStation pad).
   const labels = usePadLabels();
@@ -103,6 +103,12 @@ export function ControlSettings() {
           ))}
         </select>
       </label>
+      {config.os === "linux" && (
+        <label className="toggle">
+          <input type="checkbox" checked={!settings.selectPointerOff} onChange={(e) => setSettings({ ...settings, selectPointerOff: !e.target.checked })} />
+          <Trans>While a game runs, hold Select for a mouse pointer: the right stick moves it, RT clicks, LT right-clicks, the left stick scrolls</Trans>
+        </label>
+      )}
       <p className="muted">
         {listening ? t`Press what you want to use, or Esc to cancel.` : t`Pick a binding, then press the key or button to use for it.`}
       </p>

@@ -9,6 +9,9 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { msg, plural, t } from "@lingui/core/macro";
 import { ApiError, createClient, createGithub, createGitlab, createProviders, githubAsset, githubProvider, githubRepository, parseRepository, toRef, type Asset, type Client, type Console, type Entry, type Github, type Gitlab, type Os, type HistoryRelease, type Release, type ReleaseScan, type ReleaseStatus, type UnverifiedRelease, type Verified, type Withdrawn, type Providers, type RepositoryRef } from "@quiverlauncher/api";
 import type { HiddenApp } from "./browse-hidden";
+import type { TvSettings } from "./tv/settings";
+import { programHints } from "./tv/programs/programs";
+import { tvNative } from "./tv/tvNative";
 import { hideOnApp, shownTags, type HiddenTags } from "./catalog-tags";
 import { native, type Config, type SaveBackup, type LaunchOptions, type MovingApp, type OldApp, type OldFilter, type Progress, type StateProblem, type V3Library, type WindowsRunner } from "./native";
 import { Recovery } from "./recovery";
@@ -274,8 +277,8 @@ type Launcher = {
   /** The account's cloud saves for an app, or null when it has none: signed out, switched off, or not from the catalog. */
   cloudSavesFor: (id: string) => CloudApi | null;
   /** The app whose Play asks which of the player's programs to start; null closes the prompt. */
-  choosingProgram: string | null;
-  chooseProgram: (id: string | null) => void;
+  choosingProgram: ProgramChoice | null;
+  chooseProgram: (choice: ProgramChoice | null) => void;
   /** The app whose page asks for the player's own copy of its game (own-copy-setup.tsx): `play` once it's set up, from Play. */
   settingUpCopy: { id: string; fileId?: string; play?: boolean } | null;
   setUpCopy: (asking: { id: string; fileId?: string; play?: boolean } | null) => void;
@@ -378,6 +381,8 @@ type Launcher = {
   notice: ({ text: string } & NoticeOptions) | null;
   setNotice: (text: string | null, options?: NoticeOptions) => void;
   dismiss: (id: string) => void;
+  /** Shows an error on the app, as a launch or download that failed does: a game that closed right after starting (tv/). */
+  fail: (id: string, error: string) => void;
   /** The installed apps moving the apps folder takes along: those in it, and those kept elsewhere it can bring in. */
   movableApps: () => MovableApps;
   /** The app whose folder the player is renaming; null closes the prompt. */
@@ -1135,6 +1140,12 @@ export const folderGone = (job: Job | undefined) => Boolean(job && "error" in jo
 
 const NO_PROGRAM = "Couldn't find a program to start in this app's folder.";
 /** Whether starting an app failed because Quiver can't tell which program starts it: lib.rs's NO_PROGRAM. */
+/** Play's question, which of an app's programs starts (App.tsx, tv/programs/ProgramPrompt.tsx); `remember` keeps the answer as its program. */
+export type ProgramChoice = { id: string; programs: string[]; remember?: boolean };
+
+/** Play looks in the app's folder for its program: not the player's own program, a Windows installer's, or one they chose. */
+const ownFolder = (install: Install) => !install.local && !install.installer && !install.program && !install.launch?.executable;
+
 export const noProgram = (job: Job | undefined) => Boolean(job && "error" in job && job.error === NO_PROGRAM);
 
 /** Whether the player can point Quiver at where an app is: it has no install here, or the one here lost its folder. Never during a download, or for the player's own files. */
@@ -1339,6 +1350,8 @@ export type Settings = {
   projectDetailsClosed?: boolean;
   /** TV mode: on, off, or unset, on by itself in Steam's Game Mode. */
   tvMode?: "on" | "off";
+  /** TV mode's own settings (tv/settings.ts), only those changed from the defaults. */
+  tv?: Partial<TvSettings>;
   fullscreen?: boolean;
   /** The system's title bar over the window; unset, the window's buttons are in the top bar instead. */
   systemTitleBar?: boolean;
@@ -1392,6 +1405,8 @@ export type Settings = {
   closeComboOff?: boolean;
   /** The buttons that close it, as gamepad.rs names them; unset is Start + Select (CLOSE_COMBOS in controls.tsx). */
   closeCombo?: string[];
+  /** Linux: holding Select while a game runs doesn't make the right stick a mouse pointer (src-tauri/src/tv/pointer.rs). */
+  selectPointerOff?: boolean;
   /** The library in sections by original console: what groupBy "console" was before there were other sections. */
   byConsole?: boolean;
   /** The library in sections (group.ts); unset is one piece. */
@@ -1615,7 +1630,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
   const askPlace = (entry: Entry | null, release?: Release, options?: GetOptions) => setPlacing(entry ? { entry, release, options } : null);
   const [addingFiles, askAddFiles] = useState<Entry | null>(null);
   const [changingVersion, changeVersion] = useState<Entry | null>(null);
-  const [choosingProgram, chooseProgram] = useState<string | null>(null);
+  const [choosingProgram, chooseProgram] = useState<ProgramChoice | null>(null);
   const [savesConflict, setSavesConflict] = useState<Launcher["savesConflict"]>(null);
   const [savesPlaces, setSavesPlaces] = useState<Launcher["savesPlaces"]>(null);
   const [savesFull, setSavesFull] = useState<string | null>(null);
@@ -1859,10 +1874,12 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
   // Start + Select, or the buttons the player chose, close the game being played (gamepad.rs), unless they turned it off.
   const closeCombo = settings.closeCombo?.join("+");
   useEffect(() => void native.closeCombo(!settings.closeComboOff, closeCombo?.split("+")).catch(() => {}), [settings.closeComboOff, closeCombo]);
+  // On Linux, Select is a mouse pointer during a game (gamepad.rs), unless the player turned it off.
+  useEffect(() => void native.selectPointer(!settings.selectPointerOff).catch(() => {}), [settings.selectPointerOff]);
   const tv = tvModeOn(settings, config);
   // Again as the window changes: TV mode's going full screen, or the launcher moving to another screen.
   useEffect(() => {
-    const apply = () => document.documentElement.style.setProperty("zoom", String(pageZoom(settings.scale ?? 1, tv, window.innerWidth, window.innerHeight)));
+    const apply = () => document.documentElement.style.setProperty("zoom", String(pageZoom(settings.scale ?? 1, tv, window.innerWidth)));
     apply();
     window.addEventListener("resize", apply);
     return () => window.removeEventListener("resize", apply);
@@ -2879,7 +2896,14 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       if (!withoutCopy && copiesNeeded(catalog[id], install, config.os).length) return setUpCopy({ id, play: true });
       // The programs the player picked for Play: one starts; more, and they choose.
       const programs = install.launch?.programs ?? [];
-      if (!executable && programs.length > 1) return chooseProgram(id);
+      if (!executable && programs.length > 1) return chooseProgram({ id, programs });
+      // None picked: the catalog's name for it, else the player says which of several (tv/programs.rs), once.
+      if (!executable && !programs.length && ownFolder(install) && config.os !== "android" && config.os !== "ios") {
+        const hints = programHints(config.os, install.executables, catalog[id]?.launcher?.preferredExecutables);
+        const found = await tvNative.programs(install.folder, install.dir, hints).catch(() => null);
+        if (found?.matched) executable = found.matched;
+        else if (found && found.choices.length > 1 && (config.os !== "windows" || found.unsure)) return chooseProgram({ id, programs: found.choices, remember: true });
+      }
       const chosen = executable ?? programs[0];
       const launch = { ...install.launch, ...(chosen ? { executable: chosen } : {}), windowsRunner: settings.windowsRunner, copies: launchCopies(catalog[id], install) };
       let program = install.program;
@@ -3113,6 +3137,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       return missing;
     },
     dismiss: (id) => setJobs(({ [id]: _, ...rest }) => rest),
+    fail: (id, error) => fail(id, error),
     movableApps: () => movableApps(installs),
     appsFolders: () => appsFolders(installs, config.appsDir),
     sortPlan: () => sortPlan(installs, config.appsDir, catalog, consoleNames, ownConsoles, settings),

@@ -10,7 +10,7 @@
 //! A game with no way to quit can be closed from the controller (gamepad.rs:
 //! hold the buttons chosen in Settings, Start + Select at first): it and everything it started are asked to quit, then forced.
 use std::path::{Path, PathBuf};
-use std::process::Child;
+use std::process::{Child, ExitStatus};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::Mutex;
 use std::time::{Duration, Instant};
@@ -45,10 +45,20 @@ pub enum Started {
     Elsewhere(crate::Waiting),
 }
 
-/// Called with each game the launcher starts; `ended` is told how long it ran, a launcher's hand-over included, or
-/// nothing when it couldn't be waited on. `dir` is the game's folder, given only when it's the app's own (lib.rs
-/// `start`): without it only the game's process and what it started are the game's.
-pub fn track(game: Started, dir: Option<PathBuf>, ended: impl FnOnce(Option<u64>) + Send + 'static) {
+/// How a game's session went, for `track`'s `ended`.
+pub struct Ended {
+    /// How long it ran, a launcher's hand-over included; nothing when it couldn't be waited on.
+    pub seconds: Option<u64>,
+    /// How the game's own process ended (one Windows started for it: only that it did).
+    pub status: Option<ExitStatus>,
+    /// It ended within a few seconds and handed over to nothing: closed right after starting.
+    pub early: bool,
+}
+
+/// Called with each game the launcher starts; `ended` is told how it went (`Ended`). `dir` is the game's folder,
+/// given only when it's the app's own (lib.rs `start`): without it only the game's process and what it started are
+/// the game's.
+pub fn track(game: Started, dir: Option<PathBuf>, ended: impl FnOnce(Ended) + Send + 'static) {
     let session = LATEST.fetch_add(1, Ordering::SeqCst) + 1;
     // A second early, as process start times are in whole seconds.
     let since = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map_or(0, |d| d.as_secs()).saturating_sub(1);
@@ -57,31 +67,55 @@ pub fn track(game: Started, dir: Option<PathBuf>, ended: impl FnOnce(Option<u64>
         Started::Elsewhere(_) => None,
     };
     *PLAYING.lock().unwrap() = Some((session, root, dir.clone(), since));
+    // Its window in front of Quiver's, which Windows doesn't always allow it (tv/front.rs).
+    #[cfg(windows)]
+    {
+        let dir = dir.clone();
+        let _ = std::thread::Builder::new().name("game-to-front".into()).spawn(move || crate::tv::front::bring_forward(root, dir, since));
+    }
     std::thread::Builder::new()
         .name("game-session".into())
         .spawn(move || {
             let started = Instant::now();
-            let closed = match game {
-                Started::Child(mut child) => child.wait().is_ok(),
-                Started::Elsewhere(wait) => wait(),
+            let status = match game {
+                Started::Child(mut child) => child.wait().ok(),
+                // Windows started it: whether it ended, not how.
+                Started::Elsewhere(wait) => wait().then(ExitStatus::default),
             };
-            if let Some(dir) = dir.as_deref().filter(|_| started.elapsed() < STUB_TIME) {
+            let quick = started.elapsed() < STUB_TIME;
+            let mut handed_over = false;
+            if let Some(dir) = dir.as_deref().filter(|_| quick) {
                 let mut system = System::new();
                 while game_running(&mut system, dir, since) {
+                    handed_over = true;
                     std::thread::sleep(POLL);
                 }
             }
             if LATEST.load(Ordering::SeqCst) == session {
                 PLAYING.lock().unwrap().take_if(|(s, _, _, _)| *s == session);
             }
-            ended(closed.then(|| started.elapsed().as_secs()));
+            ended(Ended { seconds: status.map(|_| started.elapsed().as_secs()), status, early: quick && !handed_over });
         })
         .ok();
 }
 
-/// Whether the controllers are worth reading while a game is in front: for the buttons that close it.
+/// The launcher's setting "Mouse pointer with Select" (tv/pointer.rs, Linux).
+pub static POINTER: AtomicBool = AtomicBool::new(true);
+
+#[tauri::command]
+pub fn select_pointer(on: bool) {
+    POINTER.store(on, Ordering::Relaxed);
+}
+
+/// Whether a game the launcher started is running.
+pub fn playing() -> bool {
+    PLAYING.lock().unwrap().is_some()
+}
+
+/// Whether the controllers are worth reading while a game is in front: for the buttons that close it, or on Linux
+/// the pointer.
 pub fn watching() -> bool {
-    CLOSE_COMBO.load(Ordering::Relaxed) && PLAYING.lock().unwrap().is_some()
+    playing() && (CLOSE_COMBO.load(Ordering::Relaxed) || (cfg!(target_os = "linux") && POINTER.load(Ordering::Relaxed)))
 }
 
 /// The launcher's setting: whether holding buttons together closes the game being played, and which. Fewer than two
@@ -168,7 +202,7 @@ fn close_windows(pids: &[Pid]) {
 }
 
 /// The game's process, everything it started, and anything of the game's (`of_game`).
-fn game_processes(system: &mut System, root: Option<Pid>, dir: Option<&Path>, since: u64) -> Vec<Pid> {
+pub(crate) fn game_processes(system: &mut System, root: Option<Pid>, dir: Option<&Path>, since: u64) -> Vec<Pid> {
     refresh_for_game(system);
     let me = Pid::from_u32(std::process::id());
     let mut found: Vec<Pid> = root.into_iter().collect();

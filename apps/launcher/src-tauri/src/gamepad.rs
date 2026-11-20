@@ -13,8 +13,8 @@
 //! Quiver, say) the controllers are let go, so the game has them to itself.
 //! On Windows SDL holds some (DirectInput ones, wheels among them) exclusively.
 //! Except while a game Quiver started runs, for the buttons that close it (Start + Select unless others are chosen)
-//! (session.rs): then they're read in the background, sending nothing, and
-//! without DirectInput.
+//! (session.rs), and on Linux the mouse pointer from the controller (tv/pointer.rs): then they're read in the
+//! background, sending nothing, and without DirectInput.
 use std::sync::Mutex;
 
 /// Names of the connected controllers, and the labels of the one used last.
@@ -233,6 +233,7 @@ mod sdl {
                     }
                     SDL_EVENT_GAMEPAD_AXIS_MOTION => {
                         let event = unsafe { event.gaxis };
+                        in_game.axis(event.which.0, SDL_GamepadAxis(event.axis.into()), event.value);
                         for (key, down) in axis(SDL_GamepadAxis(event.axis.into()), event.value) {
                             if held.set(event.which.0, key, down) {
                                 send(key, down);
@@ -264,15 +265,27 @@ mod sdl {
     const CLOSE_HOLD: Duration = Duration::from_secs(1);
 
     /// While a game the launcher started runs (session.rs): the buttons chosen in Settings (Start + Select at first),
-    /// held together on one controller for a second, close it, for games with no way to quit.
+    /// held together on one controller for a second, close it, for games with no way to quit; and on Linux, holding
+    /// Select makes the right stick a mouse pointer (RT clicks, LT right-clicks, the left stick scrolls), for launchers
+    /// that only take a mouse.
     #[derive(Default)]
     struct InGame {
         /// Since when the buttons have been held, and whether that hold has acted already.
         combo: Option<(Instant, bool)>,
+        #[cfg(target_os = "linux")]
+        pointer: Pointer,
     }
 
     impl InGame {
+        #[cfg_attr(not(target_os = "linux"), allow(unused_variables))]
+        fn axis(&mut self, pad: u32, axis: SDL_GamepadAxis, value: i16) {
+            #[cfg(target_os = "linux")]
+            self.pointer.axis(pad, axis, value);
+        }
+
         fn tick(&mut self, app: &AppHandle, held: &Held) {
+            #[cfg(target_os = "linux")]
+            self.pointer.tick(held, |line| crate::append_log(&app.state::<crate::Data>().0.join("quiver.log"), line));
             let buttons = crate::session::close_buttons();
             if !held.combo(&buttons) {
                 self.combo = None;
@@ -292,6 +305,62 @@ mod sdl {
                 }
             } else {
                 self.combo = Some((Instant::now(), false));
+            }
+        }
+    }
+
+    /// The mouse pointer from a controller (Linux, tv/pointer.rs).
+    #[cfg(target_os = "linux")]
+    #[derive(Default)]
+    struct Pointer {
+        /// Each controller's right stick and left stick's y, -1 to 1.
+        sticks: HashMap<u32, (f32, f32, f32)>,
+        mouse: Option<crate::tv::pointer::VirtualMouse>,
+        /// Making the mouse failed once (no access to /dev/uinput): not tried again.
+        failed: bool,
+        /// The left and right buttons, held.
+        clicks: (bool, bool),
+        last: Option<Instant>,
+    }
+
+    #[cfg(target_os = "linux")]
+    impl Pointer {
+        fn axis(&mut self, pad: u32, axis: SDL_GamepadAxis, value: i16) {
+            let value = value as f32 / i16::MAX as f32;
+            let stick = self.sticks.entry(pad).or_default();
+            match axis {
+                SDL_GAMEPAD_AXIS_RIGHTX => stick.0 = value,
+                SDL_GAMEPAD_AXIS_RIGHTY => stick.1 = value,
+                SDL_GAMEPAD_AXIS_LEFTY => stick.2 = value,
+                _ => {}
+            }
+        }
+
+        fn tick(&mut self, held: &Held, log: impl Fn(&str)) {
+            use crate::tv::pointer::{BTN_LEFT, BTN_RIGHT};
+            let seconds = self.last.replace(Instant::now()).map_or(0.0, |t| t.elapsed().as_secs_f32().min(0.05));
+            let on = crate::session::POINTER.load(Ordering::Relaxed) && crate::session::playing();
+            let pad = held.holding("Select").filter(|_| on);
+            if pad.is_some() && self.mouse.is_none() && !self.failed {
+                match crate::tv::pointer::VirtualMouse::new() {
+                    Ok(mouse) => self.mouse = Some(mouse),
+                    Err(e) => {
+                        self.failed = true;
+                        log(&format!("The pointer from the controller is unavailable: {e}"));
+                    }
+                }
+            }
+            let Some(mouse) = self.mouse.as_mut() else { return };
+            let wanted = pad.map_or((false, false), |p| (held.has(p, "RightTrigger2"), held.has(p, "LeftTrigger2")));
+            if wanted.0 != self.clicks.0 {
+                mouse.button(BTN_LEFT, wanted.0);
+            }
+            if wanted.1 != self.clicks.1 {
+                mouse.button(BTN_RIGHT, wanted.1);
+            }
+            self.clicks = wanted;
+            if let Some(&(x, y, scroll)) = pad.and_then(|p| self.sticks.get(&p)) {
+                mouse.steer((x, y), scroll, seconds);
             }
         }
     }
@@ -444,6 +513,17 @@ mod sdl {
         /// All these buttons held together on one controller.
         fn combo(&self, buttons: &[String]) -> bool {
             !buttons.is_empty() && self.0.values().any(|keys| buttons.iter().all(|b| keys.contains(b.as_str())))
+        }
+
+        /// The controller holding `key`, if one is.
+        #[cfg(target_os = "linux")]
+        fn holding(&self, key: &str) -> Option<u32> {
+            self.0.iter().find(|(_, keys)| keys.contains(key)).map(|(&pad, _)| pad)
+        }
+
+        #[cfg(target_os = "linux")]
+        fn has(&self, pad: u32, key: &str) -> bool {
+            self.0.get(&pad).is_some_and(|keys| keys.contains(key))
         }
     }
 

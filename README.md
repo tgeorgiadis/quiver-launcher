@@ -28,8 +28,10 @@ such as modern ports (source ports and recompilations) and fan projects. Browse 
 - **Your library, your way.** Sort and filter by console, make playlists, and share them or follow other people's.
   Add any GitHub, GitLab, Gitea/Forgejo, Bitbucket or release-feed repository, a program already on your computer, or a
   folder you fill yourself.
-- **Made for the couch.** TV mode turns Quiver into a full-screen launcher for a controller. It comes on by itself in
-  the Steam Deck's Game Mode.
+- **Made for the couch.** TV mode turns Quiver into a full-screen launcher for a controller, with a Home of what you
+  played and what's new, a tab for each console, Discover and Downloads, sized for the screen from a Steam Deck to a
+  4K TV. It comes on by itself in the Steam Deck's Game Mode. Hold Start + Select to close a game that has no way to
+  quit.
 - **Mods.** Browse, install and update mods from Thunderstore and GameBanana for the apps that support them.
 - **Play it your way.** Add any app to Steam or the desktop, and run Windows builds on Linux with Wine or Proton.
 - **Sign in to sync** (optional). Sign in with GitHub or Discord to keep your library and playlists the same on every

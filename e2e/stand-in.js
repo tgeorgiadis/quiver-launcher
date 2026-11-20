@@ -133,6 +133,8 @@ export function standInForRust({ api, state = {}, config: more = {}, maximized =
     },
     "plugin:window|is_maximized": () => maximized,
     "plugin:window|is_fullscreen": () => false,
+    // In front, as a window the player is using is: TV mode only listens then.
+    "plugin:window|is_focused": () => true,
   };
   window.__TAURI_INTERNALS__ = {
     metadata: { currentWindow: { label: "main" }, currentWebview: { windowLabel: "main", label: "main" } },

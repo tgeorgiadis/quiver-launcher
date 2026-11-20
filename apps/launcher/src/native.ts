@@ -301,6 +301,8 @@ export type SavesWarning = SavesLook & { os: "windows" | "linux" | "macos"; sour
 export const native = {
   /** Whether holding these buttons together closes the game being played (unset: Start + Select). */
   closeCombo: (on: boolean, buttons?: string[]) => invoke<void>("close_combo", { on, buttons: buttons ?? null }),
+  /** Linux: whether holding Select makes the right stick a mouse pointer while a game runs. */
+  selectPointer: (on: boolean) => invoke<void>("select_pointer", { on }),
   config: () => invoke<Config>("config"),
   /** The processor, graphics card and memory, for feedback (specs.rs); what can't be read is null. Missing from an older build, which rejects. */
   pcSpecs: () => invoke<PcSpecs>("pc_specs"),
