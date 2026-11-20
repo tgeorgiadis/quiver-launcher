@@ -969,8 +969,8 @@ msgid "Abbreviated (N64, GBC, PS2)"
 msgstr "缩写（N64、GBC、PS2）"
 
 #: ../../apps/launcher/src/detail.tsx
-msgid "About this project"
-msgstr "关于此项目"
+msgid "About this app"
+msgstr "关于此应用"
 
 #. Reason for reporting a post
 #: ../../apps/launcher/src/discussions.tsx
