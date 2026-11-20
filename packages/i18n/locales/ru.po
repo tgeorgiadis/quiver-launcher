@@ -1872,6 +1872,14 @@ msgstr "Выберите программу (.exe), которая запуск�
 msgid "Choose a release"
 msgstr "Выберите версию"
 
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Choose a system for {name}"
+msgstr "Выбрать систему для {name}"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Choose a system…"
+msgstr "Выбрать систему…"
+
 #: ../../apps/launcher/src/correction.tsx
 msgid "Choose a topic (optional)"
 msgstr "Выберите тему (необязательно)"
@@ -3437,8 +3445,8 @@ msgid "It didn't run"
 msgstr "Не запустилось"
 
 #: ../../apps/launcher/src/settings-page.tsx
-msgid "It doesn't have a system. Choose one on its page, and it can move into that system's folder."
-msgstr "У него нет системы. Выберите её на его странице, и его можно будет переместить в папку этой системы."
+msgid "It doesn't have a system. Choose one, and it can move into that system's folder."
+msgstr "У него нет системы. Выберите её, и его можно будет переместить в папку этой системы."
 
 #: ../../apps/launcher/src/App.tsx
 msgid "It gets a folder of its own in there, and updates keep installing into it."

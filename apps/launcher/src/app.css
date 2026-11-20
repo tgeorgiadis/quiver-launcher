@@ -2553,3 +2553,6 @@ main:has(.tick-bar) { scroll-padding-bottom: 96px; }
 }
 .system-naming { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin: 4px 0 10px; font-size: 13.5px; }
 .system-naming select { min-width: 0; max-width: 100%; }
+.apps-left li { margin: 3px 0; }
+.settings-pane .apps-left .choose-system { display: block; width: auto; margin: 4px 0 2px; padding: 2px 8px; border: 1px dashed var(--line-strong); border-radius: 999px; background: transparent; color: var(--fg); font-size: 12px; max-width: 100%; }
+.settings-pane .apps-left .choose-system:is(:hover, :focus-visible) { border-style: solid; border-color: var(--accent); outline: 0; }

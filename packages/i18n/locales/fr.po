@@ -1872,6 +1872,14 @@ msgstr "Choisissez un programme (.exe) qui lance l'app."
 msgid "Choose a release"
 msgstr "Choisir une version"
 
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Choose a system for {name}"
+msgstr "Choisir un système pour {name}"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Choose a system…"
+msgstr "Choisir un système…"
+
 #: ../../apps/launcher/src/correction.tsx
 msgid "Choose a topic (optional)"
 msgstr "Choisis un sujet (facultatif)"
@@ -3437,8 +3445,8 @@ msgid "It didn't run"
 msgstr "Ça n'a pas fonctionné"
 
 #: ../../apps/launcher/src/settings-page.tsx
-msgid "It doesn't have a system. Choose one on its page, and it can move into that system's folder."
-msgstr "Elle n'a pas de système. Choisis-en un sur sa page, et elle pourra aller dans le dossier de ce système."
+msgid "It doesn't have a system. Choose one, and it can move into that system's folder."
+msgstr "Elle n'a pas de système. Choisis-en un, et elle pourra aller dans le dossier de ce système."
 
 #: ../../apps/launcher/src/App.tsx
 msgid "It gets a folder of its own in there, and updates keep installing into it."

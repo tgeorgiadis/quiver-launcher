@@ -1872,6 +1872,14 @@ msgstr "앱을 실행하는 프로그램(.exe)을 선택하세요."
 msgid "Choose a release"
 msgstr "버전 선택"
 
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Choose a system for {name}"
+msgstr "{name}의 시스템 선택"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Choose a system…"
+msgstr "시스템 선택…"
+
 #: ../../apps/launcher/src/correction.tsx
 msgid "Choose a topic (optional)"
 msgstr "주제 선택(선택 사항)"
@@ -3437,8 +3445,8 @@ msgid "It didn't run"
 msgstr "실행되지 않았어요"
 
 #: ../../apps/launcher/src/settings-page.tsx
-msgid "It doesn't have a system. Choose one on its page, and it can move into that system's folder."
-msgstr "시스템이 없어요. 앱 페이지에서 하나를 고르면 그 시스템의 폴더로 옮길 수 있어요."
+msgid "It doesn't have a system. Choose one, and it can move into that system's folder."
+msgstr "시스템이 없어요. 하나를 고르면 그 시스템의 폴더로 옮길 수 있어요."
 
 #: ../../apps/launcher/src/App.tsx
 msgid "It gets a folder of its own in there, and updates keep installing into it."

@@ -1531,7 +1531,7 @@ export function VersionsDialog({ entry, onClose, start, getting }: { entry: Entr
  * the catalog's (or its game's, for an app the player added), unless the
  * player picked their own. The catalog's consoles by maker, to pick from.
  */
-function useConsolePicks(id: string) {
+export function useConsolePicks(id: string) {
   const { library, catalog, consoles, setConsoles } = useLauncher();
   const own = library.find((i) => i.id === id)?.overrides?.consoles;
   const chosen = own ?? catalog[id]?.consoles ?? [];

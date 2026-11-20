@@ -36,7 +36,7 @@ import { ConsoleFolders } from "./console-folders";
 import type { Theme } from "./theme";
 import { INTERFACE_SIZES } from "./zoom";
 import { GameCopySettings } from "./own-copy-settings";
-import { foldersOn } from "./detail";
+import { foldersOn, useConsolePicks } from "./detail";
 
 type Section = "general" | "library" | "apps" | "copies" | "cloud" | "controllers" | "updates" | "advanced";
 // Names put in the language when shown, not here, where the module loads before any is picked.
@@ -476,10 +476,30 @@ function staysWhy(why: StaysReason) {
     case "installer":
       return t`A Windows installer put it there, and Windows looks after where it is.`;
     case "noConsole":
-      return t`It doesn't have a system. Choose one on its page, and it can move into that system's folder.`;
+      return t`It doesn't have a system. Choose one, and it can move into that system's folder.`;
     case "unknown":
       return t`Quiver couldn't look it up in the catalog to find its system. Try again once you're online.`;
   }
+}
+
+/** A system for an app that has none, picked right where it's said, so it can move into that system's folder. */
+function ChooseSystem({ id, name }: { id: string; name: string }) {
+  const { consoleNames } = useLauncher();
+  const { brands, toggle } = useConsolePicks(id);
+  return (
+    <select className="choose-system" aria-label={t`Choose a system for ${name}`} value="" onChange={(e) => e.target.value && toggle(e.target.value)}>
+      <option value="">{t`Choose a system…`}</option>
+      {brands.map(({ brand, label, consoles }) => (
+        <optgroup key={brand} label={label}>
+          {consoles.map((c) => (
+            <option key={c.id} value={c.id}>
+              {consoleNames[c.id] ?? c.name}
+            </option>
+          ))}
+        </optgroup>
+      ))}
+    </select>
+  );
 }
 
 /** What a move came to: how many moved, then any that couldn't (still where they were) and any old files left behind. */
@@ -726,6 +746,7 @@ export function AppsFolder({ inSetup, onBusy }: { inSetup?: boolean; onBusy?: (b
             {stays.map((a) => (
               <li key={a.id}>
                 <strong>{a.folder}</strong>: {staysWhy(a.why)}
+                {a.why === "noConsole" && <ChooseSystem id={a.id} name={a.folder} />}
               </li>
             ))}
           </ul>

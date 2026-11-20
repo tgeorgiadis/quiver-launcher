@@ -172,3 +172,33 @@ test("system folders named in full: an app already in one by abbreviation can mo
     await s.close();
   }
 });
+
+test("an app that stays for want of a system gets one picked right there, and then moves with the others", async () => {
+  const CUSTOM = "github:quiver/my-port";
+  const s = await openApp({
+    state: {
+      settings: { groupByConsole: true },
+      library: [{ id: CUSTOM, slug: "", addedAt: 1, custom: { provider: "github", repository: "quiver/my-port", name: "My Port" } }],
+      installs: { [CUSTOM]: { version: "1.0.0", folder: "my-port", executables: [] } },
+    },
+  });
+  const { page } = s;
+  try {
+    await page.locator(".topbar button[aria-label='Settings']").click();
+    await page.locator('.settings-nav [data-section="apps"]').click();
+    const stays = page.locator("details.apps-staying");
+    await stays.locator("summary").click();
+    await stays.getByText("It doesn't have a system.").waitFor();
+    assert.equal(await page.getByRole("button", { name: /^Move \d+ installed app/ }).count(), 0);
+    await stays.getByRole("combobox", { name: "Choose a system for my-port" }).selectOption("n64");
+    await s.until(() => page.evaluate((id) => JSON.stringify(window.__files.library.find((i) => i.id === id)?.overrides?.consoles) === '["n64"]', CUSTOM));
+    // It no longer stays: it's one of those the button moves, into N64's folder.
+    await page.getByRole("button", { name: "Move 1 installed app into its system folder" }).click();
+    await page.getByText("Moved 1 app into system folders.").waitFor();
+    const move = await page.evaluate(() => window.__calls.find((c) => c.cmd === "move_app").args);
+    assert.equal(move.to, `${APPS}/Ports/N64`);
+    assert.deepEqual(s.errors, []);
+  } finally {
+    await s.close();
+  }
+});

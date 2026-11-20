@@ -1872,6 +1872,14 @@ msgstr "選擇一個用於啟動應用程式的程式（.exe）。"
 msgid "Choose a release"
 msgstr "選擇版本"
 
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Choose a system for {name}"
+msgstr "為 {name} 選擇系統"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Choose a system…"
+msgstr "選擇系統…"
+
 #: ../../apps/launcher/src/correction.tsx
 msgid "Choose a topic (optional)"
 msgstr "選擇主題（可選）"
@@ -3437,8 +3445,8 @@ msgid "It didn't run"
 msgstr "無法執行"
 
 #: ../../apps/launcher/src/settings-page.tsx
-msgid "It doesn't have a system. Choose one on its page, and it can move into that system's folder."
-msgstr "它沒有系統。在它的頁面上選擇一個，它就能移到該系統的資料夾。"
+msgid "It doesn't have a system. Choose one, and it can move into that system's folder."
+msgstr "它沒有系統。選擇一個，它就能移到該系統的資料夾。"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "It gets a folder of its own in there, and updates keep installing into it."
