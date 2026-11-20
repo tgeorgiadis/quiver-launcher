@@ -2526,11 +2526,11 @@ main:has(.tick-bar) { scroll-padding-bottom: 96px; }
 .tv-mode .tick-bar .tool, .tv-mode .tick-bar .tick-done { height: 44px; font-size: 15px; }
 
 /* Settings › Apps folder: each console folder's name and place (console-folders.tsx), one line each in one box. */
-.console-folders { max-width: 920px; margin: 4px 0 8px; }
+.console-folders { margin: 4px 0 8px; }
 .console-folders > summary { cursor: pointer; color: var(--strong); font-weight: 600; }
 .console-folders > p { margin: 6px 0 10px; font-size: 13px; }
 .console-folder-list { margin: 0 0 10px; padding: 0; list-style: none; border: 1px solid var(--line); border-radius: 10px; }
-.console-folder { display: grid; grid-template-columns: minmax(8em, 11em) minmax(0, 1fr); align-items: center; gap: 4px 12px; padding: 7px 10px; }
+.console-folder { display: grid; grid-template-columns: minmax(7em, 9.5em) minmax(0, 1fr); align-items: center; gap: 4px 12px; padding: 7px 10px; }
 .console-folder + .console-folder { border-top: 1px solid var(--line); }
 .console-folder-name { display: grid; min-width: 0; color: var(--strong); font-weight: 600; font-size: 13.5px; line-height: 1.25; }
 .console-folder-name .muted { font-size: 12px; font-weight: 400; }
