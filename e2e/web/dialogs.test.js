@@ -103,6 +103,34 @@ test("the launcher's What's new shows the release's notes in the launcher, with 
   }
 });
 
+test("Downloads' Quiver Launcher row has See changelog, the same notes as the banner's What's new", async () => {
+  const launcherUpdate = { version: "4.0.0-beta.2", notes: "## Better\n\nThe release's own words.", url: "https://example.com/release", preview: false };
+  const s2 = await openApp({ state: { ...installed, launcherUpdate } });
+  const { page: p, app: a } = s2;
+  const dialog = p.locator('[role="dialog"].changelog');
+  const row = p.locator('.download-row[data-slug="quiver-launcher"]');
+  try {
+    await p.locator(".downloads-button").click();
+    await row.waitFor();
+    await reach.install(a);
+    assert.doesNotMatch(await reach.pressOn(a, '.download-row[data-slug="quiver-launcher"] button', "South", { text: "See changelog" }), /^not reached/);
+    await dialog.waitFor();
+    assert.equal(await dialog.locator("h2").first().innerText(), "What's new in Quiver Launcher");
+    await dialog.getByText("The release's own words.").waitFor();
+    await dialog.locator("button", { hasText: "View v4.0.0-beta.2 on GitHub" }).waitFor();
+    await reach.press(a, "East");
+    await dialog.waitFor({ state: "detached" });
+    await p.locator(".downloads-page").waitFor();
+
+    await row.locator("button", { hasText: "See changelog" }).click();
+    await dialog.locator("button", { hasText: "Update now" }).click();
+    await dialog.waitFor({ state: "detached" });
+    await s2.until(() => a.execute(() => window.__calls.some((c) => c.cmd === "install_update")));
+  } finally {
+    await s2.close();
+  }
+});
+
 test("Add an app, in the library, which B closes, and B on a dialog puts the focus back on what opened it", async () => {
   await home();
   await open("button", { text: "Library" });
