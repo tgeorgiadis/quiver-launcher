@@ -2341,6 +2341,7 @@ fn main_window(app: &tauri::App, dir: &Path, theme: Option<tauri::Theme>, title_
     let maximize = !game_mode && window_state::restore(&window, dir);
     if !game_mode {
         window_state::track(&window, dir.to_path_buf());
+        window_state::keep_on_screen(&window);
     }
     #[cfg(windows)]
     tray::watch(&window);
@@ -2351,6 +2352,11 @@ fn main_window(app: &tauri::App, dir: &Path, theme: Option<tauri::Theme>, title_
     #[cfg(desktop)]
     if maximize {
         let _ = window.maximize();
+    }
+    // However it was placed (where it was saved, or where the desktop put it), it may still be off every connected
+    // screen: brought onto one.
+    if !game_mode {
+        window_state::bring_on_screen(&window);
     }
     Ok(maximize)
 }
