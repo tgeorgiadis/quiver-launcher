@@ -173,7 +173,7 @@ test("system folders named in full: an app already in one by abbreviation can mo
   }
 });
 
-test("an app that stays for want of a system gets one picked right there, and then moves with the others", async () => {
+test("an app that stays for want of a system gets systems picked right there, one or several, and then moves with the others", async () => {
   const CUSTOM = "github:quiver/my-port";
   const s = await openApp({
     state: {
@@ -183,20 +183,38 @@ test("an app that stays for want of a system gets one picked right there, and th
     },
   });
   const { page } = s;
+  const consoles = () => page.evaluate((id) => JSON.stringify(window.__files.library.find((i) => i.id === id)?.overrides?.consoles ?? null), CUSTOM);
   try {
     await page.locator(".topbar button[aria-label='Settings']").click();
     await page.locator('.settings-nav [data-section="apps"]').click();
     const stays = page.locator("details.apps-staying");
     await stays.locator("summary").click();
-    await stays.getByRole("region", { name: "No system yet" }).getByText("my-port").waitFor();
+    const row = stays.getByRole("region", { name: "No system yet" }).locator("li", { hasText: "my-port" });
+    await row.waitFor();
     assert.equal(await page.getByRole("button", { name: /^Move \d+ installed app/ }).count(), 0);
-    await stays.getByRole("combobox", { name: "Choose a system for my-port" }).selectOption("n64");
-    await s.until(() => page.evaluate((id) => JSON.stringify(window.__files.library.find((i) => i.id === id)?.overrides?.consoles) === '["n64"]', CUSTOM));
-    // It no longer stays: it's one of those the button moves, into N64's folder.
+    await row.getByRole("combobox", { name: "Choose a system for my-port" }).selectOption("n64");
+    await s.until(async () => (await consoles()) === '["n64"]');
+    // It stays in the list, so another system can be added; where it goes is said.
+    await row.getByText(`Goes in Ports/N64`).waitFor();
+    await row.getByRole("combobox", { name: "Add another system for my-port" }).selectOption("snes");
+    await s.until(async () => (await consoles()) === '["n64","snes"]');
+    await row.getByText(`Goes in Ports/Multi-system`).waitFor();
+    if (process.env.SHOTS) {
+      for (const theme of ["dark", "light"]) {
+        await page.evaluate((t) => (document.documentElement.dataset.theme = t), theme);
+        await stays.screenshot({ path: `${process.env.SHOTS}/8-several-systems-${theme}.png` });
+      }
+    }
+    // A chip takes a system away again.
+    await row.getByRole("button", { name: "Remove Super Nintendo Entertainment System from my-port" }).click();
+    await s.until(async () => (await consoles()) === '["n64"]');
+    await row.getByRole("combobox", { name: "Add another system for my-port" }).selectOption("snes");
+    await s.until(async () => (await consoles()) === '["n64","snes"]');
+    // It no longer stays: it's one of those the button moves, into the multi-system folder.
     await page.getByRole("button", { name: "Move 1 installed app into its system folder" }).click();
     await page.getByText("Moved 1 app into system folders.").waitFor();
     const move = await page.evaluate(() => window.__calls.find((c) => c.cmd === "move_app").args);
-    assert.equal(move.to, `${APPS}/Ports/N64`);
+    assert.equal(move.to, `${APPS}/Ports/Multi-system`);
     assert.deepEqual(s.errors, []);
   } finally {
     await s.close();

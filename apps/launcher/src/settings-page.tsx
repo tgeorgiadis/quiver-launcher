@@ -11,7 +11,7 @@ import { Trans } from "@lingui/react/macro";
 import { i18n, LANGUAGES, type Language } from "@quiverlauncher/i18n";
 import { Button, Field, Panel } from "@quiverlauncher/ui/controls";
 import type { MessageDescriptor } from "@lingui/core";
-import { folderClash, samePath, useLauncher, type AppsFolder as AppsFolderRow, type StaysReason } from "./store";
+import { consoleHome, folderClash, samePath, useLauncher, type AppsFolder as AppsFolderRow, type StaysReason } from "./store";
 import { WHEEL_SPEEDS, pageArea } from "./spatial";
 import { native, type AppsMoving } from "./native";
 import { DEFAULT_MUSIC_VOLUME, musicProblem, watchMusicProblem } from "./music";
@@ -485,22 +485,57 @@ function staysWhy(why: StaysReason): { title: string; hint: string } {
 const STAYS_ORDER: StaysReason[] = ["noConsole", "unknown", "own", "installer"];
 
 /** A system for an app that has none, picked right where it's said, so it can move into that system's folder. */
-function ChooseSystem({ id, name }: { id: string; name: string }) {
-  const { consoleNames } = useLauncher();
-  const { brands, toggle } = useConsolePicks(id);
+/** An app's systems, chosen in the list of apps that stay: one goes in its folder, several in Multi-system. */
+function ChooseSystem({ id, name, onPick }: { id: string; name: string; onPick: () => void }) {
+  const { consoleNames, consoleFolderOf, settings, config } = useLauncher();
+  const { chosen, brands, toggle } = useConsolePicks(id);
+  const key = consoleFolderOf(id);
+  // Where it goes now: one system's folder, or the multi-system one for several.
+  const home = key ? consoleHome(key, settings, consoleNames) : undefined;
+  const to = home && ("path" in home ? home.path : home.group.replace(/\//g, config.os === "windows" ? "\\" : "/"));
   return (
-    <select className="choose-system" aria-label={t`Choose a system for ${name}`} value="" onChange={(e) => e.target.value && toggle(e.target.value)}>
-      <option value="">{t`Choose a system…`}</option>
-      {brands.map(({ brand, label, consoles }) => (
-        <optgroup key={brand} label={label}>
-          {consoles.map((c) => (
-            <option key={c.id} value={c.id}>
-              {consoleNames[c.id] ?? c.name}
-            </option>
-          ))}
-        </optgroup>
-      ))}
-    </select>
+    <div className="choose-system-row">
+      {chosen.length > 0 && (
+        <div className="chips">
+          {chosen.map((c) => {
+            const system = consoleNames[c] ?? c.toUpperCase();
+            return (
+              <button type="button" key={c} className="chip on" aria-label={t`Remove ${system} from ${name}`} onClick={() => toggle(c)}>
+                {system} ×
+              </button>
+            );
+          })}
+        </div>
+      )}
+      <select
+        className="choose-system"
+        aria-label={chosen.length ? t`Add another system for ${name}` : t`Choose a system for ${name}`}
+        value=""
+        onChange={(e) => {
+          if (!e.target.value) return;
+          onPick();
+          toggle(e.target.value);
+        }}
+      >
+        <option value="">{chosen.length ? t`Add another…` : t`Choose a system…`}</option>
+        {brands.map(({ brand, label, consoles }) => (
+          <optgroup key={brand} label={label}>
+            {consoles
+              .filter((c) => !chosen.includes(c.id))
+              .map((c) => (
+                <option key={c.id} value={c.id}>
+                  {consoleNames[c.id] ?? c.name}
+                </option>
+              ))}
+          </optgroup>
+        ))}
+      </select>
+      {chosen.length > 0 && to && (
+        <span className="choose-system-to">
+          <Trans comment="Where an app goes once its systems are chosen, such as Ports/Multi-system">Goes in {to}</Trans>
+        </span>
+      )}
+    </div>
   );
 }
 
@@ -551,7 +586,7 @@ function MoveMessage({ message }: { message: MoveOutcome }) {
  * has got.
  */
 export function AppsFolder({ inSetup, onBusy }: { inSetup?: boolean; onBusy?: (busy: boolean) => void } = {}) {
-  const { config, jobs, movableApps, appsFolders, switchAppsFolder, moveApps, settings, setSettings, sortPlan, moveApp } = useLauncher();
+  const { config, jobs, movableApps, appsFolders, switchAppsFolder, moveApps, settings, setSettings, sortPlan, moveApp, installs } = useLauncher();
   const [asking, setAsking] = useState<{ to: string } | null>(null);
   // Moving the apps along is the player's choice; keeping them where they are is instant and first.
   const [keep, setKeep] = useState(true);
@@ -602,6 +637,9 @@ export function AppsFolder({ inSetup, onBusy }: { inSetup?: boolean; onBusy?: (b
   // Sorting the apps already installed into console folders: how many of how many have moved.
   const [sorting, setSorting] = useState<{ done: number; total: number } | null>(null);
   const [showStays, setShowStays] = useState(false);
+  // Apps given systems in the list just now: they stay in it, to add more systems (several go in Multi-system).
+  const [picked, setPicked] = useState<{ id: string; folder: string }[]>([]);
+  const noSystem = [...stays.filter((a) => a.why === "noConsole"), ...picked.filter((p) => installs[p.id] && !stays.some((a) => a.id === p.id))];
   const idle = !asking && !bringing && !moving && !checking && !sorting;
   // A move under way, or the check before it: the setup's own buttons wait for it.
   const working = Boolean(moving || checking || sorting);
@@ -736,15 +774,17 @@ export function AppsFolder({ inSetup, onBusy }: { inSetup?: boolean; onBusy?: (b
           )}
         </div>
       )}
-      {desktop && !inSetup && settings.groupByConsole && !sorting && stays.length > 0 && (
+      {desktop && !inSetup && settings.groupByConsole && !sorting && (stays.length > 0 || noSystem.length > 0) && (
         <details className="apps-staying muted" open={showStays} onToggle={(e) => setShowStays(e.currentTarget.open)}>
           <summary>
-            {plural(stays.length, {
-              one: "# app stays at the top of the apps folder",
-              other: "# apps stay at the top of the apps folder",
-            })}
+            {stays.length
+              ? plural(stays.length, {
+                  one: "# app stays at the top of the apps folder",
+                  other: "# apps stay at the top of the apps folder",
+                })
+              : t`Systems chosen for apps`}
           </summary>
-          {STAYS_ORDER.filter((why) => stays.some((a) => a.why === why)).map((why) => {
+          {STAYS_ORDER.filter((why) => (why === "noConsole" ? noSystem.length > 0 : stays.some((a) => a.why === why))).map((why) => {
             const { title, hint } = staysWhy(why);
             return (
               <section key={why} className="stays-group" aria-label={title}>
@@ -752,14 +792,14 @@ export function AppsFolder({ inSetup, onBusy }: { inSetup?: boolean; onBusy?: (b
                   <strong>{title}</strong> <span>{hint}</span>
                 </p>
                 <ul className="stays-list">
-                  {stays
-                    .filter((a) => a.why === why)
-                    .map((a) => (
-                      <li key={a.id}>
-                        <span className="stays-app">{a.folder}</span>
-                        {why === "noConsole" && <ChooseSystem id={a.id} name={a.folder} />}
-                      </li>
-                    ))}
+                  {(why === "noConsole" ? noSystem : stays.filter((a) => a.why === why)).map((a) => (
+                    <li key={a.id}>
+                      <span className="stays-app">{a.folder}</span>
+                      {why === "noConsole" && (
+                        <ChooseSystem id={a.id} name={a.folder} onPick={() => setPicked((p) => (p.some((x) => x.id === a.id) ? p : [...p, { id: a.id, folder: a.folder }]))} />
+                      )}
+                    </li>
+                  ))}
                 </ul>
               </section>
             );

@@ -1044,6 +1044,14 @@ msgstr "Hinzufügen und holen"
 msgid "Add another folder…"
 msgstr "Weiteren Ordner hinzufügen…"
 
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Add another system for {name}"
+msgstr "Weiteres System für {name} hinzufügen"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Add another…"
+msgstr "Weiteres hinzufügen…"
+
 #: ../../apps/launcher/src/library.tsx
 msgid "Add apps from each app's menu. It also shows apps that match these filters:"
 msgstr "Füge Apps über das Menü der jeweiligen App hinzu. Sie zeigt auch Apps, die zu diesen Filtern passen:"
@@ -2921,6 +2929,11 @@ msgstr "Zurück"
 #: ../../apps/launcher/src/discussions.tsx
 msgid "Go to Community"
 msgstr "Zur Community"
+
+#. Where an app goes once its systems are chosen, such as Ports/Multi-system
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Goes in {to}"
+msgstr "Kommt in {to}"
 
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Good copy"
@@ -5388,6 +5401,10 @@ msgstr "„{tag}“ von {count} entfernen?"
 msgid "Remove {name}"
 msgstr "{name} entfernen"
 
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Remove {system} from {name}"
+msgstr "{system} von {name} entfernen"
+
 #: ../../apps/launcher/src/cloud-saves-page.tsx
 msgid "Remove all"
 msgstr "Alle entfernen"
@@ -6398,6 +6415,10 @@ msgstr ""
 #: ../../apps/launcher/src/console-folders.tsx
 msgid "System folder names and places"
 msgstr "Namen und Orte der Systemordner"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Systems chosen for apps"
+msgstr "Für Apps gewählte Systeme"
 
 #. Controller hint: what the shoulder buttons do where there are tabs, change tab
 #: ../../apps/launcher/src/spatial.ts

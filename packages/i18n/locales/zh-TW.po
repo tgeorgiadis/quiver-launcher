@@ -1044,6 +1044,14 @@ msgstr "新增並獲取"
 msgid "Add another folder…"
 msgstr "新增另一個資料夾 →"
 
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Add another system for {name}"
+msgstr "為 {name} 新增其他系統"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Add another…"
+msgstr "再新增…"
+
 #: ../../apps/launcher/src/library.tsx
 msgid "Add apps from each app's menu. It also shows apps that match these filters:"
 msgstr "從每個應用程式的選單中新增應用程式。這裡還會顯示符合以下篩選條件的應用程式："
@@ -2921,6 +2929,11 @@ msgstr "返回"
 #: ../../apps/launcher/src/discussions.tsx
 msgid "Go to Community"
 msgstr "前往社群"
+
+#. Where an app goes once its systems are chosen, such as Ports/Multi-system
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Goes in {to}"
+msgstr "放入 {to}"
 
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Good copy"
@@ -5388,6 +5401,10 @@ msgstr "要從 {count} 移除「{tag}」嗎？"
 msgid "Remove {name}"
 msgstr "移除 {name}"
 
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Remove {system} from {name}"
+msgstr "從 {name} 移除 {system}"
+
 #: ../../apps/launcher/src/cloud-saves-page.tsx
 msgid "Remove all"
 msgstr "全部移除"
@@ -6398,6 +6415,10 @@ msgstr ""
 #: ../../apps/launcher/src/console-folders.tsx
 msgid "System folder names and places"
 msgstr "系統資料夾的名稱與位置"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Systems chosen for apps"
+msgstr "為應用程式選擇的系統"
 
 #. Controller hint: what the shoulder buttons do where there are tabs, change tab
 #: ../../apps/launcher/src/spatial.ts
