@@ -29,14 +29,14 @@ test("with a controller connected, the bottom says what its buttons do, as it la
   await open("button", { text: "Library" });
   // It doesn't cover the page: the d-pad still gets everywhere, every move in sight above it.
   await everything("the library, with the hints");
-  // In the Sidebar layout: only beside the sidebar, which runs to the window's bottom.
+  // In the List layout: only beside the list, which runs to the window's bottom.
   const layout = async (name) => {
     await open('button[aria-label="View options"]');
     await app.execute((name) => [...document.querySelectorAll("button")].find((b) => b.innerText.trim() === name).focus(), name);
     await reach.press(app, "South");
     await reach.press(app, "East");
   };
-  await layout("Sidebar");
+  await layout("List");
   const at = () =>
     app.execute(() => {
       const side = document.querySelector(".library-sidebar").getBoundingClientRect();

@@ -1270,6 +1270,40 @@ html[data-navigating] .shelf-row { scroll-snap-type: none; }
   .library-bar .playlists { flex-basis: 100%; }
 }
 /*
+ * The grid's tabs and playlists down a panel on its left (view.ts's playlists: "side"), as 3.x's tag filters were:
+ * All, Updates and Hidden, then the playlists under their heading, Add a playlist beside it. It stays in view as the
+ * cards scroll, and scrolls itself when it's taller than the window.
+ */
+.library-panelled { display: grid; grid-template-columns: clamp(200px, 18vw, 260px) minmax(0, 1fr); gap: 0 28px; align-items: start; }
+.library-main { min-width: 0; }
+.playlist-panel {
+  position: sticky; top: -12px; display: flex; flex-direction: column; gap: 2px; max-height: calc(100vh - 96px); margin-top: -12px; padding: 12px 6px 12px 0;
+  overflow-y: auto; scrollbar-width: thin; scrollbar-color: transparent transparent;
+}
+.playlist-panel:hover { scrollbar-color: var(--line-strong) transparent; }
+.panel-tabs { display: flex; flex-direction: column; gap: 2px; }
+.panel-tab { display: flex; align-items: center; gap: 2px; min-width: 0; border-radius: 8px; }
+.panel-tab > button:not(.menu-button) {
+  display: flex; flex: 1; align-items: center; gap: 10px; min-width: 0; min-height: 34px; padding: 5px 10px; border-radius: 8px;
+  color: var(--text-2); font-size: 13.5px; font-weight: 500; text-align: left;
+}
+.panel-tab > button:not(.menu-button) > svg { flex-shrink: 0; width: 18px; color: var(--muted); }
+.panel-tab .playlist-icon { margin: 0; }
+.panel-tab-name { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.panel-tab:hover:where(:not([data-navigating] *)) { background: var(--panel); }
+.panel-tab:hover > button:not(.menu-button) { color: var(--strong); }
+.panel-tab.active { background: var(--accent-soft); box-shadow: inset 3px 0 var(--accent); }
+.panel-tab.active > button:not(.menu-button), .panel-tab.active > button > svg { color: var(--strong); }
+.panel-tab > .menu-button { flex-shrink: 0; margin-right: 4px; }
+.panel-heading {
+  display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-top: 14px; padding: 6px 0 4px 10px; border-top: 1px solid var(--line);
+  color: var(--text-3); font-size: 11px; font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase;
+}
+.panel-heading .menu-button { margin-right: 4px; }
+.panel-empty { margin: 4px 10px; font-size: 12.5px; }
+/* The tip for players from 3.x that the playlists can go down the left (library.tsx). */
+.playlists-tip .icon-only { padding: 7px; }
+/*
  * A phone: two rows, then the search's. What to show and Add an app (an icon); then the sort, and the platforms,
  * Filters and View as icons. Group by is in View (library.tsx).
  */

@@ -159,7 +159,7 @@ function Welcome() {
       <strong>Simpler protection:</strong> get updates right away, or wait 48 hours in case a release is harmful, which gives the Quiver team time to withdraw it
     </Trans>,
     <Trans>
-      <strong>Two library views:</strong> Sidebar, inspired by Steam, and Grid, with a range of options for box art, covers, icons and what each app shows
+      <strong>Two library views:</strong> List, inspired by Steam, and Grid, with a range of options for box art, covers, icons and what each app shows, and your playlists along the top or in a side panel
     </Trans>,
     <Trans>
       <strong>TV mode:</strong> a full-screen launcher for a controller

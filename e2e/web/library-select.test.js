@@ -1,6 +1,6 @@
 /**
  * Selecting many library apps and changing them together (library-ticking.tsx): Ctrl+click and Shift+click, Select
- * in an app's menu, the bar's playlists, tags, hiding and uninstalling, the Sidebar layout, and a controller.
+ * in an app's menu, the bar's playlists, tags, hiding and uninstalling, the List layout, and a controller.
  */
 import { after, test } from "node:test";
 import assert from "node:assert/strict";
@@ -166,7 +166,7 @@ test("Uninstall asks once for every app selected, naming them", async () => {
   }
 });
 
-test("in the Sidebar layout, rows select the same way, and a controller's A selects while B stops", async () => {
+test("in the List layout, rows select the same way, and a controller's A selects while B stops", async () => {
   const s = await open({ state: { ...state(), settings: { library: { layout: "sidebar" } } } }, ".sidebar-row[data-slug='test-port']");
   const { page } = s;
   try {
