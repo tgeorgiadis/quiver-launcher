@@ -25,6 +25,7 @@ import { hiddenOnApp, hideOnApp, hideableTags } from "./catalog-tags";
 import { native } from "./native";
 import { track } from "./telemetry";
 import { boxZoom, windowBox, zoom } from "./zoom";
+import { useTickToggle, useTicked } from "./library-ticking";
 
 /** How long a finger stays down before it's a long press, in ms. */
 const LONG_PRESS = 500;
@@ -109,16 +110,8 @@ function BrowseMenuItems({ entry, onOpen, close, onReadme, onFeedback }: { entry
       {text}
     </button>
   );
-  // Up and down go through the items, round again at the end.
-  const keys = (e: KeyEvent<HTMLDivElement>) => {
-    if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
-    e.preventDefault();
-    const items = [...e.currentTarget.querySelectorAll<HTMLElement>(":scope > [data-item]:not(:disabled)")];
-    const i = items.indexOf(e.target as HTMLElement);
-    items[(i + (e.key === "ArrowDown" ? 1 : items.length - 1)) % items.length]?.focus();
-  };
   return (
-    <div className="game-menu" data-arrows="" onKeyDown={keys}>
+    <div className="game-menu" data-arrows="" onKeyDown={menuArrows}>
       {main && <MainItem main={main} onClick={() => (close(), main.act())} />}
       {top.map((i) => item(i.text, i.act))}
       {source === undefined
@@ -131,6 +124,15 @@ function BrowseMenuItems({ entry, onOpen, close, onReadme, onFeedback }: { entry
       {item(hidden ? t`Show in Browse` : t`Hide from Browse`, toggle)}
     </div>
   );
+}
+
+/** In a menu with no submenus: up and down go through its items, round again at the end. */
+export function menuArrows(e: KeyEvent<HTMLDivElement>) {
+  if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
+  e.preventDefault();
+  const items = [...e.currentTarget.querySelectorAll<HTMLElement>(":scope > [data-item]:not(:disabled)")];
+  const i = items.indexOf(e.target as HTMLElement);
+  items[(i + (e.key === "ArrowDown" ? 1 : items.length - 1)) % items.length]?.focus();
 }
 
 /**
@@ -364,6 +366,8 @@ function MenuItems({ entry, onOpen, close, escape }: { entry: Entry; onOpen: () 
     );
 
   const { main, top } = useMainItems(entry, onOpen);
+  const tickToggle = useTickToggle();
+  const { ticked } = useTicked([entry.id]);
 
   const inLibrary = library.find((i) => i.id === entry.id);
   const manage: Item[] = [];
@@ -654,6 +658,8 @@ function MenuItems({ entry, onOpen, close, escape }: { entry: Entry; onOpen: () 
         </>,
       )}
       <hr />
+      {/* In the library: the first of several apps to change at once (library-ticking.tsx). */}
+      {tickToggle && inLibrary && item({ text: ticked ? t({ message: "Unselect", comment: "Menu item: takes an app out of the apps selected in the library" }) : t({ message: "Select", comment: "Menu item: selects an app in the library, to change several at once" }), act: () => tickToggle([entry.id]) })}
       {item({ text: t`App page`, act: onOpen })}
     </div>
   );

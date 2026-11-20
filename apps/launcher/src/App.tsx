@@ -758,75 +758,77 @@ function BrowsePage({
       */}
       {(filtersOpen || filtering > 0 || hiddenView !== "hide" || (sorted && !searching)) && (
         <div id="browse-filters" className="filter-bar" role="group" aria-label={t`Catalog filters`}>
-          {sorted && !searching && (
-            <FilterPill on={sortName(filters.sort)} onClear={() => (setSorted(false), choose({ ...filters, sort: fromSaved(saved).sort }))}>
-              <span className="pill-label">{sortName(filters.sort)}</span>
-            </FilterPill>
-          )}
-          {/* What it runs ("here"): on Linux, Linux's apps and Windows' (through Proton), as the library shows them. None ticked is every platform. */}
-          {list(
-            "platforms",
-            t`Platform`,
-            here ? hereLabel : (platformsOn ?? t`All platforms`),
-            here ? undefined : (platformsOn ?? t`All platforms`),
-            [
-              { value: "here", label: hereLabel },
-              ...Object.keys(OS_NAMES)
-                .filter((id) => id !== config.os || config.os === "linux")
-                .map((id) => ({ value: id, label: osChoice(id as Os) })),
-            ],
-            { none: ["here"] },
-          )}
-          {list("consoles", t`Console`, consolesOn ?? t`Any console`, consolesOn, consoleOptions(consoles, consoleNames), { max: MAX_SYSTEMS })}
-          {list("projectTypes", t`Project type`, typesOn ?? t`Any project type`, typesOn, projectTypeOptions())}
-          {pill(
-            "ai",
-            filters.ai && filterLabel("ai", filters.ai, consoleNames),
-            <select aria-label={t`AI use`} value={filters.ai ?? ""} onChange={set("ai")}>
-              <option value="">{t`Any AI use`}</option>
-              <option value="no-generated">{t`Hide mostly AI-generated apps`}</option>
-              <option value="no-ai">{t`Hide apps with any AI use`}</option>
-            </select>,
-          )}
-          {pill(
-            "setup",
-            filters.setup && t`Easy setup`,
-            <select
-              aria-label={t`Setup`}
-              title={t`Easy setup: Quiver Launcher finds your copy of the game and puts it where the app needs it.`}
-              value={filters.setup ?? ""}
-              onChange={set("setup")}
-            >
-              <option value="">{t`Any setup`}</option>
-              <option value="easy">{t`Easy setup only`}</option>
-            </select>,
-          )}
-          {/* Up here with the filters, not under the list, which loads more as it's reached. */}
-          {(filtersOpen || showOwned) && (
-            <FilterPill on={showOwned ? t`Apps in your library shown` : undefined} onClear={() => setShowOwned(false)}>
-              <select aria-label={t`Apps in your library`} value={showOwned ? "show" : "hide"} onChange={(e) => setShowOwned(e.target.value === "show")}>
-                <option value="hide">{t`Hide apps in your library`}</option>
-                <option value="show">{t`Show apps in your library`}</option>
-              </select>
-            </FilterPill>
-          )}
-          {(filtersOpen || hiddenView !== "hide") && hidden.size > 0 && (
-            <FilterPill
-              on={hiddenView === "show" ? t`Hidden apps shown` : hiddenView === "only" ? t`Hidden apps only` : undefined}
-              onClear={() => setHiddenView("hide")}
-            >
-              <select aria-label={t`Hidden apps`} value={hiddenView} onChange={(e) => setHiddenView(e.target.value as HiddenView)}>
-                <option value="hide">{t`Hide hidden apps`}</option>
-                <option value="show">{t`Show hidden apps`}</option>
-                <option value="only">{t`Only hidden apps`}</option>
-              </select>
-            </FilterPill>
-          )}
-          {hiddenView === "only" && hidden.size > 0 && (
-            <button type="button" className="text-button" onClick={() => setSettings({ ...settings, browseHidden: undefined })}>
-              <Plural value={hidden.size} one="Unhide # app" other="Unhide all # apps" />
-            </button>
-          )}
+          <span className="filter-pills">
+            {sorted && !searching && (
+              <FilterPill on={sortName(filters.sort)} onClear={() => (setSorted(false), choose({ ...filters, sort: fromSaved(saved).sort }))}>
+                <span className="pill-label">{sortName(filters.sort)}</span>
+              </FilterPill>
+            )}
+            {/* What it runs ("here"): on Linux, Linux's apps and Windows' (through Proton), as the library shows them. None ticked is every platform. */}
+            {list(
+              "platforms",
+              t`Platform`,
+              here ? hereLabel : (platformsOn ?? t`All platforms`),
+              here ? undefined : (platformsOn ?? t`All platforms`),
+              [
+                { value: "here", label: hereLabel },
+                ...Object.keys(OS_NAMES)
+                  .filter((id) => id !== config.os || config.os === "linux")
+                  .map((id) => ({ value: id, label: osChoice(id as Os) })),
+              ],
+              { none: ["here"] },
+            )}
+            {list("consoles", t`Console`, consolesOn ?? t`Any console`, consolesOn, consoleOptions(consoles, consoleNames), { max: MAX_SYSTEMS })}
+            {list("projectTypes", t`Project type`, typesOn ?? t`Any project type`, typesOn, projectTypeOptions())}
+            {pill(
+              "ai",
+              filters.ai && filterLabel("ai", filters.ai, consoleNames),
+              <select aria-label={t`AI use`} value={filters.ai ?? ""} onChange={set("ai")}>
+                <option value="">{t`Any AI use`}</option>
+                <option value="no-generated">{t`Hide mostly AI-generated apps`}</option>
+                <option value="no-ai">{t`Hide apps with any AI use`}</option>
+              </select>,
+            )}
+            {pill(
+              "setup",
+              filters.setup && t`Easy setup`,
+              <select
+                aria-label={t`Setup`}
+                title={t`Easy setup: Quiver Launcher finds your copy of the game and puts it where the app needs it.`}
+                value={filters.setup ?? ""}
+                onChange={set("setup")}
+              >
+                <option value="">{t`Any setup`}</option>
+                <option value="easy">{t`Easy setup only`}</option>
+              </select>,
+            )}
+            {/* Up here with the filters, not under the list, which loads more as it's reached. */}
+            {(filtersOpen || showOwned) && (
+              <FilterPill on={showOwned ? t`Apps in your library shown` : undefined} onClear={() => setShowOwned(false)}>
+                <select aria-label={t`Apps in your library`} value={showOwned ? "show" : "hide"} onChange={(e) => setShowOwned(e.target.value === "show")}>
+                  <option value="hide">{t`Hide apps in your library`}</option>
+                  <option value="show">{t`Show apps in your library`}</option>
+                </select>
+              </FilterPill>
+            )}
+            {(filtersOpen || hiddenView !== "hide") && hidden.size > 0 && (
+              <FilterPill
+                on={hiddenView === "show" ? t`Hidden apps shown` : hiddenView === "only" ? t`Hidden apps only` : undefined}
+                onClear={() => setHiddenView("hide")}
+              >
+                <select aria-label={t`Hidden apps`} value={hiddenView} onChange={(e) => setHiddenView(e.target.value as HiddenView)}>
+                  <option value="hide">{t`Hide hidden apps`}</option>
+                  <option value="show">{t`Show hidden apps`}</option>
+                  <option value="only">{t`Only hidden apps`}</option>
+                </select>
+              </FilterPill>
+            )}
+            {hiddenView === "only" && hidden.size > 0 && (
+              <button type="button" className="text-button" onClick={() => setSettings({ ...settings, browseHidden: undefined })}>
+                <Plural value={hidden.size} one="Unhide # app" other="Unhide all # apps" />
+              </button>
+            )}
+          </span>
           {filtering > 0 && (
             <span className="filter-actions">
               <button type="button" className="text-button" onClick={() => choose({ platforms: ["here"], sort: filters.sort })}>
@@ -2122,8 +2124,14 @@ function Notice() {
   const close = () => setNotice(null);
   if (!notice.stays) {
     return (
-      <div className="toast" role="status" onClick={close}>
+      <div className={`toast${notice.action ? " has-action" : ""}`} role="status" onClick={close}>
         <p>{notice.text}</p>
+        {/* Its click closes the toast too. */}
+        {notice.action && (
+          <button type="button" className="toast-action" onClick={notice.action.act}>
+            {notice.action.label}
+          </button>
+        )}
       </div>
     );
   }

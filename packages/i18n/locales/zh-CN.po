@@ -22,6 +22,16 @@ msgstr "（已更改）"
 msgid "{0, plural, one {# app for other platforms isn't shown.} other {# apps for other platforms aren't shown.}}"
 msgstr "{0, plural, one {其他平台还有 # 个应用未显示。} other {其他平台还有 # 个应用未显示。}}"
 
+#. placeholder {0}: ids.length
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "{0, plural, one {# app hidden from your library.} other {# apps hidden from your library.}}"
+msgstr "{0, plural, other {已从游戏库中隐藏 # 个应用。}}"
+
+#. placeholder {0}: ids.length
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "{0, plural, one {# app shows in your library again.} other {# apps show in your library again.}}"
+msgstr "{0, plural, other {# 个应用重新显示在游戏库中。}}"
+
 #. placeholder {0}: stays.length
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "{0, plural, one {# app stays at the top of the apps folder} other {# apps stay at the top of the apps folder}}"
@@ -49,10 +59,20 @@ msgstr "{0, plural, other {# 条评论}}"
 msgid "{0, plural, one {# file} other {# files}}"
 msgstr "{0, plural, other {# 个文件}}"
 
+#. placeholder {0}: portable.length
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "{0, plural, one {# of them may keep your saves in its folder. They'll go to the trash too.} other {# of them may keep your saves in their folders. They'll go to the trash too.}}"
+msgstr "{0, plural, other {其中 # 个可能把存档保存在自己的文件夹里，存档也会一并移到回收站。}}"
+
 #. placeholder {0}: library.apps.length
 #: ../../apps/launcher/src/old-library.tsx
 msgid "{0, plural, one {If you already installed it somewhere else, show Quiver the folder.} other {If you already installed them somewhere else, show Quiver the folder.}}"
 msgstr "{0, plural, other {如果你已经把它们装在别处，请把那个文件夹告诉 Quiver。}}"
+
+#. placeholder {0}: gettable.length
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "{0, plural, one {Install # app} other {Install # apps}}"
+msgstr "{0, plural, other {安装 # 个应用}}"
 
 #. placeholder {0}: bringing.apps.length
 #. placeholder {1}: bringing.path
@@ -95,6 +115,16 @@ msgstr "{0, plural, one {无法移动此应用。它仍在原处，所有文件�
 #: ../../apps/launcher/src/App.tsx
 msgid "{0, plural, one {Unhide # app} other {Unhide all # apps}}"
 msgstr "{0, plural, one {取消隐藏 # 个应用} other {取消隐藏全部 # 个应用}}"
+
+#. placeholder {0}: installed.length
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "{0, plural, one {Uninstall # app…} other {Uninstall # apps…}}"
+msgstr "{0, plural, other {卸载 # 个应用…}}"
+
+#. placeholder {0}: updatable.length
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "{0, plural, one {Update # app} other {Update # apps}}"
+msgstr "{0, plural, other {更新 # 个应用}}"
 
 #. placeholder {0}: space(free)
 #. placeholder {0}: space(state.free)
@@ -149,6 +179,10 @@ msgstr ""
 #: ../../apps/launcher/src/ways-to-play.tsx
 msgid "{apps, plural, one {# way to play} other {# ways to play}}"
 msgstr "{apps, plural, one {# 种游玩方式} other {# 种游玩方式}}"
+
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "{away, plural, one {(# not showing)} other {(# not showing)}}"
+msgstr "{away, plural, other {（# 个未显示）}}"
 
 #: ../../apps/launcher/src/detail.tsx
 msgid "{broken, plural, one {# broken} other {# broken}}"
@@ -207,6 +241,10 @@ msgstr "{count, plural, other {# 个副本}}"
 msgid "{count, plural, one {# discussion with new comments} other {# discussions with new comments}}"
 msgstr "{count, plural, other {# 个讨论有新评论}}"
 
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "{count, plural, one {# selected} other {# selected}}"
+msgstr "{count, plural, other {已选择 # 个}}"
+
 #: ../../apps/launcher/src/old-library.tsx
 msgid "{count, plural, one {Add # app} other {Add # apps}}"
 msgstr "{count, plural, one {添加 # 个应用} other {添加 # 个应用}}"
@@ -236,6 +274,26 @@ msgstr "{count, plural, one {将其 # 个应用放到任何拥有链接的人都
 #: ../../apps/launcher/src/old-library.tsx
 msgid "{count, plural, one {Quiver Launcher 3 already installed # app in your library. Use that copy where it is, instead of downloading it again?} other {Quiver Launcher 3 already installed # apps in your library. Use those copies where they are, instead of downloading them again?}}"
 msgstr "{count, plural, one {Quiver Launcher 3 已在你的游戏库中安装了 # 个应用。要使用现有副本，而不是重新下载吗？} other {Quiver Launcher 3 已在你的游戏库中安装了 # 个应用。要使用这些现有副本，而不是重新下载吗？}}"
+
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "{count, plural, one {Remove # app from your library?} other {Remove # apps from your library?}}"
+msgstr "{count, plural, other {从游戏库中移除 # 个应用？}}"
+
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "{count, plural, one {Removing # app…} other {Removing # apps…}}"
+msgstr "{count, plural, other {正在移除 # 个应用…}}"
+
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "{count, plural, one {Uninstall # app and remove it from your library?} other {Uninstall and remove # apps from your library?}}"
+msgstr "{count, plural, other {卸载 # 个应用并从游戏库中移除？}}"
+
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "{count, plural, one {Uninstall # app?} other {Uninstall # apps?}}"
+msgstr "{count, plural, other {卸载 # 个应用？}}"
+
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "{count, plural, one {Uninstalling # app…} other {Uninstalling # apps…}}"
+msgstr "{count, plural, other {正在卸载 # 个应用…}}"
 
 #: ../../apps/launcher/src/old-library.tsx
 msgid "{count, plural, one {Use it} other {Use them}}"
@@ -304,6 +362,10 @@ msgstr "开发者已从 {listed} 中移除 {file}。"
 #: ../../apps/launcher/src/detail.tsx
 msgid "{files, plural, one {# file} other {# files}}"
 msgstr "{files, plural, one {# 个文件} other {# 个文件}}"
+
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "{files, plural, one {The files of the one installed go to the trash, and they all leave your library.} other {The files of the # installed go to the trash, and they all leave your library.}}"
+msgstr "{files, plural, other {已安装的 # 个应用的文件会移到回收站，所有应用都会从游戏库中移除。}}"
 
 #: ../../apps/launcher/src/old-library.tsx
 msgid "{filters, plural, one {# tag filter, as a playlist} other {# tag filters, as playlists}}"
@@ -390,6 +452,10 @@ msgstr "本小时还剩 {left}/{most} 次请求，截止时间：{until}。"
 msgid "{left} of {most} requests left this minute."
 msgstr "本分钟还剩 {left}/{most} 次请求。"
 
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "{listed} and {more} more"
+msgstr "{listed} 等 {more} 个"
+
 #: ../../apps/launcher/src/mods.tsx
 msgid "{mb} MB"
 msgstr "{mb} MB"
@@ -426,6 +492,10 @@ msgstr "{months, plural, one {# 个月前游玩过} other {# 个月前游玩过}
 #: ../../apps/launcher/src/library.tsx
 msgid "{more, plural, one {and # more} other {and # more}}"
 msgstr "{more, plural, one {还有 # 个} other {还有 # 个}}"
+
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "{n, plural, one {# app selected} other {# apps selected}}"
+msgstr "{n, plural, other {已选择 # 个应用}}"
 
 #: ../../apps/launcher/src/recovery.tsx
 #: ../../apps/launcher/src/tag-settings.tsx
@@ -760,10 +830,12 @@ msgid "{years, plural, one {Played # yr ago} other {Played # yrs ago}}"
 msgstr "{years, plural, one {# 年前游玩过} other {# 年前游玩过}}"
 
 #: ../../apps/launcher/src/card-menu.tsx
+#: ../../apps/launcher/src/library-ticking.tsx
 msgid "+ New playlist…"
 msgstr "+ 新建播放列表…"
 
 #: ../../apps/launcher/src/card-menu.tsx
+#: ../../apps/launcher/src/library-ticking.tsx
 msgid "+ New tag…"
 msgstr "+ 新建标签…"
 
@@ -920,6 +992,7 @@ msgstr "添加共享播放列表"
 
 #: ../../apps/launcher/src/card-menu.tsx
 #: ../../apps/launcher/src/detail.tsx
+#: ../../apps/launcher/src/library-ticking.tsx
 msgid "Add a tag"
 msgstr "添加标签"
 
@@ -983,7 +1056,9 @@ msgstr "添加到我的游戏库"
 
 #. Menu item opening the playlists to add an app to
 #. Menu item opening the playlists to add an app to
+#. Menu item opening the playlists to add an app to
 #: ../../apps/launcher/src/card-menu.tsx
+#: ../../apps/launcher/src/library-ticking.tsx
 #: ../../apps/launcher/src/library.tsx
 msgid "Add to playlist"
 msgstr "添加到播放列表"
@@ -1554,6 +1629,7 @@ msgstr "无法添加：Quiver Launcher 不知道它的来源"
 #: ../../apps/launcher/src/feedback.tsx
 #: ../../apps/launcher/src/file-picker.tsx
 #: ../../apps/launcher/src/launch-options.tsx
+#: ../../apps/launcher/src/library-ticking.tsx
 #: ../../apps/launcher/src/library.tsx
 #: ../../apps/launcher/src/mods.tsx
 #: ../../apps/launcher/src/own-copy-setup.tsx
@@ -2360,10 +2436,12 @@ msgstr "暂时不要删除你的 Quiver Launcher 3 文件夹。随时可以在 �
 msgid "Don't play yet"
 msgstr "暂不游玩"
 
+#. Button: stops selecting apps in the library
 #. Closes a dialog
 #. Closes the thanks after a problem was reported
 #: ../../apps/launcher/src/announcements-ui.tsx
 #: ../../apps/launcher/src/correction.tsx
+#: ../../apps/launcher/src/library-ticking.tsx
 #: ../../apps/launcher/src/library.tsx
 msgid "Done"
 msgstr "完成"
@@ -2483,6 +2561,12 @@ msgstr "编辑"
 #: ../../apps/launcher/src/library.tsx
 msgid "Edit playlist"
 msgstr "编辑播放列表"
+
+#. Controller hint, and a button over the apps selected in the library: what can change on all of them at once
+#: ../../apps/launcher/src/library-ticking.tsx
+#: ../../apps/launcher/src/spatial.ts
+msgid "Edit selected"
+msgstr "编辑所选"
 
 #: ../../apps/launcher/src/discussions.tsx
 msgid "Edit your comment"
@@ -2840,17 +2924,28 @@ msgstr "已隐藏"
 msgid "Hidden ({hiddenCount})"
 msgstr "已隐藏（{hiddenCount}）"
 
+#. Filter: whether the apps the player hid from the library show
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/library.tsx
 msgid "Hidden apps"
 msgstr "已隐藏的应用"
 
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/library.tsx
 msgid "Hidden apps only"
 msgstr "仅显示已隐藏的应用"
 
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/library.tsx
 msgid "Hidden apps shown"
 msgstr "显示已隐藏的应用"
+
+#. Mark on an app's card the player hid
+#. Mark on an app's card the player hid
+#: ../../apps/launcher/src/library-sidebar.tsx
+#: ../../apps/launcher/src/library-tile.tsx
+msgid "Hidden from your library"
+msgstr "已从你的游戏库中隐藏"
 
 #. Hides a post from everyone
 #: ../../apps/launcher/src/discussions.tsx
@@ -2887,10 +2982,12 @@ msgstr "从“浏览”中隐藏"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/card-menu.tsx
+#: ../../apps/launcher/src/library-ticking.tsx
 msgid "Hide from library"
 msgstr "从游戏库中隐藏"
 
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/library.tsx
 msgid "Hide hidden apps"
 msgstr "隐藏已隐藏的应用"
 
@@ -3136,6 +3233,7 @@ msgid "Install anyway"
 msgstr "仍要安装"
 
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/library-ticking.tsx
 msgid "Install automatically"
 msgstr "自动安装"
 
@@ -3790,6 +3888,12 @@ msgstr "模组应放在应用文件夹中的 {modsPath}。你自行放入其中�
 msgid "Mods to browse"
 msgstr "可浏览的模组"
 
+#. Button over the selected apps: the rest of what can change on them
+#. Button over the selected apps: the rest of what can change on them
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "More"
+msgstr "更多"
+
 #. A shelf at the foot of an app's page: the best rated apps for other games on its console
 #: ../ui/src/discover.tsx
 msgid "More like this"
@@ -4045,6 +4149,7 @@ msgid "New name for {tag}"
 msgstr "{tag} 的新名称"
 
 #: ../../apps/launcher/src/card-menu.tsx
+#: ../../apps/launcher/src/library-ticking.tsx
 #: ../../apps/launcher/src/library.tsx
 msgid "New playlist"
 msgstr "新建播放列表"
@@ -4208,6 +4313,10 @@ msgstr "{name} {version} 的文件均未标记为适用于你的电脑。如果�
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "None of the files Quiver found look like {game}."
 msgstr "Quiver 找到的文件都不像是 {game}。"
+
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "None of them are installed."
+msgstr "它们都没有安装。"
 
 #: ../../apps/launcher/src/own.tsx
 msgid "None of this release's files are for this computer."
@@ -4399,7 +4508,9 @@ msgid "Off"
 msgstr "关闭"
 
 #. Updates: offer new releases to install
+#. Updates: offer new releases to install
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/library-ticking.tsx
 msgid "Offer them"
 msgstr "提供它们"
 
@@ -4421,6 +4532,7 @@ msgid "Only apps in my library"
 msgstr "仅限我库中的应用"
 
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/library.tsx
 msgid "Only hidden apps"
 msgstr "仅显示隐藏的应用"
 
@@ -4694,7 +4806,9 @@ msgstr "玩家表示运行良好"
 msgid "Playlist name"
 msgstr "播放列表名称"
 
+#. Button over the selected apps: puts them on playlists
 #: ../../apps/launcher/src/detail.tsx
+#: ../../apps/launcher/src/library-ticking.tsx
 #: ../../apps/launcher/src/library.tsx
 msgid "Playlists"
 msgstr "播放列表"
@@ -5154,8 +5268,10 @@ msgstr "重新加载"
 
 #. Button: no background music, or no background picture
 #. Button: no background music, or no background picture
+#. Button: takes the selected apps out of the library
 #. Removes a followed playlist from the library
 #: ../../apps/launcher/src/cloud-saves-page.tsx
+#: ../../apps/launcher/src/library-ticking.tsx
 #: ../../apps/launcher/src/library.tsx
 #: ../../apps/launcher/src/own-copy-settings.tsx
 #: ../../apps/launcher/src/saves-tab.tsx
@@ -5179,6 +5295,10 @@ msgstr "全部移除"
 msgid "Remove all copies"
 msgstr "移除所有副本"
 
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "Remove apps"
+msgstr "移除应用"
+
 #: ../../apps/launcher/src/detail.tsx
 msgid "Remove console {name}"
 msgstr "移除主机 {name}"
@@ -5191,10 +5311,19 @@ msgstr "从你的账号中移除 {name} 的所有副本？你电脑上的存档�
 msgid "Remove filter {on}"
 msgstr "移除筛选条件 {on}"
 
+#. placeholder {0}: open.name
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "Remove from {0}"
+msgstr "从 {0} 中移除"
+
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Remove from library"
 msgstr "从游戏库中移除"
+
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "Remove from library…"
+msgstr "从游戏库中移除…"
 
 #: ../../apps/launcher/src/detail.tsx
 msgid "Remove tag {tag}"
@@ -5580,9 +5709,21 @@ msgid "See which apps"
 msgstr "查看哪些应用"
 
 #. Controller hint: what Confirm does on any other control
+#. Controller hint: what Confirm does on any other control
+#. Menu item: selects an app in the library, to change several at once
+#: ../../apps/launcher/src/card-menu.tsx
 #: ../../apps/launcher/src/spatial.ts
 msgid "Select"
 msgstr "选择"
+
+#. Selects every app the library shows
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "Select all"
+msgstr "全选"
+
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "Selected apps"
+msgstr "所选应用"
 
 #. Button: send a correction to the maintainers
 #. Sends the maintainers which system a release file is for
@@ -5750,6 +5891,7 @@ msgid "Show dismissed ({count})"
 msgstr "显示已忽略项（{count}）"
 
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/library.tsx
 msgid "Show hidden apps"
 msgstr "显示隐藏的应用"
 
@@ -5760,6 +5902,7 @@ msgstr "在“浏览”中显示"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/card-menu.tsx
+#: ../../apps/launcher/src/library-ticking.tsx
 msgid "Show in library"
 msgstr "在游戏库中显示"
 
@@ -6041,6 +6184,11 @@ msgstr "从当前位置启动。不会下载、移动或删除任何内容。"
 msgid "Starts the program you put in its folder, {folder}."
 msgstr "启动你放入其文件夹 {folder} 中的程序。"
 
+#. How the selected apps update: never, each staying on the version it has
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "Stay on the installed version"
+msgstr "保持当前安装的版本"
+
 #: ../../apps/launcher/src/App.tsx
 msgid "Stay signed in"
 msgstr "保持登录状态"
@@ -6069,6 +6217,10 @@ msgstr ""
 #: ../../apps/launcher/src/own-copy-settings.tsx
 msgid "Stop looking in {folder} for {console}"
 msgstr "停止在 {folder} 中查找 {console}"
+
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "Stop selecting"
+msgstr "停止选择"
 
 #: ../../apps/launcher/src/library.tsx
 msgid "Stop sharing"
@@ -6135,11 +6287,15 @@ msgid "Tag"
 msgstr "标签"
 
 #. Browse card detail: the app's tags, such as Recomp or its console, over its name
+#. Button over the selected apps: the player's tags to put on them
+#. Button over the selected apps: the player's tags to put on them
+#. Menu item opening the player's tags for an app
 #. Menu item opening the player's tags for an app
 #. Menu item opening the player's tags for an app
 #. Settings section: the player's own tags and the catalog's
 #: ../../apps/launcher/src/browse-cards.ts
 #: ../../apps/launcher/src/card-menu.tsx
+#: ../../apps/launcher/src/library-ticking.tsx
 #: ../../apps/launcher/src/tag-settings.tsx
 msgid "Tags"
 msgstr "标签"
@@ -6364,6 +6520,10 @@ msgstr "共享播放列表已是最新版本。"
 msgid "The tags you gave your apps, including any brought over from Quiver Launcher 3. Renaming or deleting one changes it on every app that has it. The catalog's own tags aren't affected."
 msgstr "你给应用添加的标签，包括从 Quiver Launcher 3 带过来的。重命名或删除一个标签会改动所有带有它的应用。目录自带的标签不受影响。"
 
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "Their files go to the trash. They stay in your library, so you can get them again."
+msgstr "它们的文件会移到回收站。它们仍留在游戏库中，你可以再次获取。"
+
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Theme"
 msgstr "主题"
@@ -6411,6 +6571,10 @@ msgstr "这些存档太大，无法使用云存档（{max}）。它们只备份�
 #: ../../apps/launcher/src/cloud-saves-page.tsx
 msgid "These saves are too big for cloud saves."
 msgstr "这些存档太大，无法使用云存档。"
+
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "They leave your library. Nothing is deleted."
+msgstr "它们会从游戏库中移除，不会删除任何文件。"
 
 #: ../../apps/launcher/src/account.tsx
 msgid "This account is suspended."
@@ -6634,6 +6798,11 @@ msgstr "类型"
 msgid "Under a minute"
 msgstr "不到一分钟"
 
+#. Button on the toast after hiding apps: shows them again, selected
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "Undo"
+msgstr "撤销"
+
 #. Stops new comments showing on the account page
 #: ../../apps/launcher/src/discussions.tsx
 msgid "Unfollow"
@@ -6641,6 +6810,7 @@ msgstr "取消关注"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/card-menu.tsx
+#: ../../apps/launcher/src/library-ticking.tsx
 #: ../../apps/launcher/src/mods.tsx
 msgid "Uninstall"
 msgstr "卸载"
@@ -6659,8 +6829,17 @@ msgstr "要卸载 {name} 吗？"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/card-menu.tsx
+#: ../../apps/launcher/src/library-ticking.tsx
 msgid "Uninstall and remove"
 msgstr "卸载并移除"
+
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "Uninstall and remove from library…"
+msgstr "卸载并从游戏库中移除…"
+
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "Uninstall apps"
+msgstr "卸载应用"
 
 #. Moderation action
 #: ../../apps/launcher/src/discussions.tsx
@@ -6680,6 +6859,13 @@ msgstr "取消固定并降级到 {version}"
 #: ../../apps/launcher/src/versions.ts
 msgid "Unpin and install {version}"
 msgstr "取消固定并安装 {version}"
+
+#. Controller hint: what Confirm does on an app selected in the library, taking it out of those selected
+#. Menu item: takes an app out of the apps selected in the library
+#: ../../apps/launcher/src/card-menu.tsx
+#: ../../apps/launcher/src/spatial.ts
+msgid "Unselect"
+msgstr "取消选择"
 
 #: ../../apps/launcher/src/tag-settings.tsx
 msgid "Untick a tag to hide it on every app on this computer. Tick it to show it again. To hide one on a single app, untick it in that app's Tags menu."
@@ -6803,7 +6989,9 @@ msgid "Updated to {version} · {when}"
 msgstr "已更新到 {version} · {when}"
 
 #. How an installed app gets new releases
+#. How an installed app gets new releases
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/library-ticking.tsx
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Updates"
 msgstr "更新"
@@ -6875,6 +7063,11 @@ msgstr "使用我的云存档"
 #: ../../apps/launcher/src/App.tsx
 msgid "Use my cloud saves anyway"
 msgstr ""
+
+#. How the selected apps update: whatever Settings, Updates says
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "Use my default"
+msgstr "使用我的默认设置"
 
 #. Which releases an app gets: whatever Settings, Updates says, which is to include pre-releases
 #: ../../apps/launcher/src/App.tsx

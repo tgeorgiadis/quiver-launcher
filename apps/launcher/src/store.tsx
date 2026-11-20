@@ -218,6 +218,12 @@ export type Asking = {
 /** `early`: the newest release still in its 48-hour wait, which the player asked for: it asks first. */
 type InstallOptions = { app?: CustomApp; pin?: boolean; unverified?: boolean; blocked?: string; auto?: boolean; asset?: string; platform?: Os; to?: string; early?: boolean };
 
+/**
+ * How a notice shows: `stays`, as a dialog to close, for one that must be read; `action`, a button on the toast that
+ * undoes what it says, say.
+ */
+export type NoticeOptions = { stays?: boolean; action?: { label: string; act: () => void } };
+
 type Launcher = {
   config: Config;
   client: Client;
@@ -369,8 +375,8 @@ type Launcher = {
   /** Takes the new settings, or how to change them as they are by then, for a change that may come after another. */
   setSettings: Dispatch<SetStateAction<Settings>>;
   /** A short note for the player, such as what signing in brought over; `stays` until OK, for one that must be read. */
-  notice: { text: string; stays?: boolean } | null;
-  setNotice: (text: string | null, options?: { stays?: boolean }) => void;
+  notice: ({ text: string } & NoticeOptions) | null;
+  setNotice: (text: string | null, options?: NoticeOptions) => void;
   dismiss: (id: string) => void;
   /** The installed apps moving the apps folder takes along: those in it, and those kept elsewhere it can bring in. */
   movableApps: () => MovableApps;

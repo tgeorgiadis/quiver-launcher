@@ -36,6 +36,7 @@ import { GameTile, LibraryTile } from "./library-tile";
 import { closesOutside } from "./overlay";
 import { boxZoom, windowBox, zoom } from "./zoom";
 import { LibraryBackground } from "./library-background";
+import { TickArea } from "./library-ticking";
 
 type Tab = "all" | "updates" | "hidden" | string;
 /** The library's filters, as the catalog's: one choice of each. */
@@ -170,7 +171,8 @@ export function LibraryPage({
   // Kept with this computer's other preferences once they settle: two changes at once (a playlist's filters cleared as it opens) save together.
   useEffect(() => {
     const libraryTab = keepsTab(tab, collections) ? tab : undefined;
-    const set = Object.fromEntries(Object.entries(filters).filter(([, value]) => value));
+    // Not hidden apps shown for now (view.ts).
+    const set = Object.fromEntries(Object.entries(filters).filter(([key, value]) => value && key !== "hidden"));
     const libraryFilters = Object.keys(set).length ? set : undefined;
     if (libraryTab === settings.libraryTab && JSON.stringify(libraryFilters) === JSON.stringify(settings.libraryFilters)) return;
     setSettings({ ...settings, libraryTab, libraryFilters });
@@ -258,7 +260,11 @@ export function LibraryPage({
     return () => void (live = false);
   }, [client, collection?.follows]);
   const loaded = list && list !== "failed" ? list : undefined;
-  const shown = all.filter((i) => hidden.has(i.id) === (tab === "hidden"));
+  // Hidden apps show on their own tab, or with the filter for them; a followed playlist has them anyway.
+  // As Browse's: once some are hidden. Not on the Hidden tab, all hidden already, nor a followed playlist's.
+  const hiddenChoice = tab !== "hidden" && !collection?.follows && (hidden.size > 0 || Boolean(filters.hidden));
+  const hiddenToo = tab === "hidden" ? "only" : hiddenChoice ? filters.hidden : undefined;
+  const shown = all.filter((i) => (hiddenToo === "show" ? true : hidden.has(i.id) === (hiddenToo === "only")));
   const updates = shown.filter((i) => !jobs[i.id] && hasUpdate(catalog[i.id], installs[i.id]));
   const words = search.toLowerCase().split(/\s+/).filter(Boolean);
   const inLibrary = new Map(all.map((i) => [i.id, i]));
@@ -286,15 +292,19 @@ export function LibraryPage({
         ...shown.flatMap((i) => (catalog[i.id] ? [{ entry: withOverrides(catalog[i.id], i.overrides), item: i }] : [])),
         ...pickedOutside(collection, (id) => inLibrary.has(id), catalog).map((id) => ({ entry: catalog[id] })),
       ];
-  // The player's own tags, to filter on as well as the catalog's.
-  const ownTags = [...new Set(candidates.flatMap((c) => c.item?.overrides?.tags ?? []))];
+  // What the filters choose from: every app in the library, hidden ones too, and any the tab adds; the player's own
+  // tags as well as the catalog's.
+  const choosable = [...all.flatMap((i) => (catalog[i.id] ? [withOverrides(catalog[i.id], i.overrides)] : [])), ...candidates.flatMap((c) => (c.item ? [] : [c.entry]))];
+  const ownTags = [...new Set(all.flatMap((i) => i.overrides?.tags ?? []))];
   const inTab = (entry: Entry, item?: LibraryItem) => {
     if (collection?.follows) return true;
     if (tab === "updates") return Boolean(item && updates.includes(item));
     if (!collection) return Boolean(item);
     return inCollection(collection, facts(entry, item), makers);
   };
-  const filtering = Object.values(filters).some(Boolean);
+  const filtering = Object.entries(filters).some(([key, value]) => value && (key !== "hidden" || hiddenChoice));
+  // What a playlist saved from them would hold: not the hidden apps' choice.
+  const toSave = Object.entries(filters).some(([key, value]) => value && key !== "hidden");
   const matching = candidates.filter(({ entry, item }) => {
     const text = [entry.projectName, ...entry.games.map((g) => g.title), ...entry.tags, ...(item?.overrides?.tags ?? [])].join(" ").toLowerCase();
     return (
@@ -361,7 +371,7 @@ export function LibraryPage({
         <PlaylistEditor
           collection={editing}
           picked={(editing.apps ?? []).filter((id) => inLibrary.has(id)).length + pickedOutside(editing, (id) => inLibrary.has(id), catalog).length}
-          library={candidates.map((c) => c.entry)}
+          library={choosable}
           ownTags={ownTags}
           on={sharedEntries}
           onClose={(saved) => {
@@ -519,6 +529,8 @@ export function LibraryPage({
       )}
     </>
   );
+  // The player's own playlist open, whose apps picked by hand the selected ones can come off.
+  const ownPlaylist = collection && !collection.follows ? collection.key : undefined;
   const empty = collection && !search && !filtering ? (collection.follows ? t`Nothing in this playlist.` : t`No apps in this playlist yet. Add some from each app's menu, or edit its filters.`) : t`Nothing here.`;
   if (sidebar && page) {
     // Under headings by console, or by when they were played or added; else one list.
@@ -536,6 +548,7 @@ export function LibraryPage({
     const open = listed.find((e) => e.id === selected) ?? listed[0];
     const installedOnly = filters.installed === "yes";
     return (
+      <TickArea shown={listed.flatMap((e) => (inLibrary.has(e.id) ? [e.id] : []))} playlist={ownPlaylist}>
       <SidebarLayout
         side={
           <>
@@ -602,13 +615,13 @@ export function LibraryPage({
               {/* The filters on, each removable, while the panel is away. */}
               {filtering && !filtersOpen && (
                 <div className="filter-bar sidebar-pills" role="group" aria-label={t`Filters on`}>
-                  <FilterFields value={filters} set={set} many={many} entries={candidates.map((c) => c.entry)} ownTags={ownTags} pills={{ all: false, clear: clearFilter }} />
+                  <FilterFields value={filters} set={set} many={many} entries={choosable} ownTags={ownTags} hiddenChoice={hiddenChoice} pills={{ all: false, clear: clearFilter }} />
                 </div>
               )}
               {filtersOpen && (
                 <FiltersPanel onClose={() => setFiltersOpen(false)}>
                   <div className="filter-bar">
-                    <FilterFields value={filters} set={set} many={many} entries={candidates.map((c) => c.entry)} ownTags={ownTags} pills={{ all: true, clear: clearFilter }} />
+                    <FilterFields value={filters} set={set} many={many} entries={choosable} ownTags={ownTags} hiddenChoice={hiddenChoice} pills={{ all: true, clear: clearFilter }} />
                   </div>
                   <div className="filter-bar sidebar-filters-foot">
                     <span className="view-label">
@@ -634,7 +647,7 @@ export function LibraryPage({
                   </div>
                   <div className="filter-bar sidebar-filters-foot">
                     {/* A playlist of whatever matches these filters, now and later. */}
-                    <button type="button" className="save-playlist" disabled={!filtering && !search.trim()} onClick={savePlaylist}>
+                    <button type="button" className="save-playlist" disabled={!toSave && !search.trim()} onClick={savePlaylist}>
                       <ListPlus size={14} /> <Trans>Save as playlist</Trans>
                     </button>
                     {filtering && (
@@ -661,6 +674,7 @@ export function LibraryPage({
         {open ? <div key={open.id}>{page(open)}</div> : <p className="empty">{empty}</p>}
         {dialogs}
       </SidebarLayout>
+      </TickArea>
     );
   }
   // The grid's sections, when it has them: by game only in the sidebar.
@@ -719,11 +733,11 @@ export function LibraryPage({
       {(view.byGame ? stacks(entries, sortFacts) : entries).map(card)}
     </div>
   );
-  const on = Object.values(filters).filter(Boolean).length;
+  const on = Object.entries(filters).filter(([key, value]) => value && (key !== "hidden" || hiddenChoice)).length;
   // An empty library over apps still installed here: their section says it all.
   const nothing = items.length === 0 && !(loose.length && tab === "all" && !search && !filtering);
   return (
-    <>
+    <TickArea shown={items.flatMap((e) => (inLibrary.has(e.id) ? [e.id] : []))} playlist={ownPlaylist}>
       <LibraryBackground />
       {resume && <ContinuePlaying entry={resume} played={installs[resume.id].lastPlayed!} onOpen={() => onOpen(resume)} action={action(resume)} />}
       <div ref={bar} className={`library-bar${stacked ? " stacked" : ""}`}>
@@ -836,26 +850,27 @@ export function LibraryPage({
       {/* Filters: pills to pick from while open; the ones on stay, each removable, while it's closed. */}
       {(filtersOpen || filtering) && (
         <div id="library-filters" className="filter-bar" role="group" aria-label={t`Library filters`}>
-          <FilterFields
-            value={filters}
-            set={set}
-            many={many}
-            entries={candidates.map((c) => c.entry)}
-            ownTags={ownTags}
-            pills={{ all: filtersOpen, clear: clearFilter }}
-          />
+          <span className="filter-pills">
+            <FilterFields
+              value={filters}
+              set={set}
+              many={many}
+              entries={choosable}
+              ownTags={ownTags}
+              hiddenChoice={hiddenChoice}
+              pills={{ all: filtersOpen, clear: clearFilter }}
+            />
+          </span>
           {filtering && (
             <span className="filter-actions">
               <button type="button" className="text-button" onClick={() => setFilters({})}>
                 <Trans>Clear all</Trans>
               </button>
-              <button
-                type="button"
-                className="save-playlist"
-                onClick={savePlaylist}
-              >
-                <ListPlus size={14} /> <Trans>Save as playlist</Trans>
-              </button>
+              {toSave && (
+                <button type="button" className="save-playlist" onClick={savePlaylist}>
+                  <ListPlus size={14} /> <Trans>Save as playlist</Trans>
+                </button>
+              )}
             </span>
           )}
         </div>
@@ -921,7 +936,7 @@ export function LibraryPage({
         </section>
       )}
       {dialogs}
-    </>
+    </TickArea>
   );
 }
 
@@ -1032,6 +1047,7 @@ export function filterLabel(key: "console" | "projectType" | OneFilter, value: s
   if (key === "ai") return AI[value] && i18n._(AI[value]);
   if (key === "installed") return value === "yes" ? t`Installed` : t`Not installed`;
   if (key === "managed") return value === "manual" ? t`Manually managed` : t`Managed by Quiver`;
+  if (key === "hidden") return value === "only" ? t`Hidden apps only` : t`Hidden apps shown`;
   return tagLabel(value);
 }
 
@@ -1041,7 +1057,7 @@ export function filterLabel(key: "console" | "projectType" | OneFilter, value: s
  * removable once it's on; `all: false` shows only the ones on.
  */
 /** The library's filters with one choice each, a dropdown's. */
-type OneFilter = "ai" | "tag" | "installed" | "managed";
+type OneFilter = "ai" | "tag" | "installed" | "managed" | "hidden";
 /** The library's filters with several choices, a list to tick. */
 type ManyFilter = "consoles" | "projectTypes";
 
@@ -1070,6 +1086,7 @@ function FilterFields({
   many,
   entries,
   ownTags = [],
+  hiddenChoice = false,
   pills,
 }: {
   value: Filters;
@@ -1078,6 +1095,8 @@ function FilterFields({
   many: (key: ManyFilter, picked: string[]) => void;
   entries: Entry[];
   ownTags?: string[];
+  /** The library's, where hidden apps can show with the rest: not a playlist's. */
+  hiddenChoice?: boolean;
   pills?: { all: boolean; clear: (key: keyof Filters) => void };
 }) {
   const { consoles, consoleNames } = useLauncher();
@@ -1146,6 +1165,15 @@ function FilterFields({
           </option>
         </select>,
       )}
+      {hiddenChoice &&
+        pill(
+          "hidden",
+          <select aria-label={t({ message: "Hidden apps", comment: "Filter: whether the apps the player hid from the library show" })} value={value.hidden ?? ""} onChange={set("hidden")}>
+            <option value="">{t`Hide hidden apps`}</option>
+            <option value="show">{t`Show hidden apps`}</option>
+            <option value="only">{t`Only hidden apps`}</option>
+          </select>,
+        )}
     </>
   );
 }
