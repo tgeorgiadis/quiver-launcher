@@ -71,6 +71,11 @@ msgstr "{0, plural, one {# comentario} other {# comentarios}}"
 msgid "{0, plural, one {# file} other {# files}}"
 msgstr "{0, plural, one {# archivo} other {# archivos}}"
 
+#. placeholder {0}: unsorted.length
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "{0, plural, one {# installed app isn't in its system folder yet.} other {# installed apps aren't in their system folders yet.}}"
+msgstr "{0, plural, one {# app instalada aún no está en la carpeta de su sistema.} other {# apps instaladas aún no están en las carpetas de su sistema.}}"
+
 #. placeholder {0}: portable.length
 #: ../../apps/launcher/src/library-ticking.tsx
 msgid "{0, plural, one {# of them may keep your saves in its folder. They'll go to the trash too.} other {# of them may keep your saves in their folders. They'll go to the trash too.}}"
@@ -102,6 +107,11 @@ msgstr "{0, plural, one {Mover # app instalada a la carpeta de su sistema} other
 #: ../../apps/launcher/src/console-folders.tsx
 msgid "{0, plural, one {Move it there} other {Move them there}}"
 msgstr "{0, plural, one {Moverla ahí} other {Moverlas ahí}}"
+
+#. placeholder {0}: unsorted.length
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "{0, plural, one {Move it} other {Move them}}"
+msgstr "{0, plural, one {Moverla} other {Moverlas}}"
 
 #. placeholder {0}: own.length
 #: ../../apps/launcher/src/tag-settings.tsx
@@ -1968,10 +1978,6 @@ msgstr "Elegir música…"
 msgid "Choose my Quiver Launcher 3 folder…"
 msgstr "Elegir mi carpeta de Quiver Launcher 3…"
 
-#: ../../apps/launcher/src/settings-page.tsx
-msgid "Choose one or more, and the app can move into that system's folder, or Multi-system for several."
-msgstr "Elige uno o más y la app podrá moverse a la carpeta de ese sistema, o a Multi-system si son varios."
-
 #: ../../apps/launcher/src/launch-options.tsx
 msgid "Choose the executable you want Quiver to run. It can be in any folder or drive."
 msgstr "Elige el ejecutable que quieres que Quiver inicie. Puede estar en cualquier carpeta o unidad."
@@ -3181,10 +3187,6 @@ msgstr "En la biblioteca"
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "In Steam's Game Mode"
 msgstr "En el modo de juego de Steam"
-
-#: ../../apps/launcher/src/settings-page.tsx
-msgid "In the default apps folder, ports go in Ports, in a folder for their system (Ports{slash}{example}, say), and those for more than one system in Ports{slash}Multi-system. Emulators, tools and standalone games get folders of their own beside it. Apps you put in another folder go exactly there, and apps already installed stay where they are until you move them."
-msgstr "En la carpeta de apps predeterminada, los ports van en Ports, en una carpeta para su sistema (Ports{slash}{example}, por ejemplo), y los de más de un sistema en Ports{slash}Multi-system. Los emuladores, las herramientas y los juegos independientes tienen sus propias carpetas al lado. Las apps que pongas en otra carpeta van exactamente ahí, y las ya instaladas se quedan donde están hasta que las muevas."
 
 #: ../../apps/launcher/src/file-picker.tsx
 msgid "In this folder"
@@ -4764,6 +4766,10 @@ msgstr "Especificaciones de la PC:"
 msgid "Pick a binding, then press the key or button to use for it."
 msgstr "Elige una asignación y luego presiona la tecla o el botón que quieras usar."
 
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Pick a system to move it, or several for Multi-system."
+msgstr "Elige un sistema para moverla, o varios para Multi-system."
+
 #: ../../apps/launcher/src/custom-art.tsx
 msgid "Picture from this computer"
 msgstr "Imagen de esta computadora"
@@ -4934,6 +4940,10 @@ msgstr "Ports para otro sistema"
 #: ../../apps/launcher/src/store.tsx
 msgid "Ports for more than one system"
 msgstr "Ports para más de un sistema"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Ports go in Ports{slash}{example}, or Ports{slash}Multi-system for more than one system. Emulators, tools and games get their own folders."
+msgstr "Los ports van en Ports{slash}{example}, o en Ports{slash}Multi-system si son para más de un sistema. Los emuladores, herramientas y juegos tienen sus propias carpetas."
 
 #: ../../apps/launcher/src/discussions.tsx
 msgid "Ports, games, mods and anything else."

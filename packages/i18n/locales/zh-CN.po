@@ -71,6 +71,11 @@ msgstr "{0, plural, other {# 条评论}}"
 msgid "{0, plural, one {# file} other {# files}}"
 msgstr "{0, plural, other {# 个文件}}"
 
+#. placeholder {0}: unsorted.length
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "{0, plural, one {# installed app isn't in its system folder yet.} other {# installed apps aren't in their system folders yet.}}"
+msgstr "{0, plural, other {# 个已安装的应用尚未放入其系统文件夹。}}"
+
 #. placeholder {0}: portable.length
 #: ../../apps/launcher/src/library-ticking.tsx
 msgid "{0, plural, one {# of them may keep your saves in its folder. They'll go to the trash too.} other {# of them may keep your saves in their folders. They'll go to the trash too.}}"
@@ -102,6 +107,11 @@ msgstr "{0, plural, other {将 # 个已安装的应用移到其系统文件夹}}
 #: ../../apps/launcher/src/console-folders.tsx
 msgid "{0, plural, one {Move it there} other {Move them there}}"
 msgstr "{0, plural, other {移到那里}}"
+
+#. placeholder {0}: unsorted.length
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "{0, plural, one {Move it} other {Move them}}"
+msgstr "{0, plural, other {移动}}"
 
 #. placeholder {0}: own.length
 #: ../../apps/launcher/src/tag-settings.tsx
@@ -1968,10 +1978,6 @@ msgstr "选择音乐…"
 msgid "Choose my Quiver Launcher 3 folder…"
 msgstr "选择我的 Quiver Launcher 3 文件夹…"
 
-#: ../../apps/launcher/src/settings-page.tsx
-msgid "Choose one or more, and the app can move into that system's folder, or Multi-system for several."
-msgstr "选择一个或多个系统后，应用即可移入该系统的文件夹；多个系统则移入 Multi-system。"
-
 #: ../../apps/launcher/src/launch-options.tsx
 msgid "Choose the executable you want Quiver to run. It can be in any folder or drive."
 msgstr "选择要让 Quiver 运行的可执行文件。它可以在任何文件夹或磁盘中。"
@@ -3181,10 +3187,6 @@ msgstr "在游戏库中"
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "In Steam's Game Mode"
 msgstr "在 Steam 的游戏模式中"
-
-#: ../../apps/launcher/src/settings-page.tsx
-msgid "In the default apps folder, ports go in Ports, in a folder for their system (Ports{slash}{example}, say), and those for more than one system in Ports{slash}Multi-system. Emulators, tools and standalone games get folders of their own beside it. Apps you put in another folder go exactly there, and apps already installed stay where they are until you move them."
-msgstr "在默认应用文件夹中，移植放在 Ports 下其系统的文件夹里（例如 Ports{slash}{example}），多个系统的移植放在 Ports{slash}Multi-system。模拟器、工具和独立游戏在旁边有各自的文件夹。放到其他文件夹的应用就装在那里，已安装的应用在你移动之前保持原处。"
 
 #: ../../apps/launcher/src/file-picker.tsx
 msgid "In this folder"
@@ -4764,6 +4766,10 @@ msgstr "电脑配置："
 msgid "Pick a binding, then press the key or button to use for it."
 msgstr "选择一个按键绑定，然后按下要用于该绑定的按键或按钮。"
 
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Pick a system to move it, or several for Multi-system."
+msgstr "选择一个系统以移动它，选择多个则放入 Multi-system。"
+
 #: ../../apps/launcher/src/custom-art.tsx
 msgid "Picture from this computer"
 msgstr "来自此电脑的图片"
@@ -4934,6 +4940,10 @@ msgstr "其他系统的移植"
 #: ../../apps/launcher/src/store.tsx
 msgid "Ports for more than one system"
 msgstr "多个系统的移植"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Ports go in Ports{slash}{example}, or Ports{slash}Multi-system for more than one system. Emulators, tools and games get their own folders."
+msgstr "移植版放在 Ports{slash}{example}，多个系统的放在 Ports{slash}Multi-system。模拟器、工具和游戏各有自己的文件夹。"
 
 #: ../../apps/launcher/src/discussions.tsx
 msgid "Ports, games, mods and anything else."

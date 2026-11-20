@@ -70,6 +70,11 @@ msgstr "{0, plural, one {# comment} other {# comments}}"
 msgid "{0, plural, one {# file} other {# files}}"
 msgstr "{0, plural, one {# file} other {# files}}"
 
+#. placeholder {0}: unsorted.length
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "{0, plural, one {# installed app isn't in its system folder yet.} other {# installed apps aren't in their system folders yet.}}"
+msgstr "{0, plural, one {# installed app isn't in its system folder yet.} other {# installed apps aren't in their system folders yet.}}"
+
 #. placeholder {0}: portable.length
 #: ../../apps/launcher/src/library-ticking.tsx
 msgid "{0, plural, one {# of them may keep your saves in its folder. They'll go to the trash too.} other {# of them may keep your saves in their folders. They'll go to the trash too.}}"
@@ -101,6 +106,11 @@ msgstr "{0, plural, one {Move # installed app into its system folder} other {Mov
 #: ../../apps/launcher/src/console-folders.tsx
 msgid "{0, plural, one {Move it there} other {Move them there}}"
 msgstr "{0, plural, one {Move it there} other {Move them there}}"
+
+#. placeholder {0}: unsorted.length
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "{0, plural, one {Move it} other {Move them}}"
+msgstr "{0, plural, one {Move it} other {Move them}}"
 
 #. placeholder {0}: own.length
 #: ../../apps/launcher/src/tag-settings.tsx
@@ -1967,10 +1977,6 @@ msgstr "Choose music…"
 msgid "Choose my Quiver Launcher 3 folder…"
 msgstr "Choose my Quiver Launcher 3 folder…"
 
-#: ../../apps/launcher/src/settings-page.tsx
-msgid "Choose one or more, and the app can move into that system's folder, or Multi-system for several."
-msgstr "Choose one or more, and the app can move into that system's folder, or Multi-system for several."
-
 #: ../../apps/launcher/src/launch-options.tsx
 msgid "Choose the executable you want Quiver to run. It can be in any folder or drive."
 msgstr "Choose the executable you want Quiver to run. It can be in any folder or drive."
@@ -3180,10 +3186,6 @@ msgstr "In library"
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "In Steam's Game Mode"
 msgstr "In Steam's Game Mode"
-
-#: ../../apps/launcher/src/settings-page.tsx
-msgid "In the default apps folder, ports go in Ports, in a folder for their system (Ports{slash}{example}, say), and those for more than one system in Ports{slash}Multi-system. Emulators, tools and standalone games get folders of their own beside it. Apps you put in another folder go exactly there, and apps already installed stay where they are until you move them."
-msgstr "In the default apps folder, ports go in Ports, in a folder for their system (Ports{slash}{example}, say), and those for more than one system in Ports{slash}Multi-system. Emulators, tools and standalone games get folders of their own beside it. Apps you put in another folder go exactly there, and apps already installed stay where they are until you move them."
 
 #: ../../apps/launcher/src/file-picker.tsx
 msgid "In this folder"
@@ -4763,6 +4765,10 @@ msgstr "PC specs:"
 msgid "Pick a binding, then press the key or button to use for it."
 msgstr "Pick a binding, then press the key or button to use for it."
 
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Pick a system to move it, or several for Multi-system."
+msgstr "Pick a system to move it, or several for Multi-system."
+
 #: ../../apps/launcher/src/custom-art.tsx
 msgid "Picture from this computer"
 msgstr "Picture from this computer"
@@ -4933,6 +4939,10 @@ msgstr "Ports for another system"
 #: ../../apps/launcher/src/store.tsx
 msgid "Ports for more than one system"
 msgstr "Ports for more than one system"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Ports go in Ports{slash}{example}, or Ports{slash}Multi-system for more than one system. Emulators, tools and games get their own folders."
+msgstr "Ports go in Ports{slash}{example}, or Ports{slash}Multi-system for more than one system. Emulators, tools and games get their own folders."
 
 #: ../../apps/launcher/src/discussions.tsx
 msgid "Ports, games, mods and anything else."

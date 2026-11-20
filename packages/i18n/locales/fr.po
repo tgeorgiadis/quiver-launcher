@@ -71,6 +71,11 @@ msgstr "{0, plural, one {# commentaire} other {# commentaires}}"
 msgid "{0, plural, one {# file} other {# files}}"
 msgstr "{0, plural, one {# fichier} other {# fichiers}}"
 
+#. placeholder {0}: unsorted.length
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "{0, plural, one {# installed app isn't in its system folder yet.} other {# installed apps aren't in their system folders yet.}}"
+msgstr "{0, plural, one {# app installée n'est pas encore dans le dossier de son système.} other {# apps installées ne sont pas encore dans les dossiers de leur système.}}"
+
 #. placeholder {0}: portable.length
 #: ../../apps/launcher/src/library-ticking.tsx
 msgid "{0, plural, one {# of them may keep your saves in its folder. They'll go to the trash too.} other {# of them may keep your saves in their folders. They'll go to the trash too.}}"
@@ -102,6 +107,11 @@ msgstr "{0, plural, one {Déplacer # appli installée dans le dossier de son sys
 #: ../../apps/launcher/src/console-folders.tsx
 msgid "{0, plural, one {Move it there} other {Move them there}}"
 msgstr "{0, plural, one {La déplacer là-bas} other {Les déplacer là-bas}}"
+
+#. placeholder {0}: unsorted.length
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "{0, plural, one {Move it} other {Move them}}"
+msgstr "{0, plural, one {La déplacer} other {Les déplacer}}"
 
 #. placeholder {0}: own.length
 #: ../../apps/launcher/src/tag-settings.tsx
@@ -1968,10 +1978,6 @@ msgstr "Choisir une musique…"
 msgid "Choose my Quiver Launcher 3 folder…"
 msgstr "Choisir mon dossier Quiver Launcher 3…"
 
-#: ../../apps/launcher/src/settings-page.tsx
-msgid "Choose one or more, and the app can move into that system's folder, or Multi-system for several."
-msgstr "Choisissez-en un ou plusieurs, et l'app pourra aller dans le dossier de ce système, ou dans Multi-system s'il y en a plusieurs."
-
 #: ../../apps/launcher/src/launch-options.tsx
 msgid "Choose the executable you want Quiver to run. It can be in any folder or drive."
 msgstr "Choisis l'exécutable que Quiver doit lancer. Il peut être dans n'importe quel dossier ou disque."
@@ -3181,10 +3187,6 @@ msgstr "Dans la bibliothèque"
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "In Steam's Game Mode"
 msgstr "En mode Jeu de Steam"
-
-#: ../../apps/launcher/src/settings-page.tsx
-msgid "In the default apps folder, ports go in Ports, in a folder for their system (Ports{slash}{example}, say), and those for more than one system in Ports{slash}Multi-system. Emulators, tools and standalone games get folders of their own beside it. Apps you put in another folder go exactly there, and apps already installed stay where they are until you move them."
-msgstr "Dans le dossier des applis par défaut, les ports vont dans Ports, dans un dossier pour leur système (Ports{slash}{example}, par exemple), et ceux pour plusieurs systèmes dans Ports{slash}Multi-system. Les émulateurs, les outils et les jeux autonomes ont leurs propres dossiers à côté. Les applis que tu mets dans un autre dossier vont exactement là, et celles déjà installées restent où elles sont jusqu'à ce que tu les déplaces."
 
 #: ../../apps/launcher/src/file-picker.tsx
 msgid "In this folder"
@@ -4764,6 +4766,10 @@ msgstr "Configuration du PC :"
 msgid "Pick a binding, then press the key or button to use for it."
 msgstr "Choisissez une attribution, puis appuyez sur la touche ou le bouton à utiliser."
 
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Pick a system to move it, or several for Multi-system."
+msgstr "Choisissez un système pour la déplacer, ou plusieurs pour Multi-system."
+
 #: ../../apps/launcher/src/custom-art.tsx
 msgid "Picture from this computer"
 msgstr "Image de cet ordinateur"
@@ -4934,6 +4940,10 @@ msgstr "Ports pour un autre système"
 #: ../../apps/launcher/src/store.tsx
 msgid "Ports for more than one system"
 msgstr "Ports pour plusieurs systèmes"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Ports go in Ports{slash}{example}, or Ports{slash}Multi-system for more than one system. Emulators, tools and games get their own folders."
+msgstr "Les ports vont dans Ports{slash}{example}, ou Ports{slash}Multi-system pour plusieurs systèmes. Émulateurs, outils et jeux ont leurs propres dossiers."
 
 #: ../../apps/launcher/src/discussions.tsx
 msgid "Ports, games, mods and anything else."
