@@ -906,6 +906,7 @@ export function AppsFolder({ inSetup, onBusy }: { inSetup?: boolean; onBusy?: (b
                     {plural(unsorted.length, { one: "# installed app isn't in its system folder yet.", other: "# installed apps aren't in their system folders yet." })}
                   </span>
                   <Button
+                    variant="main"
                     disabled={!idle || busy}
                     title={waitTitle}
                     aria-label={plural(unsorted.length, { one: "Move # installed app into its system folder", other: "Move # installed apps into their system folders" })}

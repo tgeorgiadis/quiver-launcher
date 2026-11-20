@@ -2571,7 +2571,7 @@ main:has(.tick-bar) { scroll-padding-bottom: 96px; }
 .system-folders { display: grid; gap: 10px; margin: 2px 0 14px; padding: 2px 0 2px 14px; border-left: 2px solid var(--line); }
 .system-folders > p.muted { margin: 0; font-size: 13px; }
 .system-folders .system-naming, .system-folders .console-folders, .system-folders .apps-staying { margin: 0; }
-.system-sort { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; padding: 8px 8px 8px 12px; border: 1px solid var(--line); border-radius: 10px; font-size: 13.5px; color: var(--fg); }
+.system-sort { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; padding: 8px 8px 8px 12px; border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent); background: var(--accent-soft); border-radius: 10px; font-size: 13.5px; color: var(--fg); }
 .settings-pane .system-sort button { flex: 0 0 auto; }
 .system-folders .stays-group:first-of-type { margin-top: 8px; }
 /* Its two folds alike: the apps that stay, and the system folders' names and places. */
