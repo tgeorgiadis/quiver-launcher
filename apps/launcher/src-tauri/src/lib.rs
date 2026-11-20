@@ -419,8 +419,7 @@ async fn launch(
     start(app, &data, id, &folder, dir, &preferred, wine, program, &launch.unwrap_or_default(), presence)
 }
 
-/// Waits for a started program to close; whether that could be told.
-#[cfg(not(target_os = "android"))]
+/// Waits for a started program to close; whether that could be told. On Android too, as session.rs names it.
 type Waiting = Box<dyn FnOnce() -> bool + Send>;
 /// Whether Android no longer has an app Quiver installed from an APK: the player removed it in the system's settings.
 /// False for an app that wasn't installed that way, and everywhere else. Not on the window's thread, as `launch` isn't.
