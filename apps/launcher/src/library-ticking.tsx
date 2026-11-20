@@ -82,7 +82,9 @@ export function TickArea({ shown, playlist, children }: { shown: readonly string
       stop(e);
       const ids = card.dataset.tick!.split(" ");
       if (e.shiftKey && !e.ctrlKey && !e.metaKey) {
-        setTicked((t) => tickRange(order(), anchor.current, ids[0], t));
+        // Read now: React may run the update later, after the anchor below has moved to this card.
+        const [from, shown] = [anchor.current, order()];
+        setTicked((t) => tickRange(shown, from, ids[0], t));
         anchor.current = ids[0];
       } else now.current.toggle(ids);
     };
