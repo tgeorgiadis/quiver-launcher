@@ -968,8 +968,8 @@ msgid "Abbreviated (N64, GBC, PS2)"
 msgstr "Abbreviated (N64, GBC, PS2)"
 
 #: ../../apps/launcher/src/detail.tsx
-msgid "About this project"
-msgstr "About this project"
+msgid "About this app"
+msgstr "About this app"
 
 #. Reason for reporting a post
 #: ../../apps/launcher/src/discussions.tsx

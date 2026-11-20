@@ -301,7 +301,7 @@ export function Readme({ entry, source, asked }: { entry: Entry; source: Source 
       <section className="readme">
         {top}
         <h3>
-          <Trans>About this project</Trans>
+          <Trans>About this app</Trans>
         </h3>
         <p className="detail-description">{entry.description}</p>
       </section>

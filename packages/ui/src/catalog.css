@@ -674,7 +674,7 @@
 }
 .featured-title {
   font-size: clamp(30px, 3.6vw, 50px);
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1.02;
   letter-spacing: -0.03em;
   text-shadow: 0 2px 16px rgb(0 0 0 / 0.5);
@@ -778,7 +778,7 @@
 .shelf-head h2 {
   margin: 0;
   font-size: 20px;
-  font-weight: 750;
+  font-weight: 600;
   letter-spacing: -0.02em;
 }
 .shelf-arrows {

@@ -11,7 +11,7 @@
   /* A top bar too wide for the window, even compacted (top-bar-fit.ts), scrolls sideways to its last buttons. */
   overflow-x: auto;
   /* Behind the page, which scrolls over it: drawn once, not with each step of a scroll. */
-  background: var(--glow), var(--bg);
+  background: var(--bg);
 }
 /* A control moved to (spatial.ts) keeps room for its focus ring at the page's top and bottom. */
 .shell > main { flex: 1; min-height: 0; overflow-y: auto; scroll-padding-block: 8px; }
@@ -46,7 +46,7 @@
 /* The website's brand (its src/styles.css), smaller as the window narrows. */
 .brand { display: flex; align-items: center; gap: 10px; padding: 0; flex-shrink: 0; }
 .brand > img { width: 34px; height: 34px; }
-.brand > span { display: flex; align-items: center; gap: 14px; font-size: 28px; font-weight: 750; letter-spacing: -1.3px; }
+.brand > span { display: flex; align-items: center; gap: 14px; font-size: 28px; font-weight: 700; letter-spacing: -1.3px; }
 .brand-label { font-size: 9px; letter-spacing: 1.5px; color: var(--text-4); font-weight: 600; border-left: 1px solid var(--line-strong); padding-left: 14px; }
 @media (max-width: 760px) {
   .brand-label { display: none; }
@@ -181,7 +181,7 @@ button.danger { color: var(--danger); }
 .shelf-all:hover { text-decoration: underline; text-underline-offset: 3px; }
 .shelf-arrows button { color: var(--text-2); }
 .shelf-arrows button:not(:disabled):hover { color: var(--strong); border-color: var(--line-strong); }
-.discover-all { margin: 8px 0 16px; font-size: 20px; font-weight: 750; letter-spacing: -0.02em; scroll-margin-top: 12px; }
+.discover-all { margin: 8px 0 16px; font-size: 20px; font-weight: 600; letter-spacing: -0.02em; scroll-margin-top: 12px; }
 /* A phone: two cards a rowful, not one across the screen (176px and its gap left room for just one). */
 @media (max-width: 520px) { .shelf-row { --shelf-card: 130px; gap: 14px; } }
 /* Wide cards (browse-cards.ts): as wide as the grid's, and on a phone one across with the next peeking in. */
@@ -791,7 +791,7 @@ main.app-main { padding: 0 0 40px; }
 }
 .detail-tabs > button::after { content: ""; position: absolute; left: 12px; right: 12px; bottom: 0; height: 4px; border-radius: 4px; background: transparent; }
 .detail-tabs > button:hover { color: var(--fg); }
-.detail-tabs > button[aria-selected="true"] { color: var(--accent); font-weight: 750; }
+.detail-tabs > button[aria-selected="true"] { color: var(--accent); font-weight: 600; }
 .detail-tabs > button[aria-selected="true"]::after { background: var(--accent); }
 .tab-icon { flex-shrink: 0; color: var(--text-4); }
 .detail-tabs > button:hover .tab-icon { color: var(--fg); }
@@ -805,7 +805,7 @@ main.app-main { padding: 0 0 40px; }
 /* The shoulder buttons that change tab (pad-hints.tsx), at the row's ends, raised a little off it. */
 .tab-prompt {
   flex-shrink: 0; align-self: center; margin-top: -10px; padding: 3px 9px; border-radius: 8px; background: var(--field); color: var(--text-3);
-  box-shadow: 0 2px 0 var(--line-strong), 0 4px 10px var(--shadow); font-size: 11.5px; font-weight: 750; letter-spacing: 0.02em;
+  box-shadow: 0 2px 0 var(--line-strong), 0 4px 10px var(--shadow); font-size: 11.5px; font-weight: 600; letter-spacing: 0.02em;
 }
 
 .score-link { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 0; }
@@ -1614,7 +1614,7 @@ html[data-navigating] .shelf-row { scroll-snap-type: none; }
 .continue-label { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-3); }
 .continue-label .continue-meta { margin-left: 6px; letter-spacing: 0; text-transform: none; }
 /* Its name, not a link: the catalog button beside Play opens its page. */
-.continue-title { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; margin: 6px 0 0; max-width: 100%; color: var(--strong); font-size: 30px; font-weight: 750; letter-spacing: -0.02em; line-height: 1.2; text-shadow: var(--hero-shadow); }
+.continue-title { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; margin: 6px 0 0; max-width: 100%; color: var(--strong); font-size: 30px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.2; text-shadow: var(--hero-shadow); }
 .continue-version { color: var(--text-3); font-size: 16px; font-weight: 500; letter-spacing: 0; }
 .continue-meta { color: var(--text-2); font-size: 13px; }
 .continue-action { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 16px; }
@@ -1675,7 +1675,7 @@ html[data-navigating] .shelf-row { scroll-snap-type: none; }
 .library-tile .tile-tags > .ai-chip { flex: none; padding: 0 6px; font-size: 9px; }
 .library-tile .tile-tags > .platform-icons { flex: none; margin-left: auto; gap: 5px; color: inherit; font-size: 11px; }
 .layout-grid .library-tile .card-body > .tile-line { display: block; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; color: rgb(255 255 255 / 0.75); font-size: 12px; }
-.layout-grid .library-tile .card-title { min-width: 0; color: #fff; font-size: 17px; font-weight: 750; letter-spacing: -0.01em; text-shadow: 0 1px 2px rgb(0 0 0 / 0.8), 0 0 8px rgb(0 0 0 / 0.5); }
+.layout-grid .library-tile .card-title { min-width: 0; color: #fff; font-size: 17px; font-weight: 700; letter-spacing: 0; text-shadow: 0 1px 2px rgb(0 0 0 / 0.8), 0 0 8px rgb(0 0 0 / 0.5); }
 .layout-grid .library-tile .card-body > .card-subtitle { display: block; min-width: 0; color: rgb(255 255 255 / 0.82); font-size: 12.5px; text-shadow: 0 1px 2px rgb(0 0 0 / 0.8), 0 0 6px rgb(0 0 0 / 0.5); }
 .size-small .library-tile .card-title { font-size: 14px; }
 .size-large .library-tile .card-title { font-size: 20px; }
@@ -1735,7 +1735,7 @@ span.tile-mark[data-copy="failed"] { background: #ff6b6b; }
 .tile-play { display: grid; place-items: center; width: 54px; height: 54px; padding: 0; border-radius: 50%; color: var(--on-accent); background: var(--accent); box-shadow: 0 6px 18px rgb(0 0 0 / 0.45); }
 .tile-play svg { margin-left: 3px; }
 .tile-play.tile-get svg { margin-left: 0; }
-.tile-play:hover, .tile-play:focus-visible { background: var(--accent-hover); transform: scale(1.05); }
+.tile-play:hover, .tile-play:focus-visible { background: var(--accent-hover); }
 .library-tile[data-busy] .tile-main { left: 8px; right: 8px; bottom: 8px; padding: 6px; border-radius: 8px; background: var(--raised); box-shadow: 0 6px 18px rgb(0 0 0 / 0.35); }
 /* On one line, smaller, so "Downloading 46%" fits a narrow card's bar. */
 .library-tile .progress span { padding: 0 6px; font-size: 11.5px; white-space: nowrap; }
@@ -1763,7 +1763,6 @@ span.tile-mark[data-copy="failed"] { background: #ff6b6b; }
 }
 .layout-grid:not(.image-icon) .library-tile .tile-play svg { width: 16px; height: 16px; margin: 0; flex-shrink: 0; fill: none; }
 .layout-grid:not(.image-icon) .library-tile :is(.tile-play, .tile-update) .tile-label { position: static; width: auto; height: auto; overflow: hidden; clip-path: none; white-space: nowrap; text-overflow: ellipsis; }
-.layout-grid:not(.image-icon) .library-tile .tile-play:is(:hover, :focus-visible) { transform: none; }
 .layout-grid:not(.image-icon) .library-tile .tile-main .tile-update { padding: 0 10px; color: var(--strong); background: var(--field); font-size: 13px; }
 .layout-grid:not(.image-icon) .library-tile .tile-main .tile-update:is(:hover, :focus-visible) { background: var(--field-hover); }
 .tile-update .tile-label-short { display: none; }
@@ -2395,7 +2394,7 @@ main:has(> div:not([hidden]) > .library-split) > div > .banner-stack > .banner.a
 body:has(.tv-mode) .account-menu-name { display: block; }
 .tv-mode .topbar nav button { font-size: 17px; font-weight: 600; }
 .tv-mode .topbar nav button:is(.active, :hover) { background: none; }
-.tv-mode .topbar nav button.active { color: var(--accent); font-weight: 750; }
+.tv-mode .topbar nav button.active { color: var(--accent); font-weight: 600; }
 .tv-mode .topbar nav button.active::after { bottom: 0; height: 4px; border-radius: 4px; }
 .tv-mode .topbar .tab-prompt { margin-top: 0; }
 /* The library's and Browse's tools, large enough to read and to find the focus on from across a room. */
@@ -2475,7 +2474,7 @@ body:has(.tv-mode) .account-menu-name { display: block; }
 .letter-big {
   position: fixed; left: 50%; top: 50%; z-index: 900; display: grid; place-items: center; width: 136px; height: 136px; translate: -50% -50%;
   border-radius: 28px; background: color-mix(in srgb, var(--panel) 88%, transparent); box-shadow: 0 20px 50px var(--shadow);
-  color: var(--accent); font-size: 80px; font-weight: 800; line-height: 1; pointer-events: none; animation: letter-big 0.9s ease forwards;
+  color: var(--accent); font-size: 80px; font-weight: 700; line-height: 1; pointer-events: none; animation: letter-big 0.9s ease forwards;
 }
 @keyframes letter-big {
   0% { opacity: 0; scale: 0.85; }
