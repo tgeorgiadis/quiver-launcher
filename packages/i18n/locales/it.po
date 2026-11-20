@@ -6192,8 +6192,8 @@ msgid "Show the library as a grid"
 msgstr "Mostra la libreria a griglia"
 
 #: ../../apps/launcher/src/App.tsx
-msgid "Show the library with a sidebar"
-msgstr "Mostra la libreria con la barra laterale"
+msgid "Show the library as a list"
+msgstr "Mostra la libreria come elenco"
 
 #. Shows the library's apps for other platforms, until the library is left
 #: ../../apps/launcher/src/library.tsx

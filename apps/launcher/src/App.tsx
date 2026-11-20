@@ -262,12 +262,12 @@ export function App() {
         </nav>
         {tv && <Clock />}
         <AccountButton onSignIn={() => setSigningIn(true)} />
-        {/* The library as a grid or with its sidebar, from wherever the library is, as TV mode is beside it; none where the sidebar doesn't fit (a phone). */}
+        {/* The library as a grid or a list, from wherever the library is, as TV mode is beside it; none where the sidebar doesn't fit (a phone). */}
         {tab === "library" && sidebarFits && !tv && (
           <button
             className="icon layout-button"
-            aria-label={sidebar ? t`Show the library as a grid` : t`Show the library with a sidebar`}
-            title={sidebar ? t`Show the library as a grid` : t`Show the library with a sidebar`}
+            aria-label={sidebar ? t`Show the library as a grid` : t`Show the library as a list`}
+            title={sidebar ? t`Show the library as a grid` : t`Show the library as a list`}
             onClick={() => setLibraryView({ layout: sidebar ? "grid" : "sidebar" })}
           >
             {sidebar ? <LayoutGrid size={19} /> : <PanelLeft size={19} />}

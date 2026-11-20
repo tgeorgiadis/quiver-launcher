@@ -6192,8 +6192,8 @@ msgid "Show the library as a grid"
 msgstr "라이브러리를 격자로 보기"
 
 #: ../../apps/launcher/src/App.tsx
-msgid "Show the library with a sidebar"
-msgstr "라이브러리를 사이드바와 함께 보기"
+msgid "Show the library as a list"
+msgstr "라이브러리를 목록으로 보기"
 
 #. Shows the library's apps for other platforms, until the library is left
 #: ../../apps/launcher/src/library.tsx

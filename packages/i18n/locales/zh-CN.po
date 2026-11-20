@@ -6192,8 +6192,8 @@ msgid "Show the library as a grid"
 msgstr "以网格方式显示游戏库"
 
 #: ../../apps/launcher/src/App.tsx
-msgid "Show the library with a sidebar"
-msgstr "以带侧边栏的方式显示游戏库"
+msgid "Show the library as a list"
+msgstr "以列表方式显示游戏库"
 
 #. Shows the library's apps for other platforms, until the library is left
 #: ../../apps/launcher/src/library.tsx
