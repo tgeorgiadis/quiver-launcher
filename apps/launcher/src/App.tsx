@@ -6,7 +6,7 @@ import { Plural, Trans } from "@lingui/react/macro";
 import { i18n } from "@quiverlauncher/i18n";
 import type { MessageDescriptor } from "@lingui/core";
 import { Artwork, EntryCard, OS_NAMES, PlatformIcons, ReleaseBadge, SourcedImage, heroSources } from "@quiverlauncher/ui";
-import { PORTABLE_FILE, availableOn, canGet, catalogOs, declinedUpdate, earlyGetOffer, earlyOffer, filesAddable, folderNameOf, hasUpdate, locatable, movable, noProgram, pulledVerified, renamable, rootOf, samePath, skipped, stillWaiting, tvModeOn, updateFor, updatesByItself, updatesOf, useLauncher, type AppMove, type Choice } from "./store";
+import { PORTABLE_FILE, availableOn, canGet, catalogOs, declinedUpdate, earlyGetOffer, earlyOffer, filesAddable, folderNameOf, hasUpdate, locatable, movable, noProgram, pulledVerified, renamable, rootOf, samePath, skipped, stillWaiting, tvModeOn, updateFor, updatesByItself, updatesOf, useLauncher, versionKnown, type AppMove, type Choice } from "./store";
 import { TabPrompt } from "./pad-hints";
 import { Dialog, FilterPill, LibraryPage, MultiPill, Popover, consoleOptions, filterLabel, pickedLabel, projectTypeOptions, withOverrides, type MultiOption } from "./library";
 import { BrowseCardOptions, useBrowseCards, useLibraryView, useSidebarFits } from "./library-view";
@@ -1238,7 +1238,7 @@ function AppPage({
   onOpenApp: (entry: Entry, at?: PageAt) => void;
   onSignIn: () => void;
 }) {
-  const { config, library, installs, jobs, catalog, remove, confirmUninstall, askRename, askName, managing, askManage, consoleNames, setUpdates, declineUpdate, get, switched, switchToCatalog, locateInstall, askPlace, appMoves, settings } = useLauncher();
+  const { config, library, installs, jobs, catalog, remove, confirmUninstall, askRename, askName, managing, askManage, consoleNames, setUpdates, declineUpdate, haveUpdate, get, switched, switchToCatalog, locateInstall, askPlace, appMoves, settings } = useLauncher();
   // An app the player added and switched to the catalog's shows the catalog's.
   const id = switched[opened.id] ?? opened.id;
   const item = library.find((i) => i.id === id);
@@ -1513,7 +1513,8 @@ function AppPage({
                 )}
                 {install && !install.local && (
                   <span className="muted">
-                    <Trans>Installed {installedVersion}</Trans>
+                    {/* Not 3.x's 0.0.0, which every release is newer than: the update line asks which it is. */}
+                    {versionKnown(install) ? <Trans>Installed {installedVersion}</Trans> : <Trans>Installed, version unknown</Trans>}
                   </span>
                 )}
                 {install?.unverified &&
@@ -1639,10 +1640,18 @@ function AppPage({
             {update && hasUpdate(known, install) && (
               <p className="release-pinned-line">
                 <span>
-                  <Trans>{updateVersion} is available.</Trans>
+                  {versionKnown(install) ? (
+                    <Trans>{updateVersion} is available.</Trans>
+                  ) : (
+                    <Trans>Quiver Launcher doesn&apos;t know which version this is. {updateVersion} is available.</Trans>
+                  )}
                 </span>
                 <button type="button" className="link-button" onClick={() => declineUpdate(entry.id, update.version)}>
                   <Trans>Skip this update</Trans>
+                </button>
+                {/* A copy unzipped by hand, or an app that updated itself: the player tells Quiver once, nothing downloaded. */}
+                <button type="button" className="link-button" onClick={() => haveUpdate(entry.id, update)}>
+                  <Trans>I have {updateVersion}</Trans>
                 </button>
               </p>
             )}
@@ -1814,7 +1823,8 @@ function UpdatesChoice({ id }: { id: string }) {
         <option value="default">{byDefault}</option>
         <option value="ask">{t({ message: "Offer them", comment: "Updates: offer new releases to install" })}</option>
         {auto && <option value="auto">{t`Install automatically`}</option>}
-        <option value="pinned">{t`Always stay on ${installedVersion}`}</option>
+        {/* Staying on a version Quiver doesn't know would be staying on 0.0.0. */}
+        {(versionKnown(install) || install.updates === "pinned") && <option value="pinned">{t`Always stay on ${installedVersion}`}</option>}
       </select>
     </label>
   );

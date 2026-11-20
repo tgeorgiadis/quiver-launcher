@@ -150,3 +150,23 @@ test("an update keeps Linux to the build installed: Windows' through Wine, or it
     await native.close();
   }
 });
+
+test("a copy whose version Quiver doesn't know becomes the release the player says it is, nothing downloaded", async () => {
+  // A folder the player unzipped and located: 3.x's 0.0.0, with no release date.
+  const s = await open([LINUX, WINDOWS, OLDER], { [ID]: { version: "0.0.0", folder: "test-port", dir: "C:\Games\Port", executables: [] } });
+  try {
+    await s.page.locator('article[data-slug="test-port"] .card-open').first().click();
+    const line = s.page.locator(".release-pinned-line", { hasText: "doesn't know which version this is" });
+    await line.waitFor();
+    assert.match(await s.page.locator(".app-version").innerText(), /Installed, version unknown/);
+    if (process.env.SHOT_DIR) await line.screenshot({ path: `${process.env.SHOT_DIR}/unknown-line.png` });
+    await line.getByRole("button", { name: "I have v0.5.0" }).click();
+    await line.waitFor({ state: "detached" });
+    assert.match(await s.page.locator(".app-version").innerText(), /Installed v0\.5\.0/);
+    const calls = await s.page.evaluate(() => window.__calls);
+    assert.deepEqual(calls.find((c) => c.cmd === "mark_version")?.args, { folder: "test-port", dir: "C:\Games\Port", version: "0.5.0" });
+    assert.equal(calls.some((c) => c.cmd === "install"), false);
+  } finally {
+    await s.close();
+  }
+});

@@ -326,6 +326,12 @@ pub fn is_install(dir: &Path) -> bool {
     dir.join(VERSION_FILE).is_file() || dir.join("version.txt").is_file()
 }
 
+/// Records the release the player says a folder holds in its version file, as installing that release does: the
+/// folder is then an install of it, and locating it again keeps the version (v3.rs `existing`).
+pub fn mark_version(dir: &Path, version: &str) -> Result<(), String> {
+    fs::write(dir.join(VERSION_FILE), version).map_err(text)
+}
+
 #[cfg(test)]
 #[test]
 fn installs_into_a_chosen_folder_beside_whatever_is_there() {
