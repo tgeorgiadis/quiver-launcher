@@ -37,6 +37,20 @@ test("falls back to unplaced files, and to Windows builds on Linux", () => {
   expect(bestAssets([asset("Game-win64.zip", "windows")], "linux", "x64")).toHaveLength(1);
 });
 
+test("never offers a release's source archives, so Linux falls back to the Windows build", () => {
+  // openjade's release: its libraries' sources name no system, which put them ahead of the Windows build on Linux.
+  const files = [
+    asset("ffmpeg-sources.zip", "unknown", "unknown"),
+    asset("openal-sources.zip", "unknown", "unknown"),
+    asset("ffmpeg-android-sources.zip", "android", "unknown"),
+    asset("openjade-arm64.apk", "android", "arm64"),
+    asset("openjade-windows-x64.zip", "windows"),
+  ];
+  expect(bestAssets(files, "linux", "x64").map((a) => a.filename)).toEqual(["openjade-windows-x64.zip"]);
+  expect(bestAssets(files, "macos", "arm64")).toEqual([]);
+  expect(installable(files, "linux").map((a) => a.filename)).toEqual(["openjade-windows-x64.zip"]);
+});
+
 test("takes files a host names without an extension, after ones that have one", () => {
   // GitLab names a release's files as their links are titled.
   const gitlab = asset("Game-v0.9.2-Windows-RelWithDebInfo", "windows", "unknown");
