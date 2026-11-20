@@ -2570,6 +2570,11 @@ msgstr "Easy setup: Quiver Launcher finds your copy of the game and puts it wher
 msgid "Edit"
 msgstr "Edit"
 
+#. Button beside an app's name on its page, only for catalog maintainers and admins: opens the app's entry on the website's admin pages
+#: ../../apps/launcher/src/App.tsx
+msgid "Edit in admin"
+msgstr "Edit in admin"
+
 #: ../../apps/launcher/src/library.tsx
 msgid "Edit playlist"
 msgstr "Edit playlist"
@@ -4582,6 +4587,10 @@ msgstr "Opacity"
 #: ../../apps/launcher/src/spatial.ts
 msgid "Open"
 msgstr "Open"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Open {app} in the catalog's admin pages on quiverlauncher.com"
+msgstr "Open {app} in the catalog's admin pages on quiverlauncher.com"
 
 #: ../../apps/launcher/src/announcements-ui.tsx
 msgid "Open app"

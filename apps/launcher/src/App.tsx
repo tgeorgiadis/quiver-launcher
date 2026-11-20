@@ -1,5 +1,5 @@
 import { startTransition, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { ArrowLeft, ArrowUp, BookOpen, Save, ChevronDown, Cloud, CircleArrowDown, CircleCheck, CirclePlay, CircleUser, Compass, Disc3, Download, Eye, EyeOff, FolderInput, FolderOpen, FolderPen, FolderSearch, FolderSync, History, Info, MessagesSquare, LayoutGrid, Library, LogOut, PanelLeft, Mail, PackagePlus, Pencil, Pin, Play, Plus, Search, SettingsIcon, RotateCcw, ShieldAlert, ShieldCheck, ShieldX, SlidersHorizontal, Smile, Trash2, TriangleAlert, Tv, X } from "lucide-react";
+import { ArrowLeft, ArrowUp, BookOpen, Save, ChevronDown, Cloud, CircleArrowDown, CircleCheck, CirclePlay, CircleUser, Compass, Disc3, Download, Eye, EyeOff, FolderInput, FolderOpen, FolderPen, FolderSearch, FolderSync, History, Info, MessagesSquare, LayoutGrid, Library, LogOut, PanelLeft, Mail, PackagePlus, Pencil, Pin, Play, Plus, Search, SettingsIcon, RotateCcw, ShieldAlert, ShieldCheck, ShieldX, SlidersHorizontal, Smile, Trash2, TriangleAlert, Tv, Wrench, X } from "lucide-react";
 import type { AppQuery, Asset, Entry, GameMatch, Os, Page, ProjectType } from "@quiverlauncher/api";
 import { msg, plural, t } from "@lingui/core/macro";
 import { Plural, Trans } from "@lingui/react/macro";
@@ -28,7 +28,7 @@ import { ErrorBoundary } from "./boundary";
 import { FORWARD, pageArea, toTop } from "./spatial";
 import { track, trackScreen } from "./telemetry";
 import { TelemetryNotice, useTelemetrySetup } from "./telemetry-ui";
-import { useAccount, type CatalogDefaults } from "./account";
+import { managesCatalog, useAccount, type CatalogDefaults } from "./account";
 import { native } from "./native";
 import { sizeLabel } from "./downloads";
 import { correctionClient } from "./corrections";
@@ -1457,6 +1457,18 @@ function AppPage({
                 {item && !tv && (
                   <button type="button" className="title-rename" aria-label={t`Rename ${app}`} title={t({ message: "Rename", comment: "Button beside an app's name on its page: gives it a name of the player's own" })} onClick={() => askName(item.id)}>
                     <Pencil size={15} aria-hidden="true" />
+                  </button>
+                )}
+                {/* Signed in as one who looks after the catalog: its entry on the website's admin pages, to change it there. */}
+                {site && !tv && managesCatalog(user) && (
+                  <button
+                    type="button"
+                    className="title-rename title-admin"
+                    aria-label={t({ message: "Edit in admin", comment: "Button beside an app's name on its page, only for catalog maintainers and admins: opens the app's entry on the website's admin pages" })}
+                    title={t`Open ${app} in the catalog's admin pages on quiverlauncher.com`}
+                    onClick={() => void native.openUrl(`${SITE}/admin/entries/${encodeURIComponent(entry.id)}/overview`)}
+                  >
+                    <Wrench size={15} aria-hidden="true" />
                   </button>
                 )}
               </div>

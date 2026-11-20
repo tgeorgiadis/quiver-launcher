@@ -118,6 +118,12 @@ export type AccountUser = {
   addEmail?: boolean;
 };
 
+/**
+ * Maintainers, admins and the owner, who look after the catalog on the website's admin pages (its
+ * authPolicy.ts canManageCatalog): they get a way from an app's page to its entry there.
+ */
+export const managesCatalog = (user: AccountUser | null | undefined) => ["maintainer", "admin", "owner"].includes(user?.role ?? "");
+
 /** Saved catalog filters, as the website's catalogFilters.ts keeps them; older sites have none. */
 export type CatalogDefaults = {
   projectTypes?: string[];

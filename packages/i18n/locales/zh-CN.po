@@ -2571,6 +2571,11 @@ msgstr "轻松设置：Quiver Launcher 会查找你的游戏副本，并将其�
 msgid "Edit"
 msgstr "编辑"
 
+#. Button beside an app's name on its page, only for catalog maintainers and admins: opens the app's entry on the website's admin pages
+#: ../../apps/launcher/src/App.tsx
+msgid "Edit in admin"
+msgstr "在管理后台编辑"
+
 #: ../../apps/launcher/src/library.tsx
 msgid "Edit playlist"
 msgstr "编辑播放列表"
@@ -4583,6 +4588,10 @@ msgstr "不透明度"
 #: ../../apps/launcher/src/spatial.ts
 msgid "Open"
 msgstr "打开"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Open {app} in the catalog's admin pages on quiverlauncher.com"
+msgstr "在 quiverlauncher.com 的目录管理后台打开 {app}"
 
 #: ../../apps/launcher/src/announcements-ui.tsx
 msgid "Open app"
