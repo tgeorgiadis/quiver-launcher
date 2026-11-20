@@ -4,15 +4,16 @@
  * themselves after playing, before an update and before uninstalling (store.tsx).
  */
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Archive, CloudDownload, CloudUpload, FolderInput, FolderOpen, FolderSearch, FolderSync, RotateCcw, Trash2, Undo2 } from "lucide-react";
+import { Archive, CircleCheck, CloudDownload, CloudUpload, FolderInput, FolderOpen, FolderSearch, FolderSync, RotateCcw, Trash2, Undo2 } from "lucide-react";
 import { i18n } from "@lingui/core";
 import { plural, t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import type { Entry } from "@quiverlauncher/api";
 import { sizeLabel } from "./downloads";
-import { native, type SaveBackup, type SavesFolder, type SavesInfo } from "./native";
+import { native, type SaveBackup, type SavesFolder, type SavesInfo, type SavesLook } from "./native";
 import { restoreFromFolder } from "./sync-folder";
-import { onSavesChanged, savesOf } from "./saves";
+import { onSavesChanged, reportSaveWarning, savesOf } from "./saves";
+import { telemetryChoice } from "./telemetry";
 import { fetchCopy, lastSent, restoreBackup, sendBackup, type CloudCopy, type CloudMine } from "./cloud-saves";
 import { useAccount } from "./account";
 import { isLocal } from "./custom";
@@ -29,12 +30,22 @@ function reasonLabel(reason: string) {
   return t({ message: "Made by you", comment: "Why a save backup was made: the player pressed Back up now" });
 }
 
+/** Why a backup looks like more than saves, in words: the strongest sign. */
+export function lookText(look: SavesLook) {
+  if (look.reasons.includes("tooBig")) return t`This folder is too big to back up, so it likely holds more than saves, such as the game's own files.`;
+  const size = sizeLabel(look.bytes);
+  if (look.reasons.includes("big")) return t`The files in this app's newest backup add up to ${size} before it's zipped. Saves are usually under 1 MB, so it may hold files that aren't saves.`;
+  const files = look.files;
+  if (look.reasons.includes("many")) return t`This app's newest backup has ${files} files. Saves are usually a few files, so it may hold files that aren't saves.`;
+  return t`This app's newest backup is mostly pictures, so it may hold screenshots or textures rather than saves.`;
+}
+
 export const SYSTEM_NAMES: Record<string, string> = { windows: "Windows", linux: "Linux", macos: "macOS" };
 
 export const when = (at: number) => new Date(at).toLocaleString(i18n.locale, { dateStyle: "medium", timeStyle: "short" });
 
 export function SavesTab({ entry }: { entry: Entry }) {
-  const { installs, catalog, settings, cloudSavesFor, cloudCatchUp, confirmSavePlaces } = useLauncher();
+  const { installs, catalog, settings, cloudSavesFor, cloudCatchUp, confirmSavePlaces, client } = useLauncher();
   const account = useAccount();
   const install = installs[entry.id];
   const known = catalog[entry.id] ?? entry;
@@ -170,6 +181,14 @@ export function SavesTab({ entry }: { entry: Entry }) {
       const path = await native.pickFolder(t`Choose where this app saves`, info.places.find((p) => p.exists)?.path || install?.dir);
       if (!path) return null;
       await native.savesChoose(of, path);
+      return null;
+    });
+  /** The player says the places hold their saves: the note goes, and staff are told, as for a warning. */
+  const fine = () =>
+    run(async () => {
+      await native.savesFine(of);
+      if (known.slug && !isLocal(entry.id) && telemetryChoice().enabled)
+        void reportSaveWarning(of, known, { warning: native.savesWarning, warned: native.savesWarned, send: (app, report) => client.saveWarning(app, report) }).catch(() => {});
       return null;
     });
   const unchoose = () =>
@@ -419,9 +438,22 @@ export function SavesTab({ entry }: { entry: Entry }) {
           </div>
         ))}
         <p className="muted save-source">{source}</p>
+        {info.look && (
+          <div className="save-look" role="note" aria-label={t`These may not be only saves`}>
+            <p className="save-said">{lookText(info.look)}</p>
+            <p className="save-note">
+              <Trans>Open the folder to check. If the app saves somewhere else, choose that folder.</Trans>
+            </p>
+          </div>
+        )}
         <button className="panel-action opens" disabled={busy} onClick={choose}>
           <FolderSearch size={16} aria-hidden="true" /> <Trans>Choose folder</Trans>
         </button>
+        {info.look && !info.look.reasons.includes("tooBig") && (
+          <button className="panel-action" disabled={busy} onClick={fine}>
+            <CircleCheck size={16} aria-hidden="true" /> <Trans>These are my saves</Trans>
+          </button>
+        )}
         {info.from === "you" && (
           <button className="panel-action" disabled={busy} onClick={unchoose}>
             <Undo2 size={16} aria-hidden="true" /> <Trans>Use Quiver&apos;s choice</Trans>

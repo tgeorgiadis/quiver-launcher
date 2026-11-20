@@ -4,7 +4,7 @@
  * sidebar stays in place under the top bar as the app's page scrolls.
  */
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent as KeyEvent, type PointerEvent, type ReactNode, type RefObject } from "react";
-import { Pin, X } from "lucide-react";
+import { Check, EyeOff, Pin, X } from "lucide-react";
 import { t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import type { Entry } from "@quiverlauncher/api";
@@ -14,6 +14,7 @@ import { namesOf } from "./library-tile";
 import { SIDEBAR_WIDTHS, dayLabel, playTimeLabel, sidebarWidth } from "./sidebar";
 import { versionLabel } from "./versions";
 import { GameMenu } from "./card-menu";
+import { useTicked } from "./library-ticking";
 import { pageArea } from "./spatial";
 import { zoom } from "./zoom";
 
@@ -108,7 +109,7 @@ function SidebarEdge({ split, width, onDrag, onDone }: { split: RefObject<HTMLDi
       className="sidebar-edge"
       role="separator"
       aria-orientation="vertical"
-      aria-label={t`Sidebar width`}
+      aria-label={t({ message: "List width", comment: "Library view option: how wide the List layout's list of names is" })}
       aria-valuemin={SIDEBAR_WIDTHS[0]}
       aria-valuemax={SIDEBAR_WIDTHS[1]}
       aria-valuenow={width ?? sidebar()?.offsetWidth}
@@ -216,7 +217,9 @@ function SidebarRow({
   menu: boolean;
   onSelect: () => void;
 }) {
-  const { installs, jobs, catalog, play } = useLauncher();
+  const { installs, jobs, catalog, play, settings } = useLauncher();
+  // Selecting many at once (library-ticking.tsx): only an app in the library, which has its menu.
+  const { ticking, ticked } = useTicked(menu ? [entry.id] : []);
   const install = installs[entry.id];
   const job = jobs[entry.id];
   const row = useRef<HTMLButtonElement>(null);
@@ -246,11 +249,19 @@ function SidebarRow({
         data-state={state}
         data-installed={Boolean(install)}
         data-lines={both && other ? 2 : 1}
+        data-tick={menu ? entry.id : undefined}
+        data-ticked={ticked || undefined}
+        aria-pressed={ticking && menu ? ticked : undefined}
         title={other ? `${name}\n${other}` : name}
         onClick={onSelect}
         // As in a file list: a double click plays an installed app.
         onDoubleClick={() => install && !job && void play(entry.id)}
       >
+        {ticking && menu && (
+          <span className="tick-mark" data-ticked={ticked || undefined} aria-hidden="true">
+            {ticked && <Check size={12} strokeWidth={3} />}
+          </span>
+        )}
         <span className="sidebar-icon" aria-hidden="true">
           <CardArt entry={entry} image="icon" />
         </span>
@@ -258,6 +269,9 @@ function SidebarRow({
           <span className="sidebar-line">
             <span className="sidebar-name">{name}</span>
             {install?.updates === "pinned" && <Pin className="sidebar-pin" size={12} strokeWidth={2.5} aria-hidden="true" />}
+            {menu && settings.hidden?.includes(entry.id) && (
+              <EyeOff className="sidebar-pin" size={12} strokeWidth={2.5} aria-label={t({ message: "Hidden from your library", comment: "Mark on an app's card the player hid" })} />
+            )}
             {note && <span className="sidebar-note"> – {note}</span>}
           </span>
           {both && other && <span className="sidebar-other">{other}</span>}

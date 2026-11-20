@@ -7,16 +7,19 @@
 .topbar button.community-button.active svg { color: var(--accent); }
 
 .community-page, .discussion-page { display: flex; flex-direction: column; gap: 16px; width: min(960px, 100%); margin-inline: auto; padding: 20px var(--gutter) 48px; }
+/* Community uses the width as the site's does (its .container, 1280px). */
+.community-page { width: min(1280px, 100%); }
 .community-page > .back-link, .discussion-page > .back-link { align-self: flex-start; }
 .community-page h1 { margin: 0; font-size: 28px; line-height: 1.2; }
-.community-page > p { margin: 0; max-width: 72ch; font-size: 14px; }
-/* The categories from the column's left edge, on a line across it, and the search under them. */
-.community-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; margin-top: 8px; }
-.community-page .community-bar .detail-tabs { flex-basis: 100%; margin-inline: 0; padding-top: 0; gap: 4px; border-bottom: 1px solid var(--line); }
+.community-page > p { margin: 0; font-size: 14px; }
+.community-page > p a { color: var(--link); text-decoration: underline; }
+/* The tabs on the left, over a line of their own, and the search on the right, as on the site. */
+.community-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 16px; margin-top: 8px; }
+.community-page .community-bar .detail-tabs { margin: 0; padding-top: 0; gap: 4px; border-bottom: 1px solid var(--line); }
 .community-page .community-bar .detail-tabs > button { padding: 10px 14px 12px; font-size: 16px; }
 .community-page .community-bar .detail-tabs > button:first-child { margin-left: -14px; }
 .community-search { display: flex; align-items: center; gap: 8px; padding: 0 12px; border-radius: 8px; background: var(--field); color: var(--muted); }
-.community-page .community-search input { width: 180px; height: 36px; border: 0; background: transparent; color: var(--fg); font-size: 13px; }
+.community-page .community-search input { width: 200px; height: 36px; border: 0; background: transparent; color: var(--fg); font-size: 13px; }
 
 /* A box for a list, a post or the empty state, as the app page's panels. */
 :is(.discussions, .community-page, .discussion-page) .panel { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
@@ -48,8 +51,7 @@
 .discussion-thread .eyebrow { margin: 0 0 4px; }
 .discussion-app { position: relative; isolation: isolate; display: flex; align-items: center; gap: 12px; width: 100%; min-height: 112px; margin: 0 0 16px; padding: 24px; overflow: hidden; border: 1px solid var(--line); border-radius: 12px; background: radial-gradient(120% 90% at 20% 0%, var(--backdrop-1) 0%, var(--backdrop-2) 55%, var(--bg) 100%); color: var(--fg); font: inherit; text-align: left; cursor: pointer; }
 .discussion-app::after { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(90deg, color-mix(in srgb, var(--bg) 80%, transparent) 0%, color-mix(in srgb, var(--bg) 40%, transparent) 50%, transparent 100%); }
-.discussion-app-art { position: absolute; inset: 0; z-index: -2; width: 100%; height: 100%; object-fit: cover; object-position: center 35%; opacity: 0.9; transition: transform 0.3s ease; }
-.discussion-app:hover .discussion-app-art { transform: scale(1.03); }
+.discussion-app-art { position: absolute; inset: 0; z-index: -2; width: 100%; height: 100%; object-fit: cover; object-position: center 35%; opacity: 0.9; }
 .discussion-app:focus-visible { outline: 2px solid var(--link); outline-offset: 2px; }
 .discussion-app-icon { flex: none; width: 64px; height: 64px; border-radius: 8px; overflow: hidden; }
 .discussion-app-icon img { object-fit: cover; filter: none; }
@@ -85,15 +87,19 @@ img.avatar { object-fit: cover; }
 .discussion-comment-box { display: grid; gap: 8px; padding-top: 16px; border-top: 1px solid var(--line); }
 .discussion-locked { display: flex; align-items: center; gap: 8px; padding-top: 16px; border-top: 1px solid var(--line); font-size: 13px; }
 
-/* Community's Recent and Following: each discussion beside its app's portrait art, or General's icon. */
+/* Community's Recent and Following, as on the site: each discussion beside its app's icon, or General's. */
+.community-filters { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; }
+.community-chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .community-chip { padding: 6px 12px; border: 1px solid var(--line); border-radius: 999px; background: none; color: var(--muted); font-size: 12px; font-weight: 500; }
 .community-chip:hover { color: var(--fg); }
 .community-chip[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); color: var(--strong); }
 .community-hint { margin: 0; font-size: 13px; }
 .community-page .detail-tabs .tab-count { margin-left: 2px; }
-.discussion-row.activity .discussion-row-link { flex-direction: row; align-items: center; gap: 14px; }
-.discussion-row-art { flex-shrink: 0; width: 54px; height: 72px; border-radius: 4px; object-fit: cover; background: var(--field); }
-.discussion-row-art.icon { object-fit: contain; padding: 9px 0; }
-.discussion-row-art.empty { display: grid; place-items: center; color: var(--muted); }
+.discussion-row.activity .discussion-row-link { flex-direction: row; align-items: center; gap: 16px; }
+.discussion-row-icon { flex: none; width: 44px; height: 44px; border-radius: 8px; overflow: hidden; }
+.discussion-row-icon img { object-fit: cover; filter: none; }
+.discussion-row-icon svg { width: 22px; height: 22px; }
+.discussion-row-icon.general { display: grid; place-items: center; background: var(--field); color: var(--muted); }
 .discussion-row-body { display: flex; flex: 1; min-width: 0; flex-direction: column; gap: 4px; }
-.discussion-row-place { color: var(--link); font-size: 12px; font-weight: 500; }
+.discussion-row-place { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; color: var(--muted); font-size: 12px; }
+.discussion-row-app { padding: 1px 7px; border: 1px solid var(--line); border-radius: 4px; color: var(--fg); font-weight: 500; }

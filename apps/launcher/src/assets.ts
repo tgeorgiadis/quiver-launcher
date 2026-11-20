@@ -2,7 +2,7 @@ import type { Asset, Os } from "@quiverlauncher/api";
 
 /** Checksums, signatures, symbols and source archives: never the app itself. */
 const AUXILIARY =
-  /\.(json|sha\d*|md5|sig|asc|minisig|pdb|txt)$|(^|[._-])(checksums?|sha\d*sums?|source|src|debug|symbols)([._-]|$)/i;
+  /\.(json|sha\d*|md5|sig|asc|minisig|pdb|txt)$|(^|[._-])(checksums?|sha\d*sums?|sources?|src|debug|symbols)([._-]|$)/i;
 /** What the launcher can install, best first. */
 const FORMATS = [
   /\.zip$/i,
@@ -36,13 +36,16 @@ const isScript = (name: string) => /\.(bat|cmd)$/i.test(name);
 /** An Android app, which Android installs. */
 const isApk = (name: string) => /\.apk$/i.test(name);
 
+/** An archive Quiver unpacks: on Android, one an app ships its APK in ("Game-Android.zip"). */
+const isArchive = (name: string) => FORMATS.slice(0, 8).some((f) => f.test(name));
+
 /** The kind of file an app was installed from, for usage data, as Quiver Launcher 3 sends it. */
 export function installFormat(name: string) {
   if (/\.flatpak$/i.test(name) || (/\.zip$/i.test(name) && /flatpak/i.test(name))) return "flatpak";
   if (isMsi(name)) return "msi";
   if (/\.appimage$/i.test(name)) return "appimage";
   if (isApk(name)) return "apk";
-  return FORMATS.slice(0, 8).some((f) => f.test(name)) ? "archive" : "executable";
+  return isArchive(name) ? "archive" : "executable";
 }
 
 /** A Flatpak bundle, zipped as some releases ship one ("Game-flatpak.zip"), ranks as a bundle: after the regular builds. */
@@ -116,12 +119,17 @@ export function releaseFor<R extends { assets: Asset[] }>(
  */
 export function bestAssets(assets: Asset[], os: Os, arch: string, filter?: string, kind?: "msi" | "files", platform?: Os): Asset[] {
   const wanted = filter?.trim().toLowerCase();
-  const usable = installable(assets, os).filter((a) => !kind || isMsi(a.filename) === (kind === "msi"));
+  const usable = installable(assets, os)
+    .filter((a) => !kind || isMsi(a.filename) === (kind === "msi"))
+    // On Android, an archive is taken by itself only when it's marked for Android: one the site couldn't place may be
+    // a Switch build, so the player picks it.
+    .filter((a) => os !== "android" || isApk(a.filename) || a.os === "android");
   const forOs = osFallbacks(os, platform).map((o) => usable.filter((a) => a.os === o)).find((list) => list.length) ?? [];
   const ranked = forOs
     .filter((a) => !wanted || a.filename.toLowerCase().includes(wanted))
     .filter((a) => archRank(a, arch) >= 0)
-    .map((a) => ({ a, rank: archRank(a, arch) * FORMATS.length + formatRank(a.filename) }))
+    // On Android an APK comes before the same app zipped.
+    .map((a) => ({ a, rank: archRank(a, arch) * (FORMATS.length + 1) + (os === "android" && isApk(a.filename) ? 0 : formatRank(a.filename) + 1) }))
     .sort((x, y) => x.rank - y.rank);
   return ranked.filter((r) => r.rank === ranked[0].rank).map((r) => r.a);
 }
@@ -138,8 +146,9 @@ export function installable(assets: Asset[], os: Os): Asset[] {
       // Windows Installer only runs on Windows, not through Wine.
       (!isMsi(a.filename) || os === "windows") &&
       (!isScript(a.filename) || os === "windows") &&
-      // Android only installs APKs, and only Android does.
-      isApk(a.filename) === (os === "android"),
+      // Android installs APKs, which only Android does, and an archive with one in it, as apps often ship it zipped.
+      // Not a RAR there, which Android can't unpack yet.
+      (os === "android" ? isApk(a.filename) || (isArchive(a.filename) && !/\.rar$/i.test(a.filename)) : !isApk(a.filename)),
   );
 }
 

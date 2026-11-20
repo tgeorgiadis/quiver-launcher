@@ -3,7 +3,7 @@
  * menu and in Settings, and the picture a box art or icon card shows.
  */
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { ChevronDown, Gamepad2, Grid2x2, Grid3x3, LayoutGrid, PanelLeft, RectangleHorizontal, RectangleVertical, Square } from "lucide-react";
+import { ChevronDown, Gamepad2, Grid2x2, Grid3x3, LayoutGrid, List, PanelLeft, PanelTop, RectangleHorizontal, RectangleVertical, Square } from "lucide-react";
 import { msg, plural, t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import type { MessageDescriptor } from "@lingui/core";
@@ -15,7 +15,7 @@ import { CARD_LOOKS, DETAIL_NAMES, browseCardsOf, sampleEntry, savedBrowseCards,
 import { PLATFORMS, platformsOf, savedPlatforms, type Platform } from "./platforms";
 import { SIDEBAR_SIZES } from "./sidebar";
 import { GRID_GROUP_BYS, GROUP_BYS, gridGroupBy, isGroupBy, type GroupBy } from "./group";
-import { CARD_IMAGES, CARD_SCALE, LAYOUTS, LIBRARY_DETAILS, NAME_ORDERS, SIDEBAR_MIN_WIDTH, artFor, savedView, viewOf, type CardImage, type CardSize, type LibraryDetail, type LibraryView } from "./view";
+import { CARD_IMAGES, CARD_SCALE, LAYOUTS, LIBRARY_DETAILS, NAME_ORDERS, PLAYLISTS_PLACES, SIDEBAR_MIN_WIDTH, artFor, savedView, viewOf, type CardImage, type CardSize, type LibraryDetail, type LibraryView, type PlaylistsPlace } from "./view";
 
 /** This computer's library view, and a way to change it. */
 export function useLibraryView() {
@@ -56,8 +56,9 @@ export function GroupBySelect({ grid }: { grid?: boolean }) {
 }
 
 /**
- * Whether the Sidebar layout fits: a window wide enough, at the interface
- * size, for the sidebar beside an app's page, and not a phone or tablet.
+ * Whether the List layout fits: a window wide enough, at the interface
+ * size, for the list beside an app's page, and not a phone or tablet. The
+ * grid's playlists panel goes by the same.
  */
 export function useSidebarFits() {
   const { config, settings } = useLauncher();
@@ -87,6 +88,10 @@ export function ViewOptions({ groups }: { groups?: boolean }) {
     <div className="view-options">
       {/* Where the sidebar doesn't fit, the grid is the only layout. */}
       {fits && <Choice label={t({ message: "Layout", comment: "Library view option" })} options={LAYOUTS} icons={LAYOUT_ICONS} value={layout} onChange={(layout) => set({ layout })} />}
+      {/* The grid's playlists: along the top, or down a panel beside it, where one fits. */}
+      {cards && fits && (
+        <Choice label={t({ message: "Playlists position", comment: "Library view option: where the grid's playlists go" })} options={PLAYLISTS_PLACES} icons={PLAYLISTS_ICONS} value={view.playlists} onChange={(playlists) => set({ playlists })} />
+      )}
       {/* The sidebar has no cards. */}
       {cards && <Choice label={t`Card image`} options={CARD_IMAGES} icons={IMAGE_ICONS} value={view.image} onChange={(image) => set({ image })} />}
       {cards && <CardSizeSlider value={view.cardScale} onChange={(cardScale) => set({ cardScale })} />}
@@ -201,7 +206,8 @@ export function PlatformChoice({ onChange, hidden }: { onChange?: () => void; hi
 }
 
 /** A picture of each layout and card image, for players who don't know the words yet. */
-const LAYOUT_ICONS: Record<LibraryView["layout"], ReactNode> = { grid: <LayoutGrid size={15} aria-hidden="true" />, sidebar: <PanelLeft size={15} aria-hidden="true" /> };
+const LAYOUT_ICONS: Record<LibraryView["layout"], ReactNode> = { grid: <LayoutGrid size={15} aria-hidden="true" />, sidebar: <List size={15} aria-hidden="true" /> };
+const PLAYLISTS_ICONS: Record<PlaylistsPlace, ReactNode> = { top: <PanelTop size={15} aria-hidden="true" />, side: <PanelLeft size={15} aria-hidden="true" /> };
 const IMAGE_ICONS: Record<CardImage, ReactNode> = {
   cover: <RectangleHorizontal size={15} aria-hidden="true" />,
   box: <RectangleVertical size={15} aria-hidden="true" />,
@@ -214,7 +220,7 @@ function SidebarWidth() {
   const picked = SIDEBAR_SIZES.find(([, , width]) => width === settings.sidebarWidth)?.[0] ?? null;
   return (
     <Choice
-      label={t`Sidebar width`}
+      label={t({ message: "List width", comment: "Library view option: how wide the List layout's list of names is" })}
       options={SIDEBAR_SIZES.map(([size, text]) => [size, text])}
       value={picked}
       onChange={(size) => setSettings({ ...settings, sidebarWidth: SIDEBAR_SIZES.find(([s]) => s === size)?.[2] })}

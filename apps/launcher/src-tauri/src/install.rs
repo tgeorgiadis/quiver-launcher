@@ -237,6 +237,12 @@ pub async fn install(
             }
         }
         tokio::task::spawn_blocking(move || -> Result<(), String> {
+            // On Android an archive is only an app with an APK in it: one without (another system's build the player
+            // picked) fails before it's put in the folder.
+            #[cfg(target_os = "android")]
+            if crate::android::apk_in(&out).is_none() {
+                return Err("This download has no Android app (APK) in it. Pick another of the release's files.".into());
+            }
             // This release's Flatpak bundle, where it lands: not one an earlier build left in the folder.
             let bundle = crate::flatpak::bundle_in(&out).and_then(|b| b.strip_prefix(&out).ok().map(|rel| dir.join(rel)));
             // Marked as Quiver's before anything goes in, so an install cut short can still be retried or removed.

@@ -41,7 +41,8 @@ const dialog = (name) => page.getByRole("dialog", { name });
 test("Rename…, under Manage in a card's menu, gives the app the player's name without opening its page", async () => {
   await manage("Rename…");
   const field = dialog("Rename Test Port").getByRole("textbox", { name: "Name" });
-  assert.equal(await field.inputValue(), "Test Port", "its name now fills the field");
+  // Its name now fills the field: just after the dialog shows (RenamePrompt's effect), so read once it has.
+  await s.until(async () => (await field.inputValue()) === "Test Port");
   await field.fill("  My favourite port ");
   await dialog("Rename Test Port").getByRole("button", { name: "Save" }).click();
   await dialog("Rename Test Port").waitFor({ state: "detached" });

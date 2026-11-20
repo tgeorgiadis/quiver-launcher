@@ -1,6 +1,6 @@
 [package]
 name = "quiver-launcher"
-version = "4.0.0-beta.7"
+version = "4.0.0-beta.8"
 edition = "2021"
 license-file = "../../../LICENSE"
 
@@ -13,7 +13,8 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 # `feat/cef` branch. Every other build resolves tauri-runtime-cef to the empty
 # stub in cef-stub/ (the [patch] at the end) and never compiles it.
 [features]
-cef = ["dep:tauri-runtime-cef"]
+# x11-dl and raw-window-handle: the wheel steps some window managers make Chromium lose (x11_wheel.rs).
+cef = ["dep:tauri-runtime-cef", "dep:x11-dl", "dep:raw-window-handle"]
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
@@ -72,6 +73,8 @@ wayland-protocols = { version = "0.32", features = ["client", "staging"] }
 # event aborts it (SIGTRAP in mojo).
 tauri-plugin-dialog = { version = "2", default-features = false, features = ["xdg-portal"] }
 tauri-runtime-cef = { version = "0.1", optional = true }
+x11-dl = { version = "2.21", optional = true }
+raw-window-handle = { version = "0.6", optional = true }
 
 [target.'cfg(windows)'.dependencies]
 mslnk = "0.1"

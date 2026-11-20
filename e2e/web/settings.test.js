@@ -76,7 +76,7 @@ test("the player's picture shows behind the library's grid and nowhere else, and
     await s2.close();
   }
 
-  // The Sidebar layout keeps its own background, with the picture still chosen for the grid.
+  // The List layout keeps its own background, with the picture still chosen for the grid.
   const s3 = await openApp({ state: { ...installed, settings: { libraryBackground: picture, library: { layout: "sidebar" } } } });
   try {
     await s3.page.locator(".library-split").waitFor();

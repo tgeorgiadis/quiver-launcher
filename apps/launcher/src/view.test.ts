@@ -17,6 +17,16 @@ test("a library view keeps only what differs from today's look, and ignores what
   expect(savedView({ ...DEFAULT_VIEW, greyUninstalled: false })).toEqual({ greyUninstalled: false });
 });
 
+test("the grid's playlists go along the top unless the side panel was picked; the List layout is still saved as sidebar", () => {
+  expect(viewOf({}).playlists).toBe("top");
+  expect(viewOf({ playlists: "side" })).toEqual({ ...DEFAULT_VIEW, playlists: "side" });
+  expect(viewOf({ playlists: "left" as never }).playlists).toBe("top");
+  expect(savedView({ ...DEFAULT_VIEW, playlists: "side" })).toEqual({ playlists: "side" });
+  expect(savedView({ ...DEFAULT_VIEW, playlists: "top" })).toBeUndefined();
+  // Called Sidebar once: a library saved in it opens in the List layout, and older launchers still read it.
+  expect(viewOf({ layout: "sidebar" }).layout).toBe("sidebar");
+});
+
 test("the details a library card shows are kept in order, the same list each time, without New or anything unknown", () => {
   expect(viewOf({}).details).toEqual(["icon", "subtitle"]);
   const view = viewOf({ details: ["updated", "new", "rating", "sparkles"] as never });

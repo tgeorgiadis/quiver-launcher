@@ -301,16 +301,26 @@ export function Readme({ entry, source, asked }: { entry: Entry; source: Source 
       <section className="readme">
         {top}
         <h3>
-          <Trans>About this project</Trans>
+          <Trans>About this app</Trans>
         </h3>
         <p className="detail-description">{entry.description}</p>
       </section>
     );
   if (!readme) return null;
+  const host = source && providerName(source.provider, source.host);
   return (
     <section className="readme">
       {top}
-      <h3>README</h3>
+      <div className="readme-top">
+        <h3>README</h3>
+        {/* The whole README, store badges included, as its host shows it. */}
+        {source && (
+          <a className="readme-full" href={source.url}>
+            <Trans>View full README on {host}</Trans>
+            <ArrowUpRight size={13} aria-hidden="true" />
+          </a>
+        )}
+      </div>
       <div className="readme-body">
         <Clipped height={320} opened={asked}>
           <Markdown text={readme.markdown} rawBase={readme.rawBase} htmlBase={readme.htmlBase} alertTitles={alertTitles()} />
@@ -1531,7 +1541,7 @@ export function VersionsDialog({ entry, onClose, start, getting }: { entry: Entr
  * the catalog's (or its game's, for an app the player added), unless the
  * player picked their own. The catalog's consoles by maker, to pick from.
  */
-function useConsolePicks(id: string) {
+export function useConsolePicks(id: string) {
   const { library, catalog, consoles, setConsoles } = useLauncher();
   const own = library.find((i) => i.id === id)?.overrides?.consoles;
   const chosen = own ?? catalog[id]?.consoles ?? [];

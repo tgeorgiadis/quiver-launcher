@@ -546,16 +546,69 @@ pub fn running() -> bool {
 
 /// Writes the shortcut, its artwork and Proton choice. Steam must be closed.
 pub fn apply(s: &Shortcut) -> Result<(), String> {
+    if running() {
+        return Err("Steam is open. Close Steam, then try again.".into());
+    }
     let (user, root) = account()?;
-    let config = user.join("config");
-    let file = config.join("shortcuts.vdf");
-    let current = std::fs::read(&file).ok();
-    let (bytes, id) = upsert(current.as_deref(), s)?;
-    let temp = file.with_extension("vdf.quiver.tmp");
-    std::fs::write(&temp, bytes).and_then(|_| std::fs::rename(&temp, &file)).map_err(|e| e.to_string())?;
+    let id = write_shortcuts(&user.join("config/shortcuts.vdf"), s)?;
     let _ = place_art(&user, id, &s.art);
     if s.proton {
         let _ = use_proton(&root.join("config/config.vdf"), id);
+    }
+    Ok(())
+}
+
+/// How many backups of shortcuts.vdf are kept beside it.
+const BACKUPS: usize = 5;
+
+/// Adds or updates the shortcut in Steam's shortcuts.vdf at `file`; returns its
+/// app id. The player's other shortcuts are never put at risk: a file that's
+/// there but can't be read stops the write instead of being started over, the
+/// file is backed up beside itself first, and a result that would hold fewer
+/// shortcuts than before isn't written.
+pub fn write_shortcuts(file: &Path, s: &Shortcut) -> Result<u32, String> {
+    let current = match std::fs::read(file) {
+        Ok(bytes) => Some(bytes),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => None,
+        Err(e) => return Err(format!("Steam's shortcuts file couldn't be read, so it was left as it is: {e}")),
+    };
+    let before = current.as_deref().map(count).transpose()?.unwrap_or(0);
+    let (bytes, id) = upsert(current.as_deref(), s)?;
+    if count(&bytes)? < before {
+        return Err("Adding to Steam would have lost other shortcuts, so Steam's file was left as it is.".into());
+    }
+    if let Some(old) = &current {
+        backup(file, old)?;
+    }
+    let temp = file.with_extension("vdf.quiver.tmp");
+    std::fs::write(&temp, bytes).and_then(|_| std::fs::rename(&temp, file)).map_err(|e| e.to_string())?;
+    Ok(id)
+}
+
+/// The number of shortcuts in a shortcuts.vdf's contents.
+fn count(bytes: &[u8]) -> Result<usize, String> {
+    match parse(bytes).as_deref().and_then(|root| root.iter().find(|(k, _)| k.eq_ignore_ascii_case("shortcuts"))) {
+        Some((_, Vdf::Map(list))) => Ok(list.len()),
+        _ => Err("Steam's shortcuts file couldn't be read, so it was left as it is.".into()),
+    }
+}
+
+/// Copies shortcuts.vdf's current contents to `shortcuts.vdf.quiver-backup-<time>`
+/// beside it, keeping the newest few.
+fn backup(file: &Path, bytes: &[u8]) -> Result<(), String> {
+    let stamp = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_millis()).unwrap_or(0);
+    let name = file.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_else(|| "shortcuts.vdf".into());
+    let prefix = format!("{name}.quiver-backup-");
+    std::fs::write(file.with_file_name(format!("{prefix}{stamp:013}")), bytes)
+        .map_err(|e| format!("Steam's shortcuts file couldn't be backed up, so it was left as it is: {e}"))?;
+    let Some(dir) = file.parent() else { return Ok(()) };
+    let mut old: Vec<PathBuf> = std::fs::read_dir(dir)
+        .map(|entries| entries.flatten().map(|e| e.path()).filter(|p| p.file_name().is_some_and(|n| n.to_string_lossy().starts_with(&prefix))).collect())
+        .unwrap_or_default();
+    // The stamps are zero-padded, so the names sort oldest first.
+    old.sort();
+    for path in old.iter().take(old.len().saturating_sub(BACKUPS)) {
+        let _ = std::fs::remove_file(path);
     }
     Ok(())
 }
@@ -673,11 +726,14 @@ pub fn wait_and_apply(file: &Path) {
     let Ok(s) = std::fs::read(file).map_err(|_| ()).and_then(|b| serde_json::from_slice::<Shortcut>(&b).map_err(|_| ())) else {
         return;
     };
-    // A day at most; the player may leave Steam open for a while.
+    // A day at most; the player may leave Steam open for a while. Steam saves
+    // its own copy of shortcuts.vdf as it exits, and may start again at once (a
+    // Steam Deck switching to Game Mode), so it has to stay closed for a few
+    // seconds first.
+    let mut closed = 0;
     for _ in 0..86_400 {
-        if !running() {
-            std::thread::sleep(Duration::from_secs(1));
-            let _ = apply(&s);
+        closed = if running() { 0 } else { closed + 1 };
+        if closed >= 5 && (apply(&s).is_ok() || !running()) {
             break;
         }
         std::thread::sleep(Duration::from_secs(1));
@@ -875,5 +931,77 @@ mod tests {
         assert_eq!(list[1].0, "1");
         assert!(matches!(&list[1].1, Vdf::Map(m) if m.contains(&("exe".into(), Vdf::Str("\"/elsewhere/run\"".into())))));
         assert_eq!(parse(&write(&root)).unwrap(), root, "round trip");
+    }
+
+    fn others(n: usize) -> Vec<u8> {
+        let list = (0..n).map(|i| (i.to_string(), Vdf::Map(vec![("appname".into(), Vdf::Str(format!("Other {i}")))]))).collect();
+        write(&[("shortcuts".into(), Vdf::Map(list))])
+    }
+
+    fn backups(dir: &Path) -> Vec<PathBuf> {
+        let mut found: Vec<PathBuf> = std::fs::read_dir(dir).unwrap().flatten().map(|e| e.path()).filter(|p| p.to_string_lossy().contains(".quiver-backup-")).collect();
+        found.sort();
+        found
+    }
+
+    #[test]
+    fn a_shortcuts_file_that_cant_be_read_is_left_alone() {
+        let dir = tempfile::tempdir().unwrap();
+        // A folder where the file should be: there, but not readable as a file.
+        let file = dir.path().join("shortcuts.vdf");
+        std::fs::create_dir(&file).unwrap();
+        assert!(write_shortcuts(&file, &shortcut("Game")).is_err());
+        assert!(file.is_dir(), "not replaced");
+        assert!(!dir.path().join("shortcuts.vdf.quiver.tmp").exists());
+    }
+
+    #[test]
+    fn a_shortcuts_file_that_cant_be_parsed_is_left_alone() {
+        let dir = tempfile::tempdir().unwrap();
+        let file = dir.path().join("shortcuts.vdf");
+        let mut torn = others(3);
+        torn.truncate(torn.len() / 2);
+        std::fs::write(&file, &torn).unwrap();
+        assert!(write_shortcuts(&file, &shortcut("Game")).is_err());
+        assert_eq!(std::fs::read(&file).unwrap(), torn);
+        assert!(backups(dir.path()).is_empty());
+    }
+
+    #[test]
+    fn a_missing_shortcuts_file_is_started() {
+        let dir = tempfile::tempdir().unwrap();
+        let file = dir.path().join("shortcuts.vdf");
+        write_shortcuts(&file, &shortcut("Game")).unwrap();
+        assert_eq!(count(&std::fs::read(&file).unwrap()).unwrap(), 1);
+        assert!(backups(dir.path()).is_empty(), "nothing to back up");
+    }
+
+    #[test]
+    fn the_other_shortcuts_stay_and_the_old_file_is_backed_up() {
+        let dir = tempfile::tempdir().unwrap();
+        let file = dir.path().join("shortcuts.vdf");
+        let before = others(60);
+        std::fs::write(&file, &before).unwrap();
+        write_shortcuts(&file, &shortcut("Game")).unwrap();
+        assert_eq!(count(&std::fs::read(&file).unwrap()).unwrap(), 61);
+        let saved = backups(dir.path());
+        assert_eq!(saved.len(), 1);
+        assert_eq!(std::fs::read(&saved[0]).unwrap(), before);
+    }
+
+    #[test]
+    fn only_the_newest_backups_are_kept() {
+        let dir = tempfile::tempdir().unwrap();
+        let file = dir.path().join("shortcuts.vdf");
+        std::fs::write(&file, others(1)).unwrap();
+        for n in 0..BACKUPS + 3 {
+            // Stamps are in milliseconds: keep each backup's name its own.
+            std::thread::sleep(Duration::from_millis(2));
+            write_shortcuts(&file, &shortcut(&format!("Game {n}"))).unwrap();
+        }
+        let saved = backups(dir.path());
+        assert_eq!(saved.len(), BACKUPS);
+        // The newest backup is the file as it was before the last write.
+        assert_eq!(count(&std::fs::read(saved.last().unwrap()).unwrap()).unwrap(), BACKUPS + 3);
     }
 }

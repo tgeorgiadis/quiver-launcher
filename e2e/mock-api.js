@@ -149,6 +149,7 @@ export async function startMockApi({ pageSize = Infinity } = {}) {
   const downloads = [];
   const downloadProblems = [];
   const saveReports = [];
+  const saveWarnings = [];
   // While set, downloads stop halfway until it resolves; `stalls` are the ones waiting.
   let stalled = null;
   let unstall = () => {};
@@ -647,8 +648,9 @@ export async function startMockApi({ pageSize = Infinity } = {}) {
       res.writeHead(200, { "Content-Type": "image/png" });
       return res.end(PIXEL);
     }
-    // Where the launcher saw an app save, as it tells the site: noted for an app it lists.
-    const saved = url.pathname.match(/^\/api\/v1\/apps\/([^/]+)\/save-locations$/);
+    // Where the launcher saw an app save, or that a backup looked like more than saves, as it tells the site: noted for
+    // an app it lists.
+    const saved = url.pathname.match(/^\/api\/v1\/apps\/([^/]+)\/(save-locations|save-warning)$/);
     if (saved) {
       const headers = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "content-type", "Access-Control-Allow-Methods": "POST, OPTIONS" };
       if (req.method === "OPTIONS") {
@@ -662,7 +664,7 @@ export async function startMockApi({ pageSize = Infinity } = {}) {
       });
       const slug = decodeURIComponent(saved[1]);
       const listed = entries.some((e) => e.slug === slug);
-      if (listed) saveReports.push({ slug, ...body });
+      if (listed) (saved[2] === "save-warning" ? saveWarnings : saveReports).push({ slug, ...body });
       res.writeHead(listed ? 202 : 404, { ...headers, "Content-Type": "application/json" });
       return res.end(JSON.stringify(listed ? { status: "noted" } : { error: { code: "NOT_FOUND", message: "No such app" } }));
     }
@@ -793,6 +795,8 @@ export async function startMockApi({ pageSize = Infinity } = {}) {
     setAnalytics: account.setAnalytics,
     /** Saves an account's catalog filters, as "Save as my default" on the website does; undefined clears them. */
     setCatalogDefaults: account.setCatalogDefaults,
+    /** Makes an account staff on the website ("maintainer", "admin" or "owner"), or a player again with undefined. */
+    setRole: account.setRole,
     /** The playlists an account has saved, as libraryCollections keeps them. */
     collections: account.collections,
     reviews: account.reviews,
@@ -812,6 +816,7 @@ export async function startMockApi({ pageSize = Infinity } = {}) {
     downloadProblems: () => downloadProblems,
     /** Where the launcher told the site an app saves, oldest first: { slug, os, places }. */
     saveReports: () => saveReports,
+    saveWarnings: () => saveWarnings,
     /** Downloads stop halfway while on, and finish when it's turned off. */
     stall(on) {
       if (on && !stalled) stalled = new Promise((resolve) => (unstall = resolve));
@@ -953,6 +958,8 @@ function mockAccount(entries) {
           id: user.id,
           name,
           provider: user.password ? "password" : "github",
+          // Staff on the website: "maintainer", "admin" or "owner"; a player has none here.
+          ...(user.role ? { role: user.role } : {}),
           ...(user.analyticsOptOut ? { analyticsOptOut: true } : {}),
           // The filters saved on the website ("Save as my default").
           ...(user.catalogDefaults ? { catalogDefaults: user.catalogDefaults } : {}),
@@ -1163,6 +1170,10 @@ function mockAccount(entries) {
     const user = users.get(name);
     if (user) user.catalogDefaults = defaults;
   };
+  const setRole = (name, role) => {
+    const user = users.get(name);
+    if (user) user.role = role;
+  };
   const collections = (name) => [...(users.get(name)?.collections.values() ?? [])];
-  return { handle, reviews, corrections, resolveCorrection, feedback, lists, analyticsCalls, setAnalytics, setCatalogDefaults, collections, cloud };
+  return { handle, reviews, corrections, resolveCorrection, feedback, lists, analyticsCalls, setAnalytics, setCatalogDefaults, setRole, collections, cloud };
 }

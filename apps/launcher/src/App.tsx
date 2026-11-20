@@ -1,5 +1,5 @@
 import { startTransition, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { ArrowLeft, ArrowUp, BookOpen, Save, ChevronDown, Cloud, CircleArrowDown, CircleCheck, CirclePlay, CircleUser, Compass, Disc3, Download, Eye, EyeOff, FolderInput, FolderOpen, FolderPen, FolderSearch, FolderSync, History, Info, MessagesSquare, LayoutGrid, Library, LogOut, PanelLeft, Mail, PackagePlus, Pencil, Pin, Play, Plus, Search, SettingsIcon, RotateCcw, ShieldAlert, ShieldCheck, ShieldX, SlidersHorizontal, Smile, Trash2, TriangleAlert, Tv, X } from "lucide-react";
+import { ArrowLeft, ArrowUp, BookOpen, Save, ChevronDown, Cloud, CircleArrowDown, CircleCheck, CirclePlay, CircleUser, Compass, Disc3, Download, Eye, EyeOff, FolderInput, FolderOpen, FolderPen, FolderSearch, FolderSync, History, Info, MessagesSquare, LayoutGrid, Library, LogOut, PanelLeft, Mail, PackagePlus, Pencil, Pin, Play, Plus, Search, SettingsIcon, RotateCcw, ShieldAlert, ShieldCheck, ShieldX, SlidersHorizontal, Smile, Trash2, TriangleAlert, Tv, Wrench, X } from "lucide-react";
 import type { AppQuery, Asset, Entry, GameMatch, Os, Page, ProjectType } from "@quiverlauncher/api";
 import { msg, plural, t } from "@lingui/core/macro";
 import { Plural, Trans } from "@lingui/react/macro";
@@ -28,7 +28,7 @@ import { ErrorBoundary } from "./boundary";
 import { FORWARD, pageArea, toTop } from "./spatial";
 import { track, trackScreen } from "./telemetry";
 import { TelemetryNotice, useTelemetrySetup } from "./telemetry-ui";
-import { useAccount, type CatalogDefaults } from "./account";
+import { managesCatalog, useAccount, type CatalogDefaults } from "./account";
 import { native } from "./native";
 import { sizeLabel } from "./downloads";
 import { correctionClient } from "./corrections";
@@ -257,12 +257,12 @@ export function App() {
           </button>
         </nav>
         <AccountButton onSignIn={() => setSigningIn(true)} />
-        {/* The library as a grid or with its sidebar, from wherever the library is, as TV mode is beside it; none where the sidebar doesn't fit (a phone). */}
+        {/* The library as a grid or a list, from wherever the library is, as TV mode is beside it; none where the sidebar doesn't fit (a phone). */}
         {tab === "library" && sidebarFits && (
           <button
             className="icon layout-button"
-            aria-label={sidebar ? t`Show the library as a grid` : t`Show the library with a sidebar`}
-            title={sidebar ? t`Show the library as a grid` : t`Show the library with a sidebar`}
+            aria-label={sidebar ? t`Show the library as a grid` : t`Show the library as a list`}
+            title={sidebar ? t`Show the library as a grid` : t`Show the library as a list`}
             onClick={() => setLibraryView({ layout: sidebar ? "grid" : "sidebar" })}
           >
             {sidebar ? <LayoutGrid size={19} /> : <PanelLeft size={19} />}
@@ -651,7 +651,9 @@ function BrowsePage({
   const hereLabel =
     config.os === "linux"
       ? t({ message: "Linux and Windows (this computer)", comment: "Browse's platform filter on Linux: the apps it runs, its own and Windows' through Proton" })
-      : t`${name} (this computer)`;
+      : config.os === "android"
+        ? t`${name} (this device)`
+        : t`${name} (this computer)`;
   const platformsOn = filters.platforms?.length ? filters.platforms.map((p) => (p === "here" ? hereLabel : osChoice(p))).join(", ") : undefined;
   const inLibrary = new Set(library.map((i) => i.id));
   // What this computer runs, where the catalog was asked for more (Linux's and Windows' apps: catalogOs).
@@ -739,75 +741,77 @@ function BrowsePage({
       */}
       {(filtersOpen || filtering > 0 || hiddenView !== "hide" || (sorted && !searching)) && (
         <div id="browse-filters" className="filter-bar" role="group" aria-label={t`Catalog filters`}>
-          {sorted && !searching && (
-            <FilterPill on={sortName(filters.sort)} onClear={() => (setSorted(false), choose({ ...filters, sort: fromSaved(saved).sort }))}>
-              <span className="pill-label">{sortName(filters.sort)}</span>
-            </FilterPill>
-          )}
-          {/* What it runs ("here"): on Linux, Linux's apps and Windows' (through Proton), as the library shows them. None ticked is every platform. */}
-          {list(
-            "platforms",
-            t`Platform`,
-            here ? hereLabel : (platformsOn ?? t`All platforms`),
-            here ? undefined : (platformsOn ?? t`All platforms`),
-            [
-              { value: "here", label: hereLabel },
-              ...Object.keys(OS_NAMES)
-                .filter((id) => id !== config.os || config.os === "linux")
-                .map((id) => ({ value: id, label: osChoice(id as Os) })),
-            ],
-            { none: ["here"] },
-          )}
-          {list("consoles", t`Console`, consolesOn ?? t`Any console`, consolesOn, consoleOptions(consoles, consoleNames), { max: MAX_SYSTEMS })}
-          {list("projectTypes", t`Project type`, typesOn ?? t`Any project type`, typesOn, projectTypeOptions())}
-          {pill(
-            "ai",
-            filters.ai && filterLabel("ai", filters.ai, consoleNames),
-            <select aria-label={t`AI use`} value={filters.ai ?? ""} onChange={set("ai")}>
-              <option value="">{t`Any AI use`}</option>
-              <option value="no-generated">{t`Hide mostly AI-generated apps`}</option>
-              <option value="no-ai">{t`Hide apps with any AI use`}</option>
-            </select>,
-          )}
-          {pill(
-            "setup",
-            filters.setup && t`Easy setup`,
-            <select
-              aria-label={t`Setup`}
-              title={t`Easy setup: Quiver Launcher finds your copy of the game and puts it where the app needs it.`}
-              value={filters.setup ?? ""}
-              onChange={set("setup")}
-            >
-              <option value="">{t`Any setup`}</option>
-              <option value="easy">{t`Easy setup only`}</option>
-            </select>,
-          )}
-          {/* Up here with the filters, not under the list, which loads more as it's reached. */}
-          {(filtersOpen || showOwned) && (
-            <FilterPill on={showOwned ? t`Apps in your library shown` : undefined} onClear={() => setShowOwned(false)}>
-              <select aria-label={t`Apps in your library`} value={showOwned ? "show" : "hide"} onChange={(e) => setShowOwned(e.target.value === "show")}>
-                <option value="hide">{t`Hide apps in your library`}</option>
-                <option value="show">{t`Show apps in your library`}</option>
-              </select>
-            </FilterPill>
-          )}
-          {(filtersOpen || hiddenView !== "hide") && hidden.size > 0 && (
-            <FilterPill
-              on={hiddenView === "show" ? t`Hidden apps shown` : hiddenView === "only" ? t`Hidden apps only` : undefined}
-              onClear={() => setHiddenView("hide")}
-            >
-              <select aria-label={t`Hidden apps`} value={hiddenView} onChange={(e) => setHiddenView(e.target.value as HiddenView)}>
-                <option value="hide">{t`Hide hidden apps`}</option>
-                <option value="show">{t`Show hidden apps`}</option>
-                <option value="only">{t`Only hidden apps`}</option>
-              </select>
-            </FilterPill>
-          )}
-          {hiddenView === "only" && hidden.size > 0 && (
-            <button type="button" className="text-button" onClick={() => setSettings({ ...settings, browseHidden: undefined })}>
-              <Plural value={hidden.size} one="Unhide # app" other="Unhide all # apps" />
-            </button>
-          )}
+          <span className="filter-pills">
+            {sorted && !searching && (
+              <FilterPill on={sortName(filters.sort)} onClear={() => (setSorted(false), choose({ ...filters, sort: fromSaved(saved).sort }))}>
+                <span className="pill-label">{sortName(filters.sort)}</span>
+              </FilterPill>
+            )}
+            {/* What it runs ("here"): on Linux, Linux's apps and Windows' (through Proton), as the library shows them. None ticked is every platform. */}
+            {list(
+              "platforms",
+              t`Platform`,
+              here ? hereLabel : (platformsOn ?? t`All platforms`),
+              here ? undefined : (platformsOn ?? t`All platforms`),
+              [
+                { value: "here", label: hereLabel },
+                ...Object.keys(OS_NAMES)
+                  .filter((id) => id !== config.os || config.os === "linux")
+                  .map((id) => ({ value: id, label: osChoice(id as Os) })),
+              ],
+              { none: ["here"] },
+            )}
+            {list("consoles", t`Console`, consolesOn ?? t`Any console`, consolesOn, consoleOptions(consoles, consoleNames), { max: MAX_SYSTEMS })}
+            {list("projectTypes", t`Project type`, typesOn ?? t`Any project type`, typesOn, projectTypeOptions())}
+            {pill(
+              "ai",
+              filters.ai && filterLabel("ai", filters.ai, consoleNames),
+              <select aria-label={t`AI use`} value={filters.ai ?? ""} onChange={set("ai")}>
+                <option value="">{t`Any AI use`}</option>
+                <option value="no-generated">{t`Hide mostly AI-generated apps`}</option>
+                <option value="no-ai">{t`Hide apps with any AI use`}</option>
+              </select>,
+            )}
+            {pill(
+              "setup",
+              filters.setup && t`Easy setup`,
+              <select
+                aria-label={t`Setup`}
+                title={t`Easy setup: Quiver Launcher finds your copy of the game and puts it where the app needs it.`}
+                value={filters.setup ?? ""}
+                onChange={set("setup")}
+              >
+                <option value="">{t`Any setup`}</option>
+                <option value="easy">{t`Easy setup only`}</option>
+              </select>,
+            )}
+            {/* Up here with the filters, not under the list, which loads more as it's reached. */}
+            {(filtersOpen || showOwned) && (
+              <FilterPill on={showOwned ? t`Apps in your library shown` : undefined} onClear={() => setShowOwned(false)}>
+                <select aria-label={t`Apps in your library`} value={showOwned ? "show" : "hide"} onChange={(e) => setShowOwned(e.target.value === "show")}>
+                  <option value="hide">{t`Hide apps in your library`}</option>
+                  <option value="show">{t`Show apps in your library`}</option>
+                </select>
+              </FilterPill>
+            )}
+            {(filtersOpen || hiddenView !== "hide") && hidden.size > 0 && (
+              <FilterPill
+                on={hiddenView === "show" ? t`Hidden apps shown` : hiddenView === "only" ? t`Hidden apps only` : undefined}
+                onClear={() => setHiddenView("hide")}
+              >
+                <select aria-label={t`Hidden apps`} value={hiddenView} onChange={(e) => setHiddenView(e.target.value as HiddenView)}>
+                  <option value="hide">{t`Hide hidden apps`}</option>
+                  <option value="show">{t`Show hidden apps`}</option>
+                  <option value="only">{t`Only hidden apps`}</option>
+                </select>
+              </FilterPill>
+            )}
+            {hiddenView === "only" && hidden.size > 0 && (
+              <button type="button" className="text-button" onClick={() => setSettings({ ...settings, browseHidden: undefined })}>
+                <Plural value={hidden.size} one="Unhide # app" other="Unhide all # apps" />
+              </button>
+            )}
+          </span>
           {filtering > 0 && (
             <span className="filter-actions">
               <button type="button" className="text-button" onClick={() => choose({ platforms: ["here"], sort: filters.sort })}>
@@ -1429,6 +1433,18 @@ function AppPage({
                 {item && (
                   <button type="button" className="title-rename" aria-label={t`Rename ${app}`} title={t({ message: "Rename", comment: "Button beside an app's name on its page: gives it a name of the player's own" })} onClick={() => askName(item.id)}>
                     <Pencil size={15} aria-hidden="true" />
+                  </button>
+                )}
+                {/* Signed in as one who looks after the catalog: its entry on the website's admin pages, to change it there. */}
+                {site && managesCatalog(user) && (
+                  <button
+                    type="button"
+                    className="title-rename title-admin"
+                    aria-label={t({ message: "Edit in admin", comment: "Button beside an app's name on its page, only for catalog maintainers and admins: opens the app's entry on the website's admin pages" })}
+                    title={t`Open ${app} in the catalog's admin pages on quiverlauncher.com`}
+                    onClick={() => void native.openUrl(`${SITE}/admin/entries/${encodeURIComponent(entry.id)}/overview`)}
+                  >
+                    <Wrench size={15} aria-hidden="true" />
                   </button>
                 )}
               </div>
@@ -2089,8 +2105,14 @@ function Notice() {
   const close = () => setNotice(null);
   if (!notice.stays) {
     return (
-      <div className="toast" role="status" onClick={close}>
+      <div className={`toast${notice.action ? " has-action" : ""}`} role="status" onClick={close}>
         <p>{notice.text}</p>
+        {/* Its click closes the toast too. */}
+        {notice.action && (
+          <button type="button" className="toast-action" onClick={notice.action.act}>
+            {notice.action.label}
+          </button>
+        )}
       </div>
     );
   }
@@ -2728,6 +2750,9 @@ function ChooseFileDialog({ choice }: { choice: Choice }) {
   // Open from the start when nothing else is offered: then the files a maintainer didn't tick are all there is.
   const [showAll, setShowAll] = useState(choice.assets.length === 0);
   const unapproved = new Set(choice.unapproved);
+  const { config } = useLauncher();
+  // A phone or tablet is a device, not a computer.
+  const device = config.os === "android";
   const name = choice.entry.projectName;
   const version = versionLabel(choice.version);
   // The release's other files this computer can install, whatever system the site says they're for.
@@ -2760,8 +2785,12 @@ function ChooseFileDialog({ choice }: { choice: Choice }) {
           </h2>
           <p className="muted">
             {choice.unmatched
-              ? t`None of ${name} ${version}'s files are marked for your computer. If you know which one runs on it, pick it.`
-              : t`${name} ${version} has more than one file for your computer.`}
+              ? device
+                ? t`None of ${name} ${version}'s files are marked for your device. If you know which one runs on it, pick it.`
+                : t`None of ${name} ${version}'s files are marked for your computer. If you know which one runs on it, pick it.`
+              : device
+                ? t`${name} ${version} has more than one file for your device.`
+                : t`${name} ${version} has more than one file for your computer.`}
           </p>
           {choice.assets.length > 0 && (
             <div className="choices">
@@ -2777,7 +2806,13 @@ function ChooseFileDialog({ choice }: { choice: Choice }) {
               <>
                 <p className="muted">
                   {choice.assets.length > 0 ? (
-                    <Trans>The release's other files. They may not run on your computer.</Trans>
+                    device ? (
+                      <Trans>The release's other files. They may not run on your device.</Trans>
+                    ) : (
+                      <Trans>The release's other files. They may not run on your computer.</Trans>
+                    )
+                  ) : device ? (
+                    <Trans>The release's files Quiver doesn't offer. They may not run on your device.</Trans>
                   ) : (
                     <Trans>The release's files Quiver doesn't offer. They may not run on your computer.</Trans>
                   )}
