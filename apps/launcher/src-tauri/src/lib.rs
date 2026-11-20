@@ -36,6 +36,8 @@ mod tray;
 mod update;
 mod v3;
 mod window_state;
+#[cfg(all(feature = "cef", target_os = "linux"))]
+mod x11_wheel;
 
 use serde::Serialize;
 use std::ffi::OsStr;
@@ -2512,6 +2514,8 @@ pub fn run() {
             app.manage(Playing::default());
             app.manage(picker::Picks::default());
             gamepad::start(app.handle().clone());
+            #[cfg(all(feature = "cef", target_os = "linux"))]
+            x11_wheel::start(app.handle().clone());
             #[cfg(target_os = "linux")]
             {
                 keyboard::kwin::listen(app.handle().clone());
