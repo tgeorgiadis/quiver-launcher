@@ -103,6 +103,7 @@ export type InstallRequest = {
   /** A new install goes in a folder of its own in here (one the player chose) instead of the apps folder. */
   into?: string;
   filesToAdd: string[];
+  migration?: boolean;
   version: string;
   /** The catalog's preferred programs, for finding the one a Windows installer installed. */
   preferred?: string[];
@@ -115,6 +116,7 @@ export type InstallRequest = {
 };
 /** What an install did. A Windows installer (MSI) puts its files where its setup chose. */
 export type Installed = {
+  executable?: string | null;
   dir: string;
   version: string;
   /** The downloaded file's `sha256:<hex>`. Missing from the web side's stand-in for the Rust side. */

@@ -1,6 +1,6 @@
 import { describe, expect, it, test } from "vitest";
 import type { Asset, Os } from "@quiverlauncher/api";
-import { assetFilterFor, bestAssets, hasBuildFor, installable, installFormat, otherSystems, pickedBefore, releaseFor, runsHere } from "./assets";
+import { installPreference, flatpakAsset, isFlatpakAsset, assetFilterFor, bestAssets, hasBuildFor, installable, installFormat, otherSystems, pickedBefore, releaseFor, runsHere } from "./assets";
 
 const asset = (filename: string, os: Asset["os"], architecture: Asset["architecture"] = "x64"): Asset => ({
   id: filename, url: `https://example.com/${filename}`, filename, os, architecture, format: "",
@@ -95,6 +95,41 @@ test("a Flatpak bundle installs on Linux, after an AppImage", () => {
   expect(bestAssets([asset("Game-x86_64.flatpak", "linux"), asset("Game-win64.zip", "windows")], "linux", "x64").map((a) => a.filename)).toEqual(["Game-x86_64.flatpak"]);
   expect(bestAssets([asset("Game.flatpak", "linux"), asset("Game.AppImage", "linux")], "linux", "x64").map((a) => a.filename)).toEqual(["Game.AppImage"]);
   expect(assetFilterFor("GameB-1.0.flatpak", ["GameA-1.0.flatpak", "GameB-1.0.flatpak"])).toBe("gameb");
+});
+
+test("preferring Flatpak puts a Flatpak bundle first, and falls back when there isn't one", () => {
+  const files = [asset("Game.flatpak", "linux"), asset("Game.AppImage", "linux"), asset("Game-linux.zip", "linux")];
+  expect(bestAssets(files, "linux", "x64", undefined, undefined, undefined, { preference: "flatpak" }).map((a) => a.filename)).toEqual(["Game.flatpak"]);
+  // A zip whose name says it holds a Flatpak counts as one, ahead of an AppImage.
+  expect(
+    bestAssets([asset("Game-Flatpak.zip", "linux"), asset("Game.AppImage", "linux")], "linux", "x64", undefined, undefined, undefined, { preference: "flatpak" }).map((a) => a.filename),
+  ).toEqual(["Game-Flatpak.zip"]);
+  // Echoes Unbound-style: Flatpak with unknown arch still beats an arch-matched AppImage when preferred.
+  expect(
+    bestAssets(
+      [asset("MetroidPrime2Port.flatpak", "linux", "unknown"), asset("MetroidPrime2-x86_64.AppImage", "linux", "x64")],
+      "linux",
+      "x64",
+      undefined,
+      undefined,
+      undefined,
+      { preference: "flatpak" },
+    ).map((a) => a.filename),
+  ).toEqual(["MetroidPrime2Port.flatpak"]);
+  // No Flatpak: the usual order (archives before AppImage) is unchanged.
+  expect(bestAssets([asset("Game.AppImage", "linux"), asset("Game-linux.zip", "linux")], "linux", "x64", undefined, undefined, undefined, { preference: "flatpak" }).map((a) => a.filename)).toEqual([
+    "Game-linux.zip",
+  ]);
+  // A catalog filter still wins over preferring Flatpak.
+  expect(bestAssets(files, "linux", "x64", "AppImage", undefined, undefined, { preference: "flatpak" }).map((a) => a.filename)).toEqual(["Game.AppImage"]);
+  expect(isFlatpakAsset("Game.flatpak")).toBe(true);
+  expect(isFlatpakAsset("Game-Flatpak.zip")).toBe(true);
+  expect(isFlatpakAsset("Game.AppImage")).toBe(false);
+  expect(isFlatpakAsset("readme-about-flatpak.txt")).toBe(false);
+  expect(flatpakAsset(files, "linux", "x64")?.filename).toBe("Game.flatpak");
+  expect(flatpakAsset([asset("Game.AppImage", "linux")], "linux", "x64")).toBeUndefined();
+  // Wrong architecture: not offered.
+  expect(flatpakAsset([asset("Game-aarch64.flatpak", "linux", "arm64"), asset("Game.AppImage", "linux")], "linux", "x64")).toBeUndefined();
 });
 
 test("a Windows installer (MSI) installs on Windows when there's nothing to unpack, and never elsewhere", () => {
@@ -193,6 +228,54 @@ test("a release has the build the player chose to get when that's what installin
   expect(hasBuildFor([linux, asset("Game-1.0-x64.msi", "windows")], "linux", "x64", "windows")).toBe(false);
 });
 
+test("new Linux install preferences select each format and keep automatic behavior", () => {
+  const files = [asset("Game-Flatpak.zip", "linux"), asset("Game.tar.gz", "linux"), asset("Game.AppImage", "linux")];
+  const select = (preference: "automatic" | "flatpak" | "appimage" | "archive") =>
+    bestAssets(files, "linux", "x64", undefined, undefined, undefined, { preference });
+  expect(select("automatic")).toEqual([files[0]]);
+  expect(select("flatpak")).toEqual([files[0]]);
+  expect(select("archive")).toEqual([files[1]]);
+  expect(select("appimage")).toEqual([files[2]]);
+});
+
+test("preferences fall back without overriding architecture, catalog filters or platform choices", () => {
+  const files = [asset("Game.zip", "linux"), asset("Game.AppImage", "linux", "arm64"), asset("Game.flatpak", "linux", "arm64"), asset("Game-win.zip", "windows")];
+  for (const preference of ["appimage", "flatpak", "archive"] as const) {
+    expect(bestAssets(files, "linux", "x64", undefined, undefined, undefined, { preference })).toEqual([files[0]]);
+    expect(bestAssets(files, "linux", "x64", undefined, undefined, "windows", { preference })).toEqual([files[3]]);
+  }
+  const compatible = [files[0], asset("Game.AppImage", "linux")];
+  expect(bestAssets(compatible, "linux", "x64", ".zip", undefined, undefined, { preference: "appimage" })).toEqual([files[0]]);
+  const windows = [asset("Game.zip", "windows"), asset("Game.AppImage", "windows")];
+  expect(bestAssets(windows, "windows", "x64", undefined, undefined, undefined, { preference: "appimage" })).toEqual([windows[0]]);
+});
+
+test("a remembered file wins before format and architecture ranking discard it", () => {
+  const files = [asset("Game-vulkan.zip", "linux"), asset("Game-opengl.AppImage", "linux", "unknown")];
+  expect(bestAssets(files, "linux", "x64", undefined, undefined, undefined, { preference: "archive", pick: "opengl" })).toEqual([files[1]]);
+  const ambiguous = [asset("Game-opengl.zip", "linux"), files[1]];
+  expect(bestAssets(ambiguous, "linux", "x64", undefined, undefined, undefined, { pick: "opengl" })).toEqual(ambiguous);
+  expect(bestAssets(files, "linux", "x64", undefined, undefined, undefined, { pick: "renamed" })).toEqual(files);
+});
+
+test("updates retain their recorded format regardless of the global preference and never fall back", () => {
+  const files = [asset("Game.zip", "linux"), asset("Game.AppImage", "linux"), asset("Game.flatpak", "linux")];
+  for (const format of ["archive", "appimage", "flatpak"] as const) {
+    for (const preference of ["automatic", "archive", "appimage", "flatpak"] as const) {
+      expect(bestAssets(files, "linux", "x64", undefined, "files", undefined, { format, preference })).toEqual(files.filter((a) => installFormat(a.filename) === format));
+    }
+    expect(bestAssets(files.filter((a) => installFormat(a.filename) !== format), "linux", "x64", undefined, "files", undefined, { format })).toEqual([]);
+  }
+});
+
+test("the legacy Flatpak checkbox is preserved until explicitly replaced, including Automatic", () => {
+  expect(installPreference({})).toBe("automatic");
+  expect(installPreference({ preferFlatpak: false })).toBe("automatic");
+  expect(installPreference({ preferFlatpak: true })).toBe("flatpak");
+  for (const preferredInstallFormat of ["automatic", "archive", "appimage", "flatpak"] as const)
+    expect(installPreference({ preferredInstallFormat, preferFlatpak: true })).toBe(preferredInstallFormat);
+});
+
 describe("releaseFor", () => {
   const build = (version: string, ...systems: Os[]) => ({ version, assets: systems.map((os) => asset(os === "linux" ? `Game-${version}.AppImage` : `Game-${version}-${os}.zip`, os)) });
   // As Wario Land 4's: the newest release is Linux's alone.
@@ -247,4 +330,27 @@ test("Android takes an APK an app ships zipped, as Ghostship does", () => {
   expect(bestAssets([...files, asset("Ghostship.apk", "android", "unknown")], "android", "arm64").map((a) => a.filename)).toEqual(["Ghostship.apk"]);
   // A release with no Android build: every archive is offered for the player to pick.
   expect(installable(files.slice(1), "android")).toHaveLength(3);
+});
+
+test("migration requires the exact preferred format and compatible Linux assets", async () => {
+  const { migrationAssets } = await import("./assets");
+  const files = [asset("Game-Flatpak.zip", "linux"), asset("Game.AppImage", "linux"), asset("Game.tar.gz", "linux")];
+  for (const [i, target] of (["flatpak", "appimage", "archive"] as const).entries()) {
+    expect(migrationAssets(files, "linux", "x64", target)).toEqual([files[i]]);
+    expect(migrationAssets(files.filter((_, j) => i !== j), "linux", "x64", target)).toEqual([]);
+    expect(migrationAssets(files, "windows", "x64", target)).toEqual([]);
+  }
+  expect(migrationAssets(files, "linux", "x64", "automatic")).toEqual([]);
+  expect(migrationAssets([asset("Game.AppImage", "linux", "arm64")], "linux", "x64", "appimage")).toEqual([]);
+  expect(migrationAssets([asset("Game.zip", "windows")], "linux", "x64", "archive")).toEqual([]);
+  expect(migrationAssets(files, "linux", "x64", "appimage", "tar.gz")).toEqual([]);
+  const variants = [asset("Game-GL.AppImage", "linux"), asset("Game-VK.AppImage", "linux")];
+  expect(migrationAssets(variants, "linux", "x64", "appimage")).toEqual(variants);
+});
+
+test("legacy migration opt-in is preserved and explicit disabling wins", async () => {
+  const { migrationEnabled } = await import("./assets");
+  expect(migrationEnabled({})).toBe(false);
+  expect(migrationEnabled({ offerFlatpakMigration: true })).toBe(true);
+  expect(migrationEnabled({ offerFlatpakMigration: true, offerFormatMigration: false })).toBe(false);
 });

@@ -36,17 +36,37 @@ const isScript = (name: string) => /\.(bat|cmd)$/i.test(name);
 /** An Android app, which Android installs. */
 const isApk = (name: string) => /\.apk$/i.test(name);
 
+/**
+ * A Flatpak bundle Quiver can install: a `.flatpak` file, or a zip whose name
+ * says it holds one (`Game-Flatpak.zip`). A name that only mentions Flatpak in
+ * passing (notes, checksums) isn't one — those never reach `installable`.
+ */
+export const isFlatpakAsset = (name: string) => /\.flatpak$/i.test(name) || (/\.zip$/i.test(name) && /flatpak/i.test(name));
 /** An archive Quiver unpacks: on Android, one an app ships its APK in ("Game-Android.zip"). */
 const isArchive = (name: string) => FORMATS.slice(0, 8).some((f) => f.test(name));
 
 /** The kind of file an app was installed from, for usage data, as Quiver Launcher 3 sends it. */
 export function installFormat(name: string) {
-  if (/\.flatpak$/i.test(name) || (/\.zip$/i.test(name) && /flatpak/i.test(name))) return "flatpak";
+  if (isFlatpakAsset(name)) return "flatpak";
   if (isMsi(name)) return "msi";
   if (/\.appimage$/i.test(name)) return "appimage";
   if (isApk(name)) return "apk";
   return isArchive(name) ? "archive" : "executable";
 }
+
+export type InstallPreference = "automatic" | "flatpak" | "appimage" | "archive";
+export type PreferredFormat = Exclude<InstallPreference, "automatic">;
+export type InstallFormat = ReturnType<typeof installFormat>;
+export type AssetSelection = {
+  preference?: InstallPreference;
+  /** An installed format is a constraint, not a fallback preference. */
+  format?: InstallFormat;
+  pick?: string;
+};
+
+/** Read the previous checkbox until the user chooses a format explicitly. */
+export const installPreference = (settings: { preferredInstallFormat?: InstallPreference; preferFlatpak?: boolean }): InstallPreference =>
+  settings.preferredInstallFormat ?? (settings.preferFlatpak ? "flatpak" : "automatic");
 
 const formatRank = (name: string) => FORMATS.findIndex((f) => f.test(name));
 
@@ -110,8 +130,10 @@ export function releaseFor<R extends { assets: Asset[] }>(
  * release has nothing for this platform. `kind` keeps an update to the kind
  * installed: a Windows installer ("msi"), or files Quiver unpacks ("files").
  * `platform` is the system whose build the player chose, tried first.
+ * Saved picks and installed formats are respected before ranking. A preference
+ * selects that format when available, otherwise the usual ranking applies.
  */
-export function bestAssets(assets: Asset[], os: Os, arch: string, filter?: string, kind?: "msi" | "files", platform?: Os): Asset[] {
+export function bestAssets(assets: Asset[], os: Os, arch: string, filter?: string, kind?: "msi" | "files", platform?: Os, selection: AssetSelection = {}): Asset[] {
   const wanted = filter?.trim().toLowerCase();
   const usable = installable(assets, os)
     .filter((a) => !kind || isMsi(a.filename) === (kind === "msi"))
@@ -119,14 +141,45 @@ export function bestAssets(assets: Asset[], os: Os, arch: string, filter?: strin
     // a Switch build, so the player picks it.
     .filter((a) => os !== "android" || isApk(a.filename) || a.os === "android");
   const forOs = osFallbacks(os, platform).map((o) => usable.filter((a) => a.os === o)).find((list) => list.length) ?? [];
-  const ranked = forOs
+  let candidates = forOs
     .filter((a) => !wanted || a.filename.toLowerCase().includes(wanted))
     .filter((a) => archRank(a, arch) >= 0)
+    .filter((a) => !selection.format || installFormat(a.filename) === selection.format);
+  // Search all eligible files before ranking can discard a remembered choice.
+  // Missing or ambiguous picks go back to the player, without choosing a new variant.
+  const pick = selection.pick;
+  if (pick) {
+    const matches = candidates.filter((a) => a.filename.toLowerCase().includes(pick));
+    return matches.length ? matches : candidates;
+  }
+  if (os === "linux" && selection.preference && selection.preference !== "automatic") {
+    const preferred = candidates.filter((a) => installFormat(a.filename) === selection.preference);
+    if (preferred.length) candidates = preferred;
+  }
+  const ranked = candidates
     // On Android an APK comes before the same app zipped.
     .map((a) => ({ a, rank: archRank(a, arch) * (FORMATS.length + 1) + (os === "android" && isApk(a.filename) ? 0 : formatRank(a.filename) + 1) }))
     .sort((x, y) => x.rank - y.rank);
   return ranked.filter((r) => r.rank === ranked[0].rank).map((r) => r.a);
 }
+
+/**
+ * A Flatpak bundle among these that this computer can install, preferring the
+ * same ranking `bestAssets` uses when Flatpak is preferred. Undefined when
+ * none suits (wrong arch, filtered out, or the release has no Flatpak).
+ */
+export function flatpakAsset(assets: Asset[], os: Os, arch: string, filter?: string, platform?: Os): Asset | undefined {
+  return bestAssets(assets, os, arch, filter, "files", platform, { format: "flatpak" }).find((a) => isFlatpakAsset(a.filename));
+}
+
+/** Migration never falls back to another format or to a Windows build. */
+export function migrationAssets(assets: Asset[], os: Os, arch: string, target: InstallPreference, filter?: string): Asset[] {
+  if (os !== "linux" || target === "automatic") return [];
+  return bestAssets(assets.filter((a) => a.os === "linux" || a.os === "unknown"), os, arch, filter, "files", undefined, { format: target });
+}
+
+export const migrationEnabled = (settings: { offerFormatMigration?: boolean; offerFlatpakMigration?: boolean }) =>
+  settings.offerFormatMigration ?? settings.offerFlatpakMigration ?? false;
 
 /**
  * Every release file this computer could install, whatever system the site

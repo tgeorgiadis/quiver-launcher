@@ -722,6 +722,10 @@ msgid "{received} so far"
 msgstr "{received} jusqu'ici"
 
 #: ../../apps/launcher/src/App.tsx
+msgid "{release} includes your preferred format, {format}. Quiver will install it and keep {name} in your library. Saves and settings may use different locations and may need to be moved manually."
+msgstr ""
+
+#: ../../apps/launcher/src/App.tsx
 msgid "{release} is less than 48 hours old. You've chosen to wait 48 hours for updates, so that if a release turns out to be malicious, Quiver has time to withdraw it before it reaches you. Installing it now skips that wait."
 msgstr "{release} a moins de 48 heures. Vous avez choisi d'attendre 48 heures pour les mises à jour afin que, si une version se révèle malveillante, Quiver ait le temps de la retirer avant qu'elle ne vous parvienne. L'installer maintenant, c'est passer outre cette attente."
 
@@ -1465,6 +1469,11 @@ msgstr "Les apps que vous ajoutez depuis GitLab récupèrent leurs versions sur 
 msgid "Apps you don't have yet show with Get; nothing downloads until you press it."
 msgstr "Les apps que vous n'avez pas encore s'affichent avec Obtenir ; rien n'est téléchargé tant que vous n'appuyez pas dessus."
 
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Archive"
+msgstr ""
+
 #: ../../apps/launcher/src/own.tsx
 msgid "Artwork and consoles from the game"
 msgstr "Illustrations et consoles du jeu"
@@ -1489,6 +1498,10 @@ msgstr "La mise à jour automatique ne réinstallera pas {updateVersion}. Elle i
 #: ../../apps/launcher/src/launch-options.tsx
 msgid "Automatic"
 msgstr "Automatique"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Automatic (current behavior)"
+msgstr ""
 
 #: ../../apps/launcher/src/launch-options.tsx
 msgid "Automatic (no Proton or Wine found)"
@@ -2521,6 +2534,10 @@ msgstr "Ne fonctionne pas"
 msgid "Don't allow"
 msgstr "Ne pas autoriser"
 
+#: ../../apps/launcher/src/App.tsx
+msgid "Don't ask again for this format"
+msgstr ""
+
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Don't delete your Quiver Launcher 3 folder yet. Move them anytime in Settings › Apps folder."
 msgstr "Ne supprimez pas encore votre dossier Quiver Launcher 3. Déplacez-les quand vous voulez dans Paramètres › Dossier des apps."
@@ -2824,6 +2841,10 @@ msgstr "Pour une app absente du catalogue. Elle n'est qu'à vous ; pour en ajou
 #: ../../apps/launcher/src/correction.tsx
 msgid "For example: it starts the level editor instead of the game, or it needs the US version of the game."
 msgstr "Par exemple : il lance l’éditeur de niveaux au lieu du jeu, ou il lui faut la version américaine du jeu."
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "For new Linux installs, prefer this format when a compatible download is available; otherwise use the automatic selection. You can still choose another download. Changing this setting does not change existing installs."
+msgstr ""
 
 #: ../../apps/launcher/src/correction.tsx
 msgid "For what the listing gets wrong, like the wrong program or game file. To say how it ran, use Player feedback."
@@ -3593,6 +3614,10 @@ msgstr "Tout juste mise à jour"
 msgid "Keep {keep}"
 msgstr "Conserver {keep}"
 
+#: ../../apps/launcher/src/App.tsx
+msgid "Keep current format"
+msgstr ""
+
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Keep Quiver open until it's done."
 msgstr "Gardez Quiver ouvert jusqu’à la fin."
@@ -3783,6 +3808,10 @@ msgstr "Liens"
 #: ../../apps/launcher/src/App.tsx
 msgid "Linux and Windows (this computer)"
 msgstr "Linux et Windows (cet ordinateur)"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Linux installs"
+msgstr ""
 
 #. Browse's platform filter on Linux: its own apps, not Windows' too
 #: ../../apps/launcher/src/App.tsx
@@ -3978,6 +4007,18 @@ msgstr "Moyenne"
 #: ../../apps/launcher/src/spatial.ts
 msgid "Menu"
 msgstr "Menu"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Migrate {name} to {format}?"
+msgstr ""
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Migrate to {format}"
+msgstr ""
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Migrate to {format}?"
+msgstr ""
 
 #. Window button
 #: ../../apps/launcher/src/window-bar.tsx
@@ -4672,6 +4713,10 @@ msgstr "Message"
 msgid "Off"
 msgstr "Désactivé"
 
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Offer migration to the preferred install format when available"
+msgstr ""
+
 #. Updates: offer new releases to install
 #. Updates: offer new releases to install
 #: ../../apps/launcher/src/App.tsx
@@ -5048,6 +5093,10 @@ msgstr "Publication…"
 #: ../../apps/launcher/src/detail.tsx
 msgid "Pre-release"
 msgstr "Version préliminaire"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Preferred Linux install format"
+msgstr ""
 
 #: ../../apps/launcher/src/controls.tsx
 msgid "Press a button…"
@@ -6722,6 +6771,10 @@ msgstr "La sauvegarde la plus récente de {name} est sur cet ordinateur uniqueme
 msgid "THE ORIGINAL GAME"
 msgstr "LE JEU ORIGINAL"
 
+#: ../../apps/launcher/src/App.tsx
+msgid "The previous Flatpak stays installed; Quiver will launch the new format."
+msgstr ""
+
 #: ../../apps/launcher/src/correction.tsx
 msgid "The problem you reported on {sent} was fixed. Thanks!"
 msgstr "Le problème que vous avez signalé le {sent} a été corrigé. Merci !"
@@ -6938,6 +6991,10 @@ msgstr "Cette playlist n'est plus partagée."
 #: ../../apps/launcher/src/detail.tsx
 msgid "This project only publishes pre-releases, so Quiver Launcher offers its newest one."
 msgstr "Ce projet ne publie que des versions préliminaires, donc Quiver Launcher propose la plus récente."
+
+#: ../../apps/launcher/src/store.tsx
+msgid "This release has no compatible download in the installed format. Choose another download explicitly to change formats."
+msgstr ""
 
 #: ../../apps/launcher/src/store.tsx
 #: ../../apps/launcher/src/telemetry.test.ts
@@ -7610,6 +7667,10 @@ msgstr "Quand {name} la demande, choisis ce fichier : {0}"
 #: ../../apps/launcher/src/own-copy-settings.tsx
 msgid "When an app needs your own copy of a game, like a ROM or a disc image, Quiver looks for it in these folders, and nowhere else."
 msgstr "Quand une app a besoin de ta propre copie d'un jeu, comme une ROM ou une image disque, Quiver la cherche uniquement dans ces dossiers."
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "When your preferred format becomes available for an installed app, Quiver asks before switching. Automatic does not offer migrations. Saves and settings may need to be moved between formats."
+msgstr ""
 
 #: ../../apps/launcher/src/setup.tsx
 msgid "Where apps install"

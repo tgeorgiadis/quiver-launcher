@@ -12,6 +12,7 @@ import { i18n, LANGUAGES, type Language } from "@quiverlauncher/i18n";
 import { Button, Field, Panel } from "@quiverlauncher/ui/controls";
 import type { MessageDescriptor } from "@lingui/core";
 import { consoleHome, folderClash, parentOf, samePath, useLauncher, type AppsFolder as AppsFolderRow, type StaysReason } from "./store";
+import { installPreference, migrationEnabled, type InstallPreference } from "./assets";
 import { WHEEL_SPEEDS, pageArea } from "./spatial";
 import { native, type AppsMoving } from "./native";
 import { DEFAULT_MUSIC_VOLUME, musicProblem, watchMusicProblem } from "./music";
@@ -137,6 +138,7 @@ export function SettingsPage({ back, onBack, onRunSetup, start }: { back: string
                 <AppsFolder />
                 <PortableDefaultSetting />
                 <WindowsRunnerSetting />
+                <LinuxInstallSettings />
               </>
             ) : section === "copies" ? (
               <GameCopySettings />
@@ -338,6 +340,49 @@ export function LanguageSetting() {
         ))}
       </select>
     </Field>
+  );
+}
+
+/** New Linux install preferences and opt-in migration to the preferred format. */
+function LinuxInstallSettings() {
+  const { config, settings, setSettings } = useLauncher();
+  if (config.os !== "linux") return null;
+  return (
+    <section className="settings-section" aria-label={t`Linux installs`}>
+      <h3><Trans>Linux installs</Trans></h3>
+      <label className="panel-field">
+        <Trans>Preferred Linux install format</Trans>
+        <select
+          value={installPreference(settings)}
+          onChange={(e) => setSettings({ ...settings, preferredInstallFormat: e.target.value as InstallPreference, preferFlatpak: undefined })}
+        >
+          <option value="automatic"><Trans>Automatic (current behavior)</Trans></option>
+          <option value="flatpak">Flatpak</option>
+          <option value="appimage">AppImage</option>
+          <option value="archive"><Trans>Archive</Trans></option>
+        </select>
+      </label>
+      <p className="muted">
+        <Trans>
+          For new Linux installs, prefer this format when a compatible download is available; otherwise use the
+          automatic selection. You can still choose another download. Changing this setting does not change existing installs.
+        </Trans>
+      </p>
+      <label className="toggle">
+        <input
+          type="checkbox"
+          checked={migrationEnabled(settings)}
+          onChange={(e) => setSettings({ ...settings, offerFormatMigration: e.target.checked, offerFlatpakMigration: undefined })}
+        />
+        <Trans>Offer migration to the preferred install format when available</Trans>
+      </label>
+      <p className="muted">
+        <Trans>
+          When your preferred format becomes available for an installed app, Quiver asks before switching.
+          Automatic does not offer migrations. Saves and settings may need to be moved between formats.
+        </Trans>
+      </p>
+    </section>
   );
 }
 
