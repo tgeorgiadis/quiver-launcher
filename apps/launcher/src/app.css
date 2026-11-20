@@ -2551,3 +2551,5 @@ main:has(.tick-bar) { scroll-padding-bottom: 96px; }
   .console-folder-edit { flex-wrap: wrap; }
   .console-folder-path { flex-basis: 100%; }
 }
+.system-naming { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin: 4px 0 10px; font-size: 13.5px; }
+.system-naming select { min-width: 0; max-width: 100%; }

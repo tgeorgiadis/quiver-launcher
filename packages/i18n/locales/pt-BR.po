@@ -95,8 +95,8 @@ msgstr "{0, plural, one {Mover # app de {1} para {dir}?} other {Mover # apps de 
 
 #. placeholder {0}: unsorted.length
 #: ../../apps/launcher/src/settings-page.tsx
-msgid "{0, plural, one {Move # installed app into its console folder} other {Move # installed apps into their console folders}}"
-msgstr "{0, plural, one {Mover # app instalado para a pasta do console dele} other {Mover # apps instalados para as pastas dos consoles deles}}"
+msgid "{0, plural, one {Move # installed app into its system folder} other {Move # installed apps into their system folders}}"
+msgstr "{0, plural, one {Mover # app instalado para a pasta do seu sistema} other {Mover # apps instalados para as pastas dos seus sistemas}}"
 
 #. placeholder {0}: still.apps.length
 #: ../../apps/launcher/src/console-folders.tsx
@@ -945,6 +945,11 @@ msgstr "Um PNG transparente. Para o atalho na Steam."
 msgid "A Windows installer put it there, and Windows looks after where it is."
 msgstr "Um instalador do Windows o colocou ali, e o Windows cuida de onde ele fica."
 
+#. How system folders are named: by abbreviation
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Abbreviated (N64, GBC, PS2)"
+msgstr "Abreviados (N64, GBC, PS2)"
+
 #: ../../apps/launcher/src/detail.tsx
 msgid "About this project"
 msgstr "Sobre este projeto"
@@ -1602,7 +1607,7 @@ msgstr "Procurar uma pasta para {name}"
 msgid "Browse the catalog"
 msgstr "Explorar o catálogo"
 
-#. Opens a folder picker for a console's apps
+#. Opens a folder picker for a system's apps
 #: ../../apps/launcher/src/console-folders.tsx
 msgid "Browse…"
 msgstr "Procurar…"
@@ -2142,10 +2147,6 @@ msgstr "Confirmar / Selecionar"
 #: ../../apps/launcher/src/library.tsx
 msgid "Console"
 msgstr "Console"
-
-#: ../../apps/launcher/src/console-folders.tsx
-msgid "Console folder names and places"
-msgstr "Nomes e locais das pastas de console"
 
 #: ../../apps/launcher/src/detail.tsx
 msgid "Consoles"
@@ -3144,6 +3145,11 @@ msgctxt "README callout"
 msgid "Important"
 msgstr "Importante"
 
+#. How system folders are named: by full name
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "In full (Nintendo 64, Game Boy Color, PlayStation 2)"
+msgstr "Por extenso (Nintendo 64, Game Boy Color, PlayStation 2)"
+
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/discover.tsx
 #: ../../apps/launcher/src/game.tsx
@@ -3156,8 +3162,8 @@ msgid "In Steam's Game Mode"
 msgstr "No Modo de Jogo do Steam"
 
 #: ../../apps/launcher/src/settings-page.tsx
-msgid "In the default apps folder, ports go in Ports, in a folder for their console (Ports{slash}N64, say), and those for more than one console in Ports{slash}Multi-console. Emulators, tools and standalone games get folders of their own beside it. Apps you put in another folder go exactly there, and apps already installed stay where they are until you move them."
-msgstr "Na pasta de apps padrão, os ports vão em Ports, em uma pasta para o console deles (por exemplo, Ports{slash}N64), e os de mais de um console em Ports{slash}Multi-console. Emuladores, ferramentas e jogos independentes ganham pastas próprias ao lado. Os apps que você coloca em outra pasta vão exatamente para lá, e os apps já instalados ficam onde estão até você movê-los."
+msgid "In the default apps folder, ports go in Ports, in a folder for their system (Ports{slash}{example}, say), and those for more than one system in Ports{slash}Multi-system. Emulators, tools and standalone games get folders of their own beside it. Apps you put in another folder go exactly there, and apps already installed stay where they are until you move them."
+msgstr "Na pasta de apps padrão, os ports vão em Ports, numa pasta para o seu sistema (Ports{slash}{example}, por exemplo), e os de mais de um sistema em Ports{slash}Multi-system. Emuladores, ferramentas e jogos independentes ganham pastas próprias ao lado. Apps que você coloca em outra pasta vão exatamente para lá, e os já instalados ficam onde estão até você movê-los."
 
 #: ../../apps/launcher/src/file-picker.tsx
 msgid "In this folder"
@@ -3431,8 +3437,8 @@ msgid "It didn't run"
 msgstr "Não rodou"
 
 #: ../../apps/launcher/src/settings-page.tsx
-msgid "It doesn't have a console. Choose one on its page, and it can move into that console's folder."
-msgstr "Ele não tem console. Escolha um na página dele, e ele poderá ir para a pasta desse console."
+msgid "It doesn't have a system. Choose one on its page, and it can move into that system's folder."
+msgstr "Ele não tem sistema. Escolha um na página dele, e ele poderá ir para a pasta desse sistema."
 
 #: ../../apps/launcher/src/App.tsx
 msgid "It gets a folder of its own in there, and updates keep installing into it."
@@ -4023,12 +4029,12 @@ msgid "Moved {0} of {n, plural, one {# app} other {# apps}}."
 msgstr "{0} de {n, plural, one {# app movido} other {# apps movidos}}."
 
 #: ../../apps/launcher/src/settings-page.tsx
-msgid "Moved {n, plural, one {# app} other {# apps}} into console folders."
-msgstr "{n, plural, one {# app movido} other {# apps movidos}} para pastas de console."
-
-#: ../../apps/launcher/src/settings-page.tsx
 msgid "Moved {n, plural, one {# app} other {# apps}} into Quiver's apps folder. Once you've checked they run, you can delete your Quiver Launcher 3 folder."
 msgstr "{n, plural, one {# app movido} other {# apps movidos}} para a pasta de apps do Quiver. Depois de conferir que funcionam, você pode apagar sua pasta do Quiver Launcher 3."
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Moved {n, plural, one {# app} other {# apps}} into system folders."
+msgstr "{n, plural, one {# app movido} other {# apps movidos}} para pastas de sistema."
 
 #: ../../apps/launcher/src/console-folders.tsx
 #: ../../apps/launcher/src/settings-page.tsx
@@ -4054,8 +4060,8 @@ msgstr "Movendo apps"
 #. placeholder {0}: sorting.done
 #. placeholder {1}: sorting.total
 #: ../../apps/launcher/src/settings-page.tsx
-msgid "Moving apps into console folders… {0} of {1}"
-msgstr "Movendo apps para pastas de console… {0} de {1}"
+msgid "Moving apps into system folders… {0} of {1}"
+msgstr "Movendo apps para pastas de sistema… {0} de {1}"
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Moving apps…"
@@ -4100,6 +4106,10 @@ msgstr "Nome e arte"
 #: ../../apps/launcher/src/library-view.tsx
 msgid "Name on top"
 msgstr "Nome em cima"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Name system folders"
+msgstr "Nomes das pastas de sistema"
 
 #. Library card detail: the other name (the app's or the game's) under the large one
 #: ../../apps/launcher/src/library-view.tsx
@@ -4893,12 +4903,12 @@ msgid "Portrait, about 600×900. The library's cards and TV mode."
 msgstr "Retrato, cerca de 600×900. Os cartões da biblioteca e o modo TV."
 
 #: ../../apps/launcher/src/store.tsx
-msgid "Ports for another console"
-msgstr "Ports para outro console"
+msgid "Ports for another system"
+msgstr "Ports para outro sistema"
 
 #: ../../apps/launcher/src/store.tsx
-msgid "Ports for more than one console"
-msgstr "Ports para mais de um console"
+msgid "Ports for more than one system"
+msgstr "Ports para mais de um sistema"
 
 #: ../../apps/launcher/src/discussions.tsx
 msgid "Ports, games, mods and anything else."
@@ -4962,8 +4972,8 @@ msgid "Put {name}'s folder back in the usual place"
 msgstr "Voltar a pasta de {name} para o lugar de sempre"
 
 #: ../../apps/launcher/src/settings-page.tsx
-msgid "Put new apps in a folder for their console"
-msgstr "Colocar os apps novos em uma pasta para o console deles"
+msgid "Put new apps in a folder for their system"
+msgstr "Colocar apps novos numa pasta para o seu sistema"
 
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Putting it in place…"
@@ -5040,8 +5050,8 @@ msgid "Quiver checks your copy, and puts it where the game reads it unless the g
 msgstr "O Quiver confere sua cópia e coloca onde o jogo lê, a não ser que o jogo peça por ela. Ele nunca baixa arquivos de jogos."
 
 #: ../../apps/launcher/src/settings-page.tsx
-msgid "Quiver couldn't look it up in the catalog to find its console. Try again once you're online."
-msgstr "O Quiver não conseguiu consultá-lo no catálogo para descobrir o console. Tente de novo quando estiver online."
+msgid "Quiver couldn't look it up in the catalog to find its system. Try again once you're online."
+msgstr "O Quiver não conseguiu procurá-lo no catálogo para encontrar o sistema. Tente de novo quando estiver online."
 
 #: ../../apps/launcher/src/music.ts
 msgid "Quiver couldn't open that music file. It may have been moved or deleted."
@@ -5452,8 +5462,8 @@ msgid "Rename {tag}"
 msgstr "Renomear {tag}"
 
 #: ../../apps/launcher/src/console-folders.tsx
-msgid "Rename a console's folder, or put it anywhere, such as on another drive. Leave it empty for the usual place."
-msgstr "Renomeie a pasta de um console ou coloque-a em qualquer lugar, como em outro drive. Deixe vazio para o lugar de sempre."
+msgid "Rename a system's folder, or put it anywhere, such as on another drive. Leave it empty for the usual place."
+msgstr "Renomeie a pasta de um sistema ou coloque-a em qualquer lugar, como em outro drive. Deixe vazio para o lugar de sempre."
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Rename folder"
@@ -5492,7 +5502,7 @@ msgstr "Denunciado"
 msgid "Repository"
 msgstr "Repositório"
 
-#. Puts a console's folder back where grouping by console puts it
+#. Puts a system's folder back where grouping by system puts it
 #. Puts the launch options back as Quiver chose them
 #: ../../apps/launcher/src/console-folders.tsx
 #: ../../apps/launcher/src/launch-options.tsx
@@ -5839,12 +5849,12 @@ msgid "Sent. A maintainer will take a look."
 msgstr "Enviado. Um mantenedor vai dar uma olhada."
 
 #: ../../apps/launcher/src/console-folders.tsx
-msgid "Set a folder for another console"
-msgstr "Escolher uma pasta para outro console"
+msgid "Set a folder for another system"
+msgstr "Escolher uma pasta para outro sistema"
 
 #: ../../apps/launcher/src/console-folders.tsx
-msgid "Set a folder for another console…"
-msgstr "Escolher uma pasta para outro console…"
+msgid "Set a folder for another system…"
+msgstr "Escolher uma pasta para outro sistema…"
 
 #. Button that sets up the player's copy of the game, then starts the app
 #: ../../apps/launcher/src/App.tsx
@@ -6364,6 +6374,10 @@ msgstr "Mudar para a versão para Windows (Wine)"
 #: ../../apps/launcher/src/sync-folder-page.tsx
 msgid "Sync folder"
 msgstr ""
+
+#: ../../apps/launcher/src/console-folders.tsx
+msgid "System folder names and places"
+msgstr "Nomes e locais das pastas de sistema"
 
 #. Controller hint: what the shoulder buttons do where there are tabs, change tab
 #: ../../apps/launcher/src/spatial.ts

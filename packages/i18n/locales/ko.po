@@ -95,8 +95,8 @@ msgstr "{0, plural, other {{1}의 앱 #개를 {dir}(으)로 옮길까요?}}"
 
 #. placeholder {0}: unsorted.length
 #: ../../apps/launcher/src/settings-page.tsx
-msgid "{0, plural, one {Move # installed app into its console folder} other {Move # installed apps into their console folders}}"
-msgstr "{0, plural, other {설치된 앱 #개를 콘솔 폴더로 옮기기}}"
+msgid "{0, plural, one {Move # installed app into its system folder} other {Move # installed apps into their system folders}}"
+msgstr "{0, plural, other {설치된 앱 #개를 시스템 폴더로 옮기기}}"
 
 #. placeholder {0}: still.apps.length
 #: ../../apps/launcher/src/console-folders.tsx
@@ -945,6 +945,11 @@ msgstr "투명 PNG. Steam 바로 가기에 쓰입니다."
 msgid "A Windows installer put it there, and Windows looks after where it is."
 msgstr "Windows 설치 프로그램이 그곳에 설치했으며, 위치는 Windows가 관리합니다."
 
+#. How system folders are named: by abbreviation
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Abbreviated (N64, GBC, PS2)"
+msgstr "약칭 (N64, GBC, PS2)"
+
 #: ../../apps/launcher/src/detail.tsx
 msgid "About this project"
 msgstr "이 프로젝트 정보"
@@ -1602,7 +1607,7 @@ msgstr "{name} 폴더 찾아보기"
 msgid "Browse the catalog"
 msgstr "카탈로그 둘러보기"
 
-#. Opens a folder picker for a console's apps
+#. Opens a folder picker for a system's apps
 #: ../../apps/launcher/src/console-folders.tsx
 msgid "Browse…"
 msgstr "찾아보기…"
@@ -2142,10 +2147,6 @@ msgstr "확인 / 선택"
 #: ../../apps/launcher/src/library.tsx
 msgid "Console"
 msgstr "콘솔"
-
-#: ../../apps/launcher/src/console-folders.tsx
-msgid "Console folder names and places"
-msgstr "콘솔 폴더 이름과 위치"
 
 #: ../../apps/launcher/src/detail.tsx
 msgid "Consoles"
@@ -3144,6 +3145,11 @@ msgctxt "README callout"
 msgid "Important"
 msgstr "중요"
 
+#. How system folders are named: by full name
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "In full (Nintendo 64, Game Boy Color, PlayStation 2)"
+msgstr "전체 이름 (Nintendo 64, Game Boy Color, PlayStation 2)"
+
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/discover.tsx
 #: ../../apps/launcher/src/game.tsx
@@ -3156,8 +3162,8 @@ msgid "In Steam's Game Mode"
 msgstr "Steam 게임 모드에서"
 
 #: ../../apps/launcher/src/settings-page.tsx
-msgid "In the default apps folder, ports go in Ports, in a folder for their console (Ports{slash}N64, say), and those for more than one console in Ports{slash}Multi-console. Emulators, tools and standalone games get folders of their own beside it. Apps you put in another folder go exactly there, and apps already installed stay where they are until you move them."
-msgstr "기본 앱 폴더에서 포트는 Ports 안의 콘솔별 폴더(예: Ports{slash}N64)에 들어가고, 여러 콘솔용 포트는 Ports{slash}Multi-console에 들어가요. 에뮬레이터, 도구, 단독 게임은 그 옆에 각자의 폴더가 생겨요. 다른 폴더에 넣은 앱은 바로 그곳에 설치되고, 이미 설치된 앱은 옮기기 전까지 그대로 있어요."
+msgid "In the default apps folder, ports go in Ports, in a folder for their system (Ports{slash}{example}, say), and those for more than one system in Ports{slash}Multi-system. Emulators, tools and standalone games get folders of their own beside it. Apps you put in another folder go exactly there, and apps already installed stay where they are until you move them."
+msgstr "기본 앱 폴더에서 포트는 Ports 안의 시스템별 폴더(예: Ports{slash}{example})에, 여러 시스템용 포트는 Ports{slash}Multi-system에 들어가요. 에뮬레이터, 도구, 독립 게임은 그 옆에 각자의 폴더가 생겨요. 다른 폴더에 넣은 앱은 정확히 그곳에 설치되고, 이미 설치된 앱은 옮기기 전까지 그대로 있어요."
 
 #: ../../apps/launcher/src/file-picker.tsx
 msgid "In this folder"
@@ -3431,8 +3437,8 @@ msgid "It didn't run"
 msgstr "실행되지 않았어요"
 
 #: ../../apps/launcher/src/settings-page.tsx
-msgid "It doesn't have a console. Choose one on its page, and it can move into that console's folder."
-msgstr "콘솔이 지정되지 않았습니다. 앱 페이지에서 콘솔을 선택하면 해당 콘솔 폴더로 옮길 수 있습니다."
+msgid "It doesn't have a system. Choose one on its page, and it can move into that system's folder."
+msgstr "시스템이 없어요. 앱 페이지에서 하나를 고르면 그 시스템의 폴더로 옮길 수 있어요."
 
 #: ../../apps/launcher/src/App.tsx
 msgid "It gets a folder of its own in there, and updates keep installing into it."
@@ -4023,12 +4029,12 @@ msgid "Moved {0} of {n, plural, one {# app} other {# apps}}."
 msgstr "{n, plural, other {앱 #개}} 중 {0}개를 옮겼어요."
 
 #: ../../apps/launcher/src/settings-page.tsx
-msgid "Moved {n, plural, one {# app} other {# apps}} into console folders."
-msgstr "앱 {n, plural, other {#개}}를 콘솔 폴더로 옮겼어요."
-
-#: ../../apps/launcher/src/settings-page.tsx
 msgid "Moved {n, plural, one {# app} other {# apps}} into Quiver's apps folder. Once you've checked they run, you can delete your Quiver Launcher 3 folder."
 msgstr "{n, plural, other {앱 #개}}를 Quiver의 앱 폴더로 옮겼어요. 잘 실행되는지 확인한 뒤 Quiver Launcher 3 폴더를 지워도 돼요."
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Moved {n, plural, one {# app} other {# apps}} into system folders."
+msgstr "{n, plural, other {앱 #개}}를 시스템 폴더로 옮겼어요."
 
 #: ../../apps/launcher/src/console-folders.tsx
 #: ../../apps/launcher/src/settings-page.tsx
@@ -4054,8 +4060,8 @@ msgstr "앱 옮기는 중"
 #. placeholder {0}: sorting.done
 #. placeholder {1}: sorting.total
 #: ../../apps/launcher/src/settings-page.tsx
-msgid "Moving apps into console folders… {0} of {1}"
-msgstr "앱을 콘솔 폴더로 옮기는 중… {1}개 중 {0}개"
+msgid "Moving apps into system folders… {0} of {1}"
+msgstr "앱을 시스템 폴더로 옮기는 중… {1}개 중 {0}개"
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Moving apps…"
@@ -4100,6 +4106,10 @@ msgstr "이름 및 아트워크"
 #: ../../apps/launcher/src/library-view.tsx
 msgid "Name on top"
 msgstr "이름을 위에"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Name system folders"
+msgstr "시스템 폴더 이름"
 
 #. Library card detail: the other name (the app's or the game's) under the large one
 #: ../../apps/launcher/src/library-view.tsx
@@ -4893,12 +4903,12 @@ msgid "Portrait, about 600×900. The library's cards and TV mode."
 msgstr "세로형, 약 600×900. 라이브러리 카드와 TV 모드에 쓰입니다."
 
 #: ../../apps/launcher/src/store.tsx
-msgid "Ports for another console"
-msgstr "다른 콘솔용 포트"
+msgid "Ports for another system"
+msgstr "다른 시스템용 포트"
 
 #: ../../apps/launcher/src/store.tsx
-msgid "Ports for more than one console"
-msgstr "여러 콘솔용 포트"
+msgid "Ports for more than one system"
+msgstr "여러 시스템용 포트"
 
 #: ../../apps/launcher/src/discussions.tsx
 msgid "Ports, games, mods and anything else."
@@ -4962,8 +4972,8 @@ msgid "Put {name}'s folder back in the usual place"
 msgstr "{name} 폴더를 원래 위치로 되돌리기"
 
 #: ../../apps/launcher/src/settings-page.tsx
-msgid "Put new apps in a folder for their console"
-msgstr "새 앱을 콘솔별 폴더에 넣기"
+msgid "Put new apps in a folder for their system"
+msgstr "새 앱을 시스템별 폴더에 넣기"
 
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Putting it in place…"
@@ -5040,8 +5050,8 @@ msgid "Quiver checks your copy, and puts it where the game reads it unless the g
 msgstr "Quiver가 사본을 확인하고, 게임이 직접 묻지 않으면 게임이 읽는 위치에 놓아요. 게임 파일은 절대 다운로드하지 않아요."
 
 #: ../../apps/launcher/src/settings-page.tsx
-msgid "Quiver couldn't look it up in the catalog to find its console. Try again once you're online."
-msgstr "Quiver가 카탈로그에서 이 앱의 콘솔을 찾지 못했습니다. 온라인 상태에서 다시 시도하세요."
+msgid "Quiver couldn't look it up in the catalog to find its system. Try again once you're online."
+msgstr "카탈로그에서 찾지 못해 시스템을 알 수 없어요. 온라인 상태에서 다시 시도해 주세요."
 
 #: ../../apps/launcher/src/music.ts
 msgid "Quiver couldn't open that music file. It may have been moved or deleted."
@@ -5452,8 +5462,8 @@ msgid "Rename {tag}"
 msgstr "{tag} 이름 바꾸기"
 
 #: ../../apps/launcher/src/console-folders.tsx
-msgid "Rename a console's folder, or put it anywhere, such as on another drive. Leave it empty for the usual place."
-msgstr "콘솔 폴더의 이름을 바꾸거나 다른 드라이브 등 원하는 곳에 둘 수 있어요. 비워 두면 원래 위치를 써요."
+msgid "Rename a system's folder, or put it anywhere, such as on another drive. Leave it empty for the usual place."
+msgstr "시스템 폴더의 이름을 바꾸거나 다른 드라이브 등 원하는 곳에 둘 수 있어요. 비워 두면 원래 위치를 써요."
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Rename folder"
@@ -5492,7 +5502,7 @@ msgstr "신고됨"
 msgid "Repository"
 msgstr "저장소"
 
-#. Puts a console's folder back where grouping by console puts it
+#. Puts a system's folder back where grouping by system puts it
 #. Puts the launch options back as Quiver chose them
 #: ../../apps/launcher/src/console-folders.tsx
 #: ../../apps/launcher/src/launch-options.tsx
@@ -5839,12 +5849,12 @@ msgid "Sent. A maintainer will take a look."
 msgstr "보냈어요. 관리자가 확인할 거예요."
 
 #: ../../apps/launcher/src/console-folders.tsx
-msgid "Set a folder for another console"
-msgstr "다른 콘솔의 폴더 지정"
+msgid "Set a folder for another system"
+msgstr "다른 시스템의 폴더 지정"
 
 #: ../../apps/launcher/src/console-folders.tsx
-msgid "Set a folder for another console…"
-msgstr "다른 콘솔의 폴더 지정…"
+msgid "Set a folder for another system…"
+msgstr "다른 시스템의 폴더 지정…"
 
 #. Button that sets up the player's copy of the game, then starts the app
 #: ../../apps/launcher/src/App.tsx
@@ -6364,6 +6374,10 @@ msgstr "Windows 버전으로 전환 (Wine)"
 #: ../../apps/launcher/src/sync-folder-page.tsx
 msgid "Sync folder"
 msgstr ""
+
+#: ../../apps/launcher/src/console-folders.tsx
+msgid "System folder names and places"
+msgstr "시스템 폴더 이름과 위치"
 
 #. Controller hint: what the shoulder buttons do where there are tabs, change tab
 #: ../../apps/launcher/src/spatial.ts

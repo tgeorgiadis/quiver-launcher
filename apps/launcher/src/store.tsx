@@ -410,7 +410,7 @@ type Launcher = {
    * at the top of the apps folder with why (`sortPlan`).
    */
   sortPlan: () => ReturnType<typeof sortPlan>;
-  /** The console folder an app goes in when apps are grouped by console, by `groupFolder`'s name for it ("Ports/N64"). */
+  /** The system folder an app goes in when apps are grouped by system, by `systemKey` ("port:n64"). */
   consoleFolderOf: (id: string) => string | undefined;
   /**
    * Makes `to` the folder new apps install in, moving nothing: the apps in the old one stay there and play from it,
@@ -451,43 +451,73 @@ export type MovableApps = { inside: MovingApp[]; elsewhere: MovingApp[]; placed:
 /** A folder apps are installed in: the default, which new apps install in, or another the player's apps are kept in. */
 export type AppsFolder = { path: string; default: boolean; apps: MovingApp[] };
 
-/** The short names of console folders, by the catalog's console ids (its facets). */
-const CONSOLE_FOLDERS: Record<string, string> = {
-  nes: "NES", snes: "SNES", n64: "N64", gcn: "GameCube", wii: "Wii", wiiu: "Wii U", switch: "Switch", switch2: "Switch 2",
-  gb: "Game Boy", vb: "Virtual Boy", gbc: "Game Boy Color", gba: "GBA", nds: "DS", "3ds": "3DS",
-  ps1: "PS1", ps2: "PS2", ps3: "PS3", ps4: "PS4", ps5: "PS5", psp: "PSP", vita: "Vita",
-  "og xbox": "Xbox", x360: "Xbox 360", xone: "Xbox One",
-  sms: "Master System", gg: "Game Gear", gen: "Genesis", segacd: "Sega CD", "32x": "32X", saturn: "Saturn", dreamcast: "Dreamcast",
-  cdi: "CD-i", "3do": "3DO", ami: "Amiga", arcade: "Arcade", pc: "PC", mobile: "Mobile",
+/**
+ * Each system's folder name, by the catalog's console ids (its facets): its usual abbreviation, as its tag shows
+ * (packages/ui `tagLabel`), or its name where it has none that players use, and in full. A system the catalog adds
+ * later goes by the catalog's name for it either way.
+ */
+const SYSTEM_NAMES: Record<string, [short: string, full: string]> = {
+  nes: ["NES", "Nintendo Entertainment System"], snes: ["SNES", "Super Nintendo Entertainment System"], n64: ["N64", "Nintendo 64"],
+  gcn: ["GCN", "GameCube"], wii: ["Wii", "Wii"], wiiu: ["Wii U", "Wii U"], switch: ["Switch", "Nintendo Switch"], switch2: ["Switch 2", "Nintendo Switch 2"],
+  gb: ["GB", "Game Boy"], vb: ["VB", "Virtual Boy"], gbc: ["GBC", "Game Boy Color"], gba: ["GBA", "Game Boy Advance"], nds: ["NDS", "Nintendo DS"], "3ds": ["3DS", "Nintendo 3DS"],
+  ps1: ["PS1", "PlayStation"], ps2: ["PS2", "PlayStation 2"], ps3: ["PS3", "PlayStation 3"], ps4: ["PS4", "PlayStation 4"], ps5: ["PS5", "PlayStation 5"],
+  psp: ["PSP", "PlayStation Portable"], vita: ["PSV", "PlayStation Vita"],
+  "og xbox": ["Xbox", "Xbox"], x360: ["X360", "Xbox 360"], xone: ["XOne", "Xbox One"],
+  sms: ["SMS", "Master System"], gg: ["GG", "Game Gear"], gen: ["GEN", "Genesis"], segacd: ["SCD", "Sega CD"], "32x": ["32X", "32X"], saturn: ["SAT", "Saturn"], dreamcast: ["DC", "Dreamcast"],
+  cdi: ["CD-i", "CD-i"], "3do": ["3DO", "3DO"], ami: ["Amiga", "Amiga"], arcade: ["Arcade", "Arcade"], pc: ["PC", "PC"], mobile: ["Mobile", "Mobile"],
 };
 
+/** How system folders are named: by abbreviation (N64, GBC), the default, or in full (Nintendo 64, Game Boy Color). */
+export type SystemNaming = "short" | "full";
+
 /**
- * The folder an app goes in inside its apps folder when new apps are grouped by console, as a path with "/": emulators,
- * tools and standalone games each together, and ports in Ports, in their console's folder there (or Multi-console, for
- * more than one). None for the player's own apps, which have no console to go by.
+ * Which system folder an app goes in when new apps are grouped by system, as a name that stays the same whatever the
+ * folders are called: "emulator", "tool" or "game" for those, each together, and for a port its system's,
+ * "port:<the catalog's id>", or "port:multi" for more than one and "port:other" for none. None for the player's own
+ * apps, or one they added with no system to go by.
  */
-export function groupFolder(entry: Pick<Entry, "id" | "projectType" | "consoles" | "basedOn">, consoleNames: Record<string, string> = {}): string | undefined {
+export function systemKey(entry: Pick<Entry, "id" | "projectType" | "consoles" | "basedOn">): string | undefined {
   if (isLocal(entry.id)) return undefined;
-  if (entry.projectType === "emulator") return "Emulators";
-  if (entry.projectType === "tool") return "Tools";
-  if (entry.projectType === "game") return "Games";
+  if (entry.projectType === "emulator") return "emulator";
+  if (entry.projectType === "tool") return "tool";
+  if (entry.projectType === "game") return "game";
   const consoles = entry.basedOn?.console ? [entry.basedOn.console] : (entry.consoles ?? []);
-  // An app the player added from a repository goes by the consoles they gave it (or its game's): without one, there's
+  // An app the player added from a repository goes by the systems they gave it (or its game's): without one, there's
   // nothing to say it's a port of anything, so it stays where it is.
   if (isCustom(entry.id) && !consoles.length) return undefined;
-  const id = consoles[0];
-  const folder = consoles.length > 1 ? "Multi-console" : !id ? "Other" : (CONSOLE_FOLDERS[id] ?? folderNameFor(consoleNames[id] ?? id));
-  return `Ports/${folder}`;
+  return consoles.length > 1 ? "port:multi" : consoles[0] ? `port:${consoles[0]}` : "port:other";
+}
+
+/** A system folder's usual place in the apps folder, as a path with "/" ("Ports/N64", or "Ports/Nintendo 64" in full). */
+export function systemFolder(key: string, naming: SystemNaming = "short", consoleNames: Record<string, string> = {}): string {
+  if (key === "emulator") return "Emulators";
+  if (key === "tool") return "Tools";
+  if (key === "game") return "Games";
+  if (key === "port:multi") return "Ports/Multi-system";
+  if (key === "port:other") return "Ports/Other";
+  const id = key.replace(/^port:/, "");
+  const known = SYSTEM_NAMES[id];
+  return `Ports/${known ? known[naming === "full" ? 1 : 0] : folderNameFor(consoleNames[id] ?? id)}`;
 }
 
 /**
- * Where a console folder is (one `groupFolder` names, "Ports/N64"), as the player set it in Settings
- * (`Settings.consoleFolders`): another name or place in the apps folder (`group`, a path with "/"), or a folder of
- * theirs anywhere else (`path`, a whole path). Unset, where `groupFolder` puts it.
+ * The folder an app goes in inside its apps folder when new apps are grouped by system, as a path with "/": emulators,
+ * tools and standalone games each together, and ports in Ports, in their system's folder there (or Multi-system, for
+ * more than one). None for the player's own apps, which have no system to go by.
  */
-export function consoleHome(group: string, folders: Settings["consoleFolders"]): { group: string } | { path: string } {
-  const own = folders?.[group];
-  if (!own) return { group };
+export function groupFolder(entry: Pick<Entry, "id" | "projectType" | "consoles" | "basedOn">, consoleNames: Record<string, string> = {}, naming: SystemNaming = "short"): string | undefined {
+  const key = systemKey(entry);
+  return key && systemFolder(key, naming, consoleNames);
+}
+
+/**
+ * Where a system folder is (`key`, `systemKey`'s), as the player set it in Settings (`Settings.consoleFolders`):
+ * another name or place in the apps folder (`group`, a path with "/"), or a folder of theirs anywhere else (`path`, a
+ * whole path). Unset, its usual place, named as the player chose (`naming`).
+ */
+export function consoleHome(key: string, settings: Pick<Settings, "consoleFolders" | "systemFolderNames">, consoleNames: Record<string, string> = {}): { group: string } | { path: string } {
+  const own = settings.consoleFolders?.[key];
+  if (!own) return { group: systemFolder(key, settings.systemFolderNames, consoleNames) };
   return wholePath(own) ? { path: own } : { group: own };
 }
 
@@ -498,35 +528,32 @@ export const consoleHomePath = (home: { group: string } | { path: string }, apps
 export const wholePath = (path: string) => /^([A-Za-z]:[\\/]|[\\/])/.test(path);
 
 /**
- * Every console folder grouping by console can make, by `groupFolder`'s name for it, with its name to show: emulators,
- * tools and standalone games, then the ports' consoles (the catalog's, and those with a short name of their own), then
- * ports for more than one console and for none. For the player to name or place any of them, apps installed or not.
+ * Every system folder grouping by system can make, by `systemKey`, with its name to show: emulators, tools and
+ * standalone games, then each system's (the catalog's, and those with names of their own), then ports for more than
+ * one system and for none. For the player to name or place any of them, apps installed or not.
  */
 export function consoleFolderChoices(consoleNames: Record<string, string>): { group: string; name: string }[] {
-  const ids = [...new Set([...Object.keys(CONSOLE_FOLDERS), ...Object.keys(consoleNames)])];
-  const ports = ids
-    .map((id) => ({ group: `Ports/${CONSOLE_FOLDERS[id] ?? folderNameFor(consoleNames[id] ?? id)}`, name: consoleNames[id] ?? CONSOLE_FOLDERS[id] ?? id }))
-    .filter((c, n, all) => all.findIndex((o) => o.group === c.group) === n)
-    .sort((a, b) => a.name.localeCompare(b.name));
+  const ids = [...new Set([...Object.keys(SYSTEM_NAMES), ...Object.keys(consoleNames)])];
+  const ports = ids.map((id) => ({ group: `port:${id}`, name: consoleNames[id] ?? SYSTEM_NAMES[id]?.[1] ?? id })).sort((a, b) => a.name.localeCompare(b.name));
   return [
-    { group: "Emulators", name: t`Emulators` },
-    { group: "Tools", name: t`Tools` },
-    { group: "Games", name: t`Standalone games` },
+    { group: "emulator", name: t`Emulators` },
+    { group: "tool", name: t`Tools` },
+    { group: "game", name: t`Standalone games` },
     ...ports,
-    { group: "Ports/Multi-console", name: t`Ports for more than one console` },
-    { group: "Ports/Other", name: t`Ports for another console` },
+    { group: "port:multi", name: t`Ports for more than one system` },
+    { group: "port:other", name: t`Ports for another system` },
   ];
 }
 
 /**
- * The folder a console folder is to be in Settings, as the player typed or picked it (`typed`): what to save for it
- * (`save`, unset for where `groupFolder` puts it), or why it can't be (`problem`). A folder in the apps folder is saved
+ * The folder a system folder is to be in Settings, as the player typed or picked it (`typed`): what to save for it
+ * (`save`, unset for its usual place, `usual`, a path with "/" in the apps folder), or why it can't be (`problem`). A folder in the apps folder is saved
  * as its place there, so it moves with the apps folder; one elsewhere as its whole path. Never the apps folder itself,
  * where its apps would be among every other, nor an installed app's folder or one inside it, which uninstalling that
  * app would take with it.
  */
 export function consoleFolderChoice(
-  group: string,
+  usual: string,
   typed: string,
   appsDir: string,
   installs: Record<string, Install>,
@@ -546,7 +573,7 @@ export function consoleFolderChoice(
     }
   }
   const save = within(to, appsDir) ? relativeTo(appsDir, to) : to;
-  return { save: save === group ? undefined : save };
+  return { save: samePath(joinPath(appsDir, save), joinPath(appsDir, usual)) ? undefined : save };
 }
 
 /** `path`, in `folder`, as its place there: a path with "/". */
@@ -690,10 +717,18 @@ export function sortPlan(
   catalog: Record<string, Pick<Entry, "id" | "projectType" | "consoles" | "basedOn">>,
   consoleNames: Record<string, string> = {},
   own: Record<string, string[] | undefined> = {},
+  folders?: Pick<Settings, "consoleFolders" | "systemFolderNames">,
 ): { moves: { id: string; folder: string; to: string }[]; stays: { id: string; folder: string; why: StaysReason }[] } {
   const moves: { id: string; folder: string; to: string }[] = [];
   const stays: { id: string; folder: string; why: StaysReason }[] = [];
   for (const [id, i] of Object.entries(installs)) {
+    // One in a system folder of this apps folder that's now named or placed otherwise (`folders`): it moves there.
+    if (folders && i.dir && i.inApps && i.group && !i.installer && catalog[id] && samePath(rootOf(i), appsDir)) {
+      const key = systemKey(withOwnConsoles(catalog[id], own[id]));
+      const home = key && consoleHome(key, folders, consoleNames);
+      if (home && ("path" in home || home.group !== i.group)) moves.push({ id, folder: i.folder, to: appsDir });
+      continue;
+    }
     if (i.dir) continue;
     const why: StaysReason | undefined =
       i.local || isLocal(id) ? "own"
@@ -706,7 +741,7 @@ export function sortPlan(
   }
   // A folder two entries share moves once, with the first; the other goes with it (`moveApp`). One that stays with
   // another of its folder moving goes too, so it isn't listed as staying.
-  const sameFolder = (a: { folder: string }, b: { folder: string }) => samePath(joinPath(appsDir, a.folder), joinPath(appsDir, b.folder));
+  const sameFolder = (a: { id: string }, b: { id: string }) => samePath(placeOf(installs[a.id], appsDir), placeOf(installs[b.id], appsDir));
   return {
     moves: moves.filter((a, n) => !moves.slice(0, n).some((b) => sameFolder(a, b))),
     stays: stays.filter((a, n) => !moves.some((b) => sameFolder(a, b)) && !stays.slice(0, n).some((b) => sameFolder(a, b))),
@@ -1334,11 +1369,13 @@ export type Settings = {
   /** New installs go in a folder for their console inside the apps folder (`groupFolder`). */
   groupByConsole?: boolean;
   /**
-   * The console folders the player named or put elsewhere, by `groupFolder`'s name for each ("Ports/N64"): another
+   * The system folders the player named or put elsewhere, by `systemKey` ("port:n64"): another
    * place in the apps folder, as a path with "/" ("Ports/Nintendo 64"), or a whole path anywhere ("D:\\N64"), which
    * moving the apps folder leaves be. This device's own, as the apps folder is (`consoleHome`).
    */
   consoleFolders?: Record<string, string>;
+  /** System folders by abbreviation (N64), unset, or in full (Nintendo 64): their usual names (`systemFolder`). */
+  systemFolderNames?: SystemNaming;
   /** Apps hidden from the library here. */
   hidden?: string[];
   /** The catalog's tags hidden here: everywhere, on one app, or as they're added (catalog-tags.ts). */
@@ -2172,7 +2209,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     const portableByDefault = settings.portableByDefault && config.os !== "android" && config.os !== "ios";
     // The player's, read here: further down, `settings` is the catalog's for installing it.
     const groupByConsole = Boolean(settings.groupByConsole);
-    const consoleFolders = settings.consoleFolders;
+    const systemFolders = { consoleFolders: settings.consoleFolders, systemFolderNames: settings.systemFolderNames };
     let version = chosen?.version ?? entry.verified?.version;
     let format: string | undefined;
     // A release Quiver hasn't verified, or a file of one it has, that the player said to install.
@@ -2355,9 +2392,9 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       // Grouped by console: in the default apps folder, in its console's folder there. Any other folder (another
       // apps folder, which may already be one console's, or one chosen for it alone) is exactly where it goes.
       const desktop = config.os !== "android" && config.os !== "ios";
-      const grouped = !was && desktop && groupByConsole && !chosenFolder ? groupFolder(withOwnConsoles(catalog[entry.id] ?? entry, ownConsoles[entry.id]), consoleNames) : undefined;
-      // Its console folder where the player put it: named their way in the apps folder, or a folder elsewhere.
-      const home = grouped ? consoleHome(grouped, consoleFolders) : undefined;
+      const key = !was && desktop && groupByConsole && !chosenFolder ? systemKey(withOwnConsoles(catalog[entry.id] ?? entry, ownConsoles[entry.id])) : undefined;
+      // Its system folder where the player put it: named their way in the apps folder, or a folder elsewhere.
+      const home = key ? consoleHome(key, systemFolders, consoleNames) : undefined;
       const group = home && "group" in home ? home.group : undefined;
       const into = home ? consoleHomePath(home, config.appsDir) : chosenFolder;
       // A console folder elsewhere is never made here: on a drive that isn't connected, the app would go on another.
@@ -3057,8 +3094,8 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     dismiss: (id) => setJobs(({ [id]: _, ...rest }) => rest),
     movableApps: () => movableApps(installs),
     appsFolders: () => appsFolders(installs, config.appsDir),
-    sortPlan: () => sortPlan(installs, config.appsDir, catalog, consoleNames, ownConsoles),
-    consoleFolderOf: (id) => (catalog[id] && !isLocal(id) ? groupFolder(withOwnConsoles(catalog[id], ownConsoles[id]), consoleNames) : undefined),
+    sortPlan: () => sortPlan(installs, config.appsDir, catalog, consoleNames, ownConsoles, settings),
+    consoleFolderOf: (id) => (catalog[id] && !isLocal(id) ? systemKey(withOwnConsoles(catalog[id], ownConsoles[id])) : undefined),
     async switchAppsFolder(to) {
       const from = config.appsDir;
       if (samePath(to, from)) return;
@@ -3167,8 +3204,8 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         // it (`consoleHome`), or the one it was in when there's none to work out now. Another folder is exactly where
         // it goes.
         const sorted = samePath(to, config.appsDir) && settings.groupByConsole;
-        const grouped = sorted ? groupFolder(withOwnConsoles(catalog[id] ?? { id, projectType: "port" }, ownConsoles[id]), consoleNames) : undefined;
-        const home = grouped ? consoleHome(grouped, settings.consoleFolders) : sorted && install.group ? { group: install.group } : undefined;
+        const key = sorted ? systemKey(withOwnConsoles(catalog[id] ?? { id, projectType: "port" }, ownConsoles[id])) : undefined;
+        const home = key ? consoleHome(key, settings, consoleNames) : sorted && install.group ? { group: install.group } : undefined;
         const group = home && "group" in home ? home.group : undefined;
         // A console folder elsewhere is the player's for those apps alone, which moving the apps folder leaves be.
         const listed = !(home && "path" in home) && appsFolders(installs, config.appsDir).some((f) => samePath(f.path, to));

@@ -32,7 +32,7 @@ async function consoleFolders(page) {
 
 const saved = (page) => page.evaluate(() => window.__files.settings.consoleFolders ?? null);
 
-test("a console folder put on another drive: saved whole, and its apps follow when asked", async () => {
+test("a system folder put on another drive: saved whole, and its apps follow when asked", async () => {
   const s = await openApp({ state: state() });
   const { page } = s;
   try {
@@ -57,7 +57,7 @@ test("a console folder put on another drive: saved whole, and its apps follow wh
 
     await box.fill("/mnt/card/N64/");
     await box.press("Enter");
-    await s.until(async () => JSON.stringify(await saved(page)) === JSON.stringify({ "Ports/N64": "/mnt/card/N64" }));
+    await s.until(async () => JSON.stringify(await saved(page)) === JSON.stringify({ "port:n64": "/mnt/card/N64" }));
     const left = section.locator(".console-folder-left");
     await left.getByText(`1 app is still in ${N64}.`).waitFor();
     await left.getByRole("button", { name: "Move it there" }).click();
@@ -86,7 +86,7 @@ test("a console folder put on another drive: saved whole, and its apps follow wh
   }
 });
 
-test("a console folder renamed in the apps folder is saved as its place there, and never in an app's own folder", async () => {
+test("a system folder renamed in the apps folder is saved as its place there, and never in an app's own folder", async () => {
   const s = await openApp({ state: state() });
   const { page } = s;
   try {
@@ -102,7 +102,7 @@ test("a console folder renamed in the apps folder is saved as its place there, a
 
     await box.fill(`${APPS}/Nintendo 64`);
     await box.press("Enter");
-    await s.until(async () => (await saved(page))?.["Ports/N64"] === "Nintendo 64");
+    await s.until(async () => (await saved(page))?.["port:n64"] === "Nintendo 64");
     await section.locator(".console-folder-left").getByRole("button", { name: "Move it there" }).click();
     await section.getByText("Moved 1 app.").waitFor();
     const move = await page.evaluate(() => window.__calls.find((c) => c.cmd === "move_app").args);
@@ -117,7 +117,7 @@ test("a console folder renamed in the apps folder is saved as its place there, a
   }
 });
 
-test("another console's folder set before any of its apps is installed, and a new install goes there", async () => {
+test("another system's folder set before any of its apps is installed, and a new install goes there", async () => {
   const s = await openApp({ state: state() });
   const { page } = s;
   try {
@@ -127,7 +127,7 @@ test("another console's folder set before any of its apps is installed, and a ne
     await s.until(() => box.evaluate((b) => b === document.activeElement));
     await box.fill("/mnt/card/SNES");
     await box.press("Enter");
-    await s.until(async () => (await saved(page))?.["Ports/SNES"] === "/mnt/card/SNES");
+    await s.until(async () => (await saved(page))?.["port:snes"] === "/mnt/card/SNES");
     // Nothing was in it: nothing to move.
     assert.equal(await section.locator(".console-folder-left").count(), 0);
 
@@ -143,6 +143,31 @@ test("another console's folder set before any of its apps is installed, and a ne
     const install = await page.evaluate(() => window.__files.installs["entry_tampered-port"]);
     assert.equal(install.inApps, undefined);
     assert.equal(install.group, undefined);
+  } finally {
+    await s.close();
+  }
+});
+
+test("system folders named in full: an app already in one by abbreviation can move into its new name", async () => {
+  const s = await openApp({ state: state() });
+  const { page } = s;
+  try {
+    await consoleFolders(page);
+    const naming = page.getByLabel("Name system folders");
+    assert.equal(await naming.inputValue(), "short");
+    assert.equal(await page.locator(".console-folder-path").first().getAttribute("placeholder"), N64);
+    await naming.selectOption("full");
+    await s.until(() => page.evaluate(() => window.__files.settings.systemFolderNames === "full"));
+    assert.equal(await page.locator(".console-folder-path").first().getAttribute("placeholder"), `${APPS}/Ports/Nintendo 64`);
+    await page.getByRole("button", { name: "Move 1 installed app into its system folder" }).click();
+    await page.getByText("Moved 1 app into system folders.").waitFor();
+    const move = await page.evaluate(() => window.__calls.find((c) => c.cmd === "move_app").args);
+    assert.equal(move.to, `${APPS}/Ports/Nintendo 64`);
+    assert.equal(move.group, "Ports/Nintendo 64");
+    // Back to abbreviations: Nintendo 64's app can go back too.
+    await naming.selectOption("short");
+    await page.getByRole("button", { name: "Move 1 installed app into its system folder" }).waitFor();
+    assert.deepEqual(s.errors, []);
   } finally {
     await s.close();
   }

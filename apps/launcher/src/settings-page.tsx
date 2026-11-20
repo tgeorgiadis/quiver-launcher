@@ -468,7 +468,7 @@ function MusicSetting() {
   );
 }
 
-/** Why an app stays at the top of the apps folder when the others move into console folders. */
+/** Why an app stays at the top of the apps folder when the others move into system folders. */
 function staysWhy(why: StaysReason) {
   switch (why) {
     case "own":
@@ -476,9 +476,9 @@ function staysWhy(why: StaysReason) {
     case "installer":
       return t`A Windows installer put it there, and Windows looks after where it is.`;
     case "noConsole":
-      return t`It doesn't have a console. Choose one on its page, and it can move into that console's folder.`;
+      return t`It doesn't have a system. Choose one on its page, and it can move into that system's folder.`;
     case "unknown":
-      return t`Quiver couldn't look it up in the catalog to find its console. Try again once you're online.`;
+      return t`Quiver couldn't look it up in the catalog to find its system. Try again once you're online.`;
   }
 }
 
@@ -575,6 +575,7 @@ export function AppsFolder({ inSetup, onBusy }: { inSetup?: boolean; onBusy?: (b
   const fromV3 = (path: string) => v3Folders.some((f) => samePath(f, path));
   // A path's separator as the player's system writes it, for the help on console folders.
   const slash = config.os === "windows" ? "\\" : "/";
+  const example = settings.systemFolderNames === "full" ? "Nintendo 64" : "N64";
   const { moves: unsorted, stays } = sortPlan();
   // Sorting the apps already installed into console folders: how many of how many have moved.
   const [sorting, setSorting] = useState<{ done: number; total: number } | null>(null);
@@ -637,7 +638,7 @@ export function AppsFolder({ inSetup, onBusy }: { inSetup?: boolean; onBusy?: (b
       (e) => setMessage({ text: String(e), error: true }),
     ).finally(() => setMoving(null));
   };
-  /** Moves each installed app at the top of an apps folder into its console's folder there, one at a time. */
+  /** Moves each installed app at the top of an apps folder, or in a system folder now elsewhere, into its system's folder, one at a time. */
   const sort = async () => {
     setMessage(null);
     const apps = unsorted;
@@ -658,7 +659,7 @@ export function AppsFolder({ inSetup, onBusy }: { inSetup?: boolean; onBusy?: (b
     setMessage(
       failed.length
         ? { text: t`Moved ${n - failed.length} of ${plural(n, { one: "# app", other: "# apps" })}.`, error: true, left, failed }
-        : { text: t`Moved ${plural(n, { one: "# app", other: "# apps" })} into console folders.`, left },
+        : { text: t`Moved ${plural(n, { one: "# app", other: "# apps" })} into system folders.`, left },
     );
     // What stays at the top of the apps folder is listed below, open, so the player sees why.
     setShowStays(true);
@@ -675,16 +676,27 @@ export function AppsFolder({ inSetup, onBusy }: { inSetup?: boolean; onBusy?: (b
           </label>
           <label className="toggle">
             <input type="checkbox" checked={Boolean(settings.groupByConsole)} onChange={(e) => setSettings({ ...settings, groupByConsole: e.target.checked || undefined })} />
-            <Trans>Put new apps in a folder for their console</Trans>
+            <Trans>Put new apps in a folder for their system</Trans>
           </label>
         </>
       )}
       {desktop && !inSetup && settings.groupByConsole && (
-        <p className="muted">
-          <Trans>
-            In the default apps folder, ports go in Ports, in a folder for their console (Ports{slash}N64, say), and those for more than one console in Ports{slash}Multi-console. Emulators, tools and standalone games get folders of their own beside it. Apps you put in another folder go exactly there, and apps already installed stay where they are until you move them.
-          </Trans>
-        </p>
+        <>
+          <p className="muted">
+            <Trans>
+              In the default apps folder, ports go in Ports, in a folder for their system (Ports{slash}{example}, say), and those for more than one system in Ports{slash}Multi-system. Emulators, tools and standalone games get folders of their own beside it. Apps you put in another folder go exactly there, and apps already installed stay where they are until you move them.
+            </Trans>
+          </p>
+          <label className="system-naming">
+            <span>
+              <Trans>Name system folders</Trans>
+            </span>
+            <select value={settings.systemFolderNames ?? "short"} onChange={(e) => setSettings({ ...settings, systemFolderNames: e.target.value === "full" ? "full" : undefined })}>
+              <option value="short">{t({ message: "Abbreviated (N64, GBC, PS2)", comment: "How system folders are named: by abbreviation" })}</option>
+              <option value="full">{t({ message: "In full (Nintendo 64, Game Boy Color, PlayStation 2)", comment: "How system folders are named: by full name" })}</option>
+            </select>
+          </label>
+        </>
       )}
       {desktop && !inSetup && settings.groupByConsole && <ConsoleFolders />}
       {desktop && !inSetup && settings.groupByConsole && (unsorted.length > 0 || sorting) && (
@@ -692,12 +704,12 @@ export function AppsFolder({ inSetup, onBusy }: { inSetup?: boolean; onBusy?: (b
           {sorting ? (
             <p className="muted" role="status">
               <Trans>
-                Moving apps into console folders… {sorting.done} of {sorting.total}
+                Moving apps into system folders… {sorting.done} of {sorting.total}
               </Trans>
             </p>
           ) : (
             <Button disabled={!idle || busy} title={waitTitle} onClick={() => void sort()}>
-              {plural(unsorted.length, { one: "Move # installed app into its console folder", other: "Move # installed apps into their console folders" })}
+              {plural(unsorted.length, { one: "Move # installed app into its system folder", other: "Move # installed apps into their system folders" })}
             </Button>
           )}
         </div>
