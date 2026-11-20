@@ -909,13 +909,15 @@ function CommentBox({ discussionId, editing, onDone }: { discussionId?: string; 
 }
 
 type Place = "recent" | "general" | "following";
+/** What Community's Recent tab shows, as on the site: everything, the library's apps, or by when they started. */
+type RecentFilter = "all" | "mine" | "new";
 
 /** The Community page: Recent across every app and General, General itself, and the discussions the player follows. */
 export function CommunityPage({ back, onBack }: { back: string; onBack: () => void }) {
   const { user } = useAccount();
   const live = useLive();
   const [place, setPlace] = useState<Place>("recent");
-  const [mine, setMine] = useState(false);
+  const [filter, setFilter] = useState<RecentFilter>("all");
   const [search, setSearch] = useState("");
   const [typed, setTyped] = useState("");
   useEffect(() => {
@@ -927,6 +929,11 @@ export function CommunityPage({ back, onBack }: { back: string; onBack: () => vo
     { id: "recent", label: t({ message: "Recent", context: "Community tab", comment: "Community tab: the newest discussions on every app" }) },
     { id: "general", label: i18n._(CATEGORY_LABELS.general) },
     ...(user ? [{ id: "following" as const, label: t({ message: "Following", comment: "Community tab: the discussions the player follows" }) }] : []),
+  ];
+  const filters: { id: RecentFilter; label: string }[] = [
+    { id: "all", label: t({ message: "All activity", comment: "Community filter: discussions on every app" }) },
+    { id: "mine", label: t({ message: "Apps I have", comment: "Community filter: only discussions on apps in the player's library" }) },
+    { id: "new", label: t({ message: "New discussions", comment: "Community filter: newest started first, not newest comment" }) },
   ];
   return (
     <section className="app-page community-page" aria-label={t`Community`}>
@@ -961,14 +968,23 @@ export function CommunityPage({ back, onBack }: { back: string; onBack: () => vo
             <input type="search" value={typed} placeholder={t`Search titles`} aria-label={t`Search discussion titles`} onChange={(e) => setTyped(e.target.value)} />
           </label>
         )}
-        {shown === "recent" && !search.trim() && (
-          <button type="button" className="community-chip" aria-pressed={mine} onClick={() => setMine(!mine)}>
-            <Trans comment="Community filter: only discussions on apps in the player's library">Only apps in my library</Trans>
-          </button>
-        )}
       </div>
+      {shown === "recent" && !search.trim() && (
+        <div className="community-filters">
+          <div className="community-chips" role="group" aria-label={t`Show`}>
+            {filters.map((f) => (
+              <button key={f.id} type="button" className="community-chip" aria-pressed={filter === f.id} onClick={() => setFilter(f.id)}>
+                {f.label}
+              </button>
+            ))}
+          </div>
+          <p className="muted community-hint">
+            <Trans>Start a discussion from an app's page, or in General.</Trans>
+          </p>
+        </div>
+      )}
       <Live>
-        {shown === "following" ? <Followed /> : shown === "general" ? <Board key="general" category="general" search={search} /> : <Recent mine={mine} search={search} />}
+        {shown === "following" ? <Followed /> : shown === "general" ? <Board key="general" category="general" search={search} /> : <Recent key={filter} filter={filter} search={search} />}
       </Live>
     </section>
   );
@@ -987,24 +1003,20 @@ function useUnseen() {
   return useMemo(() => new Set((list.results as Summary[]).filter((d) => d.unseen).map((d) => d.id)), [list.results]);
 }
 
-/** Community's Recent tab: the newest discussions on every app and in General, or only on the library's apps. */
-function Recent({ mine, search }: { mine: boolean; search: string }) {
+/** Community's Recent tab: the newest discussions on every app and in General, only on the library's apps, or newest started first. */
+function Recent({ filter, search }: { filter: RecentFilter; search: string }) {
   const text = search.trim();
+  const mine = filter === "mine";
   const ids = useLibraryEntryIds();
   const unseen = useUnseen();
   const [limit, setLimit] = useState(20);
-  const all = usePaginatedQuery(fns.recent, !text && !mine ? {} : "skip", { initialNumItems: 20 });
+  const all = usePaginatedQuery(fns.recent, !text && !mine ? { order: filter === "new" ? "new" : "activity" } : "skip", { initialNumItems: 20 });
   const inLibrary = useQuery(fns.recentInApps, !text && mine ? { entryIds: ids, limit } : "skip") as Summary[] | undefined;
   const found = useQuery(fns.search, text ? { text } : "skip") as Summary[] | undefined;
   const rows = text ? found : mine ? inLibrary : all.status === "LoadingFirstPage" ? undefined : (all.results as Summary[]);
   const more = !text && (mine ? (inLibrary?.length ?? 0) >= limit && limit < 100 : all.status === "CanLoadMore");
   return (
     <>
-      {!text && (
-        <p className="muted community-hint">
-          <Trans>Start a discussion from an app's page, or in General.</Trans>
-        </p>
-      )}
       {rows === undefined ? (
         <Spinner label={text ? t`Searching…` : t`Loading discussions…`} />
       ) : rows.length ? (
@@ -1033,30 +1045,30 @@ function Recent({ mine, search }: { mine: boolean; search: string }) {
   );
 }
 
-/** One discussion in a list across apps: its app's art, name and consoles (or General), title, who started it, comments and last activity. */
+/** One discussion in a list across apps, as on the site: its app's icon (or General's), the app's name and consoles, title, who started it, comments and last activity. */
 function ActivityRow({ thread }: { thread: Summary }) {
   const { openDiscussion } = useNav();
-  const { consoleNames } = useLauncher();
+  const { catalog, consoleNames } = useLauncher();
   const entry = thread.entry;
-  const [broken, setBroken] = useState(false);
-  const art = entry?.capsule ?? entry?.icon;
-  const place = entry
-    ? [entry.name, [...new Set((entry.consoles ?? []).map((c) => consoleNames[c] ?? c.toUpperCase()))].slice(0, 2).join(", ")].filter(Boolean).join(" · ")
-    : i18n._(CATEGORY_LABELS.general);
+  const icon = entry ? (entry.icon ?? catalog[entry.id]?.artwork) : undefined;
+  const consoles = [...new Set((entry?.consoles ?? []).map((c) => consoleNames[c] ?? c.toUpperCase()))].slice(0, 2);
   const active = relativeTime(thread.lastActivityAt);
   const author = thread.author;
   return (
     <li className="discussion-row activity">
       <button type="button" className="discussion-row-link" onClick={() => openDiscussion(thread.id)}>
-        {art && !broken ? (
-          <img className={`discussion-row-art${entry?.capsule ? "" : " icon"}`} src={art} alt="" loading="lazy" onError={() => setBroken(true)} />
+        {entry ? (
+          <Artwork className="discussion-row-icon" src={icon} sources={icon ? iconSources(icon) : undefined} name={entry.name} />
         ) : (
-          <span className="discussion-row-art empty" aria-hidden="true">
+          <span className="discussion-row-icon general" aria-hidden="true">
             <MessagesSquare size={20} />
           </span>
         )}
         <span className="discussion-row-body">
-          <span className="discussion-row-place">{place}</span>
+          <span className="discussion-row-place">
+            <span className="discussion-row-app">{entry?.name ?? i18n._(CATEGORY_LABELS.general)}</span>
+            {consoles.length > 0 && <span>{consoles.join(", ")}</span>}
+          </span>
           <span className="discussion-row-title">
             <Flags thread={{ ...thread, pinned: false }} />
             {thread.title}

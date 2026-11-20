@@ -1188,6 +1188,11 @@ msgstr "全部"
 msgid "All {brand}"
 msgstr "所有 {brand}"
 
+#. Community filter: discussions on every app
+#: ../../apps/launcher/src/discussions.tsx
+msgid "All activity"
+msgstr "全部動態"
+
 #: ../../apps/launcher/src/announcements-ui.tsx
 msgid "All announcements"
 msgstr "所有公告"
@@ -1385,6 +1390,11 @@ msgstr "應用程式資料夾"
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Apps folders"
 msgstr "應用程式資料夾"
+
+#. Community filter: only discussions on apps in the player's library
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Apps I have"
+msgstr "我擁有的應用程式"
 
 #: ../../apps/launcher/src/old-library.tsx
 msgid "Apps in that folder"
@@ -4239,6 +4249,11 @@ msgstr "新內容徽標"
 msgid "New comments"
 msgstr "新留言"
 
+#. Community filter: newest started first, not newest comment
+#: ../../apps/launcher/src/discussions.tsx
+msgid "New discussions"
+msgstr "新討論"
+
 #: ../../apps/launcher/src/setup.tsx
 msgid "New in Quiver Launcher 4"
 msgstr "Quiver Launcher 4 的新功能"
@@ -4651,11 +4666,6 @@ msgstr "確定"
 #: ../../apps/launcher/src/library-view.tsx
 msgid "One card for each game"
 msgstr "每個遊戲顯示一張卡片"
-
-#. Community filter: only discussions on apps in the player's library
-#: ../../apps/launcher/src/discussions.tsx
-msgid "Only apps in my library"
-msgstr "僅限我收藏庫中的應用程式"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/library.tsx

@@ -1188,6 +1188,11 @@ msgstr "Todos"
 msgid "All {brand}"
 msgstr "Todos da {brand}"
 
+#. Community filter: discussions on every app
+#: ../../apps/launcher/src/discussions.tsx
+msgid "All activity"
+msgstr "Toda a atividade"
+
 #: ../../apps/launcher/src/announcements-ui.tsx
 msgid "All announcements"
 msgstr "Todos os avisos"
@@ -1385,6 +1390,11 @@ msgstr "Pasta de apps"
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Apps folders"
 msgstr "Pastas de apps"
+
+#. Community filter: only discussions on apps in the player's library
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Apps I have"
+msgstr "Apps que tenho"
 
 #: ../../apps/launcher/src/old-library.tsx
 msgid "Apps in that folder"
@@ -4239,6 +4249,11 @@ msgstr "Selo de novo"
 msgid "New comments"
 msgstr "Comentários novos"
 
+#. Community filter: newest started first, not newest comment
+#: ../../apps/launcher/src/discussions.tsx
+msgid "New discussions"
+msgstr "Discussões novas"
+
 #: ../../apps/launcher/src/setup.tsx
 msgid "New in Quiver Launcher 4"
 msgstr "Novidades do Quiver Launcher 4"
@@ -4651,11 +4666,6 @@ msgstr "OK"
 #: ../../apps/launcher/src/library-view.tsx
 msgid "One card for each game"
 msgstr "Um card para cada jogo"
-
-#. Community filter: only discussions on apps in the player's library
-#: ../../apps/launcher/src/discussions.tsx
-msgid "Only apps in my library"
-msgstr "Só apps da minha biblioteca"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/library.tsx

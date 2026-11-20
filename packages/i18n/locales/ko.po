@@ -1188,6 +1188,11 @@ msgstr "전체"
 msgid "All {brand}"
 msgstr "{brand} 전체"
 
+#. Community filter: discussions on every app
+#: ../../apps/launcher/src/discussions.tsx
+msgid "All activity"
+msgstr "모든 활동"
+
 #: ../../apps/launcher/src/announcements-ui.tsx
 msgid "All announcements"
 msgstr "모든 공지"
@@ -1385,6 +1390,11 @@ msgstr "앱 폴더"
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Apps folders"
 msgstr "앱 폴더"
+
+#. Community filter: only discussions on apps in the player's library
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Apps I have"
+msgstr "내가 가진 앱"
 
 #: ../../apps/launcher/src/old-library.tsx
 msgid "Apps in that folder"
@@ -4239,6 +4249,11 @@ msgstr "신규 배지"
 msgid "New comments"
 msgstr "새 댓글"
 
+#. Community filter: newest started first, not newest comment
+#: ../../apps/launcher/src/discussions.tsx
+msgid "New discussions"
+msgstr "새 토론"
+
 #: ../../apps/launcher/src/setup.tsx
 msgid "New in Quiver Launcher 4"
 msgstr "Quiver Launcher 4의 새로운 기능"
@@ -4651,11 +4666,6 @@ msgstr "확인"
 #: ../../apps/launcher/src/library-view.tsx
 msgid "One card for each game"
 msgstr "게임마다 카드 하나"
-
-#. Community filter: only discussions on apps in the player's library
-#: ../../apps/launcher/src/discussions.tsx
-msgid "Only apps in my library"
-msgstr "내 라이브러리의 앱만"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/library.tsx
