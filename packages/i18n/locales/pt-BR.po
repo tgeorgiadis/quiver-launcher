@@ -547,8 +547,16 @@ msgid "{name} (this computer)"
 msgstr "{name} (este computador)"
 
 #: ../../apps/launcher/src/App.tsx
+msgid "{name} (this device)"
+msgstr "{name} (este dispositivo)"
+
+#: ../../apps/launcher/src/App.tsx
 msgid "{name} {version} has more than one file for your computer."
 msgstr "{name} {version} tem mais de um arquivo para o seu computador."
+
+#: ../../apps/launcher/src/App.tsx
+msgid "{name} {version} has more than one file for your device."
+msgstr "{name} {version} tem mais de um arquivo para o seu dispositivo."
 
 #: ../../apps/launcher/src/store.tsx
 msgid "{name} already has {installed}, the newest release it can update to."
@@ -4432,6 +4440,10 @@ msgstr "Nenhum"
 msgid "None of {name} {version}'s files are marked for your computer. If you know which one runs on it, pick it."
 msgstr "Nenhum arquivo de {name} {version} está marcado para o seu computador. Se você souber qual roda nele, escolha-o."
 
+#: ../../apps/launcher/src/App.tsx
+msgid "None of {name} {version}'s files are marked for your device. If you know which one runs on it, pick it."
+msgstr "Nenhum arquivo de {name} {version} está marcado para o seu dispositivo. Se você souber qual roda nele, escolha-o."
+
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "None of the files Quiver found look like {game}."
 msgstr "Nenhum dos arquivos que o Quiver encontrou parece ser {game}."
@@ -4443,6 +4455,10 @@ msgstr "Nenhum deles está instalado."
 #: ../../apps/launcher/src/own.tsx
 msgid "None of this release's files are for this computer."
 msgstr "Nenhum arquivo desta versão é para este computador."
+
+#: ../../apps/launcher/src/own.tsx
+msgid "None of this release's files are for this device."
+msgstr "Nenhum arquivo desta versão é para este dispositivo."
 
 #. Mouse wheel speed: the system's
 #: ../../apps/launcher/src/settings-page.tsx
@@ -4475,6 +4491,10 @@ msgstr "Ainda não confirmado"
 msgid "Not for this computer"
 msgstr "Não para este computador"
 
+#: ../../apps/launcher/src/ways-to-play.tsx
+msgid "Not for this device"
+msgstr "Não para este dispositivo"
+
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Not found in the catalog"
 msgstr "Não encontrado no catálogo"
@@ -4497,7 +4517,11 @@ msgstr "Não instalados primeiro"
 
 #: ../../apps/launcher/src/sync-folder-page.tsx
 msgid "not installed on this computer"
-msgstr ""
+msgstr "não instalado neste computador"
+
+#: ../../apps/launcher/src/sync-folder-page.tsx
+msgid "not installed on this device"
+msgstr "não instalado neste dispositivo"
 
 #: ../../apps/launcher/src/library.tsx
 msgid "Not installed only"
@@ -6705,8 +6729,16 @@ msgid "The release's files Quiver doesn't offer. They may not run on your comput
 msgstr "Os arquivos da versão que o Quiver não oferece. Eles podem não funcionar no seu computador."
 
 #: ../../apps/launcher/src/App.tsx
+msgid "The release's files Quiver doesn't offer. They may not run on your device."
+msgstr "Os arquivos da versão que o Quiver não oferece. Eles podem não funcionar no seu dispositivo."
+
+#: ../../apps/launcher/src/App.tsx
 msgid "The release's other files. They may not run on your computer."
 msgstr "Os outros arquivos da versão. Eles podem não funcionar no seu computador."
+
+#: ../../apps/launcher/src/App.tsx
+msgid "The release's other files. They may not run on your device."
+msgstr "Os outros arquivos da versão. Eles podem não funcionar no seu dispositivo."
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "The saves and settings come over too."
@@ -6902,6 +6934,10 @@ msgstr "Este projeto só publica versões prévias, então o Quiver Launcher ofe
 msgid "This release has no download for your computer."
 msgstr "Esta versão não tem download para o seu computador."
 
+#: ../../apps/launcher/src/store.tsx
+msgid "This release has no download for your device."
+msgstr "Esta versão não tem download para o seu dispositivo."
+
 #: ../ui/src/index.tsx
 msgid "This release has no files Quiver Launcher can install"
 msgstr "Esta versão não tem arquivos que o Quiver Launcher possa instalar"
@@ -6913,6 +6949,10 @@ msgstr "Esta versão não tem instalador do Windows (MSI) para atualizá-la. Des
 #: ../../apps/launcher/src/own.tsx
 msgid "This release has several downloads for this computer. Which app is this?"
 msgstr "Esta versão tem vários downloads para este computador. Qual app é este?"
+
+#: ../../apps/launcher/src/own.tsx
+msgid "This release has several downloads for this device. Which app is this?"
+msgstr "Esta versão tem vários downloads para este dispositivo. Qual app é este?"
 
 #: ../../apps/launcher/src/store.tsx
 msgid "This release only comes as a Windows installer (MSI). Uninstall it, then get it again to install it that way."

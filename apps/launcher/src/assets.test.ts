@@ -148,6 +148,9 @@ test("Android installs its APKs, and only Android does", () => {
   expect(bestAssets([asset("Game.zip", "unknown", "unknown")], "android", "arm64")).toEqual([]);
   expect(bestAssets(files, "windows", "x64").map((a) => a.filename)).toEqual(["Game-win64.zip"]);
   expect(installFormat("Game.apk")).toBe("apk");
+  // The player can still pick a zip nobody marked for Android, as it may have an APK in it.
+  expect(installable([asset("Game.zip", "unknown", "unknown")], "android")).toHaveLength(1);
+  expect(installable([asset("Game.exe", "windows"), asset("Game.AppImage", "linux")], "android")).toEqual([]);
 });
 
 test("a file the player can install from the Releases tab is one this computer runs", () => {
@@ -229,4 +232,19 @@ test("otherSystems names the systems of a release with nothing for this computer
   expect(otherSystems([], "windows", "x64")).toEqual([]);
   // Nor do a checksum or a file with no platform count as a system.
   expect(otherSystems([linux, asset("Game.sha256", "windows"), asset("art.png", "unknown")], "windows", "x64")).toEqual(["linux"]);
+});
+
+test("Android takes an APK an app ships zipped, as Ghostship does", () => {
+  const files = [
+    asset("Nautilus-Alfa-Android.zip", "android", "unknown"),
+    asset("Nautilus-Alfa-Linux.zip", "linux", "unknown"),
+    asset("Nautilus-Alfa-Win64.zip", "windows", "unknown"),
+    asset("Nautilus-Alfa-iOS.zip", "ios", "unknown"),
+  ];
+  expect(bestAssets(files, "android", "arm64").map((a) => a.filename)).toEqual(["Nautilus-Alfa-Android.zip"]);
+  expect(bestAssets(files, "windows", "x64").map((a) => a.filename)).toEqual(["Nautilus-Alfa-Win64.zip"]);
+  // A bare APK still comes first.
+  expect(bestAssets([...files, asset("Ghostship.apk", "android", "unknown")], "android", "arm64").map((a) => a.filename)).toEqual(["Ghostship.apk"]);
+  // A release with no Android build: every archive is offered for the player to pick.
+  expect(installable(files.slice(1), "android")).toHaveLength(3);
 });

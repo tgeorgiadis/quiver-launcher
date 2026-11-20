@@ -16,7 +16,7 @@ import { when } from "./saves-tab";
 import { useLauncher } from "./store";
 
 export function SyncFolderSettings() {
-  const { settings, setSettings, installs, catalog } = useLauncher();
+  const { settings, setSettings, installs, catalog, config } = useLauncher();
   const folder = settings.syncFolder;
   /** Null while it's read. */
   const [kept, setKept] = useState<{ there: boolean; apps: SyncFolderApp[] } | null>(null);
@@ -153,7 +153,7 @@ export function SyncFolderSettings() {
                 <span className="save-main">
                   <span>{name}</span>
                   <span className="save-note">
-                    {[plural(app.copies, { one: "# backup", other: "# backups" }), sizeLabel(app.size), t`Newest from ${device}, ${date}`, !installs[app.id] && t`not installed on this computer`].filter(Boolean).join(" · ")}
+                    {[plural(app.copies, { one: "# backup", other: "# backups" }), sizeLabel(app.size), t`Newest from ${device}, ${date}`, !installs[app.id] && (config.os === "android" ? t`not installed on this device` : t`not installed on this computer`)].filter(Boolean).join(" · ")}
                   </span>
                 </span>
               </li>

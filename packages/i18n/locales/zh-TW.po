@@ -547,8 +547,16 @@ msgid "{name} (this computer)"
 msgstr "{name}（此電腦）"
 
 #: ../../apps/launcher/src/App.tsx
+msgid "{name} (this device)"
+msgstr "{name}（此裝置）"
+
+#: ../../apps/launcher/src/App.tsx
 msgid "{name} {version} has more than one file for your computer."
 msgstr "{name} {version} 有多個適用於你電腦的檔案。"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "{name} {version} has more than one file for your device."
+msgstr "{name} {version} 有多個適用於你裝置的檔案。"
 
 #: ../../apps/launcher/src/store.tsx
 msgid "{name} already has {installed}, the newest release it can update to."
@@ -4432,6 +4440,10 @@ msgstr "無"
 msgid "None of {name} {version}'s files are marked for your computer. If you know which one runs on it, pick it."
 msgstr "{name} {version} 的檔案均未標記為適用於你的電腦。如果你知道哪個檔案可以執行，請選擇它。"
 
+#: ../../apps/launcher/src/App.tsx
+msgid "None of {name} {version}'s files are marked for your device. If you know which one runs on it, pick it."
+msgstr "{name} {version} 的檔案均未標記為適用於你的裝置。如果你知道哪個檔案可以執行，請選擇它。"
+
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "None of the files Quiver found look like {game}."
 msgstr "Quiver 找到的檔案都不像是 {game}。"
@@ -4443,6 +4455,10 @@ msgstr "它們都沒有安裝。"
 #: ../../apps/launcher/src/own.tsx
 msgid "None of this release's files are for this computer."
 msgstr "此版本的檔案均不適用於此電腦。"
+
+#: ../../apps/launcher/src/own.tsx
+msgid "None of this release's files are for this device."
+msgstr "此版本的檔案均不適用於此裝置。"
 
 #. Mouse wheel speed: the system's
 #: ../../apps/launcher/src/settings-page.tsx
@@ -4475,6 +4491,10 @@ msgstr "尚未確認"
 msgid "Not for this computer"
 msgstr "不適用於這台電腦"
 
+#: ../../apps/launcher/src/ways-to-play.tsx
+msgid "Not for this device"
+msgstr "不適用於這台裝置"
+
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Not found in the catalog"
 msgstr "未在目錄中找到"
@@ -4497,7 +4517,11 @@ msgstr "未優先安裝"
 
 #: ../../apps/launcher/src/sync-folder-page.tsx
 msgid "not installed on this computer"
-msgstr ""
+msgstr "未安裝在此電腦上"
+
+#: ../../apps/launcher/src/sync-folder-page.tsx
+msgid "not installed on this device"
+msgstr "未安裝在此裝置上"
 
 #: ../../apps/launcher/src/library.tsx
 msgid "Not installed only"
@@ -6705,8 +6729,16 @@ msgid "The release's files Quiver doesn't offer. They may not run on your comput
 msgstr "此版本中 Quiver 未提供的檔案。它們可能無法在你的電腦上執行。"
 
 #: ../../apps/launcher/src/App.tsx
+msgid "The release's files Quiver doesn't offer. They may not run on your device."
+msgstr "此版本中 Quiver 未提供的檔案。它們可能無法在你的裝置上執行。"
+
+#: ../../apps/launcher/src/App.tsx
 msgid "The release's other files. They may not run on your computer."
 msgstr "此版本的其他檔案。它們可能無法在你的電腦上執行。"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "The release's other files. They may not run on your device."
+msgstr "此版本的其他檔案。它們可能無法在你的裝置上執行。"
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "The saves and settings come over too."
@@ -6902,6 +6934,10 @@ msgstr "此專案只發布預釋出版本，因此 Quiver Launcher 會提供其�
 msgid "This release has no download for your computer."
 msgstr "此版本沒有適用於你電腦的下載檔案。"
 
+#: ../../apps/launcher/src/store.tsx
+msgid "This release has no download for your device."
+msgstr "此版本沒有適用於你裝置的下載檔案。"
+
 #: ../ui/src/index.tsx
 msgid "This release has no files Quiver Launcher can install"
 msgstr "此發行版本沒有 Quiver Launcher 可安裝的檔案"
@@ -6913,6 +6949,10 @@ msgstr "此版本沒有可用於更新的 Windows 安裝程式（MSI）。請先
 #: ../../apps/launcher/src/own.tsx
 msgid "This release has several downloads for this computer. Which app is this?"
 msgstr "此版本有多個適用於此電腦的下載檔案。這是哪一個應用程式？"
+
+#: ../../apps/launcher/src/own.tsx
+msgid "This release has several downloads for this device. Which app is this?"
+msgstr "此版本有多個適用於此裝置的下載檔案。這是哪一個應用程式？"
 
 #: ../../apps/launcher/src/store.tsx
 msgid "This release only comes as a Windows installer (MSI). Uninstall it, then get it again to install it that way."

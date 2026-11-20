@@ -2342,6 +2342,9 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
             ? msg`This release has no Windows installer (MSI) to update it with. Uninstall it, then get it again to install this release's download.`
             : msg`This release only comes as a Windows installer (MSI). Uninstall it, then get it again to install it that way.`,
         );
+      // A phone or tablet is a device, not a computer.
+      const noDownload =
+        config.os === "android" ? msg`This release has no download for your device.` : msg`This release has no download for your computer.`;
       // Of the release's files, the ones this computer can install, of the kind installed.
       const ofKind = (list: Asset[]) => installable(list, config.os).filter((a) => !kind || isMsi(a.filename) === (kind === "msi"));
       const approved = ofKind(release.assets);
@@ -2364,7 +2367,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       else if (!asset || others.length || missed || unmatched) {
         if (auto) return waitForPlayer();
         unapproved = stray || custom ? [] : ofKind(release.otherAssets ?? (await otherFilesOf(entry.slug, release.version)));
-        if (!asset && !unapproved.length) throw new Problem(msg`This release has no download for your computer.`);
+        if (!asset && !unapproved.length) throw new Problem(noDownload);
         const choices = asset ? [asset, ...others] : [];
         const all = [...approved, ...unapproved];
         const picked = await chooseFile({ entry, version: release.version, assets: choices, all, unapproved: unapproved.map((a) => a.id), unmatched });
@@ -2374,7 +2377,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         const files = [...new Set([...choices, ...all].map((a) => a.filename))];
         pick = assetFilterFor(picked.filename, files);
       }
-      if (!asset) throw new Problem(msg`This release has no download for your computer.`);
+      if (!asset) throw new Problem(noDownload);
       // One a maintainer didn't tick always asks first, whatever the release: it's installed as the developer
       // published it, checked against the file Quiver saw. A file of a verified release that isn't verified itself asks
       // first, as an unverified release does. An automatic update takes one that changed with Newest right away, as it

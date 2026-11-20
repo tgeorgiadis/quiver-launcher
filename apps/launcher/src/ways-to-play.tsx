@@ -136,7 +136,7 @@ export function WaysToPlay({ entry, onOpenApp, onOpenGame }: { entry: Entry; onO
           {here.map(way(close))}
           {elsewhere.length > 0 && (
             <div className="ways-group" role="presentation">
-              <Trans>Not for this computer</Trans>
+              {config.os === "android" ? <Trans>Not for this device</Trans> : <Trans>Not for this computer</Trans>}
             </div>
           )}
           {elsewhere.map(way(close))}
