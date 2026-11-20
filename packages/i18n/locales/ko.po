@@ -380,6 +380,18 @@ msgstr "{have} 설치됨"
 msgid "{hidden, plural, one {# app you hid, kept hidden} other {# apps you hid, kept hidden}}"
 msgstr "{hidden, plural, other {숨긴 앱 #개, 계속 숨김}}"
 
+#: ../../apps/launcher/src/library.tsx
+msgid "{hiddenHere, plural, one {# app here is hidden.} other {# apps here are hidden.}}"
+msgstr "{hiddenHere, plural, other {여기서 앱 #개가 숨겨져 있습니다.}}"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "{hiddenHere, plural, one {# app in this playlist is hidden.} other {# apps in this playlist are hidden.}}"
+msgstr "{hiddenHere, plural, other {이 재생 목록의 앱 #개가 숨겨져 있습니다.}}"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "{hiddenHere, plural, one {# hidden app matches.} other {# hidden apps match.}}"
+msgstr "{hiddenHere, plural, other {숨긴 앱 #개가 일치합니다.}}"
+
 #: ../../apps/launcher/src/App.tsx
 msgid "{hiddenLeft, plural, one {# app here is hidden.} other {# apps here are hidden.}}"
 msgstr "{hiddenLeft, plural, other {여기 있는 앱 중 #개는 숨겨져 있어요.}}"
@@ -864,8 +876,8 @@ msgid "<0>TV mode:</0> a full-screen launcher for a controller"
 msgstr "<0>TV 모드:</0> 컨트롤러로 쓰는 전체 화면 런처"
 
 #: ../../apps/launcher/src/setup.tsx
-msgid "<0>Two library views:</0> Sidebar, inspired by Steam, and Grid, with a range of options for box art, covers, icons and what each app shows"
-msgstr "<0>두 가지 라이브러리 보기:</0> Steam에서 영감을 받은 사이드바, 그리고 박스 아트, 커버, 아이콘과 앱마다 표시할 내용을 다양하게 고를 수 있는 격자"
+msgid "<0>Two library views:</0> List, inspired by Steam, and Grid, with a range of options for box art, covers, icons and what each app shows, and your playlists along the top or in a side panel"
+msgstr "<0>두 가지 라이브러리 보기:</0> Steam에서 영감을 받은 목록, 그리고 박스 아트, 커버, 아이콘과 앱마다 표시할 내용을 다양하게 고를 수 있는 격자. 재생 목록은 위쪽이나 사이드 패널에 둘 수 있습니다"
 
 #: ../../apps/launcher/src/custom-art.tsx
 msgid "A cover's address follows your account. The other pictures, and any from a file, stay on this computer."
@@ -2411,6 +2423,7 @@ msgstr "시작하거나 댓글을 단 토론이 새 댓글과 함께 여기에 �
 #: ../../apps/launcher/src/announcements-ui.tsx
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/card-menu.tsx
+#: ../../apps/launcher/src/library.tsx
 msgid "Dismiss"
 msgstr "닫기"
 
@@ -3685,6 +3698,18 @@ msgstr "Linux 및 Windows (이 컴퓨터)"
 msgid "Linux only"
 msgstr "Linux만"
 
+#. Library layout, inspired by Steam's: a list of names down the left, the app picked in it open beside it
+#: ../../apps/launcher/src/view.ts
+msgid "List"
+msgstr "목록"
+
+#. Library view option: how wide the List layout's list of names is
+#. Library view option: how wide the List layout's list of names is
+#: ../../apps/launcher/src/library-sidebar.tsx
+#: ../../apps/launcher/src/library-view.tsx
+msgid "List width"
+msgstr "목록 너비"
+
 #: ../../apps/launcher/src/discussions.tsx
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Load more"
@@ -3867,6 +3892,10 @@ msgstr "메뉴"
 #: ../../apps/launcher/src/window-bar.tsx
 msgid "Minimize"
 msgstr "최소화"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Miss the tag filters down the left from Quiver Launcher 3? Your playlists can go there too."
+msgstr "Quiver Launcher 3의 왼쪽 태그 필터가 그리우신가요? 재생 목록도 그곳에 둘 수 있습니다."
 
 #: ../../apps/launcher/src/mods.tsx
 msgid "Mod requirements"
@@ -4260,6 +4289,10 @@ msgstr "아직 설치된 모드가 없어요. 둘러보기에서 찾아보세요
 #: ../../apps/launcher/src/mods.tsx
 msgid "No mods match your search."
 msgstr "검색과 일치하는 모드가 없어요."
+
+#: ../../apps/launcher/src/library.tsx
+msgid "No playlists yet. Add one with +, or save your filters as one."
+msgstr "아직 재생 목록이 없습니다. +로 추가하거나 필터를 재생 목록으로 저장하세요."
 
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "No programs found in its folder."
@@ -4807,6 +4840,7 @@ msgid "Playlist name"
 msgstr "재생 목록 이름"
 
 #. Button over the selected apps: puts them on playlists
+#. Heading over the player's playlists in the library's side panel
 #: ../../apps/launcher/src/detail.tsx
 #: ../../apps/launcher/src/library-ticking.tsx
 #: ../../apps/launcher/src/library.tsx
@@ -4820,6 +4854,12 @@ msgstr "재생 목록 및 태그"
 #: ../../apps/launcher/src/library.tsx
 msgid "Playlists for this app"
 msgstr "이 앱의 재생 목록"
+
+#. Library view option: where the grid's playlists go
+#: ../../apps/launcher/src/library-view.tsx
+#: ../../apps/launcher/src/library.tsx
+msgid "Playlists position"
+msgstr "재생 목록 위치"
 
 #. A kind of project: a game brought to other platforms
 #. Project type: a game ported to another platform
@@ -5849,8 +5889,8 @@ msgid "Show {name}"
 msgstr "{name} 보기"
 
 #: ../../apps/launcher/src/settings-page.tsx
-msgid "Show a picture of your own behind the library's grid. The Sidebar layout doesn't show it."
-msgstr "라이브러리 그리드 뒤에 원하는 이미지를 표시합니다. 사이드바 레이아웃에서는 표시되지 않습니다."
+msgid "Show a picture of your own behind the library's grid. The List layout doesn't show it."
+msgstr "라이브러리 그리드 뒤에 원하는 이미지를 표시합니다. 목록 레이아웃에서는 표시되지 않습니다."
 
 #: ../../apps/launcher/src/announcements-ui.tsx
 msgid "Show again"
@@ -5877,6 +5917,16 @@ msgstr "앱을 표시할 플랫폼"
 #: ../../apps/launcher/src/App.tsx
 msgid "Show apps in your library"
 msgstr "라이브러리에 있는 앱 보기"
+
+#. Moves the library's playlist tabs to a panel down the left
+#: ../../apps/launcher/src/library.tsx
+msgid "Show as side panel"
+msgstr "사이드 패널로 표시"
+
+#. Moves the library's playlists from the side panel to tabs along the top
+#: ../../apps/launcher/src/library.tsx
+msgid "Show at top of library"
+msgstr "라이브러리 위쪽에 표시"
 
 #: ../../apps/launcher/src/library-view.tsx
 msgid "Show both names"
@@ -5987,15 +6037,10 @@ msgstr "컨트롤러가 연결되어 있으면 화면 하단에 버튼 기능 �
 msgid "Showing"
 msgstr "표시됨"
 
-#. Library layout: a list of names down the left
+#. Where the library grid's playlists go: a panel down the left
 #: ../../apps/launcher/src/view.ts
-msgid "Sidebar"
-msgstr "사이드바"
-
-#: ../../apps/launcher/src/library-sidebar.tsx
-#: ../../apps/launcher/src/library-view.tsx
-msgid "Sidebar width"
-msgstr "사이드바 너비"
+msgid "Side panel"
+msgstr "사이드 패널"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/discussions.tsx
@@ -6734,6 +6779,11 @@ msgstr "도구"
 #: ../../apps/launcher/src/spatial.ts
 msgid "Top"
 msgstr "맨 위로"
+
+#. Where the library grid's playlists go: tabs along the top
+#: ../../apps/launcher/src/view.ts
+msgid "Top of library"
+msgstr "위쪽"
 
 #. Sort order for mods
 #: ../../apps/launcher/src/App.tsx

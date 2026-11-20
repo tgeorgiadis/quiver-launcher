@@ -1,6 +1,6 @@
 /**
- * How the library shows its apps on this computer: a grid, or a sidebar of
- * names beside the open app's page; which picture each card has,
+ * How the library shows its apps on this computer: a grid, or a list of
+ * names beside the open app's page (the List layout, kept as "sidebar"); where the grid's playlists go; which picture each card has,
  * how big the cards are (a slider), and whether names show under them. Kept in
  * settings.json with the other preferences for this device.
  */
@@ -9,8 +9,13 @@ import type { MessageDescriptor } from "@lingui/core";
 import type { Entry } from "@quiverlauncher/api";
 import { CARD_DETAILS, coverOf, type CardDetail } from "@quiverlauncher/ui";
 
-/** Sidebar: the library as a list down the left, the app picked in it open beside it (wide windows only). */
+/**
+ * Sidebar: the List layout, the library as a list down the left, the app picked in it open beside it (wide windows
+ * only). Called Sidebar once; still saved as that, so older launchers read it.
+ */
 export type Layout = "grid" | "sidebar";
+/** Where the grid's tabs and playlists go: in a row along the top, or down a panel on the left, as 3.x's tag filters were. */
+export type PlaylistsPlace = "top" | "side";
 /** Cover: the wide library art, as the catalog shows it. Box art: the portrait capsule. Icon: the app's icon on a plain tile. */
 export type CardImage = "cover" | "box" | "icon";
 /** The size the cards' finer points go by (app.css's size-*): the slider's scale, in three steps. */
@@ -19,6 +24,8 @@ export type CardSize = "small" | "medium" | "large";
 export type NameOrder = "game" | "app";
 export type LibraryView = {
   layout: Layout;
+  /** The grid's playlists: along the top, or a side panel (wide windows only, not TV mode). */
+  playlists: PlaylistsPlace;
   image: CardImage;
   /** How big the cards are, from the slider: their width over a Medium card's. */
   cardScale: number;
@@ -65,14 +72,18 @@ const sameDetails = (a: readonly LibraryDetail[], b: readonly LibraryDetail[]) =
  * A shelf of box art, medium, with names: unlike Browse's wide catalog cards.
  * A card for each app, as a new player added them; one for each game is the View menu's.
  */
-export const DEFAULT_VIEW: LibraryView = { layout: "grid", image: "box", cardScale: 1, size: "medium", names: true, nameOrder: "game", bothNames: true, continuePlaying: true, marks: true, greyUninstalled: true, byGame: false, details: ["icon", "subtitle"] };
+export const DEFAULT_VIEW: LibraryView = { layout: "grid", playlists: "top", image: "box", cardScale: 1, size: "medium", names: true, nameOrder: "game", bothNames: true, continuePlaying: true, marks: true, greyUninstalled: true, byGame: false, details: ["icon", "subtitle"] };
 /** TV mode's look (tvModeOn), over the player's own view, which stays saved for when it's left. */
-export const TV_VIEW: Pick<LibraryView, "layout" | "image" | "cardScale" | "size"> = { layout: "grid", image: "box", cardScale: 1.3, size: "large" };
+export const TV_VIEW: Pick<LibraryView, "layout" | "playlists" | "image" | "cardScale" | "size"> = { layout: "grid", playlists: "top", image: "box", cardScale: 1.3, size: "large" };
 
 // The choices' names put in the language when shown (i18n._), not here, where the module loads before any is picked.
 export const LAYOUTS: [Layout, MessageDescriptor][] = [
   ["grid", msg({ message: "Grid", comment: "Library layout" })],
-  ["sidebar", msg({ message: "Sidebar", comment: "Library layout: a list of names down the left" })],
+  ["sidebar", msg({ message: "List", comment: "Library layout, inspired by Steam's: a list of names down the left, the app picked in it open beside it" })],
+];
+export const PLAYLISTS_PLACES: [PlaylistsPlace, MessageDescriptor][] = [
+  ["top", msg({ message: "Top of library", comment: "Where the library grid's playlists go: tabs along the top" })],
+  ["side", msg({ message: "Side panel", comment: "Where the library grid's playlists go: a panel down the left" })],
 ];
 /** The narrowest window, in CSS pixels at the interface size, the sidebar fits beside an app's page in. */
 export const SIDEBAR_MIN_WIDTH = 900;
@@ -115,6 +126,7 @@ export function viewOf(saved?: Partial<LibraryView>): LibraryView {
   const scale = cardScaleOf(saved?.cardScale, SIZE_SCALES[pick(CARD_SIZES, saved?.size, DEFAULT_VIEW.size)]);
   return {
     layout: pick(LAYOUTS, saved?.layout, DEFAULT_VIEW.layout),
+    playlists: pick(PLAYLISTS_PLACES, saved?.playlists, DEFAULT_VIEW.playlists),
     image: pick(CARD_IMAGES, saved?.image, DEFAULT_VIEW.image),
     // A library saved before the slider keeps the size it had.
     cardScale: scale,

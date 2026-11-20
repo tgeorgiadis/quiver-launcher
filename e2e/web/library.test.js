@@ -108,7 +108,7 @@ test("the library's sidebar layout", async () => {
   await home();
   await open("button", { text: "Library" });
   await open('button[aria-label="View options"]');
-  await app.execute(() => [...document.querySelectorAll("button")].find((b) => b.innerText.trim() === "Sidebar").focus());
+  await app.execute(() => [...document.querySelectorAll("button")].find((b) => b.innerText.trim() === "List").focus());
   await reach.press(app, "South");
   await back();
   await everything("the sidebar layout");
@@ -117,6 +117,86 @@ test("the library's sidebar layout", async () => {
   await app.execute(() => [...document.querySelectorAll(".app-actions button")].find((b) => b.innerText.trim() === "Play").focus());
   await reach.press(app, "DPadDown");
   assert.match(await reach.focused(app), /^button ".+" in App sections$/);
+});
+
+test("the grid's playlists in a side panel: the d-pad gets everywhere, and a right-click puts them back on top", async () => {
+  const playlists = [
+    { key: "fav", name: "Favourites", tags: [], consoles: [], apps: ["entry_test-port"], order: 0 },
+    { key: "todo", name: "To finish", tags: [], consoles: [], apps: [], order: 1 },
+  ];
+  const s2 = await openApp({ state: { ...installed, collections: playlists, settings: { library: { playlists: "side" } } } });
+  try {
+    const { page: p } = s2;
+    await p.locator("article[data-slug]").first().waitFor();
+    // The tabs and playlists down the left, none along the top.
+    assert.deepEqual(await p.locator(".playlist-panel .panel-tab-name").allInnerTexts(), ["All", "Favourites", "To finish"]);
+    assert.equal(await p.locator("nav.playlists").count(), 0);
+    await p.locator(".panel-tab", { hasText: "Favourites" }).locator("button").first().click();
+    assert.equal(await p.locator(".panel-tab.active .panel-tab-name").innerText(), "Favourites");
+    // The open playlist's menu beside it.
+    assert.equal(await p.locator(".panel-tab.active .menu-button").count(), 1);
+    await reach.install(s2.app);
+    const { missed, outOfSight } = await reach.explore(s2.app, { ignore: 'button[aria-label="Back to top"], .card-action > .primary:only-of-type, .card-action .get-split > .primary' });
+    assert.deepEqual(missed, [], "the d-pad gets to everything");
+    assert.deepEqual(outOfSight, []);
+    // A right-click on the panel: back along the top, the playlist still open.
+    await p.locator(".playlist-panel").click({ button: "right", position: { x: 30, y: 20 } });
+    await p.getByRole("menuitem", { name: "Show at top of library" }).click();
+    await p.locator("nav.playlists").waitFor();
+    assert.equal(await p.locator(".playlist-panel").count(), 0);
+    assert.equal(await p.locator(".playlist-tab button.active").innerText(), "Favourites");
+    // And from the tabs, to the side again.
+    await p.locator("nav.playlists").click({ button: "right", position: { x: 4, y: 10 } });
+    await p.getByRole("menuitem", { name: "Show as side panel" }).click();
+    await p.locator(".playlist-panel").waitFor();
+  } finally {
+    await s2.close();
+  }
+});
+
+test("players from Quiver Launcher 3 are offered the side panel once", async () => {
+  const s2 = await openApp({ state: { ...installed, settings: { cameFromV3: true, oldLibraryNoticeSeen: true } } });
+  try {
+    const { page: p } = s2;
+    await p.locator(".playlists-tip").waitFor();
+    await p.locator(".playlists-tip").getByRole("button", { name: "Show as side panel" }).click();
+    await p.locator(".playlist-panel").waitFor();
+    assert.equal(await p.locator(".playlists-tip").count(), 0);
+    // Answered: not again, along the top once more.
+    await p.locator(".playlist-panel").click({ button: "right", position: { x: 30, y: 20 } });
+    await p.getByRole("menuitem", { name: "Show at top of library" }).click();
+    await p.locator("nav.playlists").waitFor();
+    assert.equal(await p.locator(".playlists-tip").count(), 0);
+  } finally {
+    await s2.close();
+  }
+  // Not for a player who never had 3.x.
+  const s3 = await openApp({ state: { ...installed, settings: { oldLibraryNoticeSeen: true } } });
+  try {
+    await s3.page.locator("article[data-slug]").first().waitFor();
+    await s3.page.waitForTimeout(300);
+    assert.equal(await s3.page.locator(".playlists-tip").count(), 0);
+  } finally {
+    await s3.close();
+  }
+});
+
+test("a playlist whose apps are all hidden says so, and its button shows them, in the grid and the List layout", async () => {
+  const playlists = [{ key: "pl", name: "Turtle", tags: [], consoles: [], apps: ["entry_test-port"], order: 0 }];
+  for (const layout of ["grid", "sidebar"]) {
+    const s2 = await openApp({ state: { ...installed, collections: playlists, settings: { library: { layout }, libraryTab: "pl", hidden: ["entry_test-port"] } } });
+    try {
+      const { page: p } = s2;
+      const note = p.locator(".hidden-note").first();
+      await note.waitFor();
+      assert.match(await note.innerText(), /1 app in this playlist is hidden\./);
+      await note.getByRole("button", { name: "Show hidden apps" }).click();
+      await p.locator(layout === "grid" ? "article[data-slug='test-port']" : ".sidebar-row").first().waitFor();
+      assert.equal(await p.locator(".hidden-note").count(), 0);
+    } finally {
+      await s2.close();
+    }
+  }
 });
 
 test("the library's sidebar rows line up: one icon size and one name column", async () => {

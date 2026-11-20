@@ -394,7 +394,7 @@ function BackgroundSetting() {
       <h3>
         <Trans>Library background</Trans>
       </h3>
-      <p className="muted">{name ?? <Trans>Show a picture of your own behind the library's grid. The Sidebar layout doesn't show it.</Trans>}</p>
+      <p className="muted">{name ?? <Trans>Show a picture of your own behind the library's grid. The List layout doesn't show it.</Trans>}</p>
       {url && broken !== url && (
         <div className="background-preview">
           <img src={url} alt="" style={{ opacity }} onError={() => setBroken(url)} />

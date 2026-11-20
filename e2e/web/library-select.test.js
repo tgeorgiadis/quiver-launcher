@@ -1,6 +1,6 @@
 /**
  * Selecting many library apps and changing them together (library-ticking.tsx): Ctrl+click and Shift+click, Select
- * in an app's menu, the bar's playlists, tags, hiding and uninstalling, the Sidebar layout, and a controller.
+ * in an app's menu, the bar's playlists, tags, hiding and uninstalling, the List layout, and a controller.
  */
 import { after, test } from "node:test";
 import assert from "node:assert/strict";
@@ -36,7 +36,9 @@ test("Ctrl+click selects, Shift+click selects a range, and a click then selects 
   const s = await open();
   const { page } = s;
   try {
-    // The order the library shows them: from the first to the last card.
+    // The order the library shows them: from the first to the last card, once all three are there (the catalog's come
+    // in after the first, and a range taken from fewer would miss them).
+    await s.until(async () => (await page.locator("article[data-tick]").count()) === state().library.length);
     const slugs = await page.$$eval("article[data-tick]", (els) => els.map((el) => el.dataset.slug));
     await card(page, slugs[0]).locator(".card-open").click({ modifiers: ["Control"] });
     await bar(page).waitFor();
@@ -166,7 +168,7 @@ test("Uninstall asks once for every app selected, naming them", async () => {
   }
 });
 
-test("in the Sidebar layout, rows select the same way, and a controller's A selects while B stops", async () => {
+test("in the List layout, rows select the same way, and a controller's A selects while B stops", async () => {
   const s = await open({ state: { ...state(), settings: { library: { layout: "sidebar" } } } }, ".sidebar-row[data-slug='test-port']");
   const { page } = s;
   try {

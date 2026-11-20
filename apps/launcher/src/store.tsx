@@ -1299,6 +1299,10 @@ export type Settings = {
   launched?: boolean;
   /** The first-run notice offering to bring over a Quiver Launcher 3 library was answered. */
   oldLibraryNoticeSeen?: boolean;
+  /** A Quiver Launcher 3 library was brought over here (importOld). */
+  cameFromV3?: boolean;
+  /** The library's tip for players from 3.x, that the playlists can go down the left as its tag filters did, was answered. */
+  playlistsTipSeen?: boolean;
   /** A library that was here already was looked over once for installs of Quiver Launcher 3's, and any offered were answered. */
   oldInstallsChecked?: boolean;
   /** The first start's setup (setup.tsx) was finished or skipped. */
@@ -2946,7 +2950,9 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
           ...all,
           ...playlists.map((p, i) => ({ key: newKey(), consoles: [], ...p, order: collections.length + i, account: userId, pending: userId ? true : undefined })),
         ]);
-      // The player brought a library over: the one found by itself isn't offered again.
+      // The player brought a library over: the one found by itself isn't offered again. Whose tag filters ran down the
+      // left, which the library's tip offers again.
+      setSettings((s) => ({ ...s, cameFromV3: true }));
       setOldLibrary(null);
       setOldInstalls(null);
       return missing;

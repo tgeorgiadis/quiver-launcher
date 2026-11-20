@@ -380,6 +380,18 @@ msgstr "已安裝 {have} 個"
 msgid "{hidden, plural, one {# app you hid, kept hidden} other {# apps you hid, kept hidden}}"
 msgstr "{hidden, plural, other {# 個你隱藏的應用程式，保持隱藏}}"
 
+#: ../../apps/launcher/src/library.tsx
+msgid "{hiddenHere, plural, one {# app here is hidden.} other {# apps here are hidden.}}"
+msgstr "{hiddenHere, plural, other {這裡有 # 個應用程式被隱藏。}}"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "{hiddenHere, plural, one {# app in this playlist is hidden.} other {# apps in this playlist are hidden.}}"
+msgstr "{hiddenHere, plural, other {此播放清單中有 # 個應用程式被隱藏。}}"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "{hiddenHere, plural, one {# hidden app matches.} other {# hidden apps match.}}"
+msgstr "{hiddenHere, plural, other {有 # 個隱藏的應用程式符合條件。}}"
+
 #: ../../apps/launcher/src/App.tsx
 msgid "{hiddenLeft, plural, one {# app here is hidden.} other {# apps here are hidden.}}"
 msgstr "{hiddenLeft, plural, one {這裡有 # 個應用程式處於隱藏狀態。} other {這裡有 # 個應用程式處於隱藏狀態。}}"
@@ -864,8 +876,8 @@ msgid "<0>TV mode:</0> a full-screen launcher for a controller"
 msgstr "<0>電視模式：</0>用控制器操作的全螢幕啟動器"
 
 #: ../../apps/launcher/src/setup.tsx
-msgid "<0>Two library views:</0> Sidebar, inspired by Steam, and Grid, with a range of options for box art, covers, icons and what each app shows"
-msgstr "<0>兩種遊戲庫檢視：</0>受 Steam 啟發的側邊欄，以及格狀排列，提供多種選項來顯示盒裝封面、封面、圖示和每個應用程式顯示的內容"
+msgid "<0>Two library views:</0> List, inspired by Steam, and Grid, with a range of options for box art, covers, icons and what each app shows, and your playlists along the top or in a side panel"
+msgstr "<0>兩種遊戲庫檢視：</0>受 Steam 啟發的清單，以及格狀排列，提供多種選項來顯示盒裝封面、封面、圖示和每個應用程式顯示的內容；播放清單可放在頂部或側邊面板"
 
 #: ../../apps/launcher/src/custom-art.tsx
 msgid "A cover's address follows your account. The other pictures, and any from a file, stay on this computer."
@@ -2411,6 +2423,7 @@ msgstr "你發起或留言過的討論會和新留言一起顯示在這裡。"
 #: ../../apps/launcher/src/announcements-ui.tsx
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/card-menu.tsx
+#: ../../apps/launcher/src/library.tsx
 msgid "Dismiss"
 msgstr "關閉"
 
@@ -3685,6 +3698,18 @@ msgstr "Linux 和 Windows（此電腦）"
 msgid "Linux only"
 msgstr "僅限 Linux"
 
+#. Library layout, inspired by Steam's: a list of names down the left, the app picked in it open beside it
+#: ../../apps/launcher/src/view.ts
+msgid "List"
+msgstr "清單"
+
+#. Library view option: how wide the List layout's list of names is
+#. Library view option: how wide the List layout's list of names is
+#: ../../apps/launcher/src/library-sidebar.tsx
+#: ../../apps/launcher/src/library-view.tsx
+msgid "List width"
+msgstr "清單寬度"
+
 #: ../../apps/launcher/src/discussions.tsx
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Load more"
@@ -3867,6 +3892,10 @@ msgstr "選單"
 #: ../../apps/launcher/src/window-bar.tsx
 msgid "Minimize"
 msgstr "最小化"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Miss the tag filters down the left from Quiver Launcher 3? Your playlists can go there too."
+msgstr "懷念 Quiver Launcher 3 左側的標籤篩選嗎？你的播放清單也可以放在那裡。"
 
 #: ../../apps/launcher/src/mods.tsx
 msgid "Mod requirements"
@@ -4260,6 +4289,10 @@ msgstr "尚未安裝模組。請在“瀏覽”中查詢。"
 #: ../../apps/launcher/src/mods.tsx
 msgid "No mods match your search."
 msgstr "沒有符合搜尋條件的模組。"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "No playlists yet. Add one with +, or save your filters as one."
+msgstr "還沒有播放清單。按 + 新增一個，或將篩選條件儲存為播放清單。"
 
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "No programs found in its folder."
@@ -4807,6 +4840,7 @@ msgid "Playlist name"
 msgstr "播放清單名稱"
 
 #. Button over the selected apps: puts them on playlists
+#. Heading over the player's playlists in the library's side panel
 #: ../../apps/launcher/src/detail.tsx
 #: ../../apps/launcher/src/library-ticking.tsx
 #: ../../apps/launcher/src/library.tsx
@@ -4820,6 +4854,12 @@ msgstr "播放清單和標籤"
 #: ../../apps/launcher/src/library.tsx
 msgid "Playlists for this app"
 msgstr "此應用程式的播放清單"
+
+#. Library view option: where the grid's playlists go
+#: ../../apps/launcher/src/library-view.tsx
+#: ../../apps/launcher/src/library.tsx
+msgid "Playlists position"
+msgstr "播放清單位置"
 
 #. A kind of project: a game brought to other platforms
 #. Project type: a game ported to another platform
@@ -5849,8 +5889,8 @@ msgid "Show {name}"
 msgstr "顯示 {name}"
 
 #: ../../apps/launcher/src/settings-page.tsx
-msgid "Show a picture of your own behind the library's grid. The Sidebar layout doesn't show it."
-msgstr "在遊戲庫的格狀檢視後方顯示自選圖片。“側邊欄”佈局不會顯示此圖片。"
+msgid "Show a picture of your own behind the library's grid. The List layout doesn't show it."
+msgstr "在遊戲庫的格狀檢視後方顯示自選圖片。“清單”佈局不會顯示此圖片。"
 
 #: ../../apps/launcher/src/announcements-ui.tsx
 msgid "Show again"
@@ -5877,6 +5917,16 @@ msgstr "顯示應用程式："
 #: ../../apps/launcher/src/App.tsx
 msgid "Show apps in your library"
 msgstr "顯示遊戲庫中的應用程式"
+
+#. Moves the library's playlist tabs to a panel down the left
+#: ../../apps/launcher/src/library.tsx
+msgid "Show as side panel"
+msgstr "顯示為側邊面板"
+
+#. Moves the library's playlists from the side panel to tabs along the top
+#: ../../apps/launcher/src/library.tsx
+msgid "Show at top of library"
+msgstr "顯示在遊戲庫頂部"
 
 #: ../../apps/launcher/src/library-view.tsx
 msgid "Show both names"
@@ -5987,15 +6037,10 @@ msgstr "連線遊戲控制器時，在螢幕底部顯示各個按鈕的功能"
 msgid "Showing"
 msgstr "顯示中"
 
-#. Library layout: a list of names down the left
+#. Where the library grid's playlists go: a panel down the left
 #: ../../apps/launcher/src/view.ts
-msgid "Sidebar"
-msgstr "側邊欄"
-
-#: ../../apps/launcher/src/library-sidebar.tsx
-#: ../../apps/launcher/src/library-view.tsx
-msgid "Sidebar width"
-msgstr "側邊欄寬度"
+msgid "Side panel"
+msgstr "側邊面板"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/discussions.tsx
@@ -6733,6 +6778,11 @@ msgstr "工具"
 #. Controller hint: what Back to top does
 #: ../../apps/launcher/src/spatial.ts
 msgid "Top"
+msgstr "頂部"
+
+#. Where the library grid's playlists go: tabs along the top
+#: ../../apps/launcher/src/view.ts
+msgid "Top of library"
 msgstr "頂部"
 
 #. Sort order for mods

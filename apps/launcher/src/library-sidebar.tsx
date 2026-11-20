@@ -109,7 +109,7 @@ function SidebarEdge({ split, width, onDrag, onDone }: { split: RefObject<HTMLDi
       className="sidebar-edge"
       role="separator"
       aria-orientation="vertical"
-      aria-label={t`Sidebar width`}
+      aria-label={t({ message: "List width", comment: "Library view option: how wide the List layout's list of names is" })}
       aria-valuemin={SIDEBAR_WIDTHS[0]}
       aria-valuemax={SIDEBAR_WIDTHS[1]}
       aria-valuenow={width ?? sidebar()?.offsetWidth}

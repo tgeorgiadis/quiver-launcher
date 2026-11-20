@@ -2,12 +2,14 @@
  * The library: tabs (All, Updates, Hidden and the player's playlists) over a search, a sort, the catalog's filters and optional
  * sections by the original console. A playlist holds apps picked by hand,
  * saved filters, or both; one can be shared on quiverlauncher.com, and a
- * playlist someone shared can be followed. The Sidebar layout shows the same
- * library as a list down the left, with the app picked in it open beside it.
+ * playlist someone shared can be followed. The grid's tabs and playlists can
+ * go down a panel on its left instead, as 3.x's tag filters did. The List
+ * layout (saved as "sidebar") shows the same library as a list down the left,
+ * with the app picked in it open beside it.
  */
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent as KeyEvent, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { Check, ChevronDown, ChevronsDownUp, ChevronsUpDown, Clock, CloudDownload, Compass, HardDrive, LayoutGrid, Library, ListPlus, MoreHorizontal, PanelLeft, Play, Plus, Search, SlidersHorizontal, X } from "lucide-react";
+import { Check, ChevronDown, ChevronsDownUp, ChevronsUpDown, Clock, CloudDownload, Compass, Eye, EyeOff, HardDrive, LayoutGrid, Library, List, ListPlus, MoreHorizontal, PanelLeft, PanelTop, Play, Plus, Search, SlidersHorizontal, X } from "lucide-react";
 import { msg, plural, t } from "@lingui/core/macro";
 import { Plural, Trans } from "@lingui/react/macro";
 import type { MessageDescriptor } from "@lingui/core";
@@ -27,6 +29,7 @@ import { withPictures, type Pictures } from "./custom-art";
 import { LIBRARY_SORTS, compareApps, isLibrarySort, type LibrarySort } from "./sort";
 import { keepsTab, keptFilters, type LibraryFilters } from "./view";
 import { track } from "./telemetry";
+import { native } from "./native";
 import { CardArt, GroupBySelect, PlatformChoice, ViewOptions, showCardScale, useLibraryView, usePlatforms, useSidebarFits } from "./library-view";
 import { PLATFORMS, forPlatforms, type Platform } from "./platforms";
 import { gridGroupBy, isStack, sections, stacks, type Stack } from "./group";
@@ -111,7 +114,7 @@ export function LibraryPage({
   page?: (entry: Entry) => ReactNode;
 }) {
   const { client, config, library: all, catalog, installs, jobs, get, add, settings, setSettings, collections, saveCollection, consoles, consoleNames, cache } = useLauncher();
-  const { view, groupBy } = useLibraryView();
+  const { view, groupBy, set: setView } = useLibraryView();
   // The cards' size, on the page (showCardScale), where View options' slider changes it as it moves. Up here, before
   // the sidebar's page returns early, so it's the same hooks either way.
   useEffect(() => showCardScale(view.cardScale), [view.cardScale]);
@@ -149,6 +152,20 @@ export function LibraryPage({
   // The Sidebar layout, where the window is wide enough for it; a grid where it isn't.
   const fits = useSidebarFits();
   const sidebar = view.layout === "sidebar" && fits && Boolean(page);
+  // The grid's tabs and playlists down a panel on its left, where it fits; along the top where it doesn't, or in TV mode.
+  const panel = !sidebar && view.playlists === "side" && fits && !tv;
+  // A right-click on the tabs, or the panel: a way to move them to the other place.
+  const placeMenu = useRef<((x: number, y: number) => void) | null>(null);
+  const openPlaceMenu = (e: { preventDefault: () => void; clientX: number; clientY: number; currentTarget: Element }) => {
+    e.preventDefault();
+    // The keyboard's Menu key fires it at no point: by the tabs instead.
+    if (e.clientX === 0 && e.clientY === 0) {
+      const r = e.currentTarget.getBoundingClientRect();
+      const s = zoom() / boxZoom();
+      return placeMenu.current?.((r.left + 12) * s, (r.top + 12) * s);
+    }
+    placeMenu.current?.(e.clientX, e.clientY);
+  };
   // The app open beside the sidebar; the first one until the player picks one.
   const [selected, setSelected] = useState<string>();
   const { user, unshareList } = useAccount();
@@ -305,14 +322,14 @@ export function LibraryPage({
   const filtering = Object.entries(filters).some(([key, value]) => value && (key !== "hidden" || hiddenChoice));
   // What a playlist saved from them would hold: not the hidden apps' choice.
   const toSave = Object.entries(filters).some(([key, value]) => value && key !== "hidden");
-  const matching = candidates.filter(({ entry, item }) => {
+  const passes = (entry: Entry, item?: LibraryItem) => {
     const text = [entry.projectName, ...entry.games.map((g) => g.title), ...entry.tags, ...(item?.overrides?.tags ?? [])].join(" ").toLowerCase();
-    return (
-      words.every((w) => text.includes(w)) &&
-      inTab(entry, item) &&
-      (!filtering || matches(toPlaylist(filters), facts(entry, item), makers))
-    );
-  });
+    return words.every((w) => text.includes(w)) && inTab(entry, item) && (!filtering || matches(toPlaylist(filters), facts(entry, item), makers));
+  };
+  const matching = candidates.filter(({ entry, item }) => passes(entry, item));
+  // The hidden apps the tab, search and filters would show but for the Hidden apps filter: said, with a way to show them,
+  // so a playlist of hidden apps doesn't look empty.
+  const hiddenHere = hiddenChoice && !hiddenToo ? all.filter((i) => hidden.has(i.id) && catalog[i.id] && passes(withOverrides(catalog[i.id], i.overrides), i)).length : 0;
   // Apps for other platforms than the ones picked here, unless installed here; shown for now when the player asks.
   const elsewhere = new Set(matching.flatMap(({ entry }) => (!installs[entry.id] && !forPlatforms(entry, platforms) ? [entry.id] : [])));
   // How many of them each platform not picked would show, by it in the platforms' menu.
@@ -444,7 +461,8 @@ export function LibraryPage({
     ...(hidden.size || tab === "hidden" ? [["hidden", t({ message: `Hidden (${hiddenCount})`, comment: "Library tab: apps the player hid" })] as [Tab, string]] : []),
     ...collections.map((c): [Tab, string] => [c.key, c.name]),
   ];
-  tabKeys.current = tabs.map(([key]) => key);
+  // None in the row while they're in the panel: the tools have it to themselves.
+  tabKeys.current = panel ? [] : tabs.map(([key]) => key);
   const [inRow, inMore] = [tabs.slice(0, shownTabs), tabs.slice(shownTabs)];
   const playlistName = collection?.name ?? "";
   const playlistMenu = collection && (
@@ -531,7 +549,23 @@ export function LibraryPage({
   );
   // The player's own playlist open, whose apps picked by hand the selected ones can come off.
   const ownPlaylist = collection && !collection.follows ? collection.key : undefined;
-  const empty = collection && !search && !filtering ? (collection.follows ? t`Nothing in this playlist.` : t`No apps in this playlist yet. Add some from each app's menu, or edit its filters.`) : t`Nothing here.`;
+  const showHidden = (
+    <button type="button" className="show-hidden" onClick={() => setFilters({ ...filters, hidden: "show" })}>
+      <Eye size={15} aria-hidden="true" /> <Trans>Show hidden apps</Trans>
+    </button>
+  );
+  // In place of "nothing here" when hidden apps are all there is: how many, and a way to show them.
+  const hiddenNote = hiddenHere > 0 && (
+    <span className="hidden-note">
+      {collection
+        ? plural(hiddenHere, { one: "# app in this playlist is hidden.", other: "# apps in this playlist are hidden." })
+        : search || filtering
+          ? plural(hiddenHere, { one: "# hidden app matches.", other: "# hidden apps match." })
+          : plural(hiddenHere, { one: "# app here is hidden.", other: "# apps here are hidden." })}
+      {showHidden}
+    </span>
+  );
+  const empty = hiddenNote ? hiddenNote : collection && !search && !filtering ? (collection.follows ? t`Nothing in this playlist.` : t`No apps in this playlist yet. Add some from each app's menu, or edit its filters.`) : t`Nothing here.`;
   if (sidebar && page) {
     // Under headings by console, or by when they were played or added; else one list.
     const groups: [string, Entry[]][] = groupBy
@@ -736,35 +770,56 @@ export function LibraryPage({
   const on = Object.entries(filters).filter(([key, value]) => value && (key !== "hidden" || hiddenChoice)).length;
   // An empty library over apps still installed here: their section says it all.
   const nothing = items.length === 0 && !(loose.length && tab === "all" && !search && !filtering);
-  return (
-    <TickArea shown={items.flatMap((e) => (inLibrary.has(e.id) ? [e.id] : []))} playlist={ownPlaylist}>
-      <LibraryBackground />
-      {resume && <ContinuePlaying entry={resume} played={installs[resume.id].lastPlayed!} onOpen={() => onOpen(resume)} action={action(resume)} />}
-      <div ref={bar} className={`library-bar${stacked ? " stacked" : ""}`}>
-        {!stacked && (
-          <nav ref={tabRow} className="playlists" aria-label={t`Playlists`}>
-            {inRow.map(([key, name]) => (
-              <span key={key} className="playlist-tab" data-tab={key}>
-                <button className={tab === key ? "active" : ""} aria-pressed={tab === key} onClick={() => setTab(key)}>
-                  <PlaylistIcon entry={iconOf(key)} />
-                  {name}
-                </button>
-                {/* The open playlist's menu: edit, share or delete it; a followed one is copied or removed. */}
-                {tab === key && collection && playlistMenu}
-              </span>
-            ))}
-            {/* The tabs that don't fit beside the search and the tools; the open one named on it, its menu beside it. */}
-            {inMore.length > 0 && (
-              <span className="playlist-tab more-tabs">
-                <span className="more-select">
-                  <select
-                    aria-label={t`More playlists`}
-                    className={inMore.some(([key]) => key === tab) ? "active" : ""}
-                    value={inMore.some(([key]) => key === tab) ? tab : ""}
-                    onChange={(e) => e.target.value && setTab(e.target.value)}
-                  >
-                    <option value="">{t({ message: "More…", comment: "Picks a playlist that isn't among the tabs" })}</option>
-                    {inMore.map(([key, name]) => (
+  // The library under the tabs, or beside the panel.
+  const body = (
+    <>
+      <PlaylistsTip panel={panel} fits={fits && !tv && !sidebar} onPanel={() => setView({ playlists: "side" })} />
+        {resume && <ContinuePlaying entry={resume} played={installs[resume.id].lastPlayed!} onOpen={() => onOpen(resume)} action={action(resume)} />}
+        <div ref={bar} className={`library-bar${stacked ? " stacked" : ""}${panel ? " with-panel" : ""}`}>
+          {!stacked && !panel && (
+            <nav ref={tabRow} className="playlists" aria-label={t`Playlists`} onContextMenu={openPlaceMenu}>
+              {inRow.map(([key, name]) => (
+                <span key={key} className="playlist-tab" data-tab={key}>
+                  <button className={tab === key ? "active" : ""} aria-pressed={tab === key} onClick={() => setTab(key)}>
+                    <PlaylistIcon entry={iconOf(key)} />
+                    {name}
+                  </button>
+                  {/* The open playlist's menu: edit, share or delete it; a followed one is copied or removed. */}
+                  {tab === key && collection && playlistMenu}
+                </span>
+              ))}
+              {/* The tabs that don't fit beside the search and the tools; the open one named on it, its menu beside it. */}
+              {inMore.length > 0 && (
+                <span className="playlist-tab more-tabs">
+                  <span className="more-select">
+                    <select
+                      aria-label={t`More playlists`}
+                      className={inMore.some(([key]) => key === tab) ? "active" : ""}
+                      value={inMore.some(([key]) => key === tab) ? tab : ""}
+                      onChange={(e) => e.target.value && setTab(e.target.value)}
+                    >
+                      <option value="">{t({ message: "More…", comment: "Picks a playlist that isn't among the tabs" })}</option>
+                      {inMore.map(([key, name]) => (
+                        <option key={key} value={key}>
+                          {name}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown size={14} aria-hidden="true" />
+                  </span>
+                  {inMore.some(([key]) => key === tab) && collection && playlistMenu}
+                </span>
+              )}
+              {addPlaylist}
+            </nav>
+          )}
+          <div className="library-tools page-tools">
+            {/* The tabs, folded: every tab and playlist in one menu, the open playlist's menu and Add a playlist beside it. */}
+            {stacked && !panel && (
+              <span className="library-show" onContextMenu={openPlaceMenu}>
+                <span className="quiet-select">
+                  <select aria-label={t({ message: "Show", comment: "Picks which library tab or playlist the library shows, where the tabs don't fit" })} value={collection || tabs.some(([key]) => key === tab) ? tab : "all"} onChange={(e) => setTab(e.target.value)}>
+                    {tabs.map(([key, name]) => (
                       <option key={key} value={key}>
                         {name}
                       </option>
@@ -772,171 +827,246 @@ export function LibraryPage({
                   </select>
                   <ChevronDown size={14} aria-hidden="true" />
                 </span>
-                {inMore.some(([key]) => key === tab) && collection && playlistMenu}
+                {playlistMenu}
+                {addPlaylist}
               </span>
             )}
-            {addPlaylist}
-          </nav>
-        )}
-        <div className="library-tools page-tools">
-          {/* The tabs, folded: every tab and playlist in one menu, the open playlist's menu and Add a playlist beside it. */}
-          {stacked && (
-            <span className="library-show">
-              <span className="quiet-select">
-                <select aria-label={t({ message: "Show", comment: "Picks which library tab or playlist the library shows, where the tabs don't fit" })} value={collection || tabs.some(([key]) => key === tab) ? tab : "all"} onChange={(e) => setTab(e.target.value)}>
-                  {tabs.map(([key, name]) => (
-                    <option key={key} value={key}>
-                      {name}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown size={14} aria-hidden="true" />
-              </span>
-              {playlistMenu}
-              {addPlaylist}
+            <span className="quiet-select library-sort">
+              <select aria-label={t({ message: "Sort", comment: "Label of the library's sort order" })} value={sort} onChange={(e) => setSort(e.target.value as LibrarySort)}>
+                {LIBRARY_SORTS.map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {i18n._(label)}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown size={14} aria-hidden="true" />
             </span>
-          )}
-          <span className="quiet-select library-sort">
-            <select aria-label={t({ message: "Sort", comment: "Label of the library's sort order" })} value={sort} onChange={(e) => setSort(e.target.value as LibrarySort)}>
-              {LIBRARY_SORTS.map(([value, label]) => (
-                <option key={value} value={value}>
-                  {i18n._(label)}
-                </option>
-              ))}
-            </select>
-            <ChevronDown size={14} aria-hidden="true" />
-          </span>
-          {!narrow && <GroupBySelect grid />}
-          {shelvesBy && foldAll(shelves.map(([name]) => name))}
-          {platformMenu}
-          {/* On a phone, Filters and Add an app are icons (their names kept for a screen reader). */}
-          <button
-            className={`tool filters-tool${filtersOpen || filtering ? " on" : ""}`}
-            aria-expanded={filtersOpen}
-            aria-controls="library-filters"
-            onClick={() => setFiltersOpen(!filtersOpen)}
-          >
-            <SlidersHorizontal size={15} />{" "}
-            <span className="tool-label">
-              <Trans>Filters</Trans>
-            </span>
-            {filtering && <span className="tool-count">{on}</span>}
-          </button>
-          <Popover label={t`View options`} icon={<LayoutGrid size={17} />} role="group" className="tool icon-only" panel="view-panel" align="end">
-            {() => <ViewOptions groups={narrow} />}
-          </Popover>
-          {!tv && (
-            <button className="primary add-app" onClick={onAdd}>
-              <Plus size={15} />{" "}
+            {!narrow && <GroupBySelect grid />}
+            {shelvesBy && foldAll(shelves.map(([name]) => name))}
+            {platformMenu}
+            {/* On a phone, Filters and Add an app are icons (their names kept for a screen reader). */}
+            <button
+              className={`tool filters-tool${filtersOpen || filtering ? " on" : ""}`}
+              aria-expanded={filtersOpen}
+              aria-controls="library-filters"
+              onClick={() => setFiltersOpen(!filtersOpen)}
+            >
+              <SlidersHorizontal size={15} />{" "}
               <span className="tool-label">
-                <Trans>Add an app</Trans>
+                <Trans>Filters</Trans>
               </span>
+              {filtering && <span className="tool-count">{on}</span>}
             </button>
-          )}
-        </div>
-        {/* The search on a row of its own under the tabs and tools, centred and larger, so it's seen first. */}
-        <div className="search-row">
-          <label className="search library-search">
-            <Search size={17} />
-            <input aria-label={t`Search your library`} placeholder={t`Search your library`} value={search} onChange={(e) => setSearch(e.target.value)} />
-            {search && (
-              <button type="button" className="search-clear" aria-label={t`Clear search`} onClick={() => setSearch("")}>
-                <X size={14} />
+            <Popover label={t`View options`} icon={<LayoutGrid size={17} />} role="group" className="tool icon-only" panel="view-panel" align="end">
+              {() => <ViewOptions groups={narrow} />}
+            </Popover>
+            {!tv && (
+              <button className="primary add-app" onClick={onAdd}>
+                <Plus size={15} />{" "}
+                <span className="tool-label">
+                  <Trans>Add an app</Trans>
+                </span>
               </button>
             )}
-          </label>
-        </div>
-      </div>
-      {/* Filters: pills to pick from while open; the ones on stay, each removable, while it's closed. */}
-      {(filtersOpen || filtering) && (
-        <div id="library-filters" className="filter-bar" role="group" aria-label={t`Library filters`}>
-          <span className="filter-pills">
-            <FilterFields
-              value={filters}
-              set={set}
-              many={many}
-              entries={choosable}
-              ownTags={ownTags}
-              hiddenChoice={hiddenChoice}
-              pills={{ all: filtersOpen, clear: clearFilter }}
-            />
-          </span>
-          {filtering && (
-            <span className="filter-actions">
-              <button type="button" className="text-button" onClick={() => setFilters({})}>
-                <Trans>Clear all</Trans>
-              </button>
-              {toSave && (
-                <button type="button" className="save-playlist" onClick={savePlaylist}>
-                  <ListPlus size={14} /> <Trans>Save as playlist</Trans>
+          </div>
+          {/* The search on a row of its own under the tabs and tools, centred and larger, so it's seen first. */}
+          <div className="search-row">
+            <label className="search library-search">
+              <Search size={17} />
+              <input aria-label={t`Search your library`} placeholder={t`Search your library`} value={search} onChange={(e) => setSearch(e.target.value)} />
+              {search && (
+                <button type="button" className="search-clear" aria-label={t`Clear search`} onClick={() => setSearch("")}>
+                  <X size={14} />
                 </button>
               )}
-            </span>
-          )}
-        </div>
-      )}
-      {notes}
-      {/* Empty but for other platforms' apps: the way to them under it. */}
-      {nothing && (
-        <div className="empty">
-          <p>{empty}</p>
-          {platformNote}
-        </div>
-      )}
-      {shelvesBy
-        ? shelves.map(([name, entries]) => (
-            <section key={name} className="console-section" aria-label={name}>
-              {/* Its heading folds its apps away, and back. */}
-              <h2>
-                <button type="button" className="section-fold" aria-expanded={!folded.has(name)} onClick={() => fold(name)}>
-                  {name}
-                  <ChevronDown size={18} aria-hidden="true" />
-                </button>
-              </h2>
-              {!folded.has(name) && grid(entries)}
-            </section>
-          ))
-        : byLetter && letters.length > 1
-          ? (
-              <div className="letters-wrap">
-                {grid(items)}
-                <LetterIndex grid={letterGrid} letters={letters} />
-              </div>
-            )
-          : grid(items)}
-      {!nothing && platformNote}
-      {loose.length > 0 && (
-        <section className="loose">
-          <header className="loose-heading">
-            <h2>{LOOSE}</h2>
-            {addAll()}
-          </header>
-          {/*
-            The library's own cards, in its view, each one stop for the d-pad: Add in Play's place, which Y presses, and
-            A its page. Uninstalling is on that page, as for any app.
-          */}
-          <div className={gridClass} style={gridStyle}>
-            {loose.map((entry) => (
-              <LibraryTile
-                key={entry.id}
-                entry={entry}
-                image={view.image}
-                size={view.size}
-                names={view.names}
-                nameOrder={view.nameOrder}
-                marks={view.marks}
-                details={view.details}
-                inLibrary={false}
-                onAdd={add}
-                action={cardAction}
-                onOpen={cardOpen}
-              />
-            ))}
+            </label>
           </div>
-        </section>
+        </div>
+        {/* Filters: pills to pick from while open; the ones on stay, each removable, while it's closed. */}
+        {(filtersOpen || filtering) && (
+          <div id="library-filters" className="filter-bar" role="group" aria-label={t`Library filters`}>
+            <span className="filter-pills">
+              <FilterFields
+                value={filters}
+                set={set}
+                many={many}
+                entries={choosable}
+                ownTags={ownTags}
+                hiddenChoice={hiddenChoice}
+                pills={{ all: filtersOpen, clear: clearFilter }}
+              />
+            </span>
+            {filtering && (
+              <span className="filter-actions">
+                <button type="button" className="text-button" onClick={() => setFilters({})}>
+                  <Trans>Clear all</Trans>
+                </button>
+                {toSave && (
+                  <button type="button" className="save-playlist" onClick={savePlaylist}>
+                    <ListPlus size={14} /> <Trans>Save as playlist</Trans>
+                  </button>
+                )}
+              </span>
+            )}
+          </div>
+        )}
+        {notes}
+        {/* Empty but for other platforms' apps: the way to them under it. */}
+        {nothing && (
+          <div className="empty">
+            <p>{empty}</p>
+            {platformNote}
+          </div>
+        )}
+        {shelvesBy
+          ? shelves.map(([name, entries]) => (
+              <section key={name} className="console-section" aria-label={name}>
+                {/* Its heading folds its apps away, and back. */}
+                <h2>
+                  <button type="button" className="section-fold" aria-expanded={!folded.has(name)} onClick={() => fold(name)}>
+                    {name}
+                    <ChevronDown size={18} aria-hidden="true" />
+                  </button>
+                </h2>
+                {!folded.has(name) && grid(entries)}
+              </section>
+            ))
+          : byLetter && letters.length > 1
+            ? (
+                <div className="letters-wrap">
+                  {grid(items)}
+                  <LetterIndex grid={letterGrid} letters={letters} />
+                </div>
+              )
+            : grid(items)}
+        {!nothing && platformNote}
+        {loose.length > 0 && (
+          <section className="loose">
+            <header className="loose-heading">
+              <h2>{LOOSE}</h2>
+              {addAll()}
+            </header>
+            {/*
+              The library's own cards, in its view, each one stop for the d-pad: Add in Play's place, which Y presses, and
+              A its page. Uninstalling is on that page, as for any app.
+            */}
+            <div className={gridClass} style={gridStyle}>
+              {loose.map((entry) => (
+                <LibraryTile
+                  key={entry.id}
+                  entry={entry}
+                  image={view.image}
+                  size={view.size}
+                  names={view.names}
+                  nameOrder={view.nameOrder}
+                  marks={view.marks}
+                  details={view.details}
+                  inLibrary={false}
+                  onAdd={add}
+                  action={cardAction}
+                  onOpen={cardOpen}
+                />
+              ))}
+            </div>
+          </section>
+        )}
+    </>
+  );
+  /** The tabs and playlists down the left: All, Updates and Hidden, then the player's playlists under their heading. */
+  const builtIn = (key: Tab) => (key === "all" ? <Library size={15} /> : key === "updates" ? <CloudDownload size={15} /> : key === "hidden" ? <EyeOff size={15} /> : null);
+  const panelRow = ([key, name]: [Tab, string]) => (
+    <span key={key} className={`panel-tab${tab === key ? " active" : ""}`} data-tab={key}>
+      <button className={tab === key ? "active" : ""} aria-pressed={tab === key} onClick={() => setTab(key)} title={name}>
+        {builtIn(key) ?? (iconOf(key) ? <PlaylistIcon entry={iconOf(key)} /> : <List size={15} />)}
+        <span className="panel-tab-name">{name}</span>
+      </button>
+      {tab === key && collection && playlistMenu}
+    </span>
+  );
+  const playlistPanel = panel && (
+    <nav className="playlist-panel" aria-label={t`Playlists`} onContextMenu={openPlaceMenu}>
+      <div className="panel-tabs">{tabs.filter(([key]) => !collections.some((c) => c.key === key)).map(panelRow)}</div>
+      <div className="panel-heading">
+        <span>
+          <Trans comment="Heading over the player's playlists in the library's side panel">Playlists</Trans>
+        </span>
+        {addPlaylist}
+      </div>
+      <div className="panel-tabs">
+        {tabs.filter(([key]) => collections.some((c) => c.key === key)).map(panelRow)}
+        {!collections.length && (
+          <p className="muted panel-empty">
+            <Trans>No playlists yet. Add one with +, or save your filters as one.</Trans>
+          </p>
+        )}
+      </div>
+    </nav>
+  );
+  return (
+    <TickArea shown={items.flatMap((e) => (inLibrary.has(e.id) ? [e.id] : []))} playlist={ownPlaylist}>
+      <LibraryBackground />
+      {panel ? (
+        <div className="library-panelled">
+          {playlistPanel}
+          <div className="library-main">{body}</div>
+        </div>
+      ) : (
+        body
       )}
+      {/* A right-click on the tabs or the panel: move them to the other place. */}
+      <Popover label={t`Playlists position`} icon={null} role="menu" opener={placeMenu} bare>
+        {(close) => (
+          <button role="menuitem" onClick={() => (close(), setView({ playlists: panel ? "top" : "side" }), track("playlists_moved", { to: panel ? "top" : "side", how: "menu" }))}>
+            {panel ? <PanelTop size={15} aria-hidden="true" /> : <PanelLeft size={15} aria-hidden="true" />}{" "}
+            {panel ? t({ message: "Show at top of library", comment: "Moves the library's playlists from the side panel to tabs along the top" }) : t({ message: "Show as side panel", comment: "Moves the library's playlist tabs to a panel down the left" })}
+          </button>
+        )}
+      </Popover>
       {dialogs}
     </TickArea>
+  );
+}
+
+/**
+ * Once, for a player who came from Quiver Launcher 3, whose tag filters ran down the left: the playlists can go there
+ * again. Only while they're along the top of a grid wide enough for the panel, until it's answered.
+ */
+function PlaylistsTip({ panel, fits, onPanel }: { panel: boolean; fits: boolean; onPanel: () => void }) {
+  const { settings, setSettings, config } = useLauncher();
+  const { view } = useLibraryView();
+  // Not while 3.x's library is still being offered (old-library.tsx), one notice at a time.
+  const due = !settings.playlistsTipSeen && Boolean(settings.oldLibraryNoticeSeen) && !panel && fits && view.layout === "grid" && config.os !== "android" && config.os !== "ios";
+  // A library brought over from 3.x says so; else whether 3.x's is still on this computer, asked once.
+  const [old, setOld] = useState<boolean | undefined>(settings.cameFromV3 || undefined);
+  useEffect(() => {
+    if (!due || old !== undefined) return;
+    let live = true;
+    native.findV3Library().then((l) => live && setOld(Boolean(l)), () => live && setOld(false));
+    return () => void (live = false);
+  }, [due, old]);
+  if (!due || !old) return null;
+  const seen = () => setSettings((s) => ({ ...s, playlistsTipSeen: true }));
+  return (
+    <div className="banner playlists-tip" role="status">
+      <PanelLeft size={18} aria-hidden="true" />
+      <p>
+        <Trans>Miss the tag filters down the left from Quiver Launcher 3? Your playlists can go there too.</Trans>
+      </p>
+      <button
+        className="primary"
+        onClick={() => {
+          // The view first: it saves over the settings it was drawn with, which seen() then adds to.
+          onPanel();
+          seen();
+          track("playlists_moved", { to: "side", how: "tip" });
+        }}
+      >
+        <Trans>Show as side panel</Trans>
+      </button>
+      <button type="button" className="icon-only tool" aria-label={t`Dismiss`} title={t`Dismiss`} onClick={seen}>
+        <X size={15} />
+      </button>
+    </div>
   );
 }
 

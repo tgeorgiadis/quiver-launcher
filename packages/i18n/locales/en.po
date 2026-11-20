@@ -379,6 +379,18 @@ msgstr "{have} installed"
 msgid "{hidden, plural, one {# app you hid, kept hidden} other {# apps you hid, kept hidden}}"
 msgstr "{hidden, plural, one {# app you hid, kept hidden} other {# apps you hid, kept hidden}}"
 
+#: ../../apps/launcher/src/library.tsx
+msgid "{hiddenHere, plural, one {# app here is hidden.} other {# apps here are hidden.}}"
+msgstr "{hiddenHere, plural, one {# app here is hidden.} other {# apps here are hidden.}}"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "{hiddenHere, plural, one {# app in this playlist is hidden.} other {# apps in this playlist are hidden.}}"
+msgstr "{hiddenHere, plural, one {# app in this playlist is hidden.} other {# apps in this playlist are hidden.}}"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "{hiddenHere, plural, one {# hidden app matches.} other {# hidden apps match.}}"
+msgstr "{hiddenHere, plural, one {# hidden app matches.} other {# hidden apps match.}}"
+
 #: ../../apps/launcher/src/App.tsx
 msgid "{hiddenLeft, plural, one {# app here is hidden.} other {# apps here are hidden.}}"
 msgstr "{hiddenLeft, plural, one {# app here is hidden.} other {# apps here are hidden.}}"
@@ -863,8 +875,8 @@ msgid "<0>TV mode:</0> a full-screen launcher for a controller"
 msgstr "<0>TV mode:</0> a full-screen launcher for a controller"
 
 #: ../../apps/launcher/src/setup.tsx
-msgid "<0>Two library views:</0> Sidebar, inspired by Steam, and Grid, with a range of options for box art, covers, icons and what each app shows"
-msgstr "<0>Two library views:</0> Sidebar, inspired by Steam, and Grid, with a range of options for box art, covers, icons and what each app shows"
+msgid "<0>Two library views:</0> List, inspired by Steam, and Grid, with a range of options for box art, covers, icons and what each app shows, and your playlists along the top or in a side panel"
+msgstr "<0>Two library views:</0> List, inspired by Steam, and Grid, with a range of options for box art, covers, icons and what each app shows, and your playlists along the top or in a side panel"
 
 #: ../../apps/launcher/src/custom-art.tsx
 msgid "A cover's address follows your account. The other pictures, and any from a file, stay on this computer."
@@ -2410,6 +2422,7 @@ msgstr "Discussions you start or comment in show here, with their new comments."
 #: ../../apps/launcher/src/announcements-ui.tsx
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/card-menu.tsx
+#: ../../apps/launcher/src/library.tsx
 msgid "Dismiss"
 msgstr "Dismiss"
 
@@ -3684,6 +3697,18 @@ msgstr "Linux and Windows (this computer)"
 msgid "Linux only"
 msgstr "Linux only"
 
+#. Library layout, inspired by Steam's: a list of names down the left, the app picked in it open beside it
+#: ../../apps/launcher/src/view.ts
+msgid "List"
+msgstr "List"
+
+#. Library view option: how wide the List layout's list of names is
+#. Library view option: how wide the List layout's list of names is
+#: ../../apps/launcher/src/library-sidebar.tsx
+#: ../../apps/launcher/src/library-view.tsx
+msgid "List width"
+msgstr "List width"
+
 #: ../../apps/launcher/src/discussions.tsx
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Load more"
@@ -3866,6 +3891,10 @@ msgstr "Menu"
 #: ../../apps/launcher/src/window-bar.tsx
 msgid "Minimize"
 msgstr "Minimize"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Miss the tag filters down the left from Quiver Launcher 3? Your playlists can go there too."
+msgstr "Miss the tag filters down the left from Quiver Launcher 3? Your playlists can go there too."
 
 #: ../../apps/launcher/src/mods.tsx
 msgid "Mod requirements"
@@ -4259,6 +4288,10 @@ msgstr "No mods are installed yet. Find some under Browse."
 #: ../../apps/launcher/src/mods.tsx
 msgid "No mods match your search."
 msgstr "No mods match your search."
+
+#: ../../apps/launcher/src/library.tsx
+msgid "No playlists yet. Add one with +, or save your filters as one."
+msgstr "No playlists yet. Add one with +, or save your filters as one."
 
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "No programs found in its folder."
@@ -4806,6 +4839,7 @@ msgid "Playlist name"
 msgstr "Playlist name"
 
 #. Button over the selected apps: puts them on playlists
+#. Heading over the player's playlists in the library's side panel
 #: ../../apps/launcher/src/detail.tsx
 #: ../../apps/launcher/src/library-ticking.tsx
 #: ../../apps/launcher/src/library.tsx
@@ -4819,6 +4853,12 @@ msgstr "Playlists and tags"
 #: ../../apps/launcher/src/library.tsx
 msgid "Playlists for this app"
 msgstr "Playlists for this app"
+
+#. Library view option: where the grid's playlists go
+#: ../../apps/launcher/src/library-view.tsx
+#: ../../apps/launcher/src/library.tsx
+msgid "Playlists position"
+msgstr "Playlists position"
 
 #. A kind of project: a game brought to other platforms
 #. Project type: a game ported to another platform
@@ -5848,8 +5888,8 @@ msgid "Show {name}"
 msgstr "Show {name}"
 
 #: ../../apps/launcher/src/settings-page.tsx
-msgid "Show a picture of your own behind the library's grid. The Sidebar layout doesn't show it."
-msgstr "Show a picture of your own behind the library's grid. The Sidebar layout doesn't show it."
+msgid "Show a picture of your own behind the library's grid. The List layout doesn't show it."
+msgstr "Show a picture of your own behind the library's grid. The List layout doesn't show it."
 
 #: ../../apps/launcher/src/announcements-ui.tsx
 msgid "Show again"
@@ -5876,6 +5916,16 @@ msgstr "Show apps for"
 #: ../../apps/launcher/src/App.tsx
 msgid "Show apps in your library"
 msgstr "Show apps in your library"
+
+#. Moves the library's playlist tabs to a panel down the left
+#: ../../apps/launcher/src/library.tsx
+msgid "Show as side panel"
+msgstr "Show as side panel"
+
+#. Moves the library's playlists from the side panel to tabs along the top
+#: ../../apps/launcher/src/library.tsx
+msgid "Show at top of library"
+msgstr "Show at top of library"
 
 #: ../../apps/launcher/src/library-view.tsx
 msgid "Show both names"
@@ -5986,15 +6036,10 @@ msgstr "Show what the buttons do along the bottom while a controller is connecte
 msgid "Showing"
 msgstr "Showing"
 
-#. Library layout: a list of names down the left
+#. Where the library grid's playlists go: a panel down the left
 #: ../../apps/launcher/src/view.ts
-msgid "Sidebar"
-msgstr "Sidebar"
-
-#: ../../apps/launcher/src/library-sidebar.tsx
-#: ../../apps/launcher/src/library-view.tsx
-msgid "Sidebar width"
-msgstr "Sidebar width"
+msgid "Side panel"
+msgstr "Side panel"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/discussions.tsx
@@ -6733,6 +6778,11 @@ msgstr "Tool"
 #: ../../apps/launcher/src/spatial.ts
 msgid "Top"
 msgstr "Top"
+
+#. Where the library grid's playlists go: tabs along the top
+#: ../../apps/launcher/src/view.ts
+msgid "Top of library"
+msgstr "Top of library"
 
 #. Sort order for mods
 #: ../../apps/launcher/src/App.tsx
