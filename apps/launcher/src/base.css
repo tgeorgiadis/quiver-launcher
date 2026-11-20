@@ -52,8 +52,6 @@
   --backdrop-2: #15171b;
   --backdrop-art: 0.6;
   --hero-shadow: 0 2px 16px #000a;
-  /* The window's light: the accent glowing from its top, and a cooler violet from the far corner. */
-  --glow: radial-gradient(1100px 560px at 8% -14%, #38bdf81c, transparent 64%), radial-gradient(900px 520px at 100% -10%, #6366f114, transparent 62%);
 }
 /* Light: the same layout on paper white, with darker accents so text keeps its contrast. */
 :root[data-theme="light"] {
@@ -101,7 +99,6 @@
   --backdrop-2: #eceef2;
   --backdrop-art: 0.35;
   --hero-shadow: none;
-  --glow: radial-gradient(1100px 560px at 8% -14%, #0ea5e912, transparent 64%), radial-gradient(900px 520px at 100% -10%, #6366f10c, transparent 62%);
 }
 * { box-sizing: border-box; }
 body { margin: 0; }
