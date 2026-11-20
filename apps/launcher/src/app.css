@@ -288,6 +288,10 @@ p.job-error { color: var(--danger); font-size: 13px; }
 .repo-link:hover { text-decoration: underline; }
 .readme { padding: 26px 30px; border: 1px solid var(--line); border-radius: 9px; background: var(--panel); }
 .readme h3, .versions h3, .controls h3 { font-size: 15px; margin-bottom: 10px; }
+.readme-top { display: flex; align-items: baseline; justify-content: space-between; gap: 6px 15px; flex-wrap: wrap; margin-bottom: 10px; }
+.readme-top h3 { margin-bottom: 0; }
+.readme-full { display: inline-flex; align-items: center; gap: 3px; font-size: 13px; color: var(--link); text-decoration: none; }
+.readme-full:hover { text-decoration: underline; }
 /* Room inside its clipping for a link's focus ring (3px out, 2px wide). */
 .readme-body { position: relative; overflow: hidden; padding: 5px; margin: -5px; }
 .versions { display: grid; gap: 8px; }

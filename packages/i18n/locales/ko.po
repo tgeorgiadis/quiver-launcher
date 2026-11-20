@@ -7413,6 +7413,10 @@ msgstr "매우 넓은 형식, 약 1920×620. 앱 페이지 뒤와 이어서 플�
 msgid "View {version} on {host}"
 msgstr "{host}에서 {version} 보기"
 
+#: ../../apps/launcher/src/detail.tsx
+msgid "View full README on {host}"
+msgstr "{host}에서 README 전체 보기"
+
 #. placeholder {0}: providerName(source.provider, source.host)
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "View on {0}"

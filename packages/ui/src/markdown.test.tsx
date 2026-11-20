@@ -146,6 +146,49 @@ describe("lone images", () => {
   });
 });
 
+describe("store badges", () => {
+  const show = (text: string) => render(<Markdown {...bases} text={text} />).container;
+  it("hides launcher and store badges, and the row they leave empty", () => {
+    const page = show(
+      [
+        "# Game",
+        "",
+        "[![Get it on a launcher](https://launcher.example/badge.svg)](https://www.quiverlauncher.com/app/game)",
+        "[![Verified on a store](https://cdn.example/v.svg)](https://store.steampowered.com/app/1)",
+        "",
+        "A native port.",
+      ].join("\n"),
+    );
+    expect(page.querySelectorAll("img")).toHaveLength(0);
+    expect([...page.querySelectorAll("p")].map((p) => p.textContent)).toEqual([
+      "A native port.",
+    ]);
+  });
+  it("hides an HTML badge, on a store's subdomain too", () => {
+    const page = show(
+      '<p align="center"><a href="https://someone.itch.io/game"><img src="itch.svg"></a></p>\n\nText.',
+    );
+    expect(page.querySelectorAll("img")).toHaveLength(0);
+    expect(page.textContent).toContain("Text.");
+  });
+  it("keeps text links to stores, other badges and the project's own links", () => {
+    const page = show(
+      [
+        "Also on [Steam](https://store.steampowered.com/app/1).",
+        "",
+        "[![Build](https://img.shields.io/b.svg)](https://github.com/o/r/actions)",
+        "[![Discord](d.svg)](https://discord.gg/x) [![Docs](docs.png)](docs/README.md)",
+      ].join("\n"),
+    );
+    expect(page.querySelector('a[href="https://store.steampowered.com/app/1"]')?.textContent).toBe("Steam");
+    expect(page.querySelectorAll("img")).toHaveLength(3);
+  });
+  it("keeps a store badge that's part of a sentence's words", () => {
+    const page = show("[Get it ![](icon.png) on GOG](https://www.gog.com/game/x)");
+    expect(page.querySelectorAll("img")).toHaveLength(1);
+  });
+});
+
 describe("alerts", () => {
   const alert = (text: string) =>
     render(<Markdown text={text} />).container.querySelector(".md-alert");

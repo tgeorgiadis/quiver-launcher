@@ -7413,6 +7413,10 @@ msgstr "Очень широкое, примерно 1920×620. За страни
 msgid "View {version} on {host}"
 msgstr "Открыть {version} на {host}"
 
+#: ../../apps/launcher/src/detail.tsx
+msgid "View full README on {host}"
+msgstr "Весь README на {host}"
+
 #. placeholder {0}: providerName(source.provider, source.host)
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "View on {0}"

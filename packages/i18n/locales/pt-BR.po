@@ -7413,6 +7413,10 @@ msgstr "Bem larga, cerca de 1920×620. Atrás da página do app e em Continuar j
 msgid "View {version} on {host}"
 msgstr "Ver a {version} no {host}"
 
+#: ../../apps/launcher/src/detail.tsx
+msgid "View full README on {host}"
+msgstr "Ver o README completo no {host}"
+
 #. placeholder {0}: providerName(source.provider, source.host)
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "View on {0}"
