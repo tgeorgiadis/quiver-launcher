@@ -195,6 +195,9 @@ button.danger { color: var(--danger); }
   width: max-content; max-width: min(640px, calc(100vw - 48px)); padding: 12px 18px; border: 1px solid var(--line-strong); border-radius: 10px;
   background: var(--raised); color: var(--strong); font-size: 14px; box-shadow: 0 10px 28px rgb(0 0 0 / 0.45); cursor: pointer;
 }
+.toast.has-action { display: flex; align-items: center; gap: 16px; padding-block: 8px; }
+.toast-action { flex: none; padding: 6px 12px; border-radius: 7px; color: var(--accent); font-weight: 600; }
+.toast-action:hover, .toast-action:focus-visible { background: var(--button-hover); }
 .notice-prompt { display: grid; gap: 16px; }
 /* On a narrow screen the buttons go under the text rather than squeezing it to a word a line. */
 .banner { flex-wrap: wrap; }
@@ -2457,6 +2460,10 @@ body:has(.tv-mode) .account-menu-name { display: block; }
 .tick-mark {
   position: absolute; top: 8px; left: 8px; z-index: 2; display: grid; place-items: center; width: 24px; height: 24px;
   border: 2px solid #fff; border-radius: 50%; background: rgb(0 0 0 / 0.45); color: var(--on-accent); box-shadow: 0 1px 4px rgb(0 0 0 / 0.5); pointer-events: none;
+}
+.hidden-mark {
+  position: absolute; bottom: 8px; left: 8px; z-index: 1; display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%;
+  color: #fff; background: rgb(0 0 0 / 0.62);
 }
 .tick-mark[data-ticked] { border-color: var(--accent); background: var(--accent); }
 .card-cover { position: relative; }

@@ -25,7 +25,8 @@ import { native } from "./native";
 import { track } from "./telemetry";
 import { zoom } from "./zoom";
 
-type Tick = { ticked: ReadonlySet<string>; toggle: (ids: string[]) => void };
+/** `select`: just these selected, as Undo after hiding them selects them again. */
+type Tick = { ticked: ReadonlySet<string>; toggle: (ids: string[]) => void; select: (ids: string[]) => void };
 const TickContext = createContext<Tick | null>(null);
 
 /** Whether the library is selecting, and whether these apps (a card's, a game card's ports) are selected; null outside the library. */
@@ -59,7 +60,7 @@ export function TickArea({ shown, playlist, children }: { shown: readonly string
     setTicked((t) => tickToggled(t, ids));
     anchor.current = ids[0];
   };
-  const tick: Tick = { ticked, toggle };
+  const tick: Tick = { ticked, toggle, select: (ids) => setTicked(new Set(ids)) };
   // Said on the page, for its looks (app.css) and a controller's buttons (spatial.ts); the cards stay where they are,
   // with no box around them that the layouts' rules would have to step over.
   useEffect(() => {
@@ -210,13 +211,26 @@ function HideButton({ ids, onDone }: { ids: string[]; onDone: () => void }) {
   );
 }
 
-/** Hides them all, or shows them all once they're all hidden, then stops selecting: they leave what shows. */
+/**
+ * Hides them all, or shows them all once they're all hidden, then stops selecting: they leave what shows. The toast
+ * saying so has Undo, which puts back the ones that changed and selects them all again.
+ */
 function useHide(ids: string[], onDone: () => void) {
   const { settings, setSettings, setNotice } = useLauncher();
-  const all = tickState(ids, (id) => Boolean(settings.hidden?.includes(id))) === "all";
+  const select = useContext(TickContext)?.select;
+  const isHidden = (id: string) => Boolean(settings.hidden?.includes(id));
+  const all = tickState(ids, isHidden) === "all";
   return () => {
+    const changed = ids.filter((id) => isHidden(id) === all);
     setSettings((s) => ({ ...s, hidden: withIds(s.hidden, ids, !all) }));
-    setNotice(all ? plural(ids.length, { one: "# app shows in your library again.", other: "# apps show in your library again." }) : plural(ids.length, { one: "# app hidden from your library.", other: "# apps hidden from your library." }));
+    const undo = () => {
+      setSettings((s) => ({ ...s, hidden: withIds(s.hidden, changed, all) }));
+      select?.(ids);
+      track("library_bulk_edit", { action: "undo-" + (all ? "show" : "hide"), apps: changed.length });
+    };
+    setNotice(all ? plural(ids.length, { one: "# app shows in your library again.", other: "# apps show in your library again." }) : plural(ids.length, { one: "# app hidden from your library.", other: "# apps hidden from your library." }), {
+      action: { label: t({ message: "Undo", comment: "Button on the toast after hiding apps: shows them again, selected" }), act: undo },
+    });
     track("library_bulk_edit", { action: all ? "show" : "hide", apps: ids.length });
     onDone();
   };

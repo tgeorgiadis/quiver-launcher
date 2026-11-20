@@ -2924,17 +2924,28 @@ msgstr "숨김"
 msgid "Hidden ({hiddenCount})"
 msgstr "숨김 ({hiddenCount})"
 
+#. Filter: whether the apps the player hid from the library show
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/library.tsx
 msgid "Hidden apps"
 msgstr "숨긴 앱"
 
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/library.tsx
 msgid "Hidden apps only"
 msgstr "숨긴 앱만"
 
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/library.tsx
 msgid "Hidden apps shown"
 msgstr "숨긴 앱 표시 중"
+
+#. Mark on an app's card the player hid
+#. Mark on an app's card the player hid
+#: ../../apps/launcher/src/library-sidebar.tsx
+#: ../../apps/launcher/src/library-tile.tsx
+msgid "Hidden from your library"
+msgstr "라이브러리에서 숨김"
 
 #. Hides a post from everyone
 #: ../../apps/launcher/src/discussions.tsx
@@ -2976,6 +2987,7 @@ msgid "Hide from library"
 msgstr "라이브러리에서 숨기기"
 
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/library.tsx
 msgid "Hide hidden apps"
 msgstr "숨긴 앱 안 보기"
 
@@ -4520,6 +4532,7 @@ msgid "Only apps in my library"
 msgstr "내 라이브러리의 앱만"
 
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/library.tsx
 msgid "Only hidden apps"
 msgstr "숨긴 앱만 보기"
 
@@ -5878,6 +5891,7 @@ msgid "Show dismissed ({count})"
 msgstr "닫은 공지 보기({count})"
 
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/library.tsx
 msgid "Show hidden apps"
 msgstr "숨긴 앱 보기"
 
@@ -6783,6 +6797,11 @@ msgstr "입력"
 #: ../../apps/launcher/src/sidebar.ts
 msgid "Under a minute"
 msgstr "1분 미만"
+
+#. Button on the toast after hiding apps: shows them again, selected
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "Undo"
+msgstr "실행 취소"
 
 #. Stops new comments showing on the account page
 #: ../../apps/launcher/src/discussions.tsx

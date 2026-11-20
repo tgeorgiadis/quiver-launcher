@@ -42,10 +42,11 @@ test("Ctrl+click selects, Shift+click selects a range, and a click then selects 
     await bar(page).waitFor();
     assert.match(await bar(page).innerText(), /1 selected/);
     await card(page, slugs.at(-1)).locator(".card-open").click({ modifiers: ["Shift"] });
+    await s.until(async () => (await ticked(page)).length === slugs.length);
     assert.deepEqual((await ticked(page)).sort(), [...slugs].sort());
     // A plain click now unselects, and no app page opens.
     await card(page, slugs.at(-1)).locator(".card-open").click();
-    assert.equal((await ticked(page)).length, slugs.length - 1);
+    await s.until(async () => (await ticked(page)).length === slugs.length - 1);
     assert.equal(await page.locator(".page-layer:not([hidden])").count(), 0, "no app's page opened");
     await page.keyboard.press("Escape");
     await bar(page).waitFor({ state: "detached" });
@@ -88,6 +89,53 @@ test("Select in an app's menu starts selecting, and the bar puts them all on a p
     await card(page, "test-port").waitFor({ state: "detached" });
     await card(page, "tampered-port").waitFor({ state: "detached" });
     assert.equal(await card(page, "test-remake").count(), 1);
+    assert.deepEqual(s.errors, []);
+  } finally {
+    await s.close();
+  }
+});
+
+test("Undo on the toast after hiding shows them again, still selected", async () => {
+  const s = await open();
+  const { page } = s;
+  try {
+    await card(page, "test-port").locator(".card-open").click({ modifiers: ["Control"] });
+    await card(page, "tampered-port").locator(".card-open").click();
+    await bar(page).getByRole("button", { name: "Hide from library" }).click();
+    await card(page, "test-port").waitFor({ state: "detached" });
+    const toast = page.locator(".toast");
+    assert.match(await toast.innerText(), /2 apps hidden from your library/);
+    await toast.getByRole("button", { name: "Undo" }).click();
+    await card(page, "test-port").waitFor();
+    await bar(page).waitFor();
+    assert.deepEqual((await ticked(page)).sort(), ["tampered-port", "test-port"]);
+    assert.equal(await page.locator(".toast").count(), 0);
+    assert.deepEqual(s.errors, []);
+  } finally {
+    await s.close();
+  }
+});
+
+test("hidden apps' tags can be filtered on, and the filter shows hidden apps on a playlist too", async () => {
+  const hiddenPort = { ...state(), settings: { hidden: ["entry_test-port"] } };
+  const s = await open({ state: hiddenPort }, "article[data-slug='tampered-port']");
+  const { page } = s;
+  try {
+    assert.equal(await card(page, "test-port").count(), 0);
+    await page.getByRole("button", { name: "Weekend" }).click();
+    await page.getByRole("button", { name: "Filters" }).click();
+    // The hidden app's own tag is one to pick.
+    const tags = await page.getByRole("combobox", { name: "Tag" }).locator("option").allInnerTexts();
+    assert.ok(tags.includes("Favourites"), tags.join(", "));
+    // Weekend's one app is hidden: with the filter it shows, marked.
+    await page.getByRole("combobox", { name: "Hidden apps" }).selectOption("show");
+    await card(page, "test-port").waitFor();
+    assert.equal(await card(page, "test-port").locator(".hidden-mark").count(), 1);
+    assert.equal(await card(page, "tampered-port").count(), 0, "still only the playlist's");
+    await page.getByRole("combobox", { name: "Hidden apps" }).selectOption("only");
+    assert.equal(await card(page, "test-port").count(), 1);
+    // Saving these as a playlist isn't offered by the hidden apps' choice alone.
+    assert.equal(await page.locator("#library-filters .save-playlist").count(), 0);
     assert.deepEqual(s.errors, []);
   } finally {
     await s.close();

@@ -4,7 +4,7 @@
  * sidebar stays in place under the top bar as the app's page scrolls.
  */
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent as KeyEvent, type PointerEvent, type ReactNode, type RefObject } from "react";
-import { Check, Pin, X } from "lucide-react";
+import { Check, EyeOff, Pin, X } from "lucide-react";
 import { t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import type { Entry } from "@quiverlauncher/api";
@@ -217,7 +217,7 @@ function SidebarRow({
   menu: boolean;
   onSelect: () => void;
 }) {
-  const { installs, jobs, catalog, play } = useLauncher();
+  const { installs, jobs, catalog, play, settings } = useLauncher();
   // Selecting many at once (library-ticking.tsx): only an app in the library, which has its menu.
   const { ticking, ticked } = useTicked(menu ? [entry.id] : []);
   const install = installs[entry.id];
@@ -269,6 +269,9 @@ function SidebarRow({
           <span className="sidebar-line">
             <span className="sidebar-name">{name}</span>
             {install?.updates === "pinned" && <Pin className="sidebar-pin" size={12} strokeWidth={2.5} aria-hidden="true" />}
+            {menu && settings.hidden?.includes(entry.id) && (
+              <EyeOff className="sidebar-pin" size={12} strokeWidth={2.5} aria-label={t({ message: "Hidden from your library", comment: "Mark on an app's card the player hid" })} />
+            )}
             {note && <span className="sidebar-note"> – {note}</span>}
           </span>
           {both && other && <span className="sidebar-other">{other}</span>}

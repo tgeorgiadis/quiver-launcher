@@ -181,6 +181,11 @@ export type LibraryFilters = {
   tag?: string;
   installed?: "yes" | "no";
   managed?: "quiver" | "manual";
+  /**
+   * Apps the player hid, which only the Hidden tab shows otherwise: `show` them with the others, or `only` them, on any tab or
+   * playlist. Not kept for next time, nor saved with a playlist.
+   */
+  hidden?: "show" | "only";
 };
 
 /**

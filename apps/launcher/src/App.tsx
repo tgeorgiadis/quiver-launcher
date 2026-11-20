@@ -2122,8 +2122,14 @@ function Notice() {
   const close = () => setNotice(null);
   if (!notice.stays) {
     return (
-      <div className="toast" role="status" onClick={close}>
+      <div className={`toast${notice.action ? " has-action" : ""}`} role="status" onClick={close}>
         <p>{notice.text}</p>
+        {/* Its click closes the toast too. */}
+        {notice.action && (
+          <button type="button" className="toast-action" onClick={notice.action.act}>
+            {notice.action.label}
+          </button>
+        )}
       </div>
     );
   }

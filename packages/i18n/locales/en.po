@@ -2923,17 +2923,28 @@ msgstr "Hidden"
 msgid "Hidden ({hiddenCount})"
 msgstr "Hidden ({hiddenCount})"
 
+#. Filter: whether the apps the player hid from the library show
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/library.tsx
 msgid "Hidden apps"
 msgstr "Hidden apps"
 
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/library.tsx
 msgid "Hidden apps only"
 msgstr "Hidden apps only"
 
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/library.tsx
 msgid "Hidden apps shown"
 msgstr "Hidden apps shown"
+
+#. Mark on an app's card the player hid
+#. Mark on an app's card the player hid
+#: ../../apps/launcher/src/library-sidebar.tsx
+#: ../../apps/launcher/src/library-tile.tsx
+msgid "Hidden from your library"
+msgstr "Hidden from your library"
 
 #. Hides a post from everyone
 #: ../../apps/launcher/src/discussions.tsx
@@ -2975,6 +2986,7 @@ msgid "Hide from library"
 msgstr "Hide from library"
 
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/library.tsx
 msgid "Hide hidden apps"
 msgstr "Hide hidden apps"
 
@@ -4519,6 +4531,7 @@ msgid "Only apps in my library"
 msgstr "Only apps in my library"
 
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/library.tsx
 msgid "Only hidden apps"
 msgstr "Only hidden apps"
 
@@ -5877,6 +5890,7 @@ msgid "Show dismissed ({count})"
 msgstr "Show dismissed ({count})"
 
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/library.tsx
 msgid "Show hidden apps"
 msgstr "Show hidden apps"
 
@@ -6782,6 +6796,11 @@ msgstr "Type"
 #: ../../apps/launcher/src/sidebar.ts
 msgid "Under a minute"
 msgstr "Under a minute"
+
+#. Button on the toast after hiding apps: shows them again, selected
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "Undo"
+msgstr "Undo"
 
 #. Stops new comments showing on the account page
 #: ../../apps/launcher/src/discussions.tsx
