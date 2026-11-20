@@ -3966,8 +3966,8 @@ msgid "Minimize"
 msgstr "Minimize"
 
 #: ../../apps/launcher/src/library.tsx
-msgid "Miss the tag filters down the left from Quiver Launcher 3? Your playlists can go there too."
-msgstr "Miss the tag filters down the left from Quiver Launcher 3? Your playlists can go there too."
+msgid "Miss the tag filters from Quiver Launcher 3? Try the side panel view that holds your playlists."
+msgstr "Miss the tag filters from Quiver Launcher 3? Try the side panel view that holds your playlists."
 
 #: ../../apps/launcher/src/mods.tsx
 msgid "Mod requirements"

@@ -1028,8 +1028,8 @@ export function LibraryPage({
 }
 
 /**
- * Once, for a player who came from Quiver Launcher 3, whose tag filters ran down the left: the playlists can go there
- * again. Only while they're along the top of a grid wide enough for the panel, until it's answered.
+ * Once, for a player who came from Quiver Launcher 3, whose tag filters ran down the left: try the side panel that
+ * holds the playlists. Only while they're along the top of a grid wide enough for the panel, until it's answered.
  */
 function PlaylistsTip({ panel, fits, onPanel }: { panel: boolean; fits: boolean; onPanel: () => void }) {
   const { settings, setSettings, config } = useLauncher();
@@ -1050,7 +1050,7 @@ function PlaylistsTip({ panel, fits, onPanel }: { panel: boolean; fits: boolean;
     <div className="banner playlists-tip" role="status">
       <PanelLeft size={18} aria-hidden="true" />
       <p>
-        <Trans>Miss the tag filters down the left from Quiver Launcher 3? Your playlists can go there too.</Trans>
+        <Trans>Miss the tag filters from Quiver Launcher 3? Try the side panel view that holds your playlists.</Trans>
       </p>
       <button
         className="primary"

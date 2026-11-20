@@ -3967,8 +3967,8 @@ msgid "Minimize"
 msgstr "최소화"
 
 #: ../../apps/launcher/src/library.tsx
-msgid "Miss the tag filters down the left from Quiver Launcher 3? Your playlists can go there too."
-msgstr "Quiver Launcher 3의 왼쪽 태그 필터가 그리우신가요? 재생 목록도 그곳에 둘 수 있습니다."
+msgid "Miss the tag filters from Quiver Launcher 3? Try the side panel view that holds your playlists."
+msgstr "Quiver Launcher 3의 태그 필터가 그리우신가요? 재생 목록을 모아 둔 사이드 패널 보기를 사용해 보세요."
 
 #: ../../apps/launcher/src/mods.tsx
 msgid "Mod requirements"
