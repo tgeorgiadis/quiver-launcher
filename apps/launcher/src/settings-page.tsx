@@ -468,19 +468,21 @@ function MusicSetting() {
   );
 }
 
-/** Why an app stays at the top of the apps folder when the others move into system folders. */
-function staysWhy(why: StaysReason) {
+/** Why apps stay at the top of the apps folder when the others move into system folders: said once over them. */
+function staysWhy(why: StaysReason): { title: string; hint: string } {
   switch (why) {
-    case "own":
-      return t`You added it from your own folder or program, and Quiver leaves those where you put them.`;
-    case "installer":
-      return t`A Windows installer put it there, and Windows looks after where it is.`;
     case "noConsole":
-      return t`It doesn't have a system. Choose one, and it can move into that system's folder.`;
+      return { title: t`No system yet`, hint: t`Choose one, and the app can move into that system's folder.` };
     case "unknown":
-      return t`Quiver couldn't look it up in the catalog to find its system. Try again once you're online.`;
+      return { title: t`Not found in the catalog`, hint: t`Quiver needs the catalog to know their system. Try again once you're online.` };
+    case "own":
+      return { title: t`Your own folders and programs`, hint: t`Quiver leaves these where you put them.` };
+    case "installer":
+      return { title: t`Installed by a Windows installer`, hint: t`Windows looks after where these are.` };
   }
 }
+/** The order the reasons are listed in: what the player can do something about first. */
+const STAYS_ORDER: StaysReason[] = ["noConsole", "unknown", "own", "installer"];
 
 /** A system for an app that has none, picked right where it's said, so it can move into that system's folder. */
 function ChooseSystem({ id, name }: { id: string; name: string }) {
@@ -742,14 +744,26 @@ export function AppsFolder({ inSetup, onBusy }: { inSetup?: boolean; onBusy?: (b
               other: "# apps stay at the top of the apps folder",
             })}
           </summary>
-          <ul className="apps-left">
-            {stays.map((a) => (
-              <li key={a.id}>
-                <strong>{a.folder}</strong>: {staysWhy(a.why)}
-                {a.why === "noConsole" && <ChooseSystem id={a.id} name={a.folder} />}
-              </li>
-            ))}
-          </ul>
+          {STAYS_ORDER.filter((why) => stays.some((a) => a.why === why)).map((why) => {
+            const { title, hint } = staysWhy(why);
+            return (
+              <section key={why} className="stays-group" aria-label={title}>
+                <p className="stays-head">
+                  <strong>{title}</strong> <span>{hint}</span>
+                </p>
+                <ul className="stays-list">
+                  {stays
+                    .filter((a) => a.why === why)
+                    .map((a) => (
+                      <li key={a.id}>
+                        <span className="stays-app">{a.folder}</span>
+                        {why === "noConsole" && <ChooseSystem id={a.id} name={a.folder} />}
+                      </li>
+                    ))}
+                </ul>
+              </section>
+            );
+          })}
         </details>
       )}
       <ul className="apps-folders">

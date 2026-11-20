@@ -941,10 +941,6 @@ msgstr "Há aspas sem fechar."
 msgid "A transparent PNG. For its Steam shortcut."
 msgstr "Um PNG transparente. Para o atalho na Steam."
 
-#: ../../apps/launcher/src/settings-page.tsx
-msgid "A Windows installer put it there, and Windows looks after where it is."
-msgstr "Um instalador do Windows o colocou ali, e o Windows cuida de onde ele fica."
-
 #. How system folders are named: by abbreviation
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Abbreviated (N64, GBC, PS2)"
@@ -1963,6 +1959,10 @@ msgstr "Escolher música…"
 #: ../../apps/launcher/src/old-library.tsx
 msgid "Choose my Quiver Launcher 3 folder…"
 msgstr "Escolher minha pasta do Quiver Launcher 3…"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Choose one, and the app can move into that system's folder."
+msgstr "Escolha um, e o app poderá ir para a pasta desse sistema."
 
 #: ../../apps/launcher/src/launch-options.tsx
 msgid "Choose the executable you want Quiver to run. It can be in any folder or drive."
@@ -3367,6 +3367,10 @@ msgstr "{version} instalada · {when}"
 msgid "Installed before Quiver offered it"
 msgstr "Instalada antes de o Quiver oferecê-la"
 
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Installed by a Windows installer"
+msgstr "Instalado por um instalador do Windows"
+
 #. Sort order for mods
 #: ../../apps/launcher/src/mods.tsx
 #: ../../apps/launcher/src/sort.ts
@@ -3443,10 +3447,6 @@ msgstr "É para"
 #: ../../apps/launcher/src/feedback.tsx
 msgid "It didn't run"
 msgstr "Não rodou"
-
-#: ../../apps/launcher/src/settings-page.tsx
-msgid "It doesn't have a system. Choose one, and it can move into that system's folder."
-msgstr "Ele não tem sistema. Escolha um, e ele poderá ir para a pasta desse sistema."
 
 #: ../../apps/launcher/src/App.tsx
 msgid "It gets a folder of its own in there, and updates keep installing into it."
@@ -4358,6 +4358,10 @@ msgstr "Nenhuma versão encontrada."
 msgid "No reports yet"
 msgstr "Ainda sem relatos"
 
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "No system yet"
+msgstr "Ainda sem sistema"
+
 #: ../../apps/launcher/src/tag-settings.tsx
 msgid "No tags are hidden."
 msgstr "Nenhuma tag está oculta."
@@ -4425,6 +4429,10 @@ msgstr "Ainda não confirmado"
 #: ../../apps/launcher/src/ways-to-play.tsx
 msgid "Not for this computer"
 msgstr "Não para este computador"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Not found in the catalog"
+msgstr "Não encontrado no catálogo"
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Not found. Is its drive connected?"
@@ -5057,10 +5065,6 @@ msgstr "O Quiver confere se é uma cópia que o jogo aceita."
 msgid "Quiver checks your copy, and puts it where the game reads it unless the game asks for it itself. It never downloads game files."
 msgstr "O Quiver confere sua cópia e coloca onde o jogo lê, a não ser que o jogo peça por ela. Ele nunca baixa arquivos de jogos."
 
-#: ../../apps/launcher/src/settings-page.tsx
-msgid "Quiver couldn't look it up in the catalog to find its system. Try again once you're online."
-msgstr "O Quiver não conseguiu procurá-lo no catálogo para encontrar o sistema. Tente de novo quando estiver online."
-
 #: ../../apps/launcher/src/music.ts
 msgid "Quiver couldn't open that music file. It may have been moved or deleted."
 msgstr "O Quiver não conseguiu abrir esse arquivo de música. Ele pode ter sido movido ou excluído."
@@ -5202,9 +5206,17 @@ msgstr "O Quiver Launcher envia dados de uso para ajudar a melhorá-lo. Eles nã
 msgid "Quiver Launcher: go to your library"
 msgstr "Quiver Launcher: ir para sua biblioteca"
 
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Quiver leaves these where you put them."
+msgstr "O Quiver os deixa onde você os colocou."
+
 #: ../../apps/launcher/src/own.tsx
 msgid "Quiver makes a folder for it in {dir} and opens it. Put the app's files there; Play starts the first program in it."
 msgstr "O Quiver cria uma pasta para ele em {dir} e a abre. Coloque os arquivos do app nela; Jogar inicia o primeiro programa que estiver lá."
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Quiver needs the catalog to know their system. Try again once you're online."
+msgstr "O Quiver precisa do catálogo para saber o sistema deles. Tente de novo quando estiver online."
 
 #: ../../apps/launcher/src/saves-tab.tsx
 msgid "Quiver saw the app save here."
@@ -7501,6 +7513,10 @@ msgstr "Windows (Wine)"
 msgid "Windows apps"
 msgstr "Apps de Windows"
 
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Windows looks after where these are."
+msgstr "O Windows cuida de onde eles ficam."
+
 #. A release that was taken back
 #: ../../apps/launcher/src/detail.tsx
 msgid "Withdrawn"
@@ -7525,10 +7541,6 @@ msgstr "Ontem"
 #: ../../apps/launcher/src/feedback.tsx
 msgid "You"
 msgstr "Você"
-
-#: ../../apps/launcher/src/settings-page.tsx
-msgid "You added it from your own folder or program, and Quiver leaves those where you put them."
-msgstr "Você o adicionou da sua própria pasta ou programa, e o Quiver deixa esses apps onde você os colocou."
 
 #: ../../apps/launcher/src/saves-tab.tsx
 msgid "You chose this folder."
@@ -7690,6 +7702,10 @@ msgstr "Sua biblioteca está vazia"
 #: ../../apps/launcher/src/setup.tsx
 msgid "Your library syncs across your devices, and you can review apps. Everything works without an account too."
 msgstr "Sua biblioteca sincroniza entre seus dispositivos, e você pode avaliar apps. Tudo funciona sem conta também."
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Your own folders and programs"
+msgstr "Suas próprias pastas e programas"
 
 #: ../../apps/launcher/src/tag-settings.tsx
 msgid "Your own tags, which you can rename or delete on every app at once, and the tags your apps have from the catalog, which you can hide on this computer."

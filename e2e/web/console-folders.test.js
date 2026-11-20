@@ -188,7 +188,7 @@ test("an app that stays for want of a system gets one picked right there, and th
     await page.locator('.settings-nav [data-section="apps"]').click();
     const stays = page.locator("details.apps-staying");
     await stays.locator("summary").click();
-    await stays.getByText("It doesn't have a system.").waitFor();
+    await stays.getByRole("region", { name: "No system yet" }).getByText("my-port").waitFor();
     assert.equal(await page.getByRole("button", { name: /^Move \d+ installed app/ }).count(), 0);
     await stays.getByRole("combobox", { name: "Choose a system for my-port" }).selectOption("n64");
     await s.until(() => page.evaluate((id) => JSON.stringify(window.__files.library.find((i) => i.id === id)?.overrides?.consoles) === '["n64"]', CUSTOM));

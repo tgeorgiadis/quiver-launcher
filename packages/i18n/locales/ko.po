@@ -941,10 +941,6 @@ msgstr "따옴표가 닫히지 않았어요."
 msgid "A transparent PNG. For its Steam shortcut."
 msgstr "투명 PNG. Steam 바로 가기에 쓰입니다."
 
-#: ../../apps/launcher/src/settings-page.tsx
-msgid "A Windows installer put it there, and Windows looks after where it is."
-msgstr "Windows 설치 프로그램이 그곳에 설치했으며, 위치는 Windows가 관리합니다."
-
 #. How system folders are named: by abbreviation
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Abbreviated (N64, GBC, PS2)"
@@ -1963,6 +1959,10 @@ msgstr "음악 선택…"
 #: ../../apps/launcher/src/old-library.tsx
 msgid "Choose my Quiver Launcher 3 folder…"
 msgstr "내 Quiver Launcher 3 폴더 선택…"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Choose one, and the app can move into that system's folder."
+msgstr "시스템을 고르면 앱을 해당 시스템 폴더로 옮길 수 있습니다."
 
 #: ../../apps/launcher/src/launch-options.tsx
 msgid "Choose the executable you want Quiver to run. It can be in any folder or drive."
@@ -3367,6 +3367,10 @@ msgstr "{version} 설치됨 · {when}"
 msgid "Installed before Quiver offered it"
 msgstr "Quiver가 제공하기 전에 설치됨"
 
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Installed by a Windows installer"
+msgstr "Windows 설치 프로그램으로 설치됨"
+
 #. Sort order for mods
 #: ../../apps/launcher/src/mods.tsx
 #: ../../apps/launcher/src/sort.ts
@@ -3443,10 +3447,6 @@ msgstr "대상 시스템"
 #: ../../apps/launcher/src/feedback.tsx
 msgid "It didn't run"
 msgstr "실행되지 않았어요"
-
-#: ../../apps/launcher/src/settings-page.tsx
-msgid "It doesn't have a system. Choose one, and it can move into that system's folder."
-msgstr "시스템이 없어요. 하나를 고르면 그 시스템의 폴더로 옮길 수 있어요."
 
 #: ../../apps/launcher/src/App.tsx
 msgid "It gets a folder of its own in there, and updates keep installing into it."
@@ -4358,6 +4358,10 @@ msgstr "버전을 찾지 못했어요."
 msgid "No reports yet"
 msgstr "아직 보고 없음"
 
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "No system yet"
+msgstr "아직 시스템 없음"
+
 #: ../../apps/launcher/src/tag-settings.tsx
 msgid "No tags are hidden."
 msgstr "숨긴 태그가 없습니다."
@@ -4425,6 +4429,10 @@ msgstr "아직 확인 안 됨"
 #: ../../apps/launcher/src/ways-to-play.tsx
 msgid "Not for this computer"
 msgstr "이 컴퓨터용 아님"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Not found in the catalog"
+msgstr "카탈로그에서 찾을 수 없음"
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Not found. Is its drive connected?"
@@ -5057,10 +5065,6 @@ msgstr "Quiver가 게임이 지원하는 사본인지 확인해요."
 msgid "Quiver checks your copy, and puts it where the game reads it unless the game asks for it itself. It never downloads game files."
 msgstr "Quiver가 사본을 확인하고, 게임이 직접 묻지 않으면 게임이 읽는 위치에 놓아요. 게임 파일은 절대 다운로드하지 않아요."
 
-#: ../../apps/launcher/src/settings-page.tsx
-msgid "Quiver couldn't look it up in the catalog to find its system. Try again once you're online."
-msgstr "카탈로그에서 찾지 못해 시스템을 알 수 없어요. 온라인 상태에서 다시 시도해 주세요."
-
 #: ../../apps/launcher/src/music.ts
 msgid "Quiver couldn't open that music file. It may have been moved or deleted."
 msgstr "Quiver에서 이 음악 파일을 열 수 없습니다. 파일이 이동되었거나 삭제되었을 수 있습니다."
@@ -5202,9 +5206,17 @@ msgstr "Quiver Launcher는 개선을 위해 사용 데이터를 보냅니다. �
 msgid "Quiver Launcher: go to your library"
 msgstr "Quiver Launcher: 라이브러리로 이동"
 
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Quiver leaves these where you put them."
+msgstr "Quiver는 이것들을 둔 자리에 그대로 둡니다."
+
 #: ../../apps/launcher/src/own.tsx
 msgid "Quiver makes a folder for it in {dir} and opens it. Put the app's files there; Play starts the first program in it."
 msgstr "Quiver가 {dir}에 폴더를 만들고 열어요. 그곳에 앱 파일을 넣으세요. 플레이를 누르면 그 안의 첫 번째 프로그램이 실행돼요."
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Quiver needs the catalog to know their system. Try again once you're online."
+msgstr "Quiver가 시스템을 알려면 카탈로그가 필요합니다. 온라인 상태에서 다시 시도하세요."
 
 #: ../../apps/launcher/src/saves-tab.tsx
 msgid "Quiver saw the app save here."
@@ -7501,6 +7513,10 @@ msgstr "Windows (Wine)"
 msgid "Windows apps"
 msgstr "Windows 앱"
 
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Windows looks after where these are."
+msgstr "이 항목들의 위치는 Windows가 관리합니다."
+
 #. A release that was taken back
 #: ../../apps/launcher/src/detail.tsx
 msgid "Withdrawn"
@@ -7525,10 +7541,6 @@ msgstr "어제"
 #: ../../apps/launcher/src/feedback.tsx
 msgid "You"
 msgstr "나"
-
-#: ../../apps/launcher/src/settings-page.tsx
-msgid "You added it from your own folder or program, and Quiver leaves those where you put them."
-msgstr "직접 가진 폴더나 프로그램에서 추가한 앱이며, Quiver는 이런 앱을 놓아둔 곳에 그대로 둡니다."
 
 #: ../../apps/launcher/src/saves-tab.tsx
 msgid "You chose this folder."
@@ -7690,6 +7702,10 @@ msgstr "라이브러리가 비어 있어요"
 #: ../../apps/launcher/src/setup.tsx
 msgid "Your library syncs across your devices, and you can review apps. Everything works without an account too."
 msgstr "라이브러리가 모든 기기에서 동기화되고, 앱 리뷰도 남길 수 있어요. 계정이 없어도 모든 기능을 쓸 수 있어요."
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Your own folders and programs"
+msgstr "직접 지정한 폴더와 프로그램"
 
 #: ../../apps/launcher/src/tag-settings.tsx
 msgid "Your own tags, which you can rename or delete on every app at once, and the tags your apps have from the catalog, which you can hide on this computer."

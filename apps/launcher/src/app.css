@@ -2553,6 +2553,12 @@ main:has(.tick-bar) { scroll-padding-bottom: 96px; }
 }
 .system-naming { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin: 4px 0 10px; font-size: 13.5px; }
 .system-naming select { min-width: 0; max-width: 100%; }
-.apps-left li { margin: 3px 0; }
-.settings-pane .apps-left .choose-system { display: block; width: auto; margin: 4px 0 2px; padding: 2px 8px; border: 1px dashed var(--line-strong); border-radius: 999px; background: transparent; color: var(--fg); font-size: 12px; max-width: 100%; }
-.settings-pane .apps-left .choose-system:is(:hover, :focus-visible) { border-style: solid; border-color: var(--accent); outline: 0; }
+/* Apps that stay at the top of the apps folder, in groups by why: said once, then a line for each app. */
+.stays-group { margin: 10px 0 0; max-width: 760px; }
+.stays-head { margin: 0 0 6px; font-size: 13px; }
+.stays-head strong { color: var(--strong); }
+.stays-list { margin: 0; padding: 0; list-style: none; border: 1px solid var(--line); border-radius: 10px; }
+.stays-list li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 12px; min-height: 40px; padding: 5px 10px; }
+.stays-list li + li { border-top: 1px solid var(--line); }
+.stays-app { min-width: 0; color: var(--fg); font-size: 13px; font-weight: 600; overflow-wrap: anywhere; }
+.settings-pane .stays-list .choose-system { flex: 0 1 15em; min-width: 0; padding: 4px 8px; font-size: 12.5px; }
