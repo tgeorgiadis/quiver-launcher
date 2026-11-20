@@ -11,7 +11,7 @@
   /* A top bar too wide for the window, even compacted (top-bar-fit.ts), scrolls sideways to its last buttons. */
   overflow-x: auto;
   /* Behind the page, which scrolls over it: drawn once, not with each step of a scroll. */
-  background: var(--glow), var(--bg);
+  background: var(--bg);
 }
 /* A control moved to (spatial.ts) keeps room for its focus ring at the page's top and bottom. */
 .shell > main { flex: 1; min-height: 0; overflow-y: auto; scroll-padding-block: 8px; }
@@ -46,7 +46,7 @@
 /* The website's brand (its src/styles.css), smaller as the window narrows. */
 .brand { display: flex; align-items: center; gap: 10px; padding: 0; flex-shrink: 0; }
 .brand > img { width: 34px; height: 34px; }
-.brand > span { display: flex; align-items: center; gap: 14px; font-size: 28px; font-weight: 750; letter-spacing: -1.3px; }
+.brand > span { display: flex; align-items: center; gap: 14px; font-size: 28px; font-weight: 700; letter-spacing: -1.3px; }
 .brand-label { font-size: 9px; letter-spacing: 1.5px; color: var(--text-4); font-weight: 600; border-left: 1px solid var(--line-strong); padding-left: 14px; }
 @media (max-width: 760px) {
   .brand-label { display: none; }
@@ -181,7 +181,7 @@ button.danger { color: var(--danger); }
 .shelf-all:hover { text-decoration: underline; text-underline-offset: 3px; }
 .shelf-arrows button { color: var(--text-2); }
 .shelf-arrows button:not(:disabled):hover { color: var(--strong); border-color: var(--line-strong); }
-.discover-all { margin: 8px 0 16px; font-size: 20px; font-weight: 750; letter-spacing: -0.02em; scroll-margin-top: 12px; }
+.discover-all { margin: 8px 0 16px; font-size: 20px; font-weight: 600; letter-spacing: -0.02em; scroll-margin-top: 12px; }
 /* A phone: two cards a rowful, not one across the screen (176px and its gap left room for just one). */
 @media (max-width: 520px) { .shelf-row { --shelf-card: 130px; gap: 14px; } }
 /* Wide cards (browse-cards.ts): as wide as the grid's, and on a phone one across with the next peeking in. */
@@ -195,6 +195,9 @@ button.danger { color: var(--danger); }
   width: max-content; max-width: min(640px, calc(100vw - 48px)); padding: 12px 18px; border: 1px solid var(--line-strong); border-radius: 10px;
   background: var(--raised); color: var(--strong); font-size: 14px; box-shadow: 0 10px 28px rgb(0 0 0 / 0.45); cursor: pointer;
 }
+.toast.has-action { display: flex; align-items: center; gap: 16px; padding-block: 8px; }
+.toast-action { flex: none; padding: 6px 12px; border-radius: 7px; color: var(--accent); font-weight: 600; }
+.toast-action:hover, .toast-action:focus-visible { background: var(--button-hover); }
 .notice-prompt { display: grid; gap: 16px; }
 /* On a narrow screen the buttons go under the text rather than squeezing it to a word a line. */
 .banner { flex-wrap: wrap; }
@@ -285,6 +288,10 @@ p.job-error { color: var(--danger); font-size: 13px; }
 .repo-link:hover { text-decoration: underline; }
 .readme { padding: 26px 30px; border: 1px solid var(--line); border-radius: 9px; background: var(--panel); }
 .readme h3, .versions h3, .controls h3 { font-size: 15px; margin-bottom: 10px; }
+.readme-top { display: flex; align-items: baseline; justify-content: space-between; gap: 6px 15px; flex-wrap: wrap; margin-bottom: 10px; }
+.readme-top h3 { margin-bottom: 0; }
+.readme-full { display: inline-flex; align-items: center; gap: 3px; font-size: 13px; color: var(--link); text-decoration: none; }
+.readme-full:hover { text-decoration: underline; }
 /* Room inside its clipping for a link's focus ring (3px out, 2px wide). */
 .readme-body { position: relative; overflow: hidden; padding: 5px; margin: -5px; }
 .versions { display: grid; gap: 8px; }
@@ -526,6 +533,8 @@ main.app-main { padding: 0 0 40px; }
 .save-source, .save-said { margin: 0; }
 .save-said { font-size: 13px; }
 .save-said.error { color: var(--red-text); }
+/* A backup that looks like more than saves: what it is and what to do, above Choose folder. */
+.save-look { display: grid; gap: 4px; padding: 10px 12px; border-left: 3px solid var(--accent); border-radius: 8px; background: var(--field); }
 /* Settings, Cloud saves (cloud-saves-page.tsx): the room used as a bar, then an app to a row that opens to its copies. */
 .storage-bar { height: 8px; max-width: 760px; border-radius: 8px; background: var(--field); overflow: hidden; }
 .storage-bar > span { display: block; height: 100%; border-radius: 8px; background: var(--accent); }
@@ -786,7 +795,7 @@ main.app-main { padding: 0 0 40px; }
 }
 .detail-tabs > button::after { content: ""; position: absolute; left: 12px; right: 12px; bottom: 0; height: 4px; border-radius: 4px; background: transparent; }
 .detail-tabs > button:hover { color: var(--fg); }
-.detail-tabs > button[aria-selected="true"] { color: var(--accent); font-weight: 750; }
+.detail-tabs > button[aria-selected="true"] { color: var(--accent); font-weight: 600; }
 .detail-tabs > button[aria-selected="true"]::after { background: var(--accent); }
 .tab-icon { flex-shrink: 0; color: var(--text-4); }
 .detail-tabs > button:hover .tab-icon { color: var(--fg); }
@@ -800,7 +809,7 @@ main.app-main { padding: 0 0 40px; }
 /* The shoulder buttons that change tab (pad-hints.tsx), at the row's ends, raised a little off it. */
 .tab-prompt {
   flex-shrink: 0; align-self: center; margin-top: -10px; padding: 3px 9px; border-radius: 8px; background: var(--field); color: var(--text-3);
-  box-shadow: 0 2px 0 var(--line-strong), 0 4px 10px var(--shadow); font-size: 11.5px; font-weight: 750; letter-spacing: 0.02em;
+  box-shadow: 0 2px 0 var(--line-strong), 0 4px 10px var(--shadow); font-size: 11.5px; font-weight: 600; letter-spacing: 0.02em;
 }
 
 .score-link { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 0; }
@@ -1224,7 +1233,7 @@ html[data-navigating] .shelf-row { scroll-snap-type: none; }
  */
 .library-bar > .search-row { margin-top: 24px; }
 .library-bar:has(> .search-row) { margin-bottom: 32px; }
-#library-filters { margin: -18px 0 30px; }
+#library-filters:not(.sidebar-filters) { margin: -18px 0 30px; }
 .search-clear { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; color: var(--muted); flex-shrink: 0; }
 .search-clear:hover, .search-clear:focus-visible { color: var(--strong); background: var(--field); }
 .quiet-select { position: relative; display: inline-flex; align-items: center; }
@@ -1266,6 +1275,59 @@ html[data-navigating] .shelf-row { scroll-snap-type: none; }
 @container library-bar (max-width: 1040px) {
   .library-bar .playlists { flex-basis: 100%; }
 }
+/*
+ * The grid's tabs and playlists down a panel on its left (view.ts's playlists: "side"), as 3.x's tag filters were:
+ * All, Updates and Hidden, then the playlists under their heading, Add a playlist beside it. It stays in view as the
+ * cards scroll, and scrolls itself when it's taller than the window.
+ */
+.library-panelled { display: grid; grid-template-columns: clamp(200px, 18vw, 260px) minmax(0, 1fr); gap: 0 28px; align-items: start; }
+.library-main { min-width: 0; }
+.playlist-panel {
+  position: sticky; top: -12px; display: flex; flex-direction: column; gap: 2px; max-height: calc(100vh - 96px); margin-top: -12px; padding: 12px 6px 12px 0;
+  overflow-y: auto; scrollbar-width: thin; scrollbar-color: transparent transparent;
+}
+.playlist-panel:hover { scrollbar-color: var(--line-strong) transparent; }
+.panel-tabs { display: flex; flex-direction: column; gap: 2px; }
+.panel-tab { display: flex; align-items: center; gap: 2px; min-width: 0; border-radius: 8px; }
+.panel-tab > button:not(.menu-button) {
+  display: flex; flex: 1; align-items: center; gap: 10px; min-width: 0; min-height: 34px; padding: 5px 10px; border-radius: 8px;
+  color: var(--text-2); font-size: 13.5px; font-weight: 500; text-align: left;
+}
+.panel-tab > button:not(.menu-button) > svg { flex-shrink: 0; width: 18px; color: var(--muted); }
+.panel-tab .playlist-icon { margin: 0; }
+.panel-tab-name { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.panel-tab:hover:where(:not([data-navigating] *)) { background: var(--panel); }
+.panel-tab:hover > button:not(.menu-button) { color: var(--strong); }
+.panel-tab.active { background: var(--accent-soft); box-shadow: inset 3px 0 var(--accent); }
+.panel-tab.active > button:not(.menu-button), .panel-tab.active > button > svg { color: var(--strong); }
+.panel-tab > .menu-button { flex-shrink: 0; margin-right: 4px; }
+.panel-heading {
+  display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-top: 14px; padding: 6px 0 4px 10px; border-top: 1px solid var(--line);
+  color: var(--text-3); font-size: 11px; font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase;
+}
+.panel-heading .menu-button { margin-right: 4px; }
+.panel-empty { margin: 4px 10px; font-size: 12.5px; }
+/* An empty tab or playlist whose apps are hidden: how many, and a button that shows them (library.tsx). */
+.hidden-note { display: inline-flex; flex-direction: column; align-items: center; gap: 12px; }
+.sidebar-empty .hidden-note { align-items: flex-start; }
+.hidden-note .show-hidden {
+  display: inline-flex; align-items: center; gap: 7px; padding: 7px 14px; border: 1px solid var(--line-strong); border-radius: 8px;
+  background: var(--button); color: var(--strong); font-size: 13px; font-weight: 500;
+}
+.hidden-note .show-hidden:hover { background: var(--button-hover); }
+/*
+ * With the playlists in the side panel, the tools' row has no tabs: the search goes at its start where there's room,
+ * and on its own row under them where there isn't.
+ */
+@container library-bar (min-width: 820px) {
+  .library-bar.with-panel { flex-wrap: nowrap; }
+  .library-bar.with-panel > .search-row { order: -1; flex: 1 1 auto; justify-content: flex-start; margin-top: 0; }
+  .library-bar.with-panel > .search-row .search { flex: 1 1 auto; max-width: 560px; height: 38px; }
+  .library-bar.with-panel .library-tools { flex: 0 0 auto; margin-left: auto; }
+  .library-bar.with-panel:has(> .search-row) { margin-bottom: 24px; }
+}
+/* The tip for players from 3.x that the playlists can go down the left (library.tsx). */
+.playlists-tip .icon-only { padding: 7px; }
 /*
  * A phone: two rows, then the search's. What to show and Add an app (an icon); then the sort, and the platforms,
  * Filters and View as icons. Group by is in View (library.tsx).
@@ -1315,8 +1377,17 @@ html[data-navigating] .shelf-row { scroll-snap-type: none; }
 
 /* Filters: one slim row of pill dropdowns; a pill that's on is tinted and has its own remove button. */
 .filter-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: -6px 0 18px; }
-/* The library's and the catalog's, under their centred search: centred with it. */
-:is(#library-filters, #browse-filters) { justify-content: center; }
+/*
+ * The library's and the catalog's, under their centred search: centred with it, Clear all and the like at the end, in
+ * columns as wide each side so the pills stay where they are as those come and go.
+ */
+:is(#library-filters, #browse-filters):not(.sidebar-filters) { display: grid; grid-template-columns: 1fr auto 1fr; align-items: start; gap: 8px; }
+.filter-pills { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 8px; grid-column: 2; min-width: 0; }
+:is(#library-filters, #browse-filters):not(.sidebar-filters) > .filter-actions { grid-column: 3; justify-self: end; margin-left: 0; }
+@media (max-width: 760px) {
+  :is(#library-filters, #browse-filters):not(.sidebar-filters) { grid-template-columns: minmax(0, 1fr); }
+  .filter-pills, :is(#library-filters, #browse-filters):not(.sidebar-filters) > .filter-actions { grid-column: 1; justify-self: center; }
+}
 .pill {
   position: relative; display: inline-flex; align-items: center; height: 30px; border: 1px solid var(--line); border-radius: 999px;
   background: var(--panel); color: var(--text-2); transition: border-color 0.15s;
@@ -1349,7 +1420,7 @@ html[data-navigating] .shelf-row { scroll-snap-type: none; }
 .pill-menu-group { padding: 8px 10px 3px; color: var(--muted); font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
 .pill-menu .game-menu-check { flex: none; width: 16px; height: 16px; border: 1px solid var(--line-strong); border-radius: 4px; }
 .pill-menu button[aria-checked="true"] .game-menu-check { border-color: var(--accent); background: var(--accent); color: var(--on-accent); }
-.filter-actions { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; }
+.filter-actions { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; white-space: nowrap; }
 .filter-bar .text-button { height: 30px; padding: 0 8px; border-radius: 6px; color: var(--link); font-size: 12.5px; }
 .filter-bar .text-button:hover { text-decoration: underline; }
 .filter-bar .save-playlist {
@@ -1547,7 +1618,7 @@ html[data-navigating] .shelf-row { scroll-snap-type: none; }
 .continue-label { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-3); }
 .continue-label .continue-meta { margin-left: 6px; letter-spacing: 0; text-transform: none; }
 /* Its name, not a link: the catalog button beside Play opens its page. */
-.continue-title { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; margin: 6px 0 0; max-width: 100%; color: var(--strong); font-size: 30px; font-weight: 750; letter-spacing: -0.02em; line-height: 1.2; text-shadow: var(--hero-shadow); }
+.continue-title { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; margin: 6px 0 0; max-width: 100%; color: var(--strong); font-size: 30px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.2; text-shadow: var(--hero-shadow); }
 .continue-version { color: var(--text-3); font-size: 16px; font-weight: 500; letter-spacing: 0; }
 .continue-meta { color: var(--text-2); font-size: 13px; }
 .continue-action { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 16px; }
@@ -1608,7 +1679,7 @@ html[data-navigating] .shelf-row { scroll-snap-type: none; }
 .library-tile .tile-tags > .ai-chip { flex: none; padding: 0 6px; font-size: 9px; }
 .library-tile .tile-tags > .platform-icons { flex: none; margin-left: auto; gap: 5px; color: inherit; font-size: 11px; }
 .layout-grid .library-tile .card-body > .tile-line { display: block; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; color: rgb(255 255 255 / 0.75); font-size: 12px; }
-.layout-grid .library-tile .card-title { min-width: 0; color: #fff; font-size: 17px; font-weight: 750; letter-spacing: -0.01em; text-shadow: 0 1px 2px rgb(0 0 0 / 0.8), 0 0 8px rgb(0 0 0 / 0.5); }
+.layout-grid .library-tile .card-title { min-width: 0; color: #fff; font-size: 17px; font-weight: 700; letter-spacing: 0; text-shadow: 0 1px 2px rgb(0 0 0 / 0.8), 0 0 8px rgb(0 0 0 / 0.5); }
 .layout-grid .library-tile .card-body > .card-subtitle { display: block; min-width: 0; color: rgb(255 255 255 / 0.82); font-size: 12.5px; text-shadow: 0 1px 2px rgb(0 0 0 / 0.8), 0 0 6px rgb(0 0 0 / 0.5); }
 .size-small .library-tile .card-title { font-size: 14px; }
 .size-large .library-tile .card-title { font-size: 20px; }
@@ -1668,7 +1739,7 @@ span.tile-mark[data-copy="failed"] { background: #ff6b6b; }
 .tile-play { display: grid; place-items: center; width: 54px; height: 54px; padding: 0; border-radius: 50%; color: var(--on-accent); background: var(--accent); box-shadow: 0 6px 18px rgb(0 0 0 / 0.45); }
 .tile-play svg { margin-left: 3px; }
 .tile-play.tile-get svg { margin-left: 0; }
-.tile-play:hover, .tile-play:focus-visible { background: var(--accent-hover); transform: scale(1.05); }
+.tile-play:hover, .tile-play:focus-visible { background: var(--accent-hover); }
 .library-tile[data-busy] .tile-main { left: 8px; right: 8px; bottom: 8px; padding: 6px; border-radius: 8px; background: var(--raised); box-shadow: 0 6px 18px rgb(0 0 0 / 0.35); }
 /* On one line, smaller, so "Downloading 46%" fits a narrow card's bar. */
 .library-tile .progress span { padding: 0 6px; font-size: 11.5px; white-space: nowrap; }
@@ -1696,7 +1767,6 @@ span.tile-mark[data-copy="failed"] { background: #ff6b6b; }
 }
 .layout-grid:not(.image-icon) .library-tile .tile-play svg { width: 16px; height: 16px; margin: 0; flex-shrink: 0; fill: none; }
 .layout-grid:not(.image-icon) .library-tile :is(.tile-play, .tile-update) .tile-label { position: static; width: auto; height: auto; overflow: hidden; clip-path: none; white-space: nowrap; text-overflow: ellipsis; }
-.layout-grid:not(.image-icon) .library-tile .tile-play:is(:hover, :focus-visible) { transform: none; }
 .layout-grid:not(.image-icon) .library-tile .tile-main .tile-update { padding: 0 10px; color: var(--strong); background: var(--field); font-size: 13px; }
 .layout-grid:not(.image-icon) .library-tile .tile-main .tile-update:is(:hover, :focus-visible) { background: var(--field-hover); }
 .tile-update .tile-label-short { display: none; }
@@ -1895,16 +1965,49 @@ body:has(.overlay) .shell > main { overflow: hidden; scrollbar-gutter: stable; }
 .snapshots li { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .recovery p { max-width: 520px; }
 
-/* The player's tags in Settings: each with how many apps have it, and renaming or deleting it. */
-.tag-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; max-width: 520px; }
-.tag-list li { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 36px; }
-.tag-list .tag-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.tag-list .tag-name .muted { font-size: 12px; margin-left: 6px; }
-.tag-list .tag-actions { display: flex; gap: 6px; flex-shrink: 0; }
-.tag-list .tag-actions { align-items: center; }
-.tag-all { display: flex; gap: 8px; margin: 10px 0 6px; }
-.tag-rename { display: flex; gap: 6px; flex: 1; }
-.tag-rename input { flex: 1; min-width: 0; }
+/* Tags in Settings: how many, and the way into their own window. */
+.tags-summary { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; max-width: 560px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 9px; background: var(--panel); }
+.tags-summary-counts { display: flex; flex-wrap: wrap; gap: 4px 18px; }
+.tags-summary-counts .muted { margin-left: 4px; }
+/* Their window: its tabs, search, filters and buttons stay put, and the list scrolls under them. */
+.detail.choose.tags-window { display: flex; flex-direction: column; width: min(860px, 100%); height: min(760px, 100%); overflow: hidden; }
+.tags-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 18px 24px 0; }
+.tags-head h2 { font-size: 18px; }
+.tags-tabs { flex-shrink: 0; margin: 0; padding: 4px 12px 0; border-bottom: 1px solid var(--line); }
+.tags-tabs > button { padding: 12px 12px; background: none; border-radius: 0; font-size: 14px; }
+.tags-tabs .tab-count { margin-left: 6px; }
+.tags-tools { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; padding: 12px 24px 14px; border-bottom: 1px solid var(--line); }
+.tags-find { display: flex; gap: 8px; }
+.tags-find input { flex: 1; min-width: 0; padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
+.tags-find input:focus { border-color: var(--accent); }
+.tags-find select { flex: none; min-width: 0; max-width: 45%; padding: 7px 10px; border: 1px solid var(--line); border-radius: 7px; background: var(--panel); }
+.tags-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
+.tags-bar .chip { padding: 4px 12px; background: none; font-size: 13px; font-weight: 400; }
+.tags-bar .chip.on { background: var(--chip-bg); color: var(--chip-fg); }
+.tags-bar .chip-count { margin-left: 4px; opacity: 0.7; font-size: 12px; }
+.tags-bulk { display: flex; gap: 8px; }
+.tags-scroll { flex: 1; min-height: 0; overflow-y: auto; padding: 12px 18px 18px; }
+.tags-scroll > p { padding: 12px 6px; }
+.catalog-tags { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 4px 8px; }
+/* The player's own: a name and its count, then Rename and Delete, in two columns where they fit. */
+.own-tags { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 4px 16px; }
+.own-tags li { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 46px; padding: 4px 6px 4px 12px; border-radius: 8px; }
+.own-tags li:hover, .own-tags li:focus-within { background: var(--field-hover); }
+.own-tags .tag-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.own-tags .tag-name .muted { font-size: 12px; margin-left: 6px; }
+.own-tags .tag-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.own-tags .own-tag-ask { min-width: 0; }
+.own-tags .own-tag-button { gap: 6px; min-height: 32px; padding: 5px 12px; }
+/* On a narrow window the names need the room: the buttons are their icons (and their names, read out). */
+@media (max-width: 520px) { .own-tags .own-tag-label { display: none; } .own-tags .own-tag-button { padding: 5px 9px; } }
+.own-tags .tag-rename { display: flex; gap: 6px; width: 100%; }
+.own-tags .tag-rename input { flex: 1; min-width: 0; padding: 6px 10px; border: 1px solid var(--accent); border-radius: 7px; background: var(--panel); }
+.catalog-tag { display: flex; align-items: center; gap: 10px; min-height: 38px; padding: 6px 10px; border-radius: 8px; cursor: pointer; }
+.catalog-tag:hover, .catalog-tag:focus-within { background: var(--field-hover); }
+.catalog-tag input { flex: none; }
+.catalog-tag-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.catalog-tag-count { flex: none; color: var(--muted); font-size: 12px; }
+.catalog-tag.off .catalog-tag-name { color: var(--muted); font-weight: 400; text-decoration: line-through; text-decoration-color: color-mix(in srgb, var(--muted) 60%, transparent); }
 
 /* A playlist's icon on its tab (one of its apps'), and choosing it. */
 .playlist-icon { display: inline-grid; width: 18px; height: 18px; margin: -2px 7px -2px -5px; overflow: hidden; border-radius: 5px; flex-shrink: 0; }
@@ -2295,7 +2398,7 @@ main:has(> div:not([hidden]) > .library-split) > div > .banner-stack > .banner.a
 body:has(.tv-mode) .account-menu-name { display: block; }
 .tv-mode .topbar nav button { font-size: 17px; font-weight: 600; }
 .tv-mode .topbar nav button:is(.active, :hover) { background: none; }
-.tv-mode .topbar nav button.active { color: var(--accent); font-weight: 750; }
+.tv-mode .topbar nav button.active { color: var(--accent); font-weight: 600; }
 .tv-mode .topbar nav button.active::after { bottom: 0; height: 4px; border-radius: 4px; }
 .tv-mode .topbar .tab-prompt { margin-top: 0; }
 /* The library's and Browse's tools, large enough to read and to find the focus on from across a room. */
@@ -2375,7 +2478,7 @@ body:has(.tv-mode) .account-menu-name { display: block; }
 .letter-big {
   position: fixed; left: 50%; top: 50%; z-index: 900; display: grid; place-items: center; width: 136px; height: 136px; translate: -50% -50%;
   border-radius: 28px; background: color-mix(in srgb, var(--panel) 88%, transparent); box-shadow: 0 20px 50px var(--shadow);
-  color: var(--accent); font-size: 80px; font-weight: 800; line-height: 1; pointer-events: none; animation: letter-big 0.9s ease forwards;
+  color: var(--accent); font-size: 80px; font-weight: 700; line-height: 1; pointer-events: none; animation: letter-big 0.9s ease forwards;
 }
 @keyframes letter-big {
   0% { opacity: 0; scale: 0.85; }
@@ -2416,3 +2519,127 @@ body:has(.tv-mode) .account-menu-name { display: block; }
 .banner .old-pictures { flex: 1 1 100%; order: 1; }
 .old-pictures.compact .old-picture { grid-template-rows: auto; padding: 8px 10px 8px 34px; }
 .old-pictures.compact .old-picture input { top: 11px; }
+
+/*
+ * Selecting many library apps (library-ticking.tsx). While selecting, a card shows a tick over its picture and none of its buttons, as any click selects it; a selected one is
+ * ringed in the accent colour.
+ */
+.tick-mark {
+  position: absolute; top: 8px; left: 8px; z-index: 2; display: grid; place-items: center; width: 24px; height: 24px;
+  border: 2px solid #fff; border-radius: 50%; background: rgb(0 0 0 / 0.45); color: var(--on-accent); box-shadow: 0 1px 4px rgb(0 0 0 / 0.5); pointer-events: none;
+}
+.hidden-mark {
+  position: absolute; bottom: 8px; left: 8px; z-index: 1; display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%;
+  color: #fff; background: rgb(0 0 0 / 0.62);
+}
+.tick-mark[data-ticked] { border-color: var(--accent); background: var(--accent); }
+.card-cover { position: relative; }
+[data-ticking] .library-tile[data-tick] .tile-overlay { display: none; }
+[data-ticking] .library-tile[data-tick] .card-open { cursor: pointer; }
+.library-tile[data-ticked] .card-cover { outline: 3px solid var(--accent); outline-offset: 3px; }
+.library-tile[data-ticked] .card-cover > :not(.tick-mark) { filter: brightness(0.8); }
+/* A sidebar row: the tick over its icon's corner, the row tinted. */
+.sidebar-row .tick-mark { position: static; flex: none; width: 18px; height: 18px; border: 1.5px solid var(--line-strong); background: none; box-shadow: none; }
+.sidebar-row .tick-mark[data-ticked] { border-color: var(--accent); background: var(--accent); }
+/* While selecting, the open app's row looks like any other: the selected ones stand out. */
+[data-ticking] .sidebar-row.selected:not([data-ticked]) { background: none; box-shadow: none; }
+.sidebar-row[data-ticked] { background: var(--accent-soft); }
+
+/* The bar along the foot: how many, Select all, what to change and Done; above a controller's hints, the toasts over it. */
+.tick-bar {
+  position: fixed; left: 50%; bottom: calc(20px + var(--pad-hints, env(safe-area-inset-bottom, 0px))); z-index: 24; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 8px; width: max-content; max-width: calc(100vw - 24px); padding: 8px 10px 8px 8px;
+  border: 1px solid var(--line-strong); border-radius: 14px; background: var(--raised); color: var(--strong); box-shadow: 0 12px 32px rgb(0 0 0 / 0.5);
+}
+body:has(.tick-bar) .toast { bottom: calc(92px + var(--pad-hints, env(safe-area-inset-bottom, 0px))); }
+/* Room under the last row of cards, so the bar doesn't cover them; the Sidebar layout's list scrolls in its own box. */
+main:has(.tick-bar) { scroll-padding-bottom: 96px; }
+.tick-space { height: 84px; }
+.library-split ~ .tick-space { display: none; }
+.library-split:has(~ .tick-space) .sidebar-list { padding-bottom: 84px; }
+.tick-bar button.icon { display: grid; place-items: center; width: 32px; height: 32px; padding: 0; border: 0; border-radius: 8px; background: none; color: var(--muted); }
+.tick-bar button.icon:hover { background: var(--field); color: var(--strong); }
+.tick-count { font-size: 14px; font-weight: 600; white-space: nowrap; }
+.tick-count .muted { font-weight: 400; }
+.tick-bar .text-button { padding: 0 6px; border: 0; background: none; color: var(--link); font-size: 13px; white-space: nowrap; }
+.tick-bar .text-button:hover { text-decoration: underline; }
+.tick-actions { display: flex; align-items: center; gap: 6px; margin-left: 6px; }
+.tick-bar .tool {
+  display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px; border: 1px solid var(--line); border-radius: 8px;
+  background: var(--panel); color: var(--fg); font-size: 13px; white-space: nowrap;
+}
+.tick-bar .tool:hover, .tick-bar .tool[aria-expanded="true"] { border-color: var(--line-strong); color: var(--strong); }
+.tick-bar .tick-done { height: 34px; padding: 0 16px; }
+/* Too narrow for each button: the one menu with all of it. */
+.tick-whole { display: none !important; }
+@media (max-width: 760px) {
+  .tick-part { display: none !important; }
+  .tick-whole { display: inline-flex !important; }
+}
+/* What changes on them: long lists of playlists or tags scroll. */
+.menu.floating .tick-menu { max-height: min(55vh, 360px); overflow-y: auto; min-width: 220px; }
+/* Scrolling, not squeezed: the headings keep their height. */
+.tick-menu > * { flex-shrink: 0; }
+.tick-menu button[aria-checked="mixed"] .game-menu-check { color: var(--muted); }
+.tv-mode .tick-bar .tool, .tv-mode .tick-bar .tick-done { height: 44px; font-size: 15px; }
+
+/* Settings › Apps folder: each console folder's name and place (console-folders.tsx), one line each in one box. */
+.console-folders { margin: 4px 0 8px; }
+.console-folders > summary { cursor: pointer; color: var(--strong); font-weight: 600; }
+.console-folders > p { margin: 6px 0 10px; font-size: 13px; }
+.console-folder-list { margin: 0 0 10px; padding: 0; list-style: none; border: 1px solid var(--line); border-radius: 10px; }
+.console-folder { display: grid; grid-template-columns: minmax(7em, 9.5em) minmax(0, 1fr); align-items: center; gap: 4px 12px; padding: 7px 10px; }
+.console-folder + .console-folder { border-top: 1px solid var(--line); }
+.console-folder-name { display: grid; min-width: 0; color: var(--strong); font-weight: 600; font-size: 13.5px; line-height: 1.25; }
+.console-folder-name .muted { font-size: 12px; font-weight: 400; }
+.console-folder-edit { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.console-folder-edit > button { flex: none; white-space: nowrap; }
+.console-folder-path { flex: 1 1 auto; min-width: 0; min-height: 32px; padding: 4px 9px; border: 1px solid var(--line-strong); border-radius: 7px; background: var(--input-bg); color: var(--fg); font-size: 13px; text-overflow: ellipsis; }
+.console-folder-path::placeholder { color: var(--muted); opacity: 0.8; }
+.console-folder-path[aria-invalid="true"] { border-color: var(--danger); }
+.console-folder-note, .console-folder-left { grid-column: 2; margin: 0; font-size: 13px; overflow-wrap: anywhere; }
+.console-folder-left { display: grid; gap: 6px; }
+.console-folder-left p { margin: 0; }
+.console-folder-left .row { gap: 8px; justify-content: flex-start; }
+.console-folder-left .row > button { flex: none; white-space: nowrap; }
+.console-folder-add { padding: 7px 10px; border: 1px dashed var(--line-strong); border-radius: 8px; background: transparent; color: var(--muted); font-size: 13px; max-width: 100%; }
+@media (max-width: 640px) {
+  .console-folder { grid-template-columns: minmax(0, 1fr); }
+  .console-folder-note, .console-folder-left { grid-column: 1; }
+  .console-folder-edit { flex-wrap: wrap; }
+  .console-folder-path { flex-basis: 100%; }
+}
+.system-naming { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin: 4px 0 10px; font-size: 13.5px; }
+.system-naming select { min-width: 0; max-width: 100%; }
+/* Apps that stay at the top of the apps folder, in groups by why: said once, then a line for each app. */
+.stays-group { margin: 10px 0 0; max-width: 760px; }
+.stays-head { margin: 0 0 6px; font-size: 13px; }
+.stays-head strong { color: var(--strong); }
+.stays-list { margin: 0; padding: 0; list-style: none; border: 1px solid var(--line); border-radius: 10px; }
+.stays-list li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 12px; min-height: 40px; padding: 5px 10px; }
+.stays-list li + li { border-top: 1px solid var(--line); }
+.stays-app { min-width: 0; color: var(--fg); font-size: 13px; font-weight: 600; overflow-wrap: anywhere; }
+.settings-pane .stays-list .choose-system { flex: 0 1 13em; min-width: 0; padding: 4px 8px; font-size: 12.5px; }
+.choose-system-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 6px; min-width: 0; }
+.choose-system-row .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.choose-system-row .chip { display: inline-flex; align-items: center; height: 26px; padding: 0 10px; font-size: 12px; cursor: pointer; }
+.choose-system-row .chip:hover { border-color: var(--accent); color: var(--strong); }
+.choose-system-to { flex-basis: 100%; text-align: right; font-size: 12px; color: var(--muted); }
+/* Settings › Apps folder: what's about system folders, set in under its toggle as that toggle's options. */
+.system-folders { display: grid; gap: 10px; margin: 2px 0 14px; padding: 2px 0 2px 14px; border-left: 2px solid var(--line); }
+.system-folders > p.muted { margin: 0; font-size: 13px; }
+.system-folders .system-naming, .system-folders .console-folders, .system-folders .apps-staying { margin: 0; }
+.system-sort { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; padding: 8px 8px 8px 12px; border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent); background: var(--accent-soft); border-radius: 10px; font-size: 13.5px; color: var(--fg); }
+.settings-pane .system-sort button { flex: 0 0 auto; }
+.system-folders .stays-group:first-of-type { margin-top: 8px; }
+/* Its two folds alike: the apps that stay, and the system folders' names and places. */
+.system-folders details > summary { cursor: pointer; color: var(--strong); font-size: 13.5px; font-weight: 600; }
+/* An apps folder's path on one line: what it's in shortens with an ellipsis, its own name stays (title: all of it). */
+.apps-folder-name { flex-wrap: nowrap; }
+.apps-folder-path { display: flex; min-width: 0; white-space: nowrap; }
+.apps-folder-path-head { min-width: 0; overflow: hidden; }
+.apps-folder-path[data-cut] > :last-child::before { content: "…"; }
+.apps-folder-name .apps-folder-badge { flex: none; }
+.apps-folder-info { grid-template-columns: minmax(0, 1fr); }
+.apps-folder-name, .apps-folder-path > span:last-child { min-width: 0; }
+.apps-folder-path > span:last-child { flex: none; }

@@ -13,7 +13,7 @@ import type { Entry } from "@quiverlauncher/api";
 import { Artwork, cardSources, coverOf } from "@quiverlauncher/ui";
 import { updateFor, useLauncher } from "./store";
 import { downloadsLine, downloadsOf, sizeLabel, type Downloads } from "./downloads";
-import { useLauncherUpdate } from "./update";
+import { LauncherNotes, useLauncherUpdate } from "./update";
 import { namesOf } from "./library-tile";
 import { withOverrides } from "./library";
 import { dayLabel } from "./sidebar";
@@ -182,6 +182,8 @@ export function DownloadsPage({
   };
   const [changelog, setChangelog] = useState<{ id: string; to: string; have?: string } | null>(null);
   const reading = changelog && entryOf(changelog.id);
+  // Quiver Launcher's own update: its notes, as the banner's What's new shows them.
+  const [launcherNotes, setLauncherNotes] = useState(false);
   /** What's new, over this page. An app the player added has no history on the site, so its own page, as for all its releases. */
   const seeChangelog = (entry: Entry, to: string, have?: string) => {
     if (isCustom(entry.id) || isLocal(entry.id)) onOpen(catalog[entry.id] ?? entry, { releases: to });
@@ -262,14 +264,21 @@ export function DownloadsPage({
                         <Trans>Updating…</Trans>
                       </span>
                     </div>
-                  ) : launcher.available.manual ? (
-                    <button className="primary wide" onClick={() => void native.openUrl(launcher.available!.url)}>
-                      <Trans>Open the release page</Trans>
-                    </button>
                   ) : (
-                    <button className="primary wide" onClick={() => void launcher.install(launcher.available!.version)}>
-                      {launcher.error ? t`Try again` : t`Update and restart`}
-                    </button>
+                    <span className="download-buttons">
+                      <button onClick={() => setLauncherNotes(true)}>
+                        <ScrollText size={15} /> <Trans>See changelog</Trans>
+                      </button>
+                      {launcher.available.manual ? (
+                        <button className="primary wide" onClick={() => void native.openUrl(launcher.available!.url)}>
+                          <Trans>Open the release page</Trans>
+                        </button>
+                      ) : (
+                        <button className="primary wide" onClick={() => void launcher.install(launcher.available!.version)}>
+                          {launcher.error ? t`Try again` : t`Update and restart`}
+                        </button>
+                      )}
+                    </span>
                   )}
                 </div>
               </li>
@@ -342,6 +351,7 @@ export function DownloadsPage({
           </p>
         )}
       </DownloadSection>
+      {launcherNotes && launcher.available && <LauncherNotes update={launcher.available} onClose={() => setLauncherNotes(false)} />}
       {changelog && reading && (
         <ChangelogDialog
           entry={catalog[changelog.id] ?? reading}

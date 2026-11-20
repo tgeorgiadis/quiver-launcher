@@ -1,12 +1,12 @@
 import { startTransition, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { ArrowLeft, ArrowUp, BookOpen, Save, ChevronDown, Cloud, CircleArrowDown, CircleCheck, CirclePlay, CircleUser, Compass, Disc3, Download, Eye, EyeOff, FolderInput, FolderOpen, FolderPen, FolderSearch, FolderSync, History, Info, MessagesSquare, LayoutGrid, Library, LogOut, PanelLeft, Mail, PackagePlus, Pencil, Pin, Play, Plus, Search, SettingsIcon, RotateCcw, ShieldAlert, ShieldCheck, ShieldX, SlidersHorizontal, Smile, Trash2, TriangleAlert, Tv, X } from "lucide-react";
+import { ArrowLeft, ArrowUp, BookOpen, Save, ChevronDown, Cloud, CircleArrowDown, CircleCheck, CirclePlay, CircleUser, Compass, Disc3, Download, Eye, EyeOff, FolderInput, FolderOpen, FolderPen, FolderSearch, FolderSync, History, Info, MessagesSquare, LayoutGrid, Library, LogOut, PanelLeft, Mail, PackagePlus, Pencil, Pin, Play, Plus, Search, SettingsIcon, RotateCcw, ShieldAlert, ShieldCheck, ShieldX, SlidersHorizontal, Smile, Trash2, TriangleAlert, Tv, Wrench, X } from "lucide-react";
 import type { AppQuery, Asset, Entry, GameMatch, Os, Page, ProjectType } from "@quiverlauncher/api";
 import { msg, plural, t } from "@lingui/core/macro";
 import { Plural, Trans } from "@lingui/react/macro";
 import { i18n } from "@quiverlauncher/i18n";
 import type { MessageDescriptor } from "@lingui/core";
 import { Artwork, EntryCard, OS_NAMES, PlatformIcons, ReleaseBadge, SourcedImage, heroSources } from "@quiverlauncher/ui";
-import { canMigrateToFlatpak, PORTABLE_FILE, availableOn, canGet, catalogOs, declinedUpdate, earlyGetOffer, earlyOffer, filesAddable, folderNameOf, hasUpdate, locatable, movable, noProgram, pulledVerified, renamable, rootOf, samePath, skipped, stillWaiting, tvModeOn, updateFor, updatesOf, useLauncher, type AppMove, type Choice } from "./store";
+import { canMigrateToFlatpak, PORTABLE_FILE, availableOn, canGet, catalogOs, declinedUpdate, earlyGetOffer, earlyOffer, filesAddable, folderNameOf, hasUpdate, locatable, movable, noProgram, pulledVerified, renamable, rootOf, samePath, skipped, stillWaiting, tvModeOn, updateFor, updatesByItself, updatesOf, useLauncher, type AppMove, type Choice } from "./store";
 import { flatpakAsset } from "./assets";
 import { TabPrompt } from "./pad-hints";
 import { Dialog, FilterPill, LibraryPage, MultiPill, Popover, consoleOptions, filterLabel, pickedLabel, projectTypeOptions, withOverrides, type MultiOption } from "./library";
@@ -29,7 +29,7 @@ import { ErrorBoundary } from "./boundary";
 import { FORWARD, pageArea, toTop } from "./spatial";
 import { track, trackScreen } from "./telemetry";
 import { TelemetryNotice, useTelemetrySetup } from "./telemetry-ui";
-import { useAccount, type CatalogDefaults } from "./account";
+import { managesCatalog, useAccount, type CatalogDefaults } from "./account";
 import { native } from "./native";
 import { sizeLabel } from "./downloads";
 import { correctionClient } from "./corrections";
@@ -60,8 +60,8 @@ import { AppUpdatesNotice } from "./app-updates";
 
 type Tab = "library" | "browse";
 /** A page over the library or catalog: an app's, an original game's, Downloads or Settings. */
-/** Where an app's page opens: its Releases, with a version's notes open (Downloads' See changelog), or its Player feedback. */
-export type PageAt = { releases: string } | { feedback: true } | { readme: true };
+/** Where an app's page opens: its Releases, with a version's notes open (Downloads' See changelog), its Player feedback, or its Discussions (a discussion's app name). */
+export type PageAt = { releases: string } | { feedback: true } | { readme: true } | { discussions: true };
 type View =
   | { kind: "app"; entry: Entry; at?: PageAt }
   | { kind: "game"; game: GameLink }
@@ -82,7 +82,7 @@ export function App() {
   useUpdateCheck();
   useTray();
   useDiscordPresence();
-  const { library, client, settings, setSettings, config } = useLauncher();
+  const { library, client, settings, setSettings, config, catalog } = useLauncher();
   // TV mode, a larger look over the library and Browse: turned on, or by itself in Steam's Game Mode.
   const tv = tvModeOn(settings, config);
   const setTv = (on: boolean) => setSettings({ ...settings, tvMode: on ? "on" : "off" });
@@ -126,7 +126,18 @@ export function App() {
   const openSettings = useCallback(() => open({ kind: "settings" }), [open]);
   const openCommunity = useCallback(() => open({ kind: "community" }), [open]);
   const openDiscussion = useCallback((id: string) => open({ kind: "discussion", id }), [open]);
-  const discussionNav = useMemo(() => ({ openDiscussion, openCommunity, signIn: () => setSigningIn(true) }), [openDiscussion, openCommunity]);
+  // A discussion's app name opens that app's Discussions; an app not in the catalog loaded here is asked for by its slug.
+  const openAppDiscussions = useCallback(
+    async (entryId: string, slug?: string) => {
+      const entry = catalog[entryId] ?? (slug ? (await client.app(slug).catch(() => null))?.entry : undefined);
+      if (entry) openApp(entry, { discussions: true });
+    },
+    [catalog, client, openApp],
+  );
+  const discussionNav = useMemo(
+    () => ({ openDiscussion, openCommunity, openApp: openAppDiscussions, signIn: () => setSigningIn(true) }),
+    [openDiscussion, openCommunity, openAppDiscussions],
+  );
   // An app's Tags menu asks for the player's tags, in Settings' Library section (tag-settings.tsx).
   useEffect(() => {
     const manage = () => open({ kind: "settings", section: "library" });
@@ -252,12 +263,12 @@ export function App() {
         </nav>
         {tv && <Clock />}
         <AccountButton onSignIn={() => setSigningIn(true)} />
-        {/* The library as a grid or with its sidebar, from wherever the library is, as TV mode is beside it; none where the sidebar doesn't fit (a phone). */}
+        {/* The library as a grid or a list, from wherever the library is, as TV mode is beside it; none where the sidebar doesn't fit (a phone). */}
         {tab === "library" && sidebarFits && !tv && (
           <button
             className="icon layout-button"
-            aria-label={sidebar ? t`Show the library as a grid` : t`Show the library with a sidebar`}
-            title={sidebar ? t`Show the library as a grid` : t`Show the library with a sidebar`}
+            aria-label={sidebar ? t`Show the library as a grid` : t`Show the library as a list`}
+            title={sidebar ? t`Show the library as a grid` : t`Show the library as a list`}
             onClick={() => setLibraryView({ layout: sidebar ? "grid" : "sidebar" })}
           >
             {sidebar ? <LayoutGrid size={19} /> : <PanelLeft size={19} />}
@@ -661,7 +672,9 @@ function BrowsePage({
   const hereLabel =
     config.os === "linux"
       ? t({ message: "Linux and Windows (this computer)", comment: "Browse's platform filter on Linux: the apps it runs, its own and Windows' through Proton" })
-      : t`${name} (this computer)`;
+      : config.os === "android"
+        ? t`${name} (this device)`
+        : t`${name} (this computer)`;
   const platformsOn = filters.platforms?.length ? filters.platforms.map((p) => (p === "here" ? hereLabel : osChoice(p))).join(", ") : undefined;
   const inLibrary = new Set(library.map((i) => i.id));
   // What this computer runs, where the catalog was asked for more (Linux's and Windows' apps: catalogOs).
@@ -749,75 +762,77 @@ function BrowsePage({
       */}
       {(filtersOpen || filtering > 0 || hiddenView !== "hide" || (sorted && !searching)) && (
         <div id="browse-filters" className="filter-bar" role="group" aria-label={t`Catalog filters`}>
-          {sorted && !searching && (
-            <FilterPill on={sortName(filters.sort)} onClear={() => (setSorted(false), choose({ ...filters, sort: fromSaved(saved).sort }))}>
-              <span className="pill-label">{sortName(filters.sort)}</span>
-            </FilterPill>
-          )}
-          {/* What it runs ("here"): on Linux, Linux's apps and Windows' (through Proton), as the library shows them. None ticked is every platform. */}
-          {list(
-            "platforms",
-            t`Platform`,
-            here ? hereLabel : (platformsOn ?? t`All platforms`),
-            here ? undefined : (platformsOn ?? t`All platforms`),
-            [
-              { value: "here", label: hereLabel },
-              ...Object.keys(OS_NAMES)
-                .filter((id) => id !== config.os || config.os === "linux")
-                .map((id) => ({ value: id, label: osChoice(id as Os) })),
-            ],
-            { none: ["here"] },
-          )}
-          {list("consoles", t`Console`, consolesOn ?? t`Any console`, consolesOn, consoleOptions(consoles, consoleNames), { max: MAX_SYSTEMS })}
-          {list("projectTypes", t`Project type`, typesOn ?? t`Any project type`, typesOn, projectTypeOptions())}
-          {pill(
-            "ai",
-            filters.ai && filterLabel("ai", filters.ai, consoleNames),
-            <select aria-label={t`AI use`} value={filters.ai ?? ""} onChange={set("ai")}>
-              <option value="">{t`Any AI use`}</option>
-              <option value="no-generated">{t`Hide mostly AI-generated apps`}</option>
-              <option value="no-ai">{t`Hide apps with any AI use`}</option>
-            </select>,
-          )}
-          {pill(
-            "setup",
-            filters.setup && t`Easy setup`,
-            <select
-              aria-label={t`Setup`}
-              title={t`Easy setup: Quiver Launcher finds your copy of the game and puts it where the app needs it.`}
-              value={filters.setup ?? ""}
-              onChange={set("setup")}
-            >
-              <option value="">{t`Any setup`}</option>
-              <option value="easy">{t`Easy setup only`}</option>
-            </select>,
-          )}
-          {/* Up here with the filters, not under the list, which loads more as it's reached. */}
-          {(filtersOpen || showOwned) && (
-            <FilterPill on={showOwned ? t`Apps in your library shown` : undefined} onClear={() => setShowOwned(false)}>
-              <select aria-label={t`Apps in your library`} value={showOwned ? "show" : "hide"} onChange={(e) => setShowOwned(e.target.value === "show")}>
-                <option value="hide">{t`Hide apps in your library`}</option>
-                <option value="show">{t`Show apps in your library`}</option>
-              </select>
-            </FilterPill>
-          )}
-          {(filtersOpen || hiddenView !== "hide") && hidden.size > 0 && (
-            <FilterPill
-              on={hiddenView === "show" ? t`Hidden apps shown` : hiddenView === "only" ? t`Hidden apps only` : undefined}
-              onClear={() => setHiddenView("hide")}
-            >
-              <select aria-label={t`Hidden apps`} value={hiddenView} onChange={(e) => setHiddenView(e.target.value as HiddenView)}>
-                <option value="hide">{t`Hide hidden apps`}</option>
-                <option value="show">{t`Show hidden apps`}</option>
-                <option value="only">{t`Only hidden apps`}</option>
-              </select>
-            </FilterPill>
-          )}
-          {hiddenView === "only" && hidden.size > 0 && (
-            <button type="button" className="text-button" onClick={() => setSettings({ ...settings, browseHidden: undefined })}>
-              <Plural value={hidden.size} one="Unhide # app" other="Unhide all # apps" />
-            </button>
-          )}
+          <span className="filter-pills">
+            {sorted && !searching && (
+              <FilterPill on={sortName(filters.sort)} onClear={() => (setSorted(false), choose({ ...filters, sort: fromSaved(saved).sort }))}>
+                <span className="pill-label">{sortName(filters.sort)}</span>
+              </FilterPill>
+            )}
+            {/* What it runs ("here"): on Linux, Linux's apps and Windows' (through Proton), as the library shows them. None ticked is every platform. */}
+            {list(
+              "platforms",
+              t`Platform`,
+              here ? hereLabel : (platformsOn ?? t`All platforms`),
+              here ? undefined : (platformsOn ?? t`All platforms`),
+              [
+                { value: "here", label: hereLabel },
+                ...Object.keys(OS_NAMES)
+                  .filter((id) => id !== config.os || config.os === "linux")
+                  .map((id) => ({ value: id, label: osChoice(id as Os) })),
+              ],
+              { none: ["here"] },
+            )}
+            {list("consoles", t`Console`, consolesOn ?? t`Any console`, consolesOn, consoleOptions(consoles, consoleNames), { max: MAX_SYSTEMS })}
+            {list("projectTypes", t`Project type`, typesOn ?? t`Any project type`, typesOn, projectTypeOptions())}
+            {pill(
+              "ai",
+              filters.ai && filterLabel("ai", filters.ai, consoleNames),
+              <select aria-label={t`AI use`} value={filters.ai ?? ""} onChange={set("ai")}>
+                <option value="">{t`Any AI use`}</option>
+                <option value="no-generated">{t`Hide mostly AI-generated apps`}</option>
+                <option value="no-ai">{t`Hide apps with any AI use`}</option>
+              </select>,
+            )}
+            {pill(
+              "setup",
+              filters.setup && t`Easy setup`,
+              <select
+                aria-label={t`Setup`}
+                title={t`Easy setup: Quiver Launcher finds your copy of the game and puts it where the app needs it.`}
+                value={filters.setup ?? ""}
+                onChange={set("setup")}
+              >
+                <option value="">{t`Any setup`}</option>
+                <option value="easy">{t`Easy setup only`}</option>
+              </select>,
+            )}
+            {/* Up here with the filters, not under the list, which loads more as it's reached. */}
+            {(filtersOpen || showOwned) && (
+              <FilterPill on={showOwned ? t`Apps in your library shown` : undefined} onClear={() => setShowOwned(false)}>
+                <select aria-label={t`Apps in your library`} value={showOwned ? "show" : "hide"} onChange={(e) => setShowOwned(e.target.value === "show")}>
+                  <option value="hide">{t`Hide apps in your library`}</option>
+                  <option value="show">{t`Show apps in your library`}</option>
+                </select>
+              </FilterPill>
+            )}
+            {(filtersOpen || hiddenView !== "hide") && hidden.size > 0 && (
+              <FilterPill
+                on={hiddenView === "show" ? t`Hidden apps shown` : hiddenView === "only" ? t`Hidden apps only` : undefined}
+                onClear={() => setHiddenView("hide")}
+              >
+                <select aria-label={t`Hidden apps`} value={hiddenView} onChange={(e) => setHiddenView(e.target.value as HiddenView)}>
+                  <option value="hide">{t`Hide hidden apps`}</option>
+                  <option value="show">{t`Show hidden apps`}</option>
+                  <option value="only">{t`Only hidden apps`}</option>
+                </select>
+              </FilterPill>
+            )}
+            {hiddenView === "only" && hidden.size > 0 && (
+              <button type="button" className="text-button" onClick={() => setSettings({ ...settings, browseHidden: undefined })}>
+                <Plural value={hidden.size} one="Unhide # app" other="Unhide all # apps" />
+              </button>
+            )}
+          </span>
           {filtering > 0 && (
             <span className="filter-actions">
               <button type="button" className="text-button" onClick={() => choose({ platforms: ["here"], sort: filters.sort })}>
@@ -1025,7 +1040,7 @@ function Action({ entry, apart, reasonElsewhere }: { entry: Entry; apart?: boole
                 )
               }
             >
-              <Trans>Choose its program…</Trans>
+              <Trans>Choose its executable…</Trans>
             </button>
           )}
           {/* A local app has nothing to download: Try again plays it again. */}
@@ -1241,7 +1256,7 @@ function AppPage({
   const { own, refresh } = useOwnFeedback(entry, site);
   const { user } = useAccount();
   const [tab, setTab] = useState<"overview" | "media" | "releases" | "feedback" | "discussions" | "computer" | "saves">(
-    at && "releases" in at ? "releases" : at && "feedback" in at ? "feedback" : "overview",
+    at && "releases" in at ? "releases" : at && "feedback" in at ? "feedback" : at && "discussions" in at ? "discussions" : "overview",
   );
   // Another tab: its content keeps the last one's height until it has come (nothing loading in it, and no longer
   // changing size), so More like this, under it, doesn't come up into sight for a moment and go down again.
@@ -1447,6 +1462,18 @@ function AppPage({
                 {item && !tv && (
                   <button type="button" className="title-rename" aria-label={t`Rename ${app}`} title={t({ message: "Rename", comment: "Button beside an app's name on its page: gives it a name of the player's own" })} onClick={() => askName(item.id)}>
                     <Pencil size={15} aria-hidden="true" />
+                  </button>
+                )}
+                {/* Signed in as one who looks after the catalog: its entry on the website's admin pages, to change it there. */}
+                {site && !tv && managesCatalog(user) && (
+                  <button
+                    type="button"
+                    className="title-rename title-admin"
+                    aria-label={t({ message: "Edit in admin", comment: "Button beside an app's name on its page, only for catalog maintainers and admins: opens the app's entry on the website's admin pages" })}
+                    title={t`Open ${app} in the catalog's admin pages on quiverlauncher.com`}
+                    onClick={() => void native.openUrl(`${SITE}/admin/entries/${encodeURIComponent(entry.id)}/overview`)}
+                  >
+                    <Wrench size={15} aria-hidden="true" />
                   </button>
                 )}
               </div>
@@ -1812,7 +1839,7 @@ function UpdatesChoice({ id }: { id: string }) {
   const { installs, settings, setUpdates } = useLauncher();
   const install = installs[id];
   if (!install || install.local) return null;
-  const auto = (!install.installer || install.installer === "flatpak") && !install.setup;
+  const auto = updatesByItself(install);
   const installedVersion = versionLabel(install.version);
   const byDefault =
     settings.autoUpdates && auto
@@ -2154,8 +2181,14 @@ function Notice() {
   const close = () => setNotice(null);
   if (!notice.stays) {
     return (
-      <div className="toast" role="status" onClick={close}>
+      <div className={`toast${notice.action ? " has-action" : ""}`} role="status" onClick={close}>
         <p>{notice.text}</p>
+        {/* Its click closes the toast too. */}
+        {notice.action && (
+          <button type="button" className="toast-action" onClick={notice.action.act}>
+            {notice.action.label}
+          </button>
+        )}
       </div>
     );
   }
@@ -2466,7 +2499,7 @@ function UninstallPrompt() {
   // Out of the library too: said only when it's in there.
   const leaves = confirming.remove && library.some((i) => i.id === entry.id);
   const close = () => confirmUninstall(null);
-  const program = going?.launch?.executable && outsideFolder(going.launch.executable, going.program) ? going.launch.executable : undefined;
+  const executable = going?.launch?.executable && outsideFolder(going.launch.executable, going.program) ? going.launch.executable : undefined;
   return (
     <Dialog label={t`Uninstall ${name}`} onClose={close}>
       <div className="detail-body uninstall-prompt">
@@ -2482,15 +2515,15 @@ function UninstallPrompt() {
         </p>
         {portable && (
           <p>
-            <Trans>This app may keep its saves in this folder. They&apos;ll be removed with it.</Trans>
+            <Trans>This app may keep your saves in its folder. They&apos;ll go to the trash too.</Trans>
           </p>
         )}
         {/* What it starts is somewhere else (Launch options): only its folder goes, so the player knows that stays. */}
-        {program && (
+        {executable && (
           <p>
             <Trans>
-              It starts <code>{program}</code>, which is outside its folder, so it stays where it is. Uninstall or delete that yourself if you don&apos;t
-              want it any more.
+              It starts <code>{executable}</code>. That file is outside the app&apos;s folder, so it won&apos;t be deleted. You can delete it yourself if you
+              don&apos;t need it.
             </Trans>
           </p>
         )}
@@ -2780,6 +2813,9 @@ function ChooseFileDialog({ choice }: { choice: Choice }) {
   // Open from the start when nothing else is offered: then the files a maintainer didn't tick are all there is.
   const [showAll, setShowAll] = useState(choice.assets.length === 0);
   const unapproved = new Set(choice.unapproved);
+  const { config } = useLauncher();
+  // A phone or tablet is a device, not a computer.
+  const device = config.os === "android";
   const name = choice.entry.projectName;
   const version = versionLabel(choice.version);
   // The release's other files this computer can install, whatever system the site says they're for.
@@ -2791,7 +2827,14 @@ function ChooseFileDialog({ choice }: { choice: Choice }) {
       <strong>
         {a.os === "unknown" ? t`Platform unspecified` : (OS_NAMES[a.os] ?? a.os)}
         {a.architecture !== "unknown" ? ` · ${a.architecture}` : ""}
-        {unapproved.has(a.id) ? ` · ${t({ message: "Not approved", comment: "A release file a maintainer didn't tick for the app, in Which download?'s Show all files" })}` : ""}
+        {unapproved.has(a.id)
+          ? ` · ${
+              // Its scan isn't done, which says more than "Not approved": most files the site leaves out are waiting on theirs.
+              a.scan?.verdict === "pending"
+                ? t({ message: "Virus scan not finished", comment: "A release file Quiver doesn't offer while its virus scan runs, in Which download?'s Show all files" })
+                : t({ message: "Not approved", comment: "A release file a maintainer didn't tick for the app, in Which download?'s Show all files" })
+            }`
+          : ""}
       </strong>
       <small>{a.filename}</small>
     </span>
@@ -2805,8 +2848,12 @@ function ChooseFileDialog({ choice }: { choice: Choice }) {
           </h2>
           <p className="muted">
             {choice.unmatched
-              ? t`None of ${name} ${version}'s files are marked for your computer. If you know which one runs on it, pick it.`
-              : t`${name} ${version} has more than one file for your computer.`}
+              ? device
+                ? t`None of ${name} ${version}'s files are marked for your device. If you know which one runs on it, pick it.`
+                : t`None of ${name} ${version}'s files are marked for your computer. If you know which one runs on it, pick it.`
+              : device
+                ? t`${name} ${version} has more than one file for your device.`
+                : t`${name} ${version} has more than one file for your computer.`}
           </p>
           {choice.assets.length > 0 && (
             <div className="choices">
@@ -2822,7 +2869,13 @@ function ChooseFileDialog({ choice }: { choice: Choice }) {
               <>
                 <p className="muted">
                   {choice.assets.length > 0 ? (
-                    <Trans>The release's other files. They may not run on your computer.</Trans>
+                    device ? (
+                      <Trans>The release's other files. They may not run on your device.</Trans>
+                    ) : (
+                      <Trans>The release's other files. They may not run on your computer.</Trans>
+                    )
+                  ) : device ? (
+                    <Trans>The release's files Quiver doesn't offer. They may not run on your device.</Trans>
                   ) : (
                     <Trans>The release's files Quiver doesn't offer. They may not run on your computer.</Trans>
                   )}
@@ -2978,8 +3031,9 @@ function SuggestPlatform({ choice, files }: { choice: Choice; files: Asset[] }) 
  * first, and where a controller starts.
  */
 function UnverifiedPrompt() {
-  const { asking, installs } = useLauncher();
-  if (!asking) return null;
+  const { asking, choice, installs } = useLauncher();
+  // After a file choice already open for another app (Update all), not on top of it.
+  if (!asking || choice) return null;
   const { entry, file, reasons, scan, checkEndsAt, early, resolve } = asking;
   // Put in the sentences below by name.
   const release = versionLabel(asking.version);
@@ -3029,7 +3083,9 @@ function UnverifiedPrompt() {
                 ? t`Apps are set to update to the newest release right away, and ${release} is the newest. Quiver Launcher is asking in this case because of its virus scan.`
                 : `${early ? "" : `${t`Quiver doesn't offer a release of ${app} yet.`} `}${t`Quiver Launcher isn't offering this release as an update yet.`}`
             : unapproved
-              ? t`Quiver doesn't offer ${name} for ${app}: it may be for another system, or missed when the downloads were picked.`
+              ? scan?.verdict === "pending"
+                ? t`Quiver doesn't offer ${name} for ${app}, and its virus scan hasn't finished.`
+                : t`Quiver doesn't offer ${name} for ${app}: it may be for another system, or missed when the downloads were picked.`
               : unchecked
                 ? t`Quiver checked ${release}'s other files, not ${name}. It downloads as the developer published it.`
                 : t`${name} changed after ${release} finished its 48-hour wait, and the new file hasn't been out for 48 hours yet. It installs the file Quiver saw, and refuses one that changed since.`}

@@ -41,11 +41,30 @@ pub const NO_SAVES: &str = "No saves found yet. Play the app, or choose where it
 pub const DAMAGED: &str = "This backup is damaged and can't be restored.";
 const FAILED: &str = "Couldn't back up your saves. Check the disk has space and try again.";
 
-/// Never a save: programs, the game's own files, archives, logs and videos.
-const NOT_SAVES: [&str; 47] = [
-    "iso", "cue", "chd", "cso", "gcm", "rvz", "wbfs", "wad", "nsp", "xci", "xex", "xbe", "z64", "n64", "v64", "sfc", "smc", "gba", "gbc", "nds", "3ds", "elf", "rpx", "exe", "dll", "so",
-    "dylib", "pdb", "msi", "apk", "zip", "7z", "rar", "gz", "xz", "appimage", "otr", "o2r", "pak", "log", "tmp", "dmp", "mp4", "mkv", "webm", "lock", "pid",
+/// Never a save: programs, the game's own files, archives, logs, and kinds of file no game saves as: sound, video,
+/// fonts, textures, 3D models, shader programs, installers, documents and debug files. Pictures can be: some games keep a
+/// small one with each save.
+const NOT_SAVES: &[&str] = &[
+    // Programs and libraries.
+    "exe", "dll", "so", "dylib", "msi", "apk", "appimage", "lib", "a", "o", "ilk", "exp", "pyc", "pyo", "node", "class",
+    // The game's own files.
+    "iso", "cue", "chd", "cso", "gcm", "rvz", "wbfs", "wad", "nsp", "xci", "xex", "xbe", "z64", "n64", "v64", "sfc", "smc", "gba", "gbc", "nds", "3ds", "elf", "rpx",
+    "otr", "o2r", "pak",
+    // Archives and installers.
+    "zip", "7z", "rar", "gz", "xz", "deb", "rpm", "dmg", "pkg", "msix", "appx", "flatpak", "snap",
+    // Logs, debugging and leftovers.
+    "pdb", "log", "tmp", "dmp", "mdmp", "lock", "pid",
+    // Sound and video.
+    "wav", "mp3", "ogg", "flac", "opus", "m4a", "aac", "wma", "mid", "midi", "mp4", "mkv", "webm", "avi", "mov", "wmv", "flv", "m4v", "bik", "bk2", "usm",
+    // Fonts, textures and 3D models.
+    "ttf", "otf", "woff", "woff2", "dds", "ktx", "ktx2", "astc", "pvr", "basis", "fbx", "obj", "mtl", "glb", "gltf", "blend", "dae",
+    // Shader programs.
+    "spv", "dxbc", "dxil", "metallib", "glsl", "hlsl", "frag", "vert",
+    // Documents.
+    "pdf", "md", "htm", "html", "chm", "rtf", "doc", "docx",
 ];
+/// Pictures: a save can keep one, but a backup that's mostly pictures is more likely screenshots or textures.
+const PICTURES: [&str; 9] = ["png", "jpg", "jpeg", "bmp", "gif", "webp", "tga", "tif", "tiff"];
 /// Folders that never hold saves.
 const NOT_SAVE_DIRS: [&str; 18] = [
     "mods", "shadercache", "shader_cache", "shaders", "cache", "caches", "logs", "log", "crashdumps", "crashes", "dumps", "screenshots", "texture_packs", "textures", "temp", "tmp", ".git",
@@ -588,7 +607,23 @@ pub fn backup(store: &Path, templates: &[String], roots: &Roots, abs: &[String],
 }
 
 fn backup_as(store: &Path, templates: &[String], roots: &Roots, abs: &[String], stamp: &Stamp, kinds: Option<&[Kind]>) -> Result<Option<Backup>, String> {
-    let (places, found, files) = current(templates, roots, abs, kinds)?;
+    let key = places_key(templates);
+    let (places, found, files) = match current(templates, roots, abs, kinds) {
+        Err(e) if e == TOO_BIG => {
+            let mut state = state(store);
+            if state.too_big.as_deref() != Some(key.as_str()) {
+                state.too_big = Some(key);
+                let _ = set_state(store, &state);
+            }
+            return Err(e);
+        }
+        other => other?,
+    };
+    if state(store).too_big.as_deref() == Some(key.as_str()) {
+        let mut state = state(store);
+        state.too_big = None;
+        let _ = set_state(store, &state);
+    }
     if files.is_empty() {
         return Ok(None);
     }
@@ -894,6 +929,16 @@ pub struct State {
     /// The same as `synced`, for the player's sync folder (sync_folder.rs).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub folder_synced: Option<FolderSynced>,
+    /// The places (`places_key`) the player said hold their saves, though a backup of them looked like more: the Saves
+    /// tab stops saying so while they stay the places.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub fine: Option<String>,
+    /// The places (`places_key`) last refused as too big to back up, until a backup of them works.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub too_big: Option<String>,
+    /// What the catalog was told about how backups look (`Look::report_key`), so each is sent once.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub warned: Vec<String>,
 }
 
 /// When the saves last matched the newest backup in a sync folder. It only counts for that folder: another one's
@@ -914,6 +959,101 @@ pub fn set_state(store: &Path, state: &State) -> Result<(), String> {
         .and_then(|_| fs::write(&temp, serde_json::to_vec_pretty(state).unwrap_or_default()))
         .and_then(|_| fs::rename(&temp, &file))
         .map_err(|e| format!("Couldn't save where this app's saves are: {e}"))
+}
+
+/// One set of places as one string: a backup, a refusal or the player's word is about these places only.
+pub fn places_key(templates: &[String]) -> String {
+    templates.join("\n")
+}
+
+/// Save files adding up to more than this look like more than saves: the biggest saves, whole memory card images, are
+/// up to 16 MB, and almost every app's are under 1 MB.
+pub const BIG: u64 = 16 * 1024 * 1024;
+/// More files than this in one backup look like more than saves.
+pub const MANY: usize = 200;
+/// A backup this size or more that's mostly pictures looks like screenshots or textures, not saves with a picture each.
+const PICTURES_FROM: u64 = 1024 * 1024;
+/// Kinds of file named in a look.
+const KINDS: usize = 5;
+
+/// A kind of file in a backup, by its extension ("" for none), and its share of the backup's bytes.
+#[derive(Debug, Clone, Serialize, PartialEq)]
+pub struct Share {
+    pub ext: String,
+    pub share: f64,
+}
+
+/// Signs that the saves Quiver backs up for an app hold more than saves (docs/save-backups.md): "big", "many",
+/// "media" (mostly pictures) or "tooBig" (refused, over the place limits).
+#[derive(Debug, Clone, Serialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct Look {
+    pub reasons: Vec<&'static str>,
+    pub bytes: u64,
+    pub files: usize,
+    /// What filled it most, biggest first.
+    pub kinds: Vec<Share>,
+}
+
+impl Look {
+    /// What a report of it is remembered by: the signs and the places, so a sign is told once while they stay.
+    pub fn report_key(&self, places: &str) -> String {
+        format!("{}:{places}", self.reasons.join(","))
+    }
+}
+
+/// The signs in a set of save files, or none when they look like saves.
+pub fn look(files: &[FileInfo]) -> Option<Look> {
+    let bytes: u64 = files.iter().map(|f| f.size).sum();
+    let mut by_kind: Vec<(String, u64)> = vec![];
+    for f in files {
+        let ext = extension(&f.path);
+        match by_kind.iter_mut().find(|(e, _)| *e == ext) {
+            Some((_, n)) => *n += f.size,
+            None => by_kind.push((ext, f.size)),
+        }
+    }
+    let pictures: u64 = by_kind.iter().filter(|(e, _)| PICTURES.contains(&e.as_str())).map(|(_, n)| n).sum();
+    let mut reasons = vec![];
+    if bytes > BIG {
+        reasons.push("big");
+    }
+    if files.len() > MANY {
+        reasons.push("many");
+    }
+    if bytes >= PICTURES_FROM && pictures * 2 > bytes {
+        reasons.push("media");
+    }
+    if reasons.is_empty() {
+        return None;
+    }
+    by_kind.sort_by(|a, b| b.1.cmp(&a.1).then_with(|| a.0.cmp(&b.0)));
+    let kinds = by_kind
+        .into_iter()
+        .take(KINDS)
+        .filter(|(e, _)| e.len() <= 10 && e.chars().all(|c| c.is_ascii_alphanumeric()))
+        .map(|(ext, n)| Share { ext, share: if bytes == 0 { 0.0 } else { (n as f64 / bytes as f64 * 100.0).round() / 100.0 } })
+        .collect();
+    Some(Look { reasons, bytes, files: files.len(), kinds })
+}
+
+/// How the app's saves look: refused as too big, or the signs in its newest backup when that was of these places.
+/// None when they look like saves, or the player said these places hold their saves.
+pub fn looks(store: &Path, state: &State, templates: &[String]) -> Option<Look> {
+    let key = places_key(templates);
+    if templates.is_empty() || state.fine.as_deref() == Some(key.as_str()) {
+        return None;
+    }
+    if state.too_big.as_deref() == Some(key.as_str()) {
+        return Some(Look { reasons: vec!["tooBig"], bytes: 0, files: 0, kinds: vec![] });
+    }
+    let newest = list(store).into_iter().find(|b| b.reason != "restore")?;
+    let manifest = read_manifest(&store.join(&newest.name))?;
+    let of: Vec<&str> = manifest.places.iter().map(|p| p.template.as_str()).collect();
+    if of != templates.iter().map(String::as_str).collect::<Vec<_>>() {
+        return None;
+    }
+    look(&manifest.files)
 }
 
 /// The places to use, best first, and who said: "you", "catalog", "found" or "none".
@@ -1623,6 +1763,77 @@ mod tests {
             write(&roots.app.join(format!("data/{n}.dat")), "");
         }
         assert_eq!(backup(&store, &["app/data".into()], &roots, &[], &STAMP).unwrap_err(), TOO_BIG);
+        // The Saves tab says so until a backup of these places works, and the player's word stops it.
+        let places = vec!["app/data".to_string()];
+        let too_big = looks(&store, &state(&store), &places).unwrap();
+        assert_eq!(too_big.reasons, ["tooBig"]);
+        assert!(looks(&store, &state(&store), &["app/saves".into()]).is_none());
+        let mut said = state(&store);
+        said.fine = Some(places_key(&places));
+        assert!(looks(&store, &said, &places).is_none());
+        for n in 0..MAX_FILES + 1 {
+            fs::remove_file(roots.app.join(format!("data/{n}.dat"))).unwrap();
+        }
+        write(&roots.app.join("data/slot.sav"), "one");
+        backup(&store, &places, &roots, &[], &STAMP).unwrap().unwrap();
+        assert_eq!(state(&store).too_big, None);
+        assert!(looks(&store, &state(&store), &places).is_none());
+    }
+
+    #[test]
+    fn leaves_out_files_no_game_saves_as() {
+        let (_dir, roots, store) = world();
+        let saves = roots.app.join("saves");
+        for name in ["slot.sav", "thumb.png", "options.ini", "data.bin", "music.ogg", "voice.wav", "font.ttf", "wall.dds", "shader.spv", "model.obj", "manual.pdf", "intro.bik"] {
+            write(&saves.join(name), name);
+        }
+        let made = backup(&store, &["app/saves".into()], &roots, &[], &STAMP).unwrap().unwrap();
+        let manifest = read_manifest(&store.join(&made.name)).unwrap();
+        assert_eq!(manifest.files.iter().map(|f| f.path.as_str()).collect::<Vec<_>>(), ["data.bin", "options.ini", "slot.sav", "thumb.png"]);
+    }
+
+    fn info(path: &str, size: u64) -> FileInfo {
+        FileInfo { place: 0, path: path.into(), size, sha256: String::new() }
+    }
+
+    #[test]
+    fn tells_saves_from_more_than_saves() {
+        const MB: u64 = 1024 * 1024;
+        // Saves: small, few, or a memory card image at the most a whole one is.
+        assert_eq!(look(&[info("slot1.sav", 2048), info("thumb.png", 30_000)]), None);
+        assert_eq!(look(&[info("card.raw", 16 * MB)]), None);
+        assert_eq!(look(&(0..MANY).map(|n| info(&format!("{n}.sav"), 10)).collect::<Vec<_>>()), None);
+        // Bigger than saves, with what filled it biggest first.
+        let big = look(&[info("slot.sav", 1000), info("a/shots.png", 12 * MB), info("b/more.png", 5 * MB), info("cache.bin", MB)]).unwrap();
+        assert_eq!(big.reasons, ["big", "media"]);
+        assert_eq!(big.files, 4);
+        assert_eq!(big.kinds, [Share { ext: "png".into(), share: 0.94 }, Share { ext: "bin".into(), share: 0.06 }, Share { ext: "sav".into(), share: 0.0 }]);
+        // Too many files.
+        let many = look(&(0..MANY + 1).map(|n| info(&format!("{n}.dat"), 10)).collect::<Vec<_>>()).unwrap();
+        assert_eq!(many.reasons, ["many"]);
+        // Mostly pictures, once there's a megabyte of them; extensions that can't be told apart are left out.
+        assert_eq!(look(&[info("slot.sav", 1000), info("shot.png", MB)]).unwrap().reasons, ["media"]);
+        assert_eq!(look(&[info("slot.sav", 1000), info("shot.png", MB / 2)]), None);
+        assert_eq!(look(&[info("weird.ext with space", MB), info("shot.jpg", 2 * MB)]).unwrap().kinds, [Share { ext: "jpg".into(), share: 0.67 }]);
+        // Remembered by its signs and places.
+        assert_eq!(big.report_key("app/saves"), "big,media:app/saves");
+    }
+
+    #[test]
+    fn says_how_the_newest_backup_of_these_places_looks() {
+        let (_dir, roots, store) = world();
+        let places = vec!["app/saves".to_string()];
+        let saves = roots.app.join("saves");
+        write(&saves.join("slot.sav"), "one");
+        backup(&store, &places, &roots, &[], &STAMP).unwrap().unwrap();
+        assert!(looks(&store, &state(&store), &places).is_none());
+        for n in 0..=MANY {
+            write(&saves.join(format!("shots/{n}.sav")), "x");
+        }
+        backup(&store, &places, &roots, &[], &STAMP).unwrap().unwrap();
+        assert_eq!(looks(&store, &state(&store), &places).unwrap().reasons, ["many"]);
+        // The player chose another folder: its backups aren't made yet.
+        assert!(looks(&store, &state(&store), &["app/other".into()]).is_none());
     }
 
     #[test]

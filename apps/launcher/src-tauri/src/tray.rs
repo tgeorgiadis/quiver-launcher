@@ -100,6 +100,8 @@ pub fn open_window(app: &AppHandle) {
     let Some(window) = app.get_webview_window("main") else { return };
     let _ = window.show();
     let _ = window.unminimize();
+    // Its screen may have been turned off or unplugged since it was last seen.
+    crate::window_state::bring_on_screen(&window);
     if let Some(OnShow { maximize, fullscreen }) = app.state::<Tray>().on_show.lock().unwrap().take() {
         if let Some(title_bar) = fullscreen {
             let _ = crate::fullscreen(&window, true, title_bar);

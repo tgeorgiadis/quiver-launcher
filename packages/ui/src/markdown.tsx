@@ -87,6 +87,80 @@ function rehypeDarkThemeImages() {
 }
 
 /**
+ * Sites whose "Get it on…" or "Verified on…" badges a README may carry: game
+ * launchers and app stores, this one included. The app's page already says
+ * how to get it, so those badges are left out; the README's text, and its
+ * plain links to them, stay as written. The full README is a link away.
+ */
+export const STORE_BADGE_HOSTS = [
+  "quiverlauncher.com",
+  "recomplauncher.com",
+  "recompstore.com",
+  "store.steampowered.com",
+  "gog.com",
+  "store.epicgames.com",
+  "itch.io",
+  "flathub.org",
+  "snapcraft.io",
+  "play.google.com",
+  "apps.apple.com",
+  "apps.microsoft.com",
+];
+
+/** Whether a link goes to one of those sites (or a subdomain of one). */
+export function isStoreLink(href: unknown) {
+  try {
+    const host = new URL(String(href ?? "")).hostname.toLowerCase().replace(/^www\./, "");
+    return STORE_BADGE_HOSTS.some((site) => host === site || host.endsWith(`.${site}`));
+  } catch {
+    return false; // A relative link: it's the project's own.
+  }
+}
+
+/** A link that shows only images: a badge, rather than words. */
+function isImageLink(node: HastNode) {
+  if (node.type !== "element" || node.tagName !== "a") return false;
+  const images = (node.children ?? []).filter((c) => !isBlank(c));
+  return (
+    images.length > 0 &&
+    images.every(
+      (c) =>
+        c.type === "element" &&
+        (c.tagName === "img" ||
+          (c.tagName === "picture" &&
+            (c.children ?? []).some((i) => i.tagName === "img"))),
+    )
+  );
+}
+
+/** Drops store and launcher badges, and a paragraph or block they leave empty. */
+function rehypeHideStoreBadges() {
+  const isSpacing = (node: HastNode) =>
+    isBlank(node) || (node.type === "element" && node.tagName === "br");
+  const visit = (node: HastNode): HastNode | null => {
+    if (isImageLink(node) && isStoreLink(node.properties?.href)) return null;
+    if (!node.children?.length) return node;
+    const kept = node.children
+      .map(visit)
+      .filter((c): c is HastNode => c !== null);
+    const lost = kept.length < node.children.length;
+    node.children = kept;
+    // A row that held only badges: nothing left to show.
+    if (
+      lost &&
+      node.type === "element" &&
+      ["p", "div", "span"].includes(node.tagName!) &&
+      kept.every(isSpacing)
+    )
+      return null;
+    return node;
+  };
+  return (tree: HastNode) => {
+    visit(tree);
+  };
+}
+
+/**
  * READMEs sit under the page's own h1 and section h2, so their headings start
  * at h3, and each is at most one level deeper than the one before it. That
  * keeps the page outline in order even when an author jumps from # to ###.
@@ -271,6 +345,8 @@ export function Markdown({
         remarkPlugins={[remarkGfm]}
         rehypePlugins={[
           rehypeRaw,
+          // Before sanitising, while a <picture> badge is still whole.
+          rehypeHideStoreBadges,
           // Before sanitising, which drops <picture> and <source>.
           rehypeDarkThemeImages,
           [rehypeSanitize, schema],

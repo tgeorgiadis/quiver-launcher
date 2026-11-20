@@ -145,7 +145,7 @@ export function Setup({ onClose, onSignIn }: { onClose: (brought: boolean) => vo
 
 /**
  * The first step: a word from Quiver's developer on what Quiver Launcher 4 is to someone who knows 3 (rebuilt, the
- * same things and some more, worth an open mind), then what the setup is, and the language.
+ * same things and some more, some of it in new places), then what the setup is, and the language.
  */
 function Welcome() {
   const extras = [
@@ -159,13 +159,13 @@ function Welcome() {
       <strong>Simpler protection:</strong> get updates right away, or wait 48 hours in case a release is harmful, which gives the Quiver team time to withdraw it
     </Trans>,
     <Trans>
-      <strong>Two library views:</strong> Sidebar, inspired by Steam, and Grid, with a range of options for box art, covers, icons and what each app shows
+      <strong>Two library views:</strong> List, inspired by Steam, and Grid, with a range of options for box art, covers, icons and what each app shows, and your playlists along the top or in a side panel
     </Trans>,
     <Trans>
       <strong>TV mode:</strong> a full-screen launcher for a controller
     </Trans>,
     <Trans>
-      <strong>Playlists</strong> you can share, and other people's to follow
+      <strong>Shared playlists:</strong> share your playlists, and add other people's that stay synced
     </Trans>,
     <Trans>
       <strong>Language support:</strong> ten languages to choose from
@@ -187,7 +187,7 @@ function Welcome() {
         ))}
       </ul>
       <p>
-        <Trans>It looks and works differently in places, so give it a go with an open mind.</Trans>
+        <Trans>Some things look and work differently now. Take a moment to find your way around.</Trans>
       </p>
       <p className="muted setup-questions">
         <Trans>A few quick questions to get you started. You can change any of these later in Settings.</Trans>

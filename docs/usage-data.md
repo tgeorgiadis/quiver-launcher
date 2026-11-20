@@ -20,7 +20,7 @@ The launcher sends named events only (`apps/launcher/src/telemetry.ts`):
 - **Apps:** catalog apps installed, updated, launched, closed (with the seconds played), uninstalled, added and removed,
   by slug, and when launched or closed, the version. Apps players add are named only by kind. Installs cancelled and
   at what stage; failed installs and launches, why, and what kind of failure; an app's folder renamed and the apps
-  folder moved; an app's menu opened and its videos played.
+  folder moved; an app's menu opened and its videos played, and several apps changed at once from the library (what was changed and how many apps, not which).
 - **Mods:** the mods screen opened, and mods installed, updated, uninstalled or failing to install: the catalog app's
   slug, the mod's id at its source, and the source.
 - **Everything else:** screens opened (each once per launch), playlists made, shared and followed, searches that found
@@ -34,6 +34,14 @@ folder as a path under one of the system's own folders, such as `data/Game/saves
 computer, no user name, and no file names or contents. A folder you chose yourself is never sent, each folder is sent
 once, and nothing is sent for an app whose save locations the catalog already lists. This doesn't go to Google
 Analytics.
+
+It also tells quiverlauncher.com when a catalog app's newest save backup looks like more than saves (over 16 MB, over
+200 files, mostly pictures, or a folder too big to back up), and when you say on the Saves tab that the folder holds
+your saves, so staff can see which apps' save locations need fixing (`reportSaveWarning` in `saves.ts`). It sends the
+app, the system, where the folder came from (the catalog, a folder the launcher found, or one you chose), the signs,
+the backup's size and file count, and the five file extensions that filled it most with their share of its bytes: no
+account, no identifier for the computer, and no file or folder names. Each is sent once while the folder stays the
+same. This doesn't go to Google Analytics either.
 
 Every event carries the launcher's version, how this copy was installed (installer, portable, Flatpak and so on), the
 OS, its version (on Linux, with the distribution's name) and architecture, and whether it's a Steam Deck or in Steam's

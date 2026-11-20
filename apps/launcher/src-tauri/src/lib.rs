@@ -36,6 +36,8 @@ mod tray;
 mod update;
 mod v3;
 mod window_state;
+#[cfg(all(feature = "cef", target_os = "linux"))]
+mod x11_wheel;
 
 use serde::Serialize;
 use std::ffi::OsStr;
@@ -298,7 +300,7 @@ fn target(data: &Data, folder: &str, dir: Option<String>, preferred: &[String], 
                 return Err(if anywhere {
                     launch::program_gone(&exe)
                 } else {
-                    format!("{chosen} isn't in the app's folder any more. Choose its program again in Launch options.")
+                    format!("Can't find {chosen} in the app's folder. Choose the executable again in Launch options.")
                 });
             }
             let windows = exe.extension().is_some_and(|e| e.eq_ignore_ascii_case("exe") || e.eq_ignore_ascii_case("bat"));
@@ -313,7 +315,7 @@ fn target(data: &Data, folder: &str, dir: Option<String>, preferred: &[String], 
                 }
                 // A Windows installer's program: the player can choose it again, or run the installer again.
                 if app_dir(data, folder, dir).is_ok_and(|d| msi::installed(&d) || setup::elsewhere(&d)) {
-                    return Err(format!("The program isn't at {program} any more. Choose it again in Launch options, or run its installer again."));
+                    return Err(format!("Can't find the executable at {program}. Choose it again in Launch options, or run the installer again."));
                 }
                 return Err(format!("The program isn't at {program} any more. Remove this app and add it again from where it is now."));
             }
@@ -419,8 +421,7 @@ async fn launch(
     start(app, &data, id, &folder, dir, &preferred, wine, program, &launch.unwrap_or_default(), presence)
 }
 
-/// Waits for a started program to close; whether that could be told.
-#[cfg(not(target_os = "android"))]
+/// Waits for a started program to close; whether that could be told. On Android too, as session.rs names it.
 type Waiting = Box<dyn FnOnce() -> bool + Send>;
 /// Whether Android no longer has an app Quiver installed from an APK: the player removed it in the system's settings.
 /// False for an app that wasn't installed that way, and everywhere else. Not on the window's thread, as `launch` isn't.
@@ -573,6 +574,8 @@ struct SavesInfo {
     backups: Vec<saves::Backup>,
     /// The player switched cloud saves off for this app.
     cloud_off: bool,
+    /// Signs that the places hold more than saves (saves::looks), for the tab to ask about.
+    look: Option<saves::Look>,
 }
 
 /// One backup or restore at a time, so two never read and write the same saves.
@@ -617,7 +620,8 @@ fn saves_shown(data: &Data, of: &SavesOf) -> Result<SavesInfo, String> {
     let (roots, store, os) = saves_at(data, of)?;
     let state = saves::state(&store);
     let (places, from) = saves::places(&state, &saves::catalog_templates(&of.locations, os));
-    Ok(SavesInfo { places: saves::shown(&places, &roots, &saves::chosen_abs(&state)), from, backups: saves::list(&store), cloud_off: state.cloud_off })
+    let look = saves::looks(&store, &state, &places);
+    Ok(SavesInfo { places: saves::shown(&places, &roots, &saves::chosen_abs(&state)), from, backups: saves::list(&store), cloud_off: state.cloud_off, look })
 }
 
 /// Where an app's saves are and its backups, for its Saves tab.
@@ -1001,6 +1005,77 @@ async fn saves_to_report(data: State<'_, Data>, of: SavesOf) -> Result<SavesRepo
     Ok(SavesReport { os, places })
 }
 
+/// The player said the places Quiver backs up hold their saves, though a backup of them looked like more.
+#[tauri::command]
+async fn saves_fine(data: State<'_, Data>, of: SavesOf) -> Result<SavesInfo, String> {
+    let (_, store, os) = saves_at(&data, &of)?;
+    {
+        let _busy = SAVES_BUSY.lock().unwrap_or_else(|e| e.into_inner());
+        let mut state = saves::state(&store);
+        let (places, _) = saves::places(&state, &saves::catalog_templates(&of.locations, os));
+        state.fine = Some(saves::places_key(&places));
+        saves::set_state(&store, &state)?;
+    }
+    saves_shown(&data, &of)
+}
+
+/// What to tell the catalog about how an app's backups look (saves::Look).
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct SavesWarning {
+    os: &'static str,
+    /// Where the places came from: "catalog", "found" or "player".
+    source: &'static str,
+    #[serde(flatten)]
+    look: saves::Look,
+    /// The player said the places hold their saves.
+    fine: bool,
+    /// What it's remembered by once sent (`saves_warned`).
+    key: String,
+}
+
+/// How an app's backups look, when the catalog hasn't been told yet: their signs, or that the player said they're
+/// saves. None when there's nothing to tell.
+#[tauri::command]
+async fn saves_warning(data: State<'_, Data>, of: SavesOf) -> Result<Option<SavesWarning>, String> {
+    let (_, store, os) = saves_at(&data, &of)?;
+    let mut state = saves::state(&store);
+    let (places, from) = saves::places(&state, &saves::catalog_templates(&of.locations, os));
+    let source = match from {
+        "catalog" => "catalog",
+        "found" => "found",
+        "you" => "player",
+        _ => return Ok(None),
+    };
+    let key = saves::places_key(&places);
+    let fine = state.fine.as_deref() == Some(key.as_str());
+    // Asked about what the newest backup shows, without the player's word.
+    state.fine = None;
+    let Some(look) = saves::looks(&store, &state, &places) else { return Ok(None) };
+    let key = if fine { format!("fine:{key}") } else { look.report_key(&key) };
+    if state.warned.contains(&key) {
+        return Ok(None);
+    }
+    Ok(Some(SavesWarning { os, source, look, fine, key }))
+}
+
+/// The catalog took (or refused) a report of how an app's backups look: it isn't sent again.
+#[tauri::command]
+async fn saves_warned(data: State<'_, Data>, of: SavesOf, key: String) -> Result<(), String> {
+    let (_, store, _) = saves_at(&data, &of)?;
+    let _busy = SAVES_BUSY.lock().unwrap_or_else(|e| e.into_inner());
+    let mut state = saves::state(&store);
+    if !state.warned.contains(&key) {
+        state.warned.push(key);
+        // A few sets of places and signs per app; the oldest are long out of date.
+        if state.warned.len() > 20 {
+            state.warned.remove(0);
+        }
+        saves::set_state(&store, &state)?;
+    }
+    Ok(())
+}
+
 /// The catalog took (or refused) a report of these places: they aren't sent again.
 #[tauri::command]
 async fn saves_reported(data: State<'_, Data>, of: SavesOf, places: Vec<String>) -> Result<(), String> {
@@ -1319,7 +1394,7 @@ async fn pick_program(app: tauri::AppHandle, window: tauri::WebviewWindow, dir: 
         "macos" => Some(("Apps", &["app"])),
         _ => None,
     };
-    let path = picker::choose(&app, &window, picker::Want::File, "Choose the program that starts the app", dir.as_deref().map(Path::new), filter).await?;
+    let path = picker::choose(&app, &window, picker::Want::File, "Choose the executable that starts the app", dir.as_deref().map(Path::new), filter).await?;
     Some(path.to_string_lossy().into())
 }
 
@@ -1502,6 +1577,22 @@ fn asset_url(name: &str, release: &update::Release) -> Option<String> {
     release.assets.iter().find(|a| a.name == name).map(|a| a.browser_download_url.clone())
 }
 
+/// The executable Play starts when the player hasn't chosen one, as `target`
+/// finds it, for Launch options to name: relative to the app's folder when
+/// it's inside, else its full path (one a setup script installed). None when
+/// there's none, or it isn't a file Quiver picks (a Windows installer's or a
+/// Flatpak's).
+#[tauri::command]
+fn found_program(data: State<'_, Data>, folder: String, dir: Option<String>, preferred: Vec<String>, wine: bool) -> Option<String> {
+    let dir = app_dir(&data, &folder, dir).ok().filter(|d| d.is_dir())?;
+    if msi::installed(&dir) || setup::elsewhere(&dir) || flatpak::installed(&dir).is_some() {
+        return None;
+    }
+    let exe = install::find_executable(&dir, &preferred, if wine { "windows" } else { OS }).or_else(|| (OS == "linux" && !wine).then(|| install::find_executable(&dir, &preferred, "windows")).flatten())?;
+    let exe = if cfg!(windows) && script::installs(&dir, &exe) { script::installed(&dir).unwrap_or(exe) } else { exe };
+    Some(exe.strip_prefix(&dir).unwrap_or(&exe).to_string_lossy().into_owned())
+}
+
 /// The programs in an installed app's folder, relative to it, for the player
 /// to pick which ones Play starts.
 #[tauri::command]
@@ -1544,7 +1635,7 @@ async fn pick_executable(app: tauri::AppHandle, window: tauri::WebviewWindow, fo
     };
     let picked = match std::env::var_os("QUIVER_PICK") {
         Some(path) => Some(PathBuf::from(path)),
-        None => picker::choose(&app, &window, picker::Want::File, "Choose the program that starts the app", Some(&root), None).await,
+        None => picker::choose(&app, &window, picker::Want::File, "Choose the executable that starts the app", Some(&root), None).await,
     };
     let Some(picked) = picked else { return Ok(None) };
     if program.is_some() {
@@ -1684,6 +1775,18 @@ async fn pick_folder(app: tauri::AppHandle, window: tauri::WebviewWindow, title:
 #[tauri::command]
 async fn apps_folder_states(paths: Vec<PathBuf>) -> Vec<apps_folder::FolderState> {
     tauri::async_runtime::spawn_blocking(move || apps_folder::states(&paths)).await.unwrap_or_default()
+}
+
+/// Removes a console folder the player's apps all moved out of, once nothing's left in it (`apps_folder::remove_empty`).
+#[tauri::command]
+fn remove_empty_console_folder(data: State<Data>, path: String) {
+    apps_folder::remove_empty(Path::new(&path), &data.apps());
+}
+
+/// Removes the default apps folder's system folders that are empty (`apps_folder::remove_empty_system_folders`).
+#[tauri::command]
+fn remove_empty_system_folders(data: State<Data>) {
+    apps_folder::remove_empty_system_folders(&data.apps());
 }
 
 /// Why the installed apps can't move to `to`, if they can't: those in the
@@ -2239,6 +2342,7 @@ fn main_window(app: &tauri::App, dir: &Path, theme: Option<tauri::Theme>, title_
     let maximize = !game_mode && window_state::restore(&window, dir);
     if !game_mode {
         window_state::track(&window, dir.to_path_buf());
+        window_state::keep_on_screen(&window);
     }
     #[cfg(windows)]
     tray::watch(&window);
@@ -2249,6 +2353,11 @@ fn main_window(app: &tauri::App, dir: &Path, theme: Option<tauri::Theme>, title_
     #[cfg(desktop)]
     if maximize {
         let _ = window.maximize();
+    }
+    // However it was placed (where it was saved, or where the desktop put it), it may still be off every connected
+    // screen: brought onto one.
+    if !game_mode {
+        window_state::bring_on_screen(&window);
     }
     Ok(maximize)
 }
@@ -2405,6 +2514,8 @@ pub fn run() {
             app.manage(Playing::default());
             app.manage(picker::Picks::default());
             gamepad::start(app.handle().clone());
+            #[cfg(all(feature = "cef", target_os = "linux"))]
+            x11_wheel::start(app.handle().clone());
             #[cfg(target_os = "linux")]
             {
                 keyboard::kwin::listen(app.handle().clone());
@@ -2435,6 +2546,8 @@ pub fn run() {
             picker::browse,
             apps_folder_refusal,
             apps_folder_states,
+            remove_empty_console_folder,
+            remove_empty_system_folders,
             move_app,
             open_apps_folder,
             move_apps_folder,
@@ -2475,6 +2588,9 @@ pub fn run() {
             saves_played,
             saves_to_report,
             saves_reported,
+            saves_fine,
+            saves_warning,
+            saves_warned,
             saves_cloud,
             saves_synced,
             saves_cloud_off,
@@ -2507,6 +2623,7 @@ pub fn run() {
             steam_keyboard,
             pick_executable,
             list_programs,
+            found_program,
             find_copies,
             pick_copy,
             check_copy,

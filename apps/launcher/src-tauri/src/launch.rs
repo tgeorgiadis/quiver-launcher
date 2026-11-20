@@ -254,10 +254,10 @@ fn libraries(steam: &Path) -> Vec<PathBuf> {
 pub fn chosen_program(picked: &Path, root: &Path) -> Result<String, String> {
     let inside = picked.canonicalize().ok().zip(root.canonicalize().ok()).and_then(|(p, r)| p.strip_prefix(r).ok().map(Path::to_path_buf));
     match inside {
-        Some(relative) if relative.as_os_str().is_empty() => Err("Choose the program that starts the app, not its folder.".into()),
+        Some(relative) if relative.as_os_str().is_empty() => Err("That's a folder. Choose the file that starts the app.".into()),
         Some(relative) => Ok(relative.to_string_lossy().into()),
         None if picked.is_absolute() => Ok(picked.to_string_lossy().into()),
-        None => Err("Choose a program on this computer.".into()),
+        None => Err("Choose an executable on this computer.".into()),
     }
 }
 
@@ -294,13 +294,13 @@ pub fn program_gone(path: &Path) -> String {
     let user = std::env::var("USER").or_else(|_| std::env::var("LOGNAME")).ok();
     match missing_drive(path, user.as_deref(), Path::exists) {
         Some(drive) => drive_gone(path, &drive),
-        None => format!("{} isn't there any more. Choose its program again in Launch options.", path.display()),
+        None => format!("Can't find {}. Choose the executable again in Launch options.", path.display()),
     }
 }
 
 /// A program on a drive that isn't connected.
 pub fn drive_gone(path: &Path, drive: &str) -> String {
-    format!("{} is on the drive {drive}, which isn't connected. Connect it, then try again.", path.display())
+    format!("{} is on drive {drive}, which isn't connected. Connect the drive and try again.", path.display())
 }
 
 #[cfg(test)]

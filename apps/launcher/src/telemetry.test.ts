@@ -642,7 +642,7 @@ test("failures are counted by kind, whatever they say exactly", async () => {
   expect(failureKind(new TypeError("Failed to fetch"))).toBe("network");
   expect(failureKind("There is not enough space on the disk. (os error 112)")).toBe("disk_full");
   expect(failureKind("Access is denied. (os error 5)")).toBe("permission");
-  expect(failureKind("E:\\Games\\Game.exe is on the drive E:, which isn't connected. Connect it, then try again.")).toBe("drive_missing");
+  expect(failureKind("E:\\Games\\Game.exe is on drive E:, which isn't connected. Connect the drive and try again.")).toBe("drive_missing");
   expect(failureKind("The process cannot access the file because it is being used by another process. (os error 32)")).toBe("in_use");
   expect(failureKind("The system cannot find the file specified. (os error 2)")).toBe("not_found");
   expect(failureKind(new Problem(msg`This app has no approved release yet.`))).toBe("no_release");

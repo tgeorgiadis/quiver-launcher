@@ -131,8 +131,9 @@ pub fn refuse(from: &Path, to: &Path, apps: &[App]) -> Option<String> {
     if staying && elsewhere(apps, to).next().is_none() {
         return Some("Apps are already installed there.".into());
     }
-    if !staying && resolved(to).starts_with(resolved(from)) {
-        return Some("Choose a folder outside the apps folder.".into());
+    // A folder inside the apps folder is fine (its apps move in one level down), but never inside one app's own.
+    if let Some(app) = apps.iter().filter(|a| a.dir.is_none()).find(|a| resolved(to).starts_with(resolved(&from.join(&a.folder)))) {
+        return Some(format!("Choose a folder outside {}'s folder.", app.folder));
     }
     if let Some((app, _)) = elsewhere(apps, to).find(|(_, dir)| resolved(to).starts_with(resolved(dir))) {
         return Some(format!("Choose a folder outside {}'s folder.", app.folder));
@@ -634,9 +635,60 @@ pub fn rename(old: &Path, proton: &Path, prefix: &str, to: &str) -> Result<(), S
     Ok(())
 }
 
+/// Removes a console folder whose apps all moved out (`folder`), if nothing's left in it, and the folder it was in
+/// inside the apps folder `apps` ("Ports"), if that's empty too. Never the apps folder, a folder around it, or
+/// anything with a file left in it; a console folder elsewhere goes, but never the folder it's in.
+pub fn remove_empty(folder: &Path, apps: &Path) {
+    let keep = |at: &Path| !at.is_absolute() || resolved(apps).starts_with(resolved(at));
+    if keep(folder) || fs::remove_dir(folder).is_err() {
+        return;
+    }
+    if let Some(parent) = folder.parent().filter(|p| !keep(p) && resolved(p).starts_with(resolved(apps))) {
+        let _ = fs::remove_dir(parent);
+    }
+}
+
+/// Removes the system folders in the apps folder with nothing in them, as sorting into system folders and changing
+/// how they're named leave them (Ports/N64 once its apps are in Ports/Nintendo 64): each folder in Ports, then Ports
+/// and the folders beside it, only ever an empty one.
+pub fn remove_empty_system_folders(apps: &Path) {
+    let ports = apps.join("Ports");
+    if let Ok(entries) = fs::read_dir(&ports) {
+        for entry in entries.flatten() {
+            if entry.file_type().is_ok_and(|t| t.is_dir()) {
+                let _ = fs::remove_dir(entry.path());
+            }
+        }
+    }
+    for name in ["Ports", "Emulators", "Tools", "Games"] {
+        let _ = fs::remove_dir(apps.join(name));
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn removes_only_empty_system_folders() {
+        let root = tempfile::tempdir().unwrap();
+        let apps = root.path().join("Apps");
+        for dir in ["Ports/N64", "Ports/GBA", "Ports/Nintendo 64/sm64", "Emulators", "Tools/thing", "Game"] {
+            fs::create_dir_all(apps.join(dir)).unwrap();
+        }
+        remove_empty_system_folders(&apps);
+        assert!(!apps.join("Ports/N64").exists());
+        assert!(!apps.join("Ports/GBA").exists());
+        assert!(apps.join("Ports/Nintendo 64/sm64").is_dir());
+        assert!(!apps.join("Emulators").exists());
+        assert!(apps.join("Tools/thing").is_dir());
+        // An app's own folder at the top, empty or not, is never one of them.
+        assert!(apps.join("Game").is_dir());
+        // Once Ports is empty, it goes too.
+        fs::remove_dir_all(apps.join("Ports/Nintendo 64")).unwrap();
+        remove_empty_system_folders(&apps);
+        assert!(!apps.join("Ports").exists());
+    }
 
     #[test]
     fn moves_installed_apps_and_remembers_the_folder() {
@@ -657,6 +709,21 @@ mod tests {
         assert_eq!(steps.into_inner(), vec![(0, 1), (1, 1)]);
         assert_eq!(moved.into_inner(), vec![("a".to_string(), to.join("Game").to_string_lossy().into_owned())]);
         assert_eq!(done.inside, ["a"]);
+    }
+
+    #[test]
+    fn moves_the_apps_into_a_folder_inside_the_apps_folder() {
+        let data = tempfile::tempdir().unwrap();
+        let from = current(data.path());
+        fs::create_dir_all(from.join("Game")).unwrap();
+        fs::write(from.join("Game/game.exe"), "game").unwrap();
+        let to = from.join("Quiver");
+        let done = move_apps(data.path(), &from, &to, &[app("a", "Game")], |_| {}, |_| {}).unwrap();
+        assert_eq!(fs::read_to_string(to.join("Game/game.exe")).unwrap(), "game");
+        assert!(!from.join("Game").exists());
+        assert_eq!(current(data.path()), to);
+        assert_eq!(done.inside, ["a"]);
+        assert!(done.failed.is_empty());
     }
 
     fn app(id: &str, folder: &str) -> App {
@@ -854,12 +921,15 @@ mod tests {
         fs::create_dir_all(from.join("Game")).unwrap();
         let folders = [app("g", "Game")];
         assert!(refuse(&from, &from, &folders).is_some());
-        assert!(refuse(&from, &from.join("More"), &folders).is_some());
+        // A folder inside the apps folder is fine, but not one inside an app's own folder.
+        assert!(refuse(&from, &from.join("More"), &folders).is_none());
+        assert!(refuse(&from, &from.join("Game"), &folders).unwrap().contains("Game"));
+        assert!(refuse(&from, &from.join("Game/More"), &folders).unwrap().contains("Game"));
         // Named another way (here through a link) while the new folder doesn't exist yet.
         #[cfg(unix)]
         {
             std::os::unix::fs::symlink(root.path(), root.path().join("link")).unwrap();
-            assert!(refuse(&from, &root.path().join("link/apps/More"), &folders).is_some());
+            assert!(refuse(&from, &root.path().join("link/apps/Game/More"), &folders).is_some());
         }
         assert!(refuse(&from, Path::new("relative"), &folders).is_some());
         let to = root.path().join("Games");
@@ -973,8 +1043,11 @@ mod tests {
         assert!(done.inside.is_empty() && done.failed.is_empty());
         assert_eq!(current(data.path()), to);
         assert!(from.join("Game").is_dir());
-        // Not one inside the folder it was.
-        assert!(move_apps(data.path(), &to, &to.join("More"), &[], |_| {}, |_| {}).is_err());
+        // One inside the folder it was too, its apps staying where they are around it.
+        fs::create_dir_all(to.join("Kept")).unwrap();
+        move_apps(data.path(), &to, &to.join("More"), &[], |_| {}, |_| {}).unwrap();
+        assert_eq!(current(data.path()), to.join("More"));
+        assert!(to.join("Kept").is_dir());
     }
 
     #[test]
@@ -1090,5 +1163,33 @@ mod tests {
         drop(open);
         assert_eq!(fs::read_to_string(old.join("save.dat")).unwrap(), "saved");
         assert!(!new.exists());
+    }
+
+    #[test]
+    fn removes_an_emptied_console_folder_and_never_more() {
+        let root = tempfile::tempdir().unwrap();
+        let apps = root.path().join("apps");
+        fs::create_dir_all(apps.join("Ports/N64")).unwrap();
+        fs::create_dir_all(apps.join("Ports/SNES/Game")).unwrap();
+        // Emptied: it goes, and Ports with it once that's empty too.
+        remove_empty(&apps.join("Ports/N64"), &apps);
+        assert!(!apps.join("Ports/N64").exists() && apps.join("Ports").is_dir());
+        fs::remove_dir_all(apps.join("Ports/SNES")).unwrap();
+        fs::create_dir_all(apps.join("Ports/GBA")).unwrap();
+        remove_empty(&apps.join("Ports/GBA"), &apps);
+        assert!(!apps.join("Ports").exists() && apps.is_dir());
+        // An app still in it, the apps folder itself, or the folder around it: kept.
+        fs::create_dir_all(apps.join("Emulators/Emu")).unwrap();
+        remove_empty(&apps.join("Emulators"), &apps);
+        assert!(apps.join("Emulators/Emu").is_dir());
+        fs::remove_dir_all(apps.join("Emulators")).unwrap();
+        remove_empty(&apps, &apps);
+        remove_empty(root.path(), &apps);
+        assert!(apps.is_dir());
+        // One elsewhere goes, but never the folder it was in, empty or not.
+        let elsewhere = root.path().join("drive/Nintendo 64");
+        fs::create_dir_all(&elsewhere).unwrap();
+        remove_empty(&elsewhere, &apps);
+        assert!(!elsewhere.exists() && root.path().join("drive").is_dir());
     }
 }

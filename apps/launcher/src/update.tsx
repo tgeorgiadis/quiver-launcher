@@ -91,6 +91,30 @@ function ReleasePageButton({ update }: { update: LauncherUpdate }) {
   );
 }
 
+/**
+ * The update's notes, over the page: the banner's What's new and Downloads' See changelog.
+ * Update now at the end where this copy can update itself; otherwise its page is the way on.
+ */
+export function LauncherNotes({ update, onClose }: { update: LauncherUpdate; onClose: () => void }) {
+  const { error } = useUpdateState();
+  const name = "Quiver Launcher";
+  return (
+    <NotesDialog
+      title={t`What's new in ${name}`}
+      releases={[{ version: update.version, notes: update.notes }]}
+      other={<ReleasePageButton update={update} />}
+      update={
+        update.manual ? undefined : (
+          <button type="button" className="primary" onClick={() => (onClose(), void install(update.version))}>
+            {error ? t`Try again` : t`Update now`}
+          </button>
+        )
+      }
+      onClose={onClose}
+    />
+  );
+}
+
 /** Above the list while an update is waiting. */
 export function UpdateBanner() {
   const { available, dismissed, installing, error } = useUpdateState();
@@ -98,7 +122,6 @@ export function UpdateBanner() {
   if (!available || dismissed) return null;
   const version = available.version;
   const done = installing && percent(installing);
-  const name = "Quiver Launcher";
   return (
     <div className="banner launcher-update" role="status" aria-label={t`Launcher update`}>
       {installing ? (
@@ -131,19 +154,7 @@ export function UpdateBanner() {
           <button onClick={() => set({ dismissed: true })}>
             <Trans>Not now</Trans>
           </button>
-          {reading && (
-            <NotesDialog
-              title={t`What's new in ${name}`}
-              releases={[{ version, notes: available.notes }]}
-              other={<ReleasePageButton update={available} />}
-              update={
-                <button type="button" className="primary" onClick={() => (setReading(false), void install(version))}>
-                  {error ? t`Try again` : t`Update now`}
-                </button>
-              }
-              onClose={() => setReading(false)}
-            />
-          )}
+          {reading && <LauncherNotes update={available} onClose={() => setReading(false)} />}
         </>
       )}
     </div>

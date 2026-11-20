@@ -1,6 +1,7 @@
 /**
  * The catalog's tags a player would rather not see: unticked on one app (its Tags menu, its page), hidden on every app
- * in Settings, and hidden as the catalog adds them. A hidden tag leaves the card and the library's tag filter.
+ * in their window from Settings (searched, filtered, many at once), and hidden as the catalog adds them. A hidden tag
+ * leaves the card and the library's tag filter.
  */
 import { after, before, test } from "node:test";
 import assert from "node:assert/strict";
@@ -36,9 +37,19 @@ const until = (check) => s.until(check);
 const openSettings = async () => {
   await page.locator(".topbar button[aria-label='Settings']").click();
   await page.locator(".settings-nav button", { hasText: "Library" }).first().click();
-  await page.getByRole("region", { name: "Catalog tags" }).waitFor();
+  await page.getByRole("region", { name: "Tags", exact: true }).waitFor();
 };
-const section = () => page.getByRole("region", { name: "Catalog tags" });
+const section = () => page.getByRole("region", { name: "Tags", exact: true });
+const tagWindow = () => page.getByRole("dialog", { name: "Manage tags" });
+const tagBox = (name) => tagWindow().getByRole("checkbox", { name: new RegExp(`^${name}\\b`) });
+const openTags = async () => {
+  await section().getByRole("button", { name: "Manage tags" }).click();
+  await tagWindow().waitFor();
+  const tab = tagWindow().getByRole("tab", { name: /^From the catalog/ });
+  // It opens there when the player has no tags of their own.
+  if ((await tab.getAttribute("aria-selected")) !== "true") await tab.click();
+};
+const listed = () => tagWindow().locator(".catalog-tag-name").allInnerTexts();
 const toLibrary = async () => {
   await page.keyboard.press("Escape");
   await page.locator("article[data-slug='test-port']").waitFor();
@@ -60,12 +71,19 @@ test("an app's Tags menu lists the catalog's tags, and unticking one takes it of
   await page.keyboard.press("Escape");
 });
 
-test("Settings hides a catalog tag on every app, and shows it again", async () => {
+test("Settings sums the tags up, and the tags window's catalog tab hides one on every app, and shows it again", async () => {
   await openSettings();
-  assert.deepEqual(await section().locator(".tag-name strong").allInnerTexts(), ["Nintendo", "Recomp"]);
-  assert.match(await section().locator("li", { hasText: "Recomp" }).innerText(), /2 apps/);
-  await section().getByRole("button", { name: "Hide Recomp" }).click();
-  await section().getByRole("button", { name: "Show Recomp" }).waitFor();
+  assert.match(await section().locator(".tags-summary").innerText(), /0\s+of your tags\s+2\s+from the catalog\s+Manage tags/);
+  assert.equal(await section().locator("li").count(), 0, "the list isn't in Settings itself");
+  await openTags();
+  assert.deepEqual(await listed(), ["Nintendo", "Recomp"]);
+  assert.match(await tagWindow().locator("li", { hasText: "Recomp" }).innerText(), /2 apps/);
+  assert.equal(await page.evaluate(() => document.activeElement?.getAttribute("aria-label")), "Search tags", "ready to type");
+  await tagBox("Recomp").uncheck();
+  await tagWindow().locator(".catalog-tag.off", { hasText: "Recomp" }).waitFor();
+  await page.keyboard.press("Escape");
+  await tagWindow().waitFor({ state: "detached" });
+  assert.match(await section().locator(".tags-summary").innerText(), /2\s+from the catalog, 1 hidden/);
   await toLibrary();
   assert.equal(await kinds("test-port"), "", "Nintendo unticked on it, Recomp hidden");
   assert.equal(await kinds("tampered-port"), "");
@@ -76,9 +94,39 @@ test("Settings hides a catalog tag on every app, and shows it again", async () =
   await page.keyboard.press("Escape");
   await page.keyboard.press("Escape");
   await openSettings();
-  await section().getByRole("button", { name: "Show Recomp" }).click();
+  await openTags();
+  await tagBox("Recomp").check();
+  await tagWindow().getByRole("button", { name: "Close" }).click();
   await toLibrary();
   assert.equal(await kinds("tampered-port"), "RECOMP");
+});
+
+test("the window searches the tags, lists the shown or hidden ones, and hides or shows as many as it lists at once", async () => {
+  await openSettings();
+  await openTags();
+  await tagWindow().getByRole("searchbox", { name: "Search tags" }).fill("nin");
+  assert.deepEqual(await listed(), ["Nintendo"]);
+  await tagWindow().getByRole("button", { name: "Hide these" }).click();
+  await until(async () => (await saved())?.everywhere?.includes("nintendo"));
+  assert.deepEqual((await saved()).everywhere, ["nintendo"], "only the one listed");
+  await tagWindow().getByRole("searchbox", { name: "Search tags" }).fill("");
+  await tagWindow().getByRole("button", { name: /^Hidden/ }).click();
+  assert.deepEqual(await listed(), ["Nintendo"]);
+  await tagWindow().getByRole("button", { name: /^Showing/ }).click();
+  assert.deepEqual(await listed(), ["Recomp"]);
+  await tagWindow().getByRole("button", { name: /^All/ }).click();
+  await tagWindow().getByRole("combobox", { name: "Sort tags" }).selectOption("apps");
+  assert.deepEqual(await listed(), ["Recomp", "Nintendo"], "the one on the most apps first");
+  await tagWindow().getByRole("button", { name: "Hide all" }).click();
+  await until(async () => (await saved())?.everywhere?.length === 2);
+  assert.ok(await tagWindow().getByRole("button", { name: "Hide all" }).isDisabled());
+  await tagWindow().getByRole("button", { name: "Show all" }).click();
+  await until(async () => (await saved())?.everywhere?.length === 0);
+  await tagWindow().getByRole("searchbox", { name: "Search tags" }).fill("zzz");
+  await tagWindow().getByText("No tags match your search.").waitFor();
+  await page.keyboard.press("Escape");
+  await toLibrary();
+  assert.deepEqual(s.errors, []);
 });
 
 test("tags the catalog adds later are hidden when the player asked, until they show one", async () => {
@@ -101,8 +149,12 @@ test("tags the catalog adds later are hidden when the player asked, until they s
     await page.locator("article[data-slug='tampered-port'] .tile-kinds").waitFor();
     assert.equal(await kinds("tampered-port"), "RECOMP", "the new one is hidden");
     await openSettings();
-    assert.match(await section().locator("li", { hasText: "Widescreen" }).innerText(), /Hidden/);
-    await section().getByRole("button", { name: "Show Widescreen" }).click();
+    await openTags();
+    await tagWindow().getByRole("button", { name: /^Hidden/ }).click();
+    assert.deepEqual(await listed(), ["Widescreen"]);
+    await tagBox("Widescreen").check();
+    assert.deepEqual(await listed(), ["Widescreen"], "still listed, ticked now, until the list is searched or filtered again");
+    await page.keyboard.press("Escape");
     await toLibrary();
     await later.until(async () => (await kinds("tampered-port")) === "RECOMP · WIDESCREEN");
     assert.deepEqual(later.errors, []);

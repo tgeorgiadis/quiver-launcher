@@ -160,10 +160,15 @@ const finish = (binding: string | null) => {
 };
 
 // Not one that's disabled, which can't take the focus: the d-pad stopped at a platform's box that must stay ticked.
-const FOCUSABLE = ":is(button, input, select, textarea):not(:disabled), a[href], [tabindex]:not([tabindex='-1']), .clip-fold";
+// A fold's summary too (Settings' lists of system folders and of apps that stay), which Confirm opens and closes.
+const FOCUSABLE = ":is(button, input, select, textarea):not(:disabled), a[href], [tabindex]:not([tabindex='-1']), .clip-fold, details > summary";
 
-/** Showing, so it can have the focus. A library card's buttons are hidden until the card has focus. */
-const shown = (el: Element) => el.isConnected && el.getClientRects().length > 0 && getComputedStyle(el).visibility !== "hidden";
+/**
+ * Showing, so it can have the focus. A library card's buttons are hidden until the card has focus. Not in a closed fold
+ * (details) but its summary: WebView2 still gives what's folded away a box, and the d-pad stopped at it, its focus refused.
+ */
+const shown = (el: Element) =>
+  el.isConnected && el.getClientRects().length > 0 && getComputedStyle(el).visibility !== "hidden" && !el.closest("details:not([open]) > :not(summary)");
 
 /**
  * What Confirm presses on a library card (TV mode's library's too), in place of
@@ -173,7 +178,8 @@ const shown = (el: Element) => el.isConnected && el.getClientRects().length > 0 
 function playOf(el: EventTarget | null) {
   if (!(el instanceof HTMLElement)) return null;
   // Not Add, on a card for an app installed here but not in the library, which Quick action presses (quickButton).
-  if (el.matches(".library-tile .card-open")) return el.closest("article")?.querySelector<HTMLElement>(".tile-play:not(.tile-add)") ?? null;
+  // Not while the library is selecting apps: Confirm selects it (library-ticking.tsx).
+  if (el.matches(".library-tile .card-open") && !el.closest("[data-ticking]")) return el.closest("article")?.querySelector<HTMLElement>(".tile-play:not(.tile-add)") ?? null;
   return null;
 }
 
@@ -685,17 +691,24 @@ export function buttonsNow(): [Action, string][] {
   const now: [Action, string][] = [];
   if (focused) {
     const play = playOf(focused);
+    // A card or a sidebar row while the library is selecting apps (library-ticking.tsx).
+    const tick = focused.closest("[data-ticking]") ? focused.closest<HTMLElement>("[data-tick]") : null;
     const does = !showing(focused)
       ? t({ message: "Show", comment: "Controller hint: what Confirm does, scrolling the focused control into view" })
       : takesText(focused)
         ? t({ message: "Type", comment: "Controller hint: what Confirm does on a text field" })
+        : tick
+          ? tick.hasAttribute("data-ticked")
+            ? t({ message: "Unselect", comment: "Controller hint: what Confirm does on an app selected in the library, taking it out of those selected" })
+            : t({ message: "Select", comment: "Controller hint: what Confirm does on any other control" })
         : play
           ? play.innerText.trim() || t({ message: "Play", comment: "Controller hint: what Confirm does on a library card" })
           : focused.matches("article .card-open")
             ? t({ message: "Open", comment: "Controller hint: what Confirm does on an app card" })
             : t({ message: "Select", comment: "Controller hint: what Confirm does on any other control" });
     now.push(["confirm", does]);
-    if (focused.closest("[data-menu]")) now.push(["options", t({ message: "Menu", comment: "Controller hint: what Options does, opening a menu" })]);
+    if (tick) now.push(["options", t({ message: "Edit selected", comment: "Controller hint, and a button over the apps selected in the library: what can change on all of them at once" })]);
+    else if (focused.closest("[data-menu]")) now.push(["options", t({ message: "Menu", comment: "Controller hint: what Options does, opening a menu" })]);
     // A game's card (library-tile.tsx): the list of its ports, which Confirm opens too where none is installed to play.
     else if (focused.closest(".game-tile")) now.push(["options", t`Ways to play`]);
     else if (focused.closest("article")?.querySelector(".card-open")) now.push(["options", t({ message: "Details", comment: "Controller hint: what Options does on an app card, opening its page" })]);
@@ -1114,8 +1127,8 @@ function edit(field: HTMLInputElement | HTMLTextAreaElement) {
   });
 }
 
-/** Back has something to close or go back from: a dialog, a menu or a dropdown's list, a floating panel, the sidebar's filters, or a page. */
-export const backGoes = () => Boolean(pickerPanel() || document.querySelector('[role="dialog"], [role="menu"], [role="listbox"], .menu.floating, .sidebar-filters, .page-layer'));
+/** Back has something to close or go back from: a dialog, a menu or a dropdown's list, a floating panel, the sidebar's filters, a page, or apps selected in the library. */
+export const backGoes = () => Boolean(pickerPanel() || document.querySelector('[role="dialog"], [role="menu"], [role="listbox"], .menu.floating, .sidebar-filters, .page-layer, [data-ticking]'));
 
 /**
  * Back from outside the bindings (Android's button or gesture, main.tsx): closes or goes back as a controller's Back

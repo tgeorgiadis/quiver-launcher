@@ -28,6 +28,8 @@ export const windowsProgram = (executable: string | undefined, wine: boolean | u
  * app the player added (`program`) always keeps a full path, and has no folder of Quiver's.
  */
 export const outsideFolder = (executable: string | undefined, program?: string) => Boolean(executable && !program && /^([a-z]:[\\/]|[\\/])/i.test(executable));
+/** A file's name, from its path on any system. */
+const fileName = (path: string) => path.split(/[\\/]/).filter(Boolean).pop() ?? path;
 /** A Proton's name from its folder. */
 const folderName = (path: string) => path.replace(/[/\\]+$/, "").split(/[/\\]/).pop() || path;
 
@@ -51,7 +53,7 @@ export function RunnerSelect({ value, onChange, onError, automatic, direct }: { 
   return (
     <select aria-label={t`Run with`} value={runnerValue(value)} onChange={(e) => pick(e.target.value)}>
       <option value="">{automatic}</option>
-      {direct && <option value="direct">{t`The program itself`}</option>}
+      {direct && <option value="direct">{t`Nothing, run it directly`}</option>}
       <option value="wine">Wine</option>
       {listed.map((p) => (
         <option key={p.path} value={`proton:${p.path}`}>
@@ -76,7 +78,7 @@ export function useAutomaticRunner() {
 }
 
 /** A runner Settings set, by name. */
-const runnerName = (runner: NonNullable<Runner>) => (runner.kind === "proton" ? folderName(runner.path) : runner.kind === "wine" ? "Wine" : t`The program itself`);
+const runnerName = (runner: NonNullable<Runner>) => (runner.kind === "proton" ? folderName(runner.path) : runner.kind === "wine" ? "Wine" : t`Nothing, run it directly`);
 
 /** Automatic's line in a Run with dropdown, saying what it runs Windows programs with. */
 const automaticLine = (name: string | null | undefined) =>
@@ -126,7 +128,20 @@ export function LaunchOptionsButton({ id }: { id: string }) {
   const [runner, setRunner] = useState<Runner>();
   const [command, setCommand] = useState("");
   const [error, setError] = useState<string | null>(null);
+  // The executable Quiver starts when the player chooses none, to name it: undefined until known, null when it picks no file.
+  const [found, setFound] = useState<string | null>();
   const linux = config.os === "linux";
+  useEffect(() => {
+    if (!open || !install) return;
+    let current = true;
+    setFound(install.program);
+    if (!install.program)
+      native.foundProgram(install.folder, install.dir, install.executables, Boolean(install.wine)).then(
+        (path) => current && setFound(path ?? null),
+        () => current && setFound(null),
+      );
+    return () => void (current = false);
+  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!open || !install) return;
     setExecutable(install.launch?.executable);
@@ -156,6 +171,7 @@ export function LaunchOptionsButton({ id }: { id: string }) {
       (e) => setError(String(e)),
     );
   };
+  const name = found ? fileName(found) : "";
   const unclosed = (command.match(/"/g)?.length ?? 0) % 2 === 1 || (command.match(/'/g)?.length ?? 0) % 2 === 1;
   // A Linux program runs as itself: a runner would only break it, so there's none to choose, and none is kept.
   const runs = linux && windowsProgram(executable, install.wine);
@@ -173,25 +189,31 @@ export function LaunchOptionsButton({ id }: { id: string }) {
       <PanelFormHead title={t`Launch options`} onClose={() => setOpen(false)} />
       <div className="launch-program">
         <span className="field-label">
-          <Trans>Program</Trans>
+          <Trans>Executable</Trans>
         </span>
         <p className="muted">
           {executable ? (
             <Trans>
-              Starts <code>{executable}</code>
+              Quiver will launch <code>{executable}</code> when you press Play.
             </Trans>
+          ) : found ? (
+            <Trans>
+              Quiver will launch <code title={found}>{name}</code> when you press Play. You can choose another executable to run instead.
+            </Trans>
+          ) : found === null ? (
+            t`Choose the executable you want Quiver to run. It can be in any folder or drive.`
           ) : (
-            t`Starts the program Quiver finds in its folder.`
+            "\u00a0"
           )}
         </p>
         {outsideFolder(executable, install.program) && (
           <p className="muted small">
-            <Trans>It&apos;s outside the app&apos;s folder, so moving, renaming, updating or uninstalling the app leaves it where it is.</Trans>
+            <Trans>This file is outside the app&apos;s folder, so Quiver never moves or deletes it.</Trans>
           </p>
         )}
         <div className="row">
           <button type="button" onClick={choose}>
-            <Trans>Choose program…</Trans>
+            <Trans>Choose executable…</Trans>
           </button>
           {executable && (
             <button type="button" onClick={() => setExecutable(undefined)}>
@@ -219,7 +241,7 @@ export function LaunchOptionsButton({ id }: { id: string }) {
           onChange={(e) => setCommand(e.target.value)}
         />
         <span className="muted small">
-          <Trans>Added after the program, or write %command% where the program should go. NAME=value at the start sets an environment variable.</Trans>
+          <Trans>These go after the executable. To put the executable somewhere else, write %command% there. NAME=value at the start sets an environment variable.</Trans>
         </span>
       </label>
       {unclosed && (

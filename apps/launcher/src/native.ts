@@ -108,6 +108,10 @@ export type InstallRequest = {
   preferred?: string[];
   /** The program the app started with before an update. */
   program?: string;
+  /** The player's GitHub token, with `url` a file of a GitHub repository asked for through its API (githubAsset). */
+  githubToken?: string;
+  /** The file's browser link, downloaded without the token when GitHub refuses the token (expired or revoked). */
+  fallbackUrl?: string;
 };
 /** What an install did. A Windows installer (MSI) puts its files where its setup chose. */
 export type Installed = {
@@ -286,7 +290,13 @@ export type SavesInfo = {
   backups: SaveBackup[];
   /** The player switched cloud saves off for this app. */
   cloudOff?: boolean;
+  /** Signs that the places hold more than saves, for the tab to ask about (saves.rs `looks`). */
+  look?: SavesLook | null;
 };
+/** Signs that a backup holds more than saves, and what filled it most. */
+export type SavesLook = { reasons: ("big" | "many" | "media" | "tooBig")[]; bytes: number; files: number; kinds: { ext: string; share: number }[] };
+/** What to tell the catalog about how an app's backups look; `key` marks it sent. */
+export type SavesWarning = SavesLook & { os: "windows" | "linux" | "macos"; source: "catalog" | "found" | "player"; fine: boolean; key: string };
 
 export const native = {
   /** Whether holding these buttons together closes the game being played (unset: Start + Select). */
@@ -358,6 +368,12 @@ export const native = {
   savesFolderTake: (of: SavesOf, folder: string, name: string) => invoke<SaveBackup>("saves_folder_take", { of, folder, name }),
   /** Those places were sent to the catalog: they aren't offered by `savesToReport` again. */
   savesReported: (of: SavesOf, places: string[]) => invoke<void>("saves_reported", { of, places }),
+  /** The player said the places Quiver backs up hold their saves: the tab stops asking while they stay the places. */
+  savesFine: (of: SavesOf) => invoke<SavesInfo | null>("saves_fine", { of }),
+  /** How an app's backups look, when the catalog hasn't been told yet; null with nothing to tell. */
+  savesWarning: (of: SavesOf) => invoke<SavesWarning | null>("saves_warning", { of }),
+  /** That report was sent (or refused): `savesWarning` doesn't offer it again. */
+  savesWarned: (of: SavesOf, key: string) => invoke<void>("saves_warned", { of, key }),
   /** Stops an app's install while it downloads; the install then fails with "cancelled". */
   cancelInstall: (id: string) => invoke<void>("cancel_install", { id }),
   /** Fails with "cancelled" when the player says no to Windows uninstalling it. */
@@ -467,6 +483,10 @@ export const native = {
   openAppsFolder: (path: string) => invoke<void>("open_apps_folder", { path }),
   /** Whether each apps folder is there (a drive not plugged in isn't), and the bytes free on its drive. */
   appsFolderStates: (paths: string[]) => invoke<{ exists: boolean; free?: number | null }[]>("apps_folder_states", { paths }),
+  /** Removes a console folder its apps all moved out of, once nothing's left in it, and "Ports" around it if that's empty too. */
+  removeEmptyConsoleFolder: (path: string) => invoke<void>("remove_empty_console_folder", { path }),
+  /** Removes the default apps folder's system folders with nothing in them (Ports\\N64 after its apps went elsewhere). */
+  removeEmptySystemFolders: () => invoke<void>("remove_empty_system_folders"),
   /**
    * Moves one app's folder into `to`, beside what's there: `dir`, its folder there; `left`, its old copy if that
    * couldn't all be deleted.
@@ -495,6 +515,8 @@ export const native = {
   pickExecutable: (folder: string, dir?: string, program?: string) => invoke<string | null>("pick_executable", { folder, dir, program }),
   /** The programs in an installed app's folder, relative to it. */
   listPrograms: (folder: string, dir?: string) => invoke<string[]>("list_programs", { folder, dir }),
+  /** The executable Play starts when the player hasn't chosen one (relative to the app's folder when it's inside); null when Quiver doesn't pick a file. */
+  foundProgram: (folder: string, dir: string | undefined, preferred: string[], wine: boolean) => invoke<string | null>("found_program", { folder, dir, preferred, wine }),
   /** Whether Android no longer has an app Quiver installed from an APK; always false elsewhere. */
   androidAppGone: (folder: string, dir?: string) => invoke<boolean>("android_app_gone", { folder, dir }),
   /** The kinds of file in an installed app's folder (extensions, not names), for an error report. */

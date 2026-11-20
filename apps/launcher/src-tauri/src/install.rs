@@ -41,6 +41,15 @@ pub struct InstallRequest {
     pub preferred: Vec<String>,
     /// The program the app started with before an update.
     pub program: Option<String>,
+    /// The player's GitHub token, for a file of a GitHub repository asked for through GitHub's API: a private
+    /// repository's files come only that way. GitHub answers with a redirect to where the file is, which reqwest
+    /// follows without the token, as it leaves `Authorization` behind going to another host.
+    #[serde(default)]
+    pub github_token: Option<String>,
+    /// The file's browser link, tried without the token when GitHub refuses the token itself (expired or revoked):
+    /// a public repository's file still downloads that way, as it did before the token was saved.
+    #[serde(default)]
+    pub fallback_url: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -228,6 +237,12 @@ pub async fn install(
             }
         }
         tokio::task::spawn_blocking(move || -> Result<(), String> {
+            // On Android an archive is only an app with an APK in it: one without (another system's build the player
+            // picked) fails before it's put in the folder.
+            #[cfg(target_os = "android")]
+            if crate::android::apk_in(&out).is_none() {
+                return Err("This download has no Android app (APK) in it. Pick another of the release's files.".into());
+            }
             // This release's Flatpak bundle, where it lands: not one an earlier build left in the folder.
             let bundle = crate::flatpak::bundle_in(&out).and_then(|b| b.strip_prefix(&out).ok().map(|rel| dir.join(rel)));
             // Marked as Quiver's before anything goes in, so an install cut short can still be retried or removed.
@@ -366,14 +381,20 @@ fn refused(status: reqwest::StatusCode, url: &reqwest::Url) -> String {
 
 /// Streams the file to disk, hashing as it goes; returns its SHA-256.
 async fn download(req: &InstallRequest, to: &Path, progress: &impl Fn(Progress)) -> Result<String, String> {
-    let response = reqwest::Client::builder()
-        .user_agent("QuiverLauncher/4")
-        .build()
-        .map_err(text)?
-        .get(&req.url)
-        .send()
-        .await
-        .map_err(|_| "The download failed. Check your connection and try again.".to_string())?;
+    let client = reqwest::Client::builder().user_agent("QuiverLauncher/4").build().map_err(text)?;
+    let failed = |_| "The download failed. Check your connection and try again.".to_string();
+    let token = req.github_token.as_deref().map(str::trim).filter(|t| !t.is_empty());
+    let mut request = client.get(&req.url);
+    if let Some(token) = token {
+        request = request.bearer_auth(token).header(reqwest::header::ACCEPT, "application/octet-stream");
+    }
+    let mut response = request.send().await.map_err(failed)?;
+    // GitHub refused the token itself: the browser link, without it, as before the token was saved.
+    if token.is_some() && response.status() == reqwest::StatusCode::UNAUTHORIZED {
+        if let Some(fallback) = &req.fallback_url {
+            response = client.get(fallback).send().await.map_err(failed)?;
+        }
+    }
     if response.status() == reqwest::StatusCode::NOT_FOUND {
         // Its developer deleted it, or the release, after the site last read it.
         return Err(MISSING.into());
@@ -523,9 +544,25 @@ fn unpack(file: &Path, name: &str, out: &Path) -> Result<(), String> {
     let lower = name.to_lowercase();
     if lower.ends_with(".zip") {
         let mut archive = zip::ZipArchive::new(fs::File::open(file).map_err(text)?).map_err(text)?;
+        #[cfg(unix)]
+        let mut links = Vec::new();
         for i in 0..archive.len() {
             let mut entry = archive.by_index(i).map_err(text)?;
-            let Some(path) = enclosed(entry.name()).map(|p| out.join(p)) else { continue };
+            let Some(inside) = enclosed(entry.name()) else { continue };
+            // A zip made with the Mac's Compress keeps each file's Finder details in `__MACOSX`, which no app needs and
+            // which keeps a lone wrapper folder from being hoisted.
+            if inside.starts_with("__MACOSX") {
+                continue;
+            }
+            let path = out.join(&inside);
+            // A Mac app's frameworks link `Versions/Current`; as a copy, its signature no longer verifies.
+            #[cfg(unix)]
+            if entry.unix_mode().is_some_and(|mode| mode & 0o170000 == 0o120000) {
+                let mut target = String::new();
+                entry.read_to_string(&mut target).map_err(text)?;
+                links.push((inside, target));
+                continue;
+            }
             if entry.is_dir() {
                 fs::create_dir_all(&path).map_err(text)?;
                 continue;
@@ -539,6 +576,21 @@ fn unpack(file: &Path, name: &str, out: &Path) -> Result<(), String> {
                 use std::os::unix::fs::PermissionsExt;
                 let _ = fs::set_permissions(&path, fs::Permissions::from_mode(mode & 0o777));
             }
+        }
+        // Made last, so no entry is written through a link. Only links that point down from their own folder, as a
+        // framework's do: a chain of links with `..` can lead out of `out` even when each one seems to stay inside,
+        // and one to `.` makes a folder that holds itself.
+        #[cfg(unix)]
+        for (inside, target) in links {
+            let down = !target.is_empty() && !target.starts_with('/') && !target.contains('\0') && !target.split('/').any(|p| p == ".." || p == ".");
+            let path = out.join(&inside);
+            if !down || fs::symlink_metadata(&path).is_ok() {
+                continue;
+            }
+            if let Some(parent) = path.parent() {
+                fs::create_dir_all(parent).map_err(text)?;
+            }
+            std::os::unix::fs::symlink(&target, &path).map_err(text)?;
         }
         Ok(())
     } else if let Some(packing) = tarball(&lower) {
@@ -607,11 +659,14 @@ fn enclosed(name: &str) -> Option<PathBuf> {
 }
 
 /// Hoists the contents of a lone wrapper folder, as most archives have one.
+/// A Mac app (`Game.app`) is the program itself, not a wrapper: hoisting its
+/// `Contents` leaves a folder macOS can't start.
 pub(crate) fn flatten(dir: &Path) -> io::Result<()> {
     loop {
         let entries: Vec<_> = fs::read_dir(dir)?.collect::<Result<_, _>>()?;
         let [only] = entries.as_slice() else { return Ok(()) };
-        if !only.file_type()?.is_dir() {
+        let app = Path::new(&only.file_name()).extension().is_some_and(|e| e.eq_ignore_ascii_case("app"));
+        if !only.file_type()?.is_dir() || app {
             return Ok(());
         }
         let inner = dir.join(".quiver-flatten");
@@ -1003,6 +1058,76 @@ fn unrar_into(_file: &Path, _out: &Path) -> Result<(), String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// A one-request HTTP server on this computer: what `answer` says to the request it gets, which goes to `seen`.
+    fn serve(answer: impl FnOnce(&str) -> String + Send + 'static) -> (u16, std::sync::mpsc::Receiver<String>) {
+        use std::io::{Read, Write};
+        let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+        let port = listener.local_addr().unwrap().port();
+        let (seen, heard) = std::sync::mpsc::channel();
+        std::thread::spawn(move || {
+            let (mut stream, _) = listener.accept().unwrap();
+            let mut buf = [0u8; 8192];
+            let n = stream.read(&mut buf).unwrap();
+            let request = String::from_utf8_lossy(&buf[..n]).to_lowercase();
+            stream.write_all(answer(&request).as_bytes()).unwrap();
+            seen.send(request).unwrap();
+        });
+        (port, heard)
+    }
+
+    fn fetch(url: String, github_token: Option<&str>, fallback_url: Option<String>) -> Result<String, String> {
+        let req = InstallRequest {
+            id: "github:quiver/private".into(),
+            url,
+            filename: "game.zip".into(),
+            checksum: None,
+            folder: "private".into(),
+            dir: None,
+            into: None,
+            files_to_add: vec![],
+            version: "v1.0.0".into(),
+            preferred: vec![],
+            program: None,
+            github_token: github_token.map(Into::into),
+            fallback_url,
+        };
+        let dir = tempfile::tempdir().unwrap();
+        tauri::async_runtime::block_on(download(&req, &dir.path().join("game.zip"), &|_| {}))
+    }
+
+    #[test]
+    fn a_private_repositorys_file_comes_through_githubs_api_with_the_token_which_its_redirect_leaves_behind() {
+        let (file_port, file_saw) = serve(|_| "HTTP/1.1 200 OK\r\nContent-Length: 5\r\nConnection: close\r\n\r\nhello".into());
+        // As GitHub's API: the file for the token, else as if there were no such repository.
+        let (api_port, api_saw) = serve(move |request| {
+            if request.contains("authorization: bearer secret") && request.contains("accept: application/octet-stream") {
+                format!("HTTP/1.1 302 Found\r\nLocation: http://localhost:{file_port}/file\r\nContent-Length: 0\r\nConnection: close\r\n\r\n")
+            } else {
+                "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\nConnection: close\r\n\r\n".into()
+            }
+        });
+        let sha = fetch(format!("http://127.0.0.1:{api_port}/repos/quiver/private/releases/assets/7"), Some(" secret "), None);
+        assert_eq!(sha.unwrap(), hex::encode(Sha256::digest(b"hello")));
+        assert!(api_saw.recv().unwrap().contains("authorization: bearer secret"));
+        assert!(!file_saw.recv().unwrap().contains("authorization"), "the token stays with GitHub's API");
+    }
+
+    #[test]
+    fn without_a_token_a_private_repositorys_file_is_missing() {
+        let (api_port, _) = serve(|_| "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\nConnection: close\r\n\r\n".into());
+        assert_eq!(fetch(format!("http://127.0.0.1:{api_port}/repos/quiver/private/releases/assets/7"), None, None), Err(MISSING.into()));
+    }
+
+    #[test]
+    fn a_token_github_refuses_falls_back_to_the_browser_link_without_it() {
+        let (file_port, file_saw) = serve(|_| "HTTP/1.1 200 OK\r\nContent-Length: 5\r\nConnection: close\r\n\r\nhello".into());
+        // As GitHub's API for an expired token: Bad credentials.
+        let (api_port, _) = serve(|_| "HTTP/1.1 401 Unauthorized\r\nContent-Length: 0\r\nConnection: close\r\n\r\n".into());
+        let sha = fetch(format!("http://127.0.0.1:{api_port}/repos/quiver/public/releases/assets/7"), Some("expired"), Some(format!("http://127.0.0.1:{file_port}/game.zip")));
+        assert_eq!(sha.unwrap(), hex::encode(Sha256::digest(b"hello")));
+        assert!(!file_saw.recv().unwrap().contains("authorization"), "the browser link goes without the token");
+    }
 
     #[test]
     fn a_refused_download_says_who_and_what_to_do_without_the_address() {
@@ -1584,5 +1709,69 @@ mod tests {
         fs::write(dir.path().join("Game-v1/Game.exe"), "").unwrap();
         flatten(dir.path()).unwrap();
         assert!(dir.path().join("Game.exe").exists() && dir.path().join("data").is_dir());
+    }
+
+    #[test]
+    fn a_zipped_mac_app_stays_an_app() {
+        for top in ["", "Game-v1/"] {
+            let dir = tempfile::tempdir().unwrap();
+            let zip = {
+                let mut w = zip::ZipWriter::new(io::Cursor::new(Vec::new()));
+                for name in ["Game.app/Contents/Info.plist", "Game.app/Contents/MacOS/game"] {
+                    w.start_file(format!("{top}{name}"), zip::write::SimpleFileOptions::default().unix_permissions(0o755)).unwrap();
+                    io::Write::write_all(&mut w, b"game").unwrap();
+                }
+                // As the Mac's Compress makes it.
+                w.start_file(format!("__MACOSX/{top}Game.app/Contents/._Info.plist"), zip::write::SimpleFileOptions::default()).unwrap();
+                io::Write::write_all(&mut w, b"finder").unwrap();
+                w.finish().unwrap().into_inner()
+            };
+            let file = dir.path().join("Game.zip");
+            fs::write(&file, zip).unwrap();
+            let out = dir.path().join("out");
+            extract(&file, "Game.zip", &out).unwrap();
+            flatten(&out).unwrap();
+            assert!(out.join("Game.app/Contents/MacOS/game").is_file(), "{top}");
+            assert!(!out.join("__MACOSX").exists(), "{top}");
+            assert_eq!(find_executable(&out, &[], "macos"), Some(out.join("Game.app")), "{top}");
+        }
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn a_zipped_mac_app_keeps_its_frameworks_links_but_none_that_lead_out() {
+        let dir = tempfile::tempdir().unwrap();
+        let framework = "Game.app/Contents/Frameworks/Engine.framework";
+        let zip = {
+            let mut w = zip::ZipWriter::new(io::Cursor::new(Vec::new()));
+            let options = zip::write::SimpleFileOptions::default();
+            w.start_file(format!("{framework}/Versions/A/Engine"), options).unwrap();
+            io::Write::write_all(&mut w, b"engine").unwrap();
+            w.add_symlink(format!("{framework}/Versions/Current"), "A", options).unwrap();
+            w.add_symlink(format!("{framework}/Engine"), "Versions/Current/Engine", options).unwrap();
+            // Each `..` seems to stay inside, but together they lead out of the folder.
+            w.add_symlink("Game.app/Contents/Frameworks/up", "..", options).unwrap();
+            w.add_symlink("Game.app/Contents/out", "Frameworks/up/../../..", options).unwrap();
+            w.add_symlink("Game.app/etc", "/etc", options).unwrap();
+            // A folder that holds itself.
+            w.add_symlink("Game.app/Contents/self", "./", options).unwrap();
+            // A link to where a later file goes isn't written through.
+            w.add_symlink("Game.app/data", "Contents", options).unwrap();
+            w.start_file("Game.app/data/save.bin", options).unwrap();
+            io::Write::write_all(&mut w, b"save").unwrap();
+            w.finish().unwrap().into_inner()
+        };
+        let file = dir.path().join("Game.zip");
+        fs::write(&file, zip).unwrap();
+        let out = dir.path().join("out");
+        extract(&file, "Game.zip", &out).unwrap();
+        let link = |p: &str| fs::symlink_metadata(out.join(p)).is_ok_and(|m| m.file_type().is_symlink());
+        assert!(link(&format!("{framework}/Versions/Current")) && link(&format!("{framework}/Engine")));
+        assert_eq!(fs::read(out.join(format!("{framework}/Engine"))).unwrap(), b"engine");
+        for refused in ["Game.app/Contents/Frameworks/up", "Game.app/Contents/out", "Game.app/etc", "Game.app/Contents/self"] {
+            assert!(fs::symlink_metadata(out.join(refused)).is_err(), "{refused}");
+        }
+        assert!(!link("Game.app/data") && out.join("Game.app/data/save.bin").is_file());
+        assert!(!out.join("Game.app/Contents/save.bin").exists());
     }
 }

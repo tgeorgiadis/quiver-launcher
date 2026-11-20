@@ -27,7 +27,7 @@ export function install(app) {
     const matchMedia = window.matchMedia.bind(window);
     window.matchMedia = (query) => (/prefers-reduced-motion:\s*reduce/.test(query) ? { ...matchMedia(query), matches: true, media: query } : matchMedia(query));
     // Not the logo, the mouse's way to the library, which the Library tab beside it is for the d-pad.
-    const FOCUSABLE = "button:not(:disabled, .brand), input, select, textarea, a[href], [tabindex]:not([tabindex='-1'])";
+    const FOCUSABLE = "button:not(:disabled, .brand), input, select, textarea, a[href], [tabindex]:not([tabindex='-1']), details > summary";
     const DIRECTIONS = ["DPadUp", "DPadDown", "DPadLeft", "DPadRight"];
     const scope = () => {
       const dialogs = document.querySelectorAll('[role="dialog"]');
@@ -38,7 +38,7 @@ export function install(app) {
       const fold = el.closest(".clipped");
       return !!fold && el.getBoundingClientRect().bottom > fold.getBoundingClientRect().bottom;
     };
-    const visible = (el) => el.isConnected && el.getClientRects().length > 0 && getComputedStyle(el).visibility !== "hidden" && !folded(el);
+    const visible = (el) => el.isConnected && el.getClientRects().length > 0 && getComputedStyle(el).visibility !== "hidden" && !folded(el) && !el.closest("details:not([open]) > :not(summary)");
     const candidates = () => [...scope().querySelectorAll(FOCUSABLE)].filter(visible);
     const frame = () => new Promise((r) => requestAnimationFrame(() => r()));
     const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
