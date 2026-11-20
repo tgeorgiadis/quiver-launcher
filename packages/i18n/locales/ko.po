@@ -896,8 +896,8 @@ msgid "<0>Language support:</0> ten languages to choose from"
 msgstr "<0>언어 지원:</0> 열 가지 언어 중에서 선택"
 
 #: ../../apps/launcher/src/setup.tsx
-msgid "<0>Playlists</0> you can share, and other people's to follow"
-msgstr "<0>재생 목록</0>을 공유하고, 다른 사람의 재생 목록을 팔로우"
+msgid "<0>Shared playlists:</0> share your playlists, and add other people's that stay synced"
+msgstr "<0>공유된 재생 목록:</0> 내 재생 목록을 공유하고, 동기화 상태로 유지되는 다른 사람의 재생 목록을 추가하세요"
 
 #: ../../apps/launcher/src/setup.tsx
 msgid "<0>Sign in</0> with the same account as the website, to sync your library (apps and playlists), share feedback and report issues without leaving Quiver"
@@ -6192,8 +6192,8 @@ msgid "Show the library as a grid"
 msgstr "라이브러리를 격자로 보기"
 
 #: ../../apps/launcher/src/App.tsx
-msgid "Show the library with a sidebar"
-msgstr "라이브러리를 사이드바와 함께 보기"
+msgid "Show the library as a list"
+msgstr "라이브러리를 목록으로 보기"
 
 #. Shows the library's apps for other platforms, until the library is left
 #: ../../apps/launcher/src/library.tsx

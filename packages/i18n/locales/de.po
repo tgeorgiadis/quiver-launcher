@@ -896,8 +896,8 @@ msgid "<0>Language support:</0> ten languages to choose from"
 msgstr "<0>Sprachunterstützung:</0> zehn Sprachen zur Auswahl"
 
 #: ../../apps/launcher/src/setup.tsx
-msgid "<0>Playlists</0> you can share, and other people's to follow"
-msgstr "<0>Playlists</0>, die du teilen kannst, und die anderer, denen du folgen kannst"
+msgid "<0>Shared playlists:</0> share your playlists, and add other people's that stay synced"
+msgstr "<0>Geteilte Playlists:</0> teile deine Playlists und füge die anderer hinzu, die synchron bleiben"
 
 #: ../../apps/launcher/src/setup.tsx
 msgid "<0>Sign in</0> with the same account as the website, to sync your library (apps and playlists), share feedback and report issues without leaving Quiver"
@@ -6192,8 +6192,8 @@ msgid "Show the library as a grid"
 msgstr "Bibliothek als Raster anzeigen"
 
 #: ../../apps/launcher/src/App.tsx
-msgid "Show the library with a sidebar"
-msgstr "Bibliothek mit Seitenleiste anzeigen"
+msgid "Show the library as a list"
+msgstr "Bibliothek als Liste anzeigen"
 
 #. Shows the library's apps for other platforms, until the library is left
 #: ../../apps/launcher/src/library.tsx

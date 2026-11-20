@@ -896,8 +896,8 @@ msgid "<0>Language support:</0> ten languages to choose from"
 msgstr "<0>语言支持：</0>十种语言可选"
 
 #: ../../apps/launcher/src/setup.tsx
-msgid "<0>Playlists</0> you can share, and other people's to follow"
-msgstr "<0>播放列表</0>可以分享，也可以关注别人的"
+msgid "<0>Shared playlists:</0> share your playlists, and add other people's that stay synced"
+msgstr "<0>共享播放列表：</0>分享你的播放列表，也可以添加别人的播放列表并保持同步"
 
 #: ../../apps/launcher/src/setup.tsx
 msgid "<0>Sign in</0> with the same account as the website, to sync your library (apps and playlists), share feedback and report issues without leaving Quiver"
@@ -6192,8 +6192,8 @@ msgid "Show the library as a grid"
 msgstr "以网格方式显示游戏库"
 
 #: ../../apps/launcher/src/App.tsx
-msgid "Show the library with a sidebar"
-msgstr "以带侧边栏的方式显示游戏库"
+msgid "Show the library as a list"
+msgstr "以列表方式显示游戏库"
 
 #. Shows the library's apps for other platforms, until the library is left
 #: ../../apps/launcher/src/library.tsx
