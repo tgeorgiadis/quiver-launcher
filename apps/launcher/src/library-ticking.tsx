@@ -82,8 +82,8 @@ export function TickArea({ shown, playlist, children }: { shown: readonly string
       stop(e);
       const ids = card.dataset.tick!.split(" ");
       if (e.shiftKey && !e.ctrlKey && !e.metaKey) {
-        // Read now: React may run the update later, after the anchor below has moved to this card.
-        const [from, shown] = [anchor.current, order()];
+        // Read now: React can run the update later, once the anchor has moved on.
+        const [shown, from] = [order(), anchor.current];
         setTicked((t) => tickRange(shown, from, ids[0], t));
         anchor.current = ids[0];
       } else now.current.toggle(ids);
@@ -118,7 +118,8 @@ export function TickArea({ shown, playlist, children }: { shown: readonly string
         setTicked(new Set());
       } else if (e.key.toLowerCase() === "a" && (e.ctrlKey || e.metaKey) && !(e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement)) {
         e.preventDefault();
-        setTicked((t) => new Set([...t, ...order()]));
+        const shown = order();
+        setTicked((t) => new Set([...t, ...shown]));
       }
     };
     const listeners: [string, (e: never) => void][] = [["click", click], ["dblclick", doubleClick], ["contextmenu", contextMenu], ["keydown", key]];
