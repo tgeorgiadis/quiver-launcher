@@ -2567,8 +2567,8 @@ main:has(.tick-bar) { scroll-padding-bottom: 96px; }
 .choose-system-row .chip { display: inline-flex; align-items: center; height: 26px; padding: 0 10px; font-size: 12px; cursor: pointer; }
 .choose-system-row .chip:hover { border-color: var(--accent); color: var(--strong); }
 .choose-system-to { flex-basis: 100%; text-align: right; font-size: 12px; color: var(--muted); }
-/* Settings › Apps folder: what's about system folders, set in under its toggle as that toggle's options. */
-.system-folders { display: grid; gap: 10px; margin: 2px 0 14px; padding: 2px 0 2px 14px; border-left: 2px solid var(--line); }
+/* Settings › Apps folder: what's about system folders, together under its toggle as that toggle's options. */
+.system-folders { display: grid; gap: 10px; margin: 2px 0 14px; }
 .system-folders > p.muted { margin: 0; font-size: 13px; }
 .system-folders .system-naming, .system-folders .console-folders, .system-folders .apps-staying { margin: 0; }
 .system-sort { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; padding: 8px 8px 8px 12px; border: 1px solid var(--line); border-radius: 10px; font-size: 13.5px; color: var(--fg); }
