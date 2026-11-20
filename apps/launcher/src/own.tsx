@@ -83,7 +83,9 @@ function Heading({ title, onBack }: { title: string; onBack: () => void }) {
 type Done = { onBack: () => void; onDone: (entry: Entry) => void };
 
 function FromRepository({ onBack, onDone }: Done) {
-  const { lookUpRepository, addCustomApp } = useLauncher();
+  const { lookUpRepository, addCustomApp, config } = useLauncher();
+  // A phone or tablet is a device, not a computer.
+  const device = config.os === "android";
   const [input, setInput] = useState("");
   const [forge, setForge] = useState("auto");
   const [busy, setBusy] = useState(false);
@@ -187,7 +189,7 @@ function FromRepository({ onBack, onDone }: Done) {
       )}
       {latest && files.length === 0 && (
         <p className="job-error">
-          <Trans>None of this release's files are for this computer.</Trans>
+          {device ? <Trans>None of this release's files are for this device.</Trans> : <Trans>None of this release's files are for this computer.</Trans>}
         </p>
       )}
       {files.length === 1 && (
@@ -198,7 +200,11 @@ function FromRepository({ onBack, onDone }: Done) {
       {files.length > 1 && (
         <fieldset className="pick-file">
           <legend>
-            <Trans>This release has several downloads for this computer. Which app is this?</Trans>
+            {device ? (
+              <Trans>This release has several downloads for this device. Which app is this?</Trans>
+            ) : (
+              <Trans>This release has several downloads for this computer. Which app is this?</Trans>
+            )}
           </legend>
           {filenames.map((f) => (
             <label key={f}>

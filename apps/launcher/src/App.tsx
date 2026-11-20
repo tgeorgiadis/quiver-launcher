@@ -670,7 +670,9 @@ function BrowsePage({
   const hereLabel =
     config.os === "linux"
       ? t({ message: "Linux and Windows (this computer)", comment: "Browse's platform filter on Linux: the apps it runs, its own and Windows' through Proton" })
-      : t`${name} (this computer)`;
+      : config.os === "android"
+        ? t`${name} (this device)`
+        : t`${name} (this computer)`;
   const platformsOn = filters.platforms?.length ? filters.platforms.map((p) => (p === "here" ? hereLabel : osChoice(p))).join(", ") : undefined;
   const inLibrary = new Set(library.map((i) => i.id));
   // What this computer runs, where the catalog was asked for more (Linux's and Windows' apps: catalogOs).
@@ -2768,6 +2770,9 @@ function ChooseFileDialog({ choice }: { choice: Choice }) {
   // Open from the start when nothing else is offered: then the files a maintainer didn't tick are all there is.
   const [showAll, setShowAll] = useState(choice.assets.length === 0);
   const unapproved = new Set(choice.unapproved);
+  const { config } = useLauncher();
+  // A phone or tablet is a device, not a computer.
+  const device = config.os === "android";
   const name = choice.entry.projectName;
   const version = versionLabel(choice.version);
   // The release's other files this computer can install, whatever system the site says they're for.
@@ -2800,8 +2805,12 @@ function ChooseFileDialog({ choice }: { choice: Choice }) {
           </h2>
           <p className="muted">
             {choice.unmatched
-              ? t`None of ${name} ${version}'s files are marked for your computer. If you know which one runs on it, pick it.`
-              : t`${name} ${version} has more than one file for your computer.`}
+              ? device
+                ? t`None of ${name} ${version}'s files are marked for your device. If you know which one runs on it, pick it.`
+                : t`None of ${name} ${version}'s files are marked for your computer. If you know which one runs on it, pick it.`
+              : device
+                ? t`${name} ${version} has more than one file for your device.`
+                : t`${name} ${version} has more than one file for your computer.`}
           </p>
           {choice.assets.length > 0 && (
             <div className="choices">
@@ -2817,7 +2826,13 @@ function ChooseFileDialog({ choice }: { choice: Choice }) {
               <>
                 <p className="muted">
                   {choice.assets.length > 0 ? (
-                    <Trans>The release's other files. They may not run on your computer.</Trans>
+                    device ? (
+                      <Trans>The release's other files. They may not run on your device.</Trans>
+                    ) : (
+                      <Trans>The release's other files. They may not run on your computer.</Trans>
+                    )
+                  ) : device ? (
+                    <Trans>The release's files Quiver doesn't offer. They may not run on your device.</Trans>
                   ) : (
                     <Trans>The release's files Quiver doesn't offer. They may not run on your computer.</Trans>
                   )}
