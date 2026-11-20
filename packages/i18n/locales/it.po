@@ -1969,8 +1969,8 @@ msgid "Choose my Quiver Launcher 3 folder…"
 msgstr "Scegli la mia cartella di Quiver Launcher 3…"
 
 #: ../../apps/launcher/src/settings-page.tsx
-msgid "Choose one, and the app can move into that system's folder."
-msgstr "Scegline uno e l'app potrà spostarsi nella cartella di quel sistema."
+msgid "Choose one or more, and the app can move into that system's folder, or Multi-system for several."
+msgstr "Scegline uno o più e l'app potrà spostarsi nella cartella di quel sistema, o in Multi-system se sono diversi."
 
 #: ../../apps/launcher/src/launch-options.tsx
 msgid "Choose the executable you want Quiver to run. It can be in any folder or drive."

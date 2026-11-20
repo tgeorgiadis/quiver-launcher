@@ -472,7 +472,7 @@ function MusicSetting() {
 function staysWhy(why: StaysReason): { title: string; hint: string } {
   switch (why) {
     case "noConsole":
-      return { title: t`No system yet`, hint: t`Choose one, and the app can move into that system's folder.` };
+      return { title: t`No system yet`, hint: t`Choose one or more, and the app can move into that system's folder, or Multi-system for several.` };
     case "unknown":
       return { title: t`Not found in the catalog`, hint: t`Quiver needs the catalog to know their system. Try again once you're online.` };
     case "own":
