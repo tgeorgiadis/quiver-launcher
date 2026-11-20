@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Entry } from "@quiverlauncher/api";
-import { sortPlan, withOwnConsoles, adoptedInstall, appRef, appsFolders, groupFolder, joinPath, rootOf, unsortedApps, folderClash, keptWhereTheyAre, ownedBy, bringsAlong, catalogMatch, declinedUpdate, earlyGet, earlyGetOffer, earlyKey, earlyOffer, earlyRelease, earlyUpdate, filesAddable, folderNameOf, renamable, folderGone, forHereKey, hasUpdate, importedPlaylists, importedTags, removedTags, withAllTags, markedInApps, retagged, withOldPictures, installFiles, keptInstall, locatable, looseInstalls, mayUpdate, movableApps, movedInside, noProgram, notOfferedYet, oncePerFolder, twinsOf, withCopiesIn, withTwins, playedRef, relocatedInstall, skipped, uniqueFiles, updateFor, mainRelease, onlyPrereleases, updatesOf, usableCatalog, wantsPrereleases, withEarlyFor, withMainRelease, withPrereleases, type ImportedApp, type LibraryItem } from "./store";
+import { sortPlan, appsRightIn, consoleFolderChoice, consoleFolderChoices, consoleHome, consoleHomePath, wholePath, withOwnConsoles, adoptedInstall, appRef, appsFolders, groupFolder, joinPath, rootOf, unsortedApps, folderClash, keptWhereTheyAre, ownedBy, bringsAlong, catalogMatch, declinedUpdate, earlyGet, earlyGetOffer, earlyKey, earlyOffer, earlyRelease, earlyUpdate, filesAddable, folderNameOf, renamable, folderGone, forHereKey, hasUpdate, importedPlaylists, importedTags, removedTags, withAllTags, markedInApps, retagged, withOldPictures, installFiles, keptInstall, locatable, looseInstalls, mayUpdate, movableApps, movedInside, noProgram, notOfferedYet, oncePerFolder, twinsOf, withCopiesIn, withTwins, playedRef, relocatedInstall, skipped, uniqueFiles, updateFor, mainRelease, onlyPrereleases, updatesOf, usableCatalog, wantsPrereleases, withEarlyFor, withMainRelease, withPrereleases, type ImportedApp, type LibraryItem } from "./store";
 import type { OldApp, OldFilter } from "./native";
 
 const entry = {
@@ -891,4 +891,56 @@ it("withAllTags gives an entry back the tags the player hid", () => {
   const sent = { id: "a", tags: ["recomp", "nintendo"] } as Parameters<typeof withAllTags>[0];
   expect(withAllTags(sent)).toBe(sent);
   expect(withAllTags({ ...sent, tags: ["nintendo"], allTags: ["recomp", "nintendo"] })).toEqual(sent);
+});
+
+describe("console folders the player names or places", () => {
+  const apps = "C:\\Games\\Quiver";
+  const at = (folder: string, dir?: string) => ({ folder, version: "1", executables: [], ...(dir ? { dir } : {}) });
+
+  it("are where grouping puts them, renamed in the apps folder, or anywhere else", () => {
+    expect(consoleHome("Ports/N64", undefined)).toEqual({ group: "Ports/N64" });
+    expect(consoleHome("Ports/N64", { "Ports/N64": "Nintendo 64" })).toEqual({ group: "Nintendo 64" });
+    expect(consoleHome("Ports/N64", { "Ports/N64": "D:\\Games\\N64" })).toEqual({ path: "D:\\Games\\N64" });
+    expect(consoleHome("Ports/N64", { "Ports/SNES": "D:\\SNES" })).toEqual({ group: "Ports/N64" });
+    expect(consoleHomePath({ group: "Ports/Nintendo 64" }, apps)).toBe("C:\\Games\\Quiver\\Ports\\Nintendo 64");
+    expect(consoleHomePath({ path: "/mnt/card/N64" }, "/home/me/Quiver")).toBe("/mnt/card/N64");
+    expect(["C:\\x", "c:/x", "/x", "\\\\server\\share"].every(wholePath)).toBe(true);
+    expect(["x", "Ports/N64", "C:x", "~/x"].some(wholePath)).toBe(false);
+  });
+
+  it("are saved in the apps folder as their place there, so they move with it, and elsewhere as a whole path", () => {
+    expect(consoleFolderChoice("Ports/N64", "C:\\Games\\Quiver\\Nintendo 64\\", apps, {})).toEqual({ save: "Nintendo 64" });
+    expect(consoleFolderChoice("Ports/N64", "c:/games/quiver/Ports/Nintendo 64", apps, {})).toEqual({ save: "Ports/Nintendo 64" });
+    expect(consoleFolderChoice("Ports/N64", "D:\\N64", apps, {})).toEqual({ save: "D:\\N64" });
+    // Its usual place, or nothing typed: none saved.
+    expect(consoleFolderChoice("Ports/N64", "C:\\Games\\Quiver\\Ports\\N64", apps, {})).toEqual({ save: undefined });
+    expect(consoleFolderChoice("Ports/N64", "  ", apps, {})).toEqual({});
+  });
+
+  it("are never a name alone, the apps folder itself, or in an installed app's folder", () => {
+    const installs = { a: at("Ship"), b: at("Zelda", "D:\\Mine\\Zelda") };
+    expect(consoleFolderChoice("Ports/N64", "N64", apps, installs).problem).toBeTruthy();
+    expect(consoleFolderChoice("Ports/N64", "C:\\Games\\Quiver\\", apps, installs).problem).toBeTruthy();
+    expect(consoleFolderChoice("Ports/N64", "C:\\Games\\Quiver\\Ship\\N64", apps, installs).problem).toContain("Ship");
+    expect(consoleFolderChoice("Ports/N64", "D:\\Mine\\Zelda", apps, installs).problem).toContain("Zelda");
+    // Beside them is fine.
+    expect(consoleFolderChoice("Ports/N64", "D:\\Mine\\N64", apps, installs)).toEqual({ save: "D:\\Mine\\N64" });
+  });
+
+  it("list every console's, apps for more than one console's and the other kinds'", () => {
+    const groups = consoleFolderChoices({ n64: "Nintendo 64", newcon: "New Console" }).map((c) => c.group);
+    expect(groups).toEqual(expect.arrayContaining(["Emulators", "Tools", "Games", "Ports/N64", "Ports/New Console", "Ports/Multi-console", "Ports/Other"]));
+    expect(new Set(groups).size).toBe(groups.length);
+  });
+
+  it("find the apps right in a folder once, never one of the player's own or in a folder further in", () => {
+    const installs = {
+      a: at("A", `${apps}\\Ports\\N64\\A`),
+      twin: at("A", `${apps}\\Ports\\N64\\A`),
+      deeper: at("B", `${apps}\\Ports\\N64\\x\\B`),
+      own: { ...at("C", `${apps}\\Ports\\N64\\C`), local: true as const },
+      top: at("D"),
+    };
+    expect(appsRightIn(installs, `${apps}\\Ports\\N64`)).toEqual([{ id: "a", folder: "A" }]);
+  });
 });

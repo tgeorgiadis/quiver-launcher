@@ -32,6 +32,7 @@ import { TelemetrySetting } from "./telemetry-ui";
 import { savesOn } from "./saves";
 import { CloudSavesSettings } from "./cloud-saves-page";
 import { SyncFolderSettings } from "./sync-folder-page";
+import { ConsoleFolders } from "./console-folders";
 import type { Theme } from "./theme";
 import { INTERFACE_SIZES } from "./zoom";
 import { GameCopySettings } from "./own-copy-settings";
@@ -685,6 +686,7 @@ export function AppsFolder({ inSetup, onBusy }: { inSetup?: boolean; onBusy?: (b
           </Trans>
         </p>
       )}
+      {desktop && !inSetup && settings.groupByConsole && <ConsoleFolders />}
       {desktop && !inSetup && settings.groupByConsole && (unsorted.length > 0 || sorting) && (
         <div className="row">
           {sorting ? (

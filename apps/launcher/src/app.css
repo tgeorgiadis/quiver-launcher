@@ -2524,3 +2524,32 @@ main:has(.tick-bar) { scroll-padding-bottom: 96px; }
 .tick-menu > * { flex-shrink: 0; }
 .tick-menu button[aria-checked="mixed"] .game-menu-check { color: var(--muted); }
 .tv-mode .tick-bar .tool, .tv-mode .tick-bar .tick-done { height: 44px; font-size: 15px; }
+
+/* Settings › Apps folder: each console folder's name and place (console-folders.tsx). */
+.console-folders { max-width: 760px; margin: 4px 0 8px; }
+.console-folders > summary { cursor: pointer; color: var(--strong); font-weight: 600; }
+.console-folders > p { margin: 6px 0 10px; font-size: 13px; }
+.console-folder-list { display: grid; gap: 8px; margin: 0 0 10px; padding: 0; list-style: none; }
+.console-folder { display: grid; grid-template-columns: minmax(9em, 13em) minmax(0, 1fr); align-items: center; gap: 6px 14px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; }
+.console-folder-name { display: grid; gap: 1px; min-width: 0; color: var(--strong); font-weight: 600; }
+.console-folder-name .muted { font-size: 12px; font-weight: 400; }
+.console-folder-edit { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.console-folder-edit > button { flex: none; white-space: nowrap; }
+.console-folder-path { flex: 1 1 auto; min-width: 0; min-height: 36px; padding: 6px 10px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--input-bg); color: var(--fg); font-size: 13px; }
+.console-folder-path::placeholder { color: var(--muted); opacity: 0.8; }
+.console-folder-path[aria-invalid="true"] { border-color: var(--danger); }
+.console-folder-note, .console-folder-left { grid-column: 2; margin: 0; font-size: 13px; overflow-wrap: anywhere; }
+.console-folder-left { display: grid; gap: 6px; }
+.console-folder-left p { margin: 0; }
+.console-folder-left .row { gap: 8px; }
+.console-folder-left .row { justify-content: flex-start; }
+.console-folder-left .row > button { flex: none; white-space: nowrap; }
+.console-folder-unset { visibility: hidden; }
+.console-folder-add { padding: 7px 10px; border: 1px dashed var(--line-strong); border-radius: 8px; background: transparent; color: var(--muted); font-size: 13px; max-width: 100%; }
+@media (max-width: 640px) {
+  .console-folder { grid-template-columns: minmax(0, 1fr); }
+  .console-folder-note, .console-folder-left { grid-column: 1; }
+  .console-folder-edit { flex-wrap: wrap; }
+  .console-folder-path { flex-basis: 100%; }
+  .console-folder-unset { display: none; }
+}

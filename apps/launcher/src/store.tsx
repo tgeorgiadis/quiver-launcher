@@ -410,6 +410,8 @@ type Launcher = {
    * at the top of the apps folder with why (`sortPlan`).
    */
   sortPlan: () => ReturnType<typeof sortPlan>;
+  /** The console folder an app goes in when apps are grouped by console, by `groupFolder`'s name for it ("Ports/N64"). */
+  consoleFolderOf: (id: string) => string | undefined;
   /**
    * Makes `to` the folder new apps install in, moving nothing: the apps in the old one stay there and play from it,
    * which becomes one more apps folder. Apps already in `to` become its own again.
@@ -476,6 +478,91 @@ export function groupFolder(entry: Pick<Entry, "id" | "projectType" | "consoles"
   const id = consoles[0];
   const folder = consoles.length > 1 ? "Multi-console" : !id ? "Other" : (CONSOLE_FOLDERS[id] ?? folderNameFor(consoleNames[id] ?? id));
   return `Ports/${folder}`;
+}
+
+/**
+ * Where a console folder is (one `groupFolder` names, "Ports/N64"), as the player set it in Settings
+ * (`Settings.consoleFolders`): another name or place in the apps folder (`group`, a path with "/"), or a folder of
+ * theirs anywhere else (`path`, a whole path). Unset, where `groupFolder` puts it.
+ */
+export function consoleHome(group: string, folders: Settings["consoleFolders"]): { group: string } | { path: string } {
+  const own = folders?.[group];
+  if (!own) return { group };
+  return wholePath(own) ? { path: own } : { group: own };
+}
+
+/** A console folder's whole path, with `appsDir` the default apps folder. */
+export const consoleHomePath = (home: { group: string } | { path: string }, appsDir: string) => ("path" in home ? home.path : joinPath(appsDir, home.group));
+
+/** Whether a path is a whole one ("C:\Games", "/home/me/Games", "\\server\share"), not a name or a path from somewhere. */
+export const wholePath = (path: string) => /^([A-Za-z]:[\\/]|[\\/])/.test(path);
+
+/**
+ * Every console folder grouping by console can make, by `groupFolder`'s name for it, with its name to show: emulators,
+ * tools and standalone games, then the ports' consoles (the catalog's, and those with a short name of their own), then
+ * ports for more than one console and for none. For the player to name or place any of them, apps installed or not.
+ */
+export function consoleFolderChoices(consoleNames: Record<string, string>): { group: string; name: string }[] {
+  const ids = [...new Set([...Object.keys(CONSOLE_FOLDERS), ...Object.keys(consoleNames)])];
+  const ports = ids
+    .map((id) => ({ group: `Ports/${CONSOLE_FOLDERS[id] ?? folderNameFor(consoleNames[id] ?? id)}`, name: consoleNames[id] ?? CONSOLE_FOLDERS[id] ?? id }))
+    .filter((c, n, all) => all.findIndex((o) => o.group === c.group) === n)
+    .sort((a, b) => a.name.localeCompare(b.name));
+  return [
+    { group: "Emulators", name: t`Emulators` },
+    { group: "Tools", name: t`Tools` },
+    { group: "Games", name: t`Standalone games` },
+    ...ports,
+    { group: "Ports/Multi-console", name: t`Ports for more than one console` },
+    { group: "Ports/Other", name: t`Ports for another console` },
+  ];
+}
+
+/**
+ * The folder a console folder is to be in Settings, as the player typed or picked it (`typed`): what to save for it
+ * (`save`, unset for where `groupFolder` puts it), or why it can't be (`problem`). A folder in the apps folder is saved
+ * as its place there, so it moves with the apps folder; one elsewhere as its whole path. Never the apps folder itself,
+ * where its apps would be among every other, nor an installed app's folder or one inside it, which uninstalling that
+ * app would take with it.
+ */
+export function consoleFolderChoice(
+  group: string,
+  typed: string,
+  appsDir: string,
+  installs: Record<string, Install>,
+): { save?: string; problem?: undefined } | { problem: string } {
+  const trimmed = typed.trim();
+  // Without the separators at its end, as a picker gives it, unless that's all there is to it ("/", "C:\").
+  const bare = trimmed.replace(/[\\/]+$/, "");
+  const to = bare && !bare.endsWith(":") ? bare : trimmed;
+  if (!to) return {};
+  if (!wholePath(to)) return { problem: t`Type the folder's whole path, or choose it with Browse…` };
+  if (samePath(to, appsDir)) return { problem: t`That's the apps folder itself. Choose a folder in it, or somewhere else.` };
+  for (const install of Object.values(installs)) {
+    const dir = placeOf(install, appsDir);
+    if (within(to, dir)) {
+      const name = baseName(dir);
+      return { problem: t`That's in ${name}, an app's own folder, which uninstalling it would remove. Choose another folder.` };
+    }
+  }
+  const save = within(to, appsDir) ? relativeTo(appsDir, to) : to;
+  return { save: save === group ? undefined : save };
+}
+
+/** `path`, in `folder`, as its place there: a path with "/". */
+const relativeTo = (folder: string, path: string) => {
+  const parts: string[] = [];
+  for (let at = path; !samePath(at, folder); at = parentOf(at)) parts.unshift(baseName(at));
+  return parts.join("/");
+};
+
+/**
+ * The installed apps right in `folder` (a console folder), by id: those whose own folder is there. One folder two
+ * library entries share is listed once, as moving it takes both.
+ */
+export function appsRightIn(installs: Record<string, Install>, folder: string): { id: string; folder: string }[] {
+  const found = Object.entries(installs).filter(([, i]) => i.dir && !i.local && !i.installer && samePath(parentOf(i.dir), folder));
+  return found.filter(([, i], n) => !found.slice(0, n).some(([, o]) => samePath(o.dir!, i.dir!))).map(([id, i]) => ({ id, folder: baseName(i.dir!) }));
 }
 
 /** The apps folder an app kept in one is in: its folder's parent, or the one above its console folder (Ports/N64). */
@@ -1246,6 +1333,12 @@ export type Settings = {
   askWhereToInstall?: boolean;
   /** New installs go in a folder for their console inside the apps folder (`groupFolder`). */
   groupByConsole?: boolean;
+  /**
+   * The console folders the player named or put elsewhere, by `groupFolder`'s name for each ("Ports/N64"): another
+   * place in the apps folder, as a path with "/" ("Ports/Nintendo 64"), or a whole path anywhere ("D:\\N64"), which
+   * moving the apps folder leaves be. This device's own, as the apps folder is (`consoleHome`).
+   */
+  consoleFolders?: Record<string, string>;
   /** Apps hidden from the library here. */
   hidden?: string[];
   /** The catalog's tags hidden here: everywhere, on one app, or as they're added (catalog-tags.ts). */
@@ -2079,6 +2172,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     const portableByDefault = settings.portableByDefault && config.os !== "android" && config.os !== "ios";
     // The player's, read here: further down, `settings` is the catalog's for installing it.
     const groupByConsole = Boolean(settings.groupByConsole);
+    const consoleFolders = settings.consoleFolders;
     let version = chosen?.version ?? entry.verified?.version;
     let format: string | undefined;
     // A release Quiver hasn't verified, or a file of one it has, that the player said to install.
@@ -2261,8 +2355,17 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       // Grouped by console: in the default apps folder, in its console's folder there. Any other folder (another
       // apps folder, which may already be one console's, or one chosen for it alone) is exactly where it goes.
       const desktop = config.os !== "android" && config.os !== "ios";
-      const group = !was && desktop && groupByConsole && !chosenFolder ? groupFolder(withOwnConsoles(catalog[entry.id] ?? entry, ownConsoles[entry.id]), consoleNames) : undefined;
-      const into = group ? joinPath(config.appsDir, group) : chosenFolder;
+      const grouped = !was && desktop && groupByConsole && !chosenFolder ? groupFolder(withOwnConsoles(catalog[entry.id] ?? entry, ownConsoles[entry.id]), consoleNames) : undefined;
+      // Its console folder where the player put it: named their way in the apps folder, or a folder elsewhere.
+      const home = grouped ? consoleHome(grouped, consoleFolders) : undefined;
+      const group = home && "group" in home ? home.group : undefined;
+      const into = home ? consoleHomePath(home, config.appsDir) : chosenFolder;
+      // A console folder elsewhere is never made here: on a drive that isn't connected, the app would go on another.
+      if (home && "path" in home) {
+        const [state] = await native.appsFolderStates([home.path]).catch(() => [{ exists: true }]);
+        const where = home.path;
+        if (state && !state.exists) throw new Problem(msg`Quiver can't find ${where}, where this console's apps go. If it's on a drive, connect it, or change the folder in Settings › Apps folder.`);
+      }
       // An update writes over the app's folder, where many apps keep their saves: backed up first, as they are.
       if (was && savesOn(config.os))
         await native.savesBackup(savesOf(entry.id, was, catalog[entry.id] ?? entry), "update").then(
@@ -2955,6 +3058,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     movableApps: () => movableApps(installs),
     appsFolders: () => appsFolders(installs, config.appsDir),
     sortPlan: () => sortPlan(installs, config.appsDir, catalog, consoleNames, ownConsoles),
+    consoleFolderOf: (id) => (catalog[id] && !isLocal(id) ? groupFolder(withOwnConsoles(catalog[id], ownConsoles[id]), consoleNames) : undefined),
     async switchAppsFolder(to) {
       const from = config.appsDir;
       if (samePath(to, from)) return;
@@ -3059,11 +3163,16 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       setAppMoves((m) => ({ ...m, [id]: { copied: 0, size: 0 } }));
       const stop = await native.onAppMoving((m) => m.id === id && setAppMoves((all) => (all[id] ? { ...all, [id]: { copied: m.copied, size: m.size } } : all)));
       try {
-        const listed = appsFolders(installs, config.appsDir).some((f) => samePath(f.path, to));
-        // Into the default apps folder while apps are grouped by console: its console's folder there, kept from
-        // where it was or worked out now. Another folder is exactly where it goes.
-        const group = samePath(to, config.appsDir) && settings.groupByConsole ? (install.group ?? groupFolder(withOwnConsoles(catalog[id] ?? { id, projectType: "port" }, ownConsoles[id]), consoleNames)) : undefined;
-        const moved = await native.moveApp(id, install.folder, install.dir, group ? joinPath(to, group) : to, { inApps: listed, group });
+        // Into the default apps folder while apps are grouped by console: its console's folder, where the player put
+        // it (`consoleHome`), or the one it was in when there's none to work out now. Another folder is exactly where
+        // it goes.
+        const sorted = samePath(to, config.appsDir) && settings.groupByConsole;
+        const grouped = sorted ? groupFolder(withOwnConsoles(catalog[id] ?? { id, projectType: "port" }, ownConsoles[id]), consoleNames) : undefined;
+        const home = grouped ? consoleHome(grouped, settings.consoleFolders) : sorted && install.group ? { group: install.group } : undefined;
+        const group = home && "group" in home ? home.group : undefined;
+        // A console folder elsewhere is the player's for those apps alone, which moving the apps folder leaves be.
+        const listed = !(home && "path" in home) && appsFolders(installs, config.appsDir).some((f) => samePath(f.path, to));
+        const moved = await native.moveApp(id, install.folder, install.dir, home ? consoleHomePath(home, to) : to, { inApps: listed, group });
         setInstalls((i) => {
           const now = i[id];
           if (!now) return i;
