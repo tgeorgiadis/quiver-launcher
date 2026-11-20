@@ -307,10 +307,20 @@ export function Readme({ entry, source, asked }: { entry: Entry; source: Source 
       </section>
     );
   if (!readme) return null;
+  const host = source && providerName(source.provider, source.host);
   return (
     <section className="readme">
       {top}
-      <h3>README</h3>
+      <div className="readme-top">
+        <h3>README</h3>
+        {/* The whole README, store badges included, as its host shows it. */}
+        {source && (
+          <a className="readme-full" href={source.url}>
+            <Trans>View full README on {host}</Trans>
+            <ArrowUpRight size={13} aria-hidden="true" />
+          </a>
+        )}
+      </div>
       <div className="readme-body">
         <Clipped height={320} opened={asked}>
           <Markdown text={readme.markdown} rawBase={readme.rawBase} htmlBase={readme.htmlBase} alertTitles={alertTitles()} />

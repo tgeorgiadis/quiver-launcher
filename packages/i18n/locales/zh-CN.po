@@ -7413,6 +7413,10 @@ msgstr "超宽，约 1920 × 620。显示在应用页面和“继续游玩”后
 msgid "View {version} on {host}"
 msgstr "在 {host} 上查看 {version}"
 
+#: ../../apps/launcher/src/detail.tsx
+msgid "View full README on {host}"
+msgstr "在 {host} 上查看完整 README"
+
 #. placeholder {0}: providerName(source.provider, source.host)
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "View on {0}"
