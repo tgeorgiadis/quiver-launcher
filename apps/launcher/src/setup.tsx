@@ -165,7 +165,7 @@ function Welcome() {
       <strong>TV mode:</strong> a full-screen launcher for a controller
     </Trans>,
     <Trans>
-      <strong>Shared playlists:</strong> share yours with a link, and add other people's, which stay up to date with theirs
+      <strong>Shared playlists:</strong> share your playlists, and add other people's that stay synced
     </Trans>,
     <Trans>
       <strong>Language support:</strong> ten languages to choose from

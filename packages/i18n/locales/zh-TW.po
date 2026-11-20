@@ -896,8 +896,8 @@ msgid "<0>Language support:</0> ten languages to choose from"
 msgstr "<0>語言支援：</0>十種語言可選"
 
 #: ../../apps/launcher/src/setup.tsx
-msgid "<0>Shared playlists:</0> share yours with a link, and add other people's, which stay up to date with theirs"
-msgstr "<0>共享播放清單：</0>用連結分享你的播放清單，也可以加入別人的，它們會隨原播放清單保持更新"
+msgid "<0>Shared playlists:</0> share your playlists, and add other people's that stay synced"
+msgstr "<0>共享播放清單：</0>分享你的播放清單，也可以加入別人的播放清單並保持同步"
 
 #: ../../apps/launcher/src/setup.tsx
 msgid "<0>Sign in</0> with the same account as the website, to sync your library (apps and playlists), share feedback and report issues without leaving Quiver"

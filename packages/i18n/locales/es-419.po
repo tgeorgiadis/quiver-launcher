@@ -896,8 +896,8 @@ msgid "<0>Language support:</0> ten languages to choose from"
 msgstr "<0>Soporte de idiomas:</0> diez idiomas para elegir"
 
 #: ../../apps/launcher/src/setup.tsx
-msgid "<0>Shared playlists:</0> share yours with a link, and add other people's, which stay up to date with theirs"
-msgstr "<0>Playlists compartidas:</0> comparte las tuyas con un enlace y agrega las de otras personas, que se mantienen al día con las suyas"
+msgid "<0>Shared playlists:</0> share your playlists, and add other people's that stay synced"
+msgstr "<0>Playlists compartidas:</0> comparte tus playlists y agrega las de otras personas, que se mantienen sincronizadas"
 
 #: ../../apps/launcher/src/setup.tsx
 msgid "<0>Sign in</0> with the same account as the website, to sync your library (apps and playlists), share feedback and report issues without leaving Quiver"
