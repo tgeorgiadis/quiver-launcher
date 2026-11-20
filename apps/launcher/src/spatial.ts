@@ -160,10 +160,15 @@ const finish = (binding: string | null) => {
 };
 
 // Not one that's disabled, which can't take the focus: the d-pad stopped at a platform's box that must stay ticked.
-const FOCUSABLE = ":is(button, input, select, textarea):not(:disabled), a[href], [tabindex]:not([tabindex='-1']), .clip-fold";
+// A fold's summary too (Settings' lists of system folders and of apps that stay), which Confirm opens and closes.
+const FOCUSABLE = ":is(button, input, select, textarea):not(:disabled), a[href], [tabindex]:not([tabindex='-1']), .clip-fold, details > summary";
 
-/** Showing, so it can have the focus. A library card's buttons are hidden until the card has focus. */
-const shown = (el: Element) => el.isConnected && el.getClientRects().length > 0 && getComputedStyle(el).visibility !== "hidden";
+/**
+ * Showing, so it can have the focus. A library card's buttons are hidden until the card has focus. Not in a closed fold
+ * (details) but its summary: WebView2 still gives what's folded away a box, and the d-pad stopped at it, its focus refused.
+ */
+const shown = (el: Element) =>
+  el.isConnected && el.getClientRects().length > 0 && getComputedStyle(el).visibility !== "hidden" && !el.closest("details:not([open]) > :not(summary)");
 
 /**
  * What Confirm presses on a library card (TV mode's library's too), in place of

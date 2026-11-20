@@ -2577,3 +2577,64 @@ main:has(.tick-bar) { scroll-padding-bottom: 96px; }
 .tick-menu > * { flex-shrink: 0; }
 .tick-menu button[aria-checked="mixed"] .game-menu-check { color: var(--muted); }
 .tv-mode .tick-bar .tool, .tv-mode .tick-bar .tick-done { height: 44px; font-size: 15px; }
+
+/* Settings › Apps folder: each console folder's name and place (console-folders.tsx), one line each in one box. */
+.console-folders { margin: 4px 0 8px; }
+.console-folders > summary { cursor: pointer; color: var(--strong); font-weight: 600; }
+.console-folders > p { margin: 6px 0 10px; font-size: 13px; }
+.console-folder-list { margin: 0 0 10px; padding: 0; list-style: none; border: 1px solid var(--line); border-radius: 10px; }
+.console-folder { display: grid; grid-template-columns: minmax(7em, 9.5em) minmax(0, 1fr); align-items: center; gap: 4px 12px; padding: 7px 10px; }
+.console-folder + .console-folder { border-top: 1px solid var(--line); }
+.console-folder-name { display: grid; min-width: 0; color: var(--strong); font-weight: 600; font-size: 13.5px; line-height: 1.25; }
+.console-folder-name .muted { font-size: 12px; font-weight: 400; }
+.console-folder-edit { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.console-folder-edit > button { flex: none; white-space: nowrap; }
+.console-folder-path { flex: 1 1 auto; min-width: 0; min-height: 32px; padding: 4px 9px; border: 1px solid var(--line-strong); border-radius: 7px; background: var(--input-bg); color: var(--fg); font-size: 13px; text-overflow: ellipsis; }
+.console-folder-path::placeholder { color: var(--muted); opacity: 0.8; }
+.console-folder-path[aria-invalid="true"] { border-color: var(--danger); }
+.console-folder-note, .console-folder-left { grid-column: 2; margin: 0; font-size: 13px; overflow-wrap: anywhere; }
+.console-folder-left { display: grid; gap: 6px; }
+.console-folder-left p { margin: 0; }
+.console-folder-left .row { gap: 8px; justify-content: flex-start; }
+.console-folder-left .row > button { flex: none; white-space: nowrap; }
+.console-folder-add { padding: 7px 10px; border: 1px dashed var(--line-strong); border-radius: 8px; background: transparent; color: var(--muted); font-size: 13px; max-width: 100%; }
+@media (max-width: 640px) {
+  .console-folder { grid-template-columns: minmax(0, 1fr); }
+  .console-folder-note, .console-folder-left { grid-column: 1; }
+  .console-folder-edit { flex-wrap: wrap; }
+  .console-folder-path { flex-basis: 100%; }
+}
+.system-naming { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin: 4px 0 10px; font-size: 13.5px; }
+.system-naming select { min-width: 0; max-width: 100%; }
+/* Apps that stay at the top of the apps folder, in groups by why: said once, then a line for each app. */
+.stays-group { margin: 10px 0 0; max-width: 760px; }
+.stays-head { margin: 0 0 6px; font-size: 13px; }
+.stays-head strong { color: var(--strong); }
+.stays-list { margin: 0; padding: 0; list-style: none; border: 1px solid var(--line); border-radius: 10px; }
+.stays-list li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 12px; min-height: 40px; padding: 5px 10px; }
+.stays-list li + li { border-top: 1px solid var(--line); }
+.stays-app { min-width: 0; color: var(--fg); font-size: 13px; font-weight: 600; overflow-wrap: anywhere; }
+.settings-pane .stays-list .choose-system { flex: 0 1 13em; min-width: 0; padding: 4px 8px; font-size: 12.5px; }
+.choose-system-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 6px; min-width: 0; }
+.choose-system-row .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.choose-system-row .chip { display: inline-flex; align-items: center; height: 26px; padding: 0 10px; font-size: 12px; cursor: pointer; }
+.choose-system-row .chip:hover { border-color: var(--accent); color: var(--strong); }
+.choose-system-to { flex-basis: 100%; text-align: right; font-size: 12px; color: var(--muted); }
+/* Settings › Apps folder: what's about system folders, set in under its toggle as that toggle's options. */
+.system-folders { display: grid; gap: 10px; margin: 2px 0 14px; padding: 2px 0 2px 14px; border-left: 2px solid var(--line); }
+.system-folders > p.muted { margin: 0; font-size: 13px; }
+.system-folders .system-naming, .system-folders .console-folders, .system-folders .apps-staying { margin: 0; }
+.system-sort { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; padding: 8px 8px 8px 12px; border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent); background: var(--accent-soft); border-radius: 10px; font-size: 13.5px; color: var(--fg); }
+.settings-pane .system-sort button { flex: 0 0 auto; }
+.system-folders .stays-group:first-of-type { margin-top: 8px; }
+/* Its two folds alike: the apps that stay, and the system folders' names and places. */
+.system-folders details > summary { cursor: pointer; color: var(--strong); font-size: 13.5px; font-weight: 600; }
+/* An apps folder's path on one line: what it's in shortens with an ellipsis, its own name stays (title: all of it). */
+.apps-folder-name { flex-wrap: nowrap; }
+.apps-folder-path { display: flex; min-width: 0; white-space: nowrap; }
+.apps-folder-path-head { min-width: 0; overflow: hidden; }
+.apps-folder-path[data-cut] > :last-child::before { content: "…"; }
+.apps-folder-name .apps-folder-badge { flex: none; }
+.apps-folder-info { grid-template-columns: minmax(0, 1fr); }
+.apps-folder-name, .apps-folder-path > span:last-child { min-width: 0; }
+.apps-folder-path > span:last-child { flex: none; }

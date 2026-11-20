@@ -27,6 +27,13 @@ msgstr "{0, plural, one {No se muestra # app para otras plataformas.} other {No 
 msgid "{0, plural, one {# app hidden from your library.} other {# apps hidden from your library.}}"
 msgstr "{0, plural, one {# app oculta de tu biblioteca.} other {# apps ocultas de tu biblioteca.}}"
 
+#. placeholder {0}: still.apps.length
+#. placeholder {1}: still.from
+#. placeholder {2}: still.from
+#: ../../apps/launcher/src/console-folders.tsx
+msgid "{0, plural, one {# app is still in {1}. New ones go in the new folder.} other {# apps are still in {2}. New ones go in the new folder.}}"
+msgstr "{0, plural, one {# app sigue en {1}. Las nuevas van en la carpeta nueva.} other {# apps siguen en {2}. Las nuevas van en la carpeta nueva.}}"
+
 #. placeholder {0}: ids.length
 #: ../../apps/launcher/src/library-ticking.tsx
 msgid "{0, plural, one {# app shows in your library again.} other {# apps show in your library again.}}"
@@ -47,6 +54,11 @@ msgstr "{0, plural, one {# app} other {# apps}}"
 msgid "{0, plural, one {# backup} other {# backups}}"
 msgstr ""
 
+#. placeholder {0}: Object.keys(folders).length
+#: ../../apps/launcher/src/console-folders.tsx
+msgid "{0, plural, one {# changed} other {# changed}}"
+msgstr "{0, plural, one {# cambiada} other {# cambiadas}}"
+
 #. placeholder {0}: thread.comments
 #: ../../apps/launcher/src/discussions.tsx
 msgid "{0, plural, one {# comment} other {# comments}}"
@@ -58,6 +70,11 @@ msgstr "{0, plural, one {# comentario} other {# comentarios}}"
 #: ../../apps/launcher/src/saves-tab.tsx
 msgid "{0, plural, one {# file} other {# files}}"
 msgstr "{0, plural, one {# archivo} other {# archivos}}"
+
+#. placeholder {0}: unsorted.length
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "{0, plural, one {# installed app isn't in its system folder yet.} other {# installed apps aren't in their system folders yet.}}"
+msgstr "{0, plural, one {# app instalada aún no está en la carpeta de su sistema.} other {# apps instaladas aún no están en las carpetas de su sistema.}}"
 
 #. placeholder {0}: portable.length
 #: ../../apps/launcher/src/library-ticking.tsx
@@ -83,8 +100,18 @@ msgstr "{0, plural, one {¿Mover # app de {1} a {dir}?} other {¿Mover # apps de
 
 #. placeholder {0}: unsorted.length
 #: ../../apps/launcher/src/settings-page.tsx
-msgid "{0, plural, one {Move # installed app into its console folder} other {Move # installed apps into their console folders}}"
-msgstr "{0, plural, one {Mover # app instalada a la carpeta de su consola} other {Mover # apps instaladas a las carpetas de sus consolas}}"
+msgid "{0, plural, one {Move # installed app into its system folder} other {Move # installed apps into their system folders}}"
+msgstr "{0, plural, one {Mover # app instalada a la carpeta de su sistema} other {Mover # apps instaladas a las carpetas de sus sistemas}}"
+
+#. placeholder {0}: still.apps.length
+#: ../../apps/launcher/src/console-folders.tsx
+msgid "{0, plural, one {Move it there} other {Move them there}}"
+msgstr "{0, plural, one {Moverla ahí} other {Moverlas ahí}}"
+
+#. placeholder {0}: unsorted.length
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "{0, plural, one {Move it} other {Move them}}"
+msgstr "{0, plural, one {Moverla} other {Moverlas}}"
 
 #. placeholder {0}: own.length
 #: ../../apps/launcher/src/tag-settings.tsx
@@ -509,6 +536,7 @@ msgstr "{more, plural, one {y # más} other {y # más}}"
 msgid "{n, plural, one {# app selected} other {# apps selected}}"
 msgstr "{n, plural, one {# app seleccionada} other {# apps seleccionadas}}"
 
+#: ../../apps/launcher/src/console-folders.tsx
 #: ../../apps/launcher/src/recovery.tsx
 #: ../../apps/launcher/src/tag-settings.tsx
 msgid "{n, plural, one {# app} other {# apps}}"
@@ -935,9 +963,10 @@ msgstr "Hay comillas sin cerrar."
 msgid "A transparent PNG. For its Steam shortcut."
 msgstr "Un PNG transparente. Para su acceso directo de Steam."
 
+#. How system folders are named: by abbreviation
 #: ../../apps/launcher/src/settings-page.tsx
-msgid "A Windows installer put it there, and Windows looks after where it is."
-msgstr "La puso ahí un instalador de Windows, y Windows se encarga de dónde está."
+msgid "Abbreviated (N64, GBC, PS2)"
+msgstr "Abreviados (N64, GBC, PS2)"
 
 #: ../../apps/launcher/src/detail.tsx
 msgid "About this project"
@@ -1036,6 +1065,14 @@ msgstr "Agregar y obtener"
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Add another folder…"
 msgstr "Agregar otra carpeta…"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Add another system for {name}"
+msgstr "Agregar otro sistema para {name}"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Add another…"
+msgstr "Agregar otro…"
 
 #: ../../apps/launcher/src/library.tsx
 msgid "Add apps from each app's menu. It also shows apps that match these filters:"
@@ -1353,6 +1390,10 @@ msgstr "Carpetas de apps"
 msgid "Apps in that folder"
 msgstr "Apps de esa carpeta"
 
+#: ../../apps/launcher/src/console-folders.tsx
+msgid "Apps in the old folder"
+msgstr "Apps en la carpeta anterior"
+
 #: ../../apps/launcher/src/App.tsx
 msgid "Apps in your library"
 msgstr "Apps de tu biblioteca"
@@ -1584,9 +1625,18 @@ msgstr "Explorar"
 msgid "Browse cards"
 msgstr "Tarjetas de Explorar"
 
+#: ../../apps/launcher/src/console-folders.tsx
+msgid "Browse for a folder for {name}"
+msgstr "Buscar una carpeta para {name}"
+
 #: ../../apps/launcher/src/library.tsx
 msgid "Browse the catalog"
 msgstr "Explorar el catálogo"
+
+#. Opens a folder picker for a system's apps
+#: ../../apps/launcher/src/console-folders.tsx
+msgid "Browse…"
+msgstr "Examinar…"
 
 #. On the player's Discord profile, under Quiver Launcher's name, while no game they started from it is running
 #: ../../apps/launcher/src/settings-page.tsx
@@ -1797,6 +1847,10 @@ msgstr "Elegir un archivo para {label}"
 msgid "Choose a file…"
 msgstr "Elegir un archivo…"
 
+#: ../../apps/launcher/src/console-folders.tsx
+msgid "Choose a folder for {name}"
+msgstr "Elige una carpeta para {name}"
+
 #: ../../apps/launcher/src/store.tsx
 msgid "Choose a folder outside {name}, which is an app's own folder."
 msgstr "Elige una carpeta fuera de {name}, que es la carpeta propia de una app."
@@ -1843,6 +1897,14 @@ msgstr "Elige un programa (.exe) que inicie la app."
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Choose a release"
 msgstr "Elegir una versión"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Choose a system for {name}"
+msgstr "Elegir un sistema para {name}"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Choose a system…"
+msgstr "Elegir un sistema…"
 
 #: ../../apps/launcher/src/correction.tsx
 msgid "Choose a topic (optional)"
@@ -2616,6 +2678,10 @@ msgid "Emulator"
 msgstr "Emulador"
 
 #: ../../apps/launcher/src/store.tsx
+msgid "Emulators"
+msgstr "Emuladores"
+
+#: ../../apps/launcher/src/store.tsx
 msgid "Enter a name for its folder."
 msgstr "Escribe un nombre para su carpeta."
 
@@ -2888,6 +2954,11 @@ msgstr "Volver"
 msgid "Go to Community"
 msgstr "Ir a Comunidad"
 
+#. Where an app goes once its systems are chosen, such as Ports/Multi-system
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Goes in {to}"
+msgstr "Va en {to}"
+
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Good copy"
 msgstr "Copia buena"
@@ -3119,6 +3190,11 @@ msgctxt "README callout"
 msgid "Important"
 msgstr "Importante"
 
+#. How system folders are named: by full name
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "In full (Nintendo 64, Game Boy Color, PlayStation 2)"
+msgstr "Completos (Nintendo 64, Game Boy Color, PlayStation 2)"
+
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/discover.tsx
 #: ../../apps/launcher/src/game.tsx
@@ -3129,10 +3205,6 @@ msgstr "En la biblioteca"
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "In Steam's Game Mode"
 msgstr "En el modo de juego de Steam"
-
-#: ../../apps/launcher/src/settings-page.tsx
-msgid "In the default apps folder, ports go in Ports, in a folder for their console (Ports{slash}N64, say), and those for more than one console in Ports{slash}Multi-console. Emulators, tools and standalone games get folders of their own beside it. Apps you put in another folder go exactly there, and apps already installed stay where they are until you move them."
-msgstr "En la carpeta de apps predeterminada, los ports van en Ports, en una carpeta para su consola (por ejemplo, Ports{slash}N64), y los de más de una consola en Ports{slash}Multi-console. Los emuladores, las herramientas y los juegos independientes tienen sus propias carpetas al lado. Las apps que pongas en otra carpeta van justo ahí, y las apps ya instaladas se quedan donde están hasta que las muevas."
 
 #: ../../apps/launcher/src/file-picker.tsx
 msgid "In this folder"
@@ -3405,10 +3477,6 @@ msgstr "Es para"
 msgid "It didn't run"
 msgstr "No funcionó"
 
-#: ../../apps/launcher/src/settings-page.tsx
-msgid "It doesn't have a console. Choose one on its page, and it can move into that console's folder."
-msgstr "No tiene consola. Elige una en su página y podrá moverse a la carpeta de esa consola."
-
 #: ../../apps/launcher/src/App.tsx
 msgid "It gets a folder of its own in there, and updates keep installing into it."
 msgstr "Tendrá su propia carpeta ahí, y las actualizaciones se seguirán instalando en ella."
@@ -3627,6 +3695,10 @@ msgstr "Deja todos los scopes sin marcar: las versiones públicas no necesitan n
 #: ../../apps/launcher/src/gitlab-token.tsx
 msgid "Leave the read_api scope ticked: public releases need nothing more."
 msgstr "Deja el scope read_api marcado: las versiones públicas no necesitan nada más."
+
+#: ../../apps/launcher/src/console-folders.tsx
+msgid "Leave them"
+msgstr "Dejarlas"
 
 #. Button: back from TV mode to the usual launcher
 #: ../../apps/launcher/src/App.tsx
@@ -4004,18 +4076,20 @@ msgid "Move to…"
 msgstr "Mover a…"
 
 #. placeholder {0}: n - failed.length
+#: ../../apps/launcher/src/console-folders.tsx
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Moved {0} of {n, plural, one {# app} other {# apps}}."
 msgstr "Se movieron {0} de {n, plural, one {# app} other {# apps}}."
 
 #: ../../apps/launcher/src/settings-page.tsx
-msgid "Moved {n, plural, one {# app} other {# apps}} into console folders."
-msgstr "Se {n, plural, one {movió # app} other {movieron # apps}} a carpetas de consola."
-
-#: ../../apps/launcher/src/settings-page.tsx
 msgid "Moved {n, plural, one {# app} other {# apps}} into Quiver's apps folder. Once you've checked they run, you can delete your Quiver Launcher 3 folder."
 msgstr "Se {n, plural, one {movió # app} other {movieron # apps}} a la carpeta de apps de Quiver. Cuando compruebes que funcionan, puedes borrar tu carpeta de Quiver Launcher 3."
 
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Moved {n, plural, one {# app} other {# apps}} into system folders."
+msgstr "{n, plural, one {# app movida} other {# apps movidas}} a carpetas de sistema."
+
+#: ../../apps/launcher/src/console-folders.tsx
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Moved {n, plural, one {# app} other {# apps}}."
 msgstr "Se {n, plural, one {movió # app} other {movieron # apps}}."
@@ -4039,12 +4113,18 @@ msgstr "Moviendo apps"
 #. placeholder {0}: sorting.done
 #. placeholder {1}: sorting.total
 #: ../../apps/launcher/src/settings-page.tsx
-msgid "Moving apps into console folders… {0} of {1}"
-msgstr "Moviendo apps a carpetas de consola… {0} de {1}"
+msgid "Moving apps into system folders… {0} of {1}"
+msgstr "Moviendo apps a carpetas de sistema… {0} de {1}"
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Moving apps…"
 msgstr "Moviendo apps…"
+
+#. placeholder {0}: moving.done
+#. placeholder {1}: moving.total
+#: ../../apps/launcher/src/console-folders.tsx
+msgid "Moving apps… {0} of {1}"
+msgstr "Moviendo apps… {0} de {1}"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/card-menu.tsx
@@ -4079,6 +4159,10 @@ msgstr "Nombre y arte"
 #: ../../apps/launcher/src/library-view.tsx
 msgid "Name on top"
 msgstr "Nombre arriba"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Name system folders"
+msgstr "Nombres de carpetas de sistema"
 
 #. Library card detail: the other name (the app's or the game's) under the large one
 #: ../../apps/launcher/src/library-view.tsx
@@ -4323,6 +4407,10 @@ msgstr "No se encontraron versiones."
 msgid "No reports yet"
 msgstr "Aún sin reportes"
 
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "No system yet"
+msgstr "Sin sistema todavía"
+
 #: ../../apps/launcher/src/tag-settings.tsx
 msgid "No tags are hidden."
 msgstr "No hay etiquetas ocultas."
@@ -4390,6 +4478,10 @@ msgstr "Aún sin confirmar"
 #: ../../apps/launcher/src/ways-to-play.tsx
 msgid "Not for this computer"
 msgstr "No para esta computadora"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Not found in the catalog"
+msgstr "No se encontró en el catálogo"
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Not found. Is its drive connected?"
@@ -4716,6 +4808,10 @@ msgstr "Especificaciones de la PC:"
 msgid "Pick a binding, then press the key or button to use for it."
 msgstr "Elige una asignación y luego presiona la tecla o el botón que quieras usar."
 
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Pick a system to move it, or several for Multi-system."
+msgstr "Elige un sistema para moverla, o varios para Multi-system."
+
 #: ../../apps/launcher/src/custom-art.tsx
 msgid "Picture from this computer"
 msgstr "Imagen de esta computadora"
@@ -4886,6 +4982,18 @@ msgstr "Consolas portátiles"
 msgid "Portrait, about 600×900. The library's cards and TV mode."
 msgstr "Vertical, de unos 600×900. Las tarjetas de la biblioteca y el modo TV."
 
+#: ../../apps/launcher/src/store.tsx
+msgid "Ports for another system"
+msgstr "Ports para otro sistema"
+
+#: ../../apps/launcher/src/store.tsx
+msgid "Ports for more than one system"
+msgstr "Ports para más de un sistema"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Ports go in Ports{slash}{example}, or Ports{slash}Multi-system for several. Others get their own folders."
+msgstr "Los ports van en Ports{slash}{example}, o en Ports{slash}Multi-system si son varios. Los demás tienen sus propias carpetas."
+
 #: ../../apps/launcher/src/discussions.tsx
 msgid "Ports, games, mods and anything else."
 msgstr "Ports, juegos, mods y todo lo demás."
@@ -4943,9 +5051,13 @@ msgstr "Pestaña anterior"
 msgid "Project type"
 msgstr "Tipo de proyecto"
 
+#: ../../apps/launcher/src/console-folders.tsx
+msgid "Put {name}'s folder back in the usual place"
+msgstr "Devolver la carpeta de {name} a su lugar habitual"
+
 #: ../../apps/launcher/src/settings-page.tsx
-msgid "Put new apps in a folder for their console"
-msgstr "Poner las apps nuevas en una carpeta para su consola"
+msgid "Put new apps in a folder for their system"
+msgstr "Poner las apps nuevas en una carpeta para su sistema"
 
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Putting it in place…"
@@ -4993,6 +5105,10 @@ msgstr "Quiver bloqueó esta versión, así que no enlaza sus archivos. Para ins
 msgid "Quiver blocked this version"
 msgstr "Quiver bloqueó esta versión"
 
+#: ../../apps/launcher/src/store.tsx
+msgid "Quiver can't find {where}, where this console's apps go. If it's on a drive, connect it, or change the folder in Settings › Apps folder."
+msgstr "Quiver no encuentra {where}, donde van las apps de esta consola. Si está en una unidad, conéctala, o cambia la carpeta en Configuración › Carpeta de apps."
+
 #: ../../apps/launcher/src/sync-folder-page.tsx
 msgid "Quiver can't find this folder right now. If it's on a drive, plug it in. Backups carry on on this computer and go in the folder once it's back."
 msgstr ""
@@ -5016,10 +5132,6 @@ msgstr "Quiver revisa que sea una copia que el juego acepta."
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Quiver checks your copy, and puts it where the game reads it unless the game asks for it itself. It never downloads game files."
 msgstr "Quiver revisa tu copia y la pone donde el juego la lee, salvo que el juego la pida por su cuenta. Nunca descarga archivos de juegos."
-
-#: ../../apps/launcher/src/settings-page.tsx
-msgid "Quiver couldn't look it up in the catalog to find its console. Try again once you're online."
-msgstr "Quiver no pudo buscarla en el catálogo para saber su consola. Vuelve a intentarlo cuando tengas conexión."
 
 #: ../../apps/launcher/src/music.ts
 msgid "Quiver couldn't open that music file. It may have been moved or deleted."
@@ -5162,9 +5274,17 @@ msgstr "Quiver Launcher envía datos de uso para ayudar a mejorarlo. No se vincu
 msgid "Quiver Launcher: go to your library"
 msgstr "Quiver Launcher: ir a tu biblioteca"
 
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Quiver leaves these where you put them."
+msgstr "Quiver los deja donde los pusiste."
+
 #: ../../apps/launcher/src/own.tsx
 msgid "Quiver makes a folder for it in {dir} and opens it. Put the app's files there; Play starts the first program in it."
 msgstr "Quiver crea una carpeta para ella en {dir} y la abre. Pon ahí los archivos de la app; Jugar inicia el primer programa que haya en ella."
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Quiver needs the catalog to know their system. Try again once you're online."
+msgstr "Quiver necesita el catálogo para saber su sistema. Vuelve a intentarlo cuando tengas conexión."
 
 #: ../../apps/launcher/src/saves-tab.tsx
 msgid "Quiver saw the app save here."
@@ -5336,6 +5456,10 @@ msgstr "¿Quitar «{tag}» de {count}?"
 msgid "Remove {name}"
 msgstr "Quitar {name}"
 
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Remove {system} from {name}"
+msgstr "Quitar {system} de {name}"
+
 #: ../../apps/launcher/src/cloud-saves-page.tsx
 msgid "Remove all"
 msgstr "Quitar todas"
@@ -5429,6 +5553,10 @@ msgstr "Renombrar la carpeta de {app}"
 msgid "Rename {tag}"
 msgstr "Renombrar {tag}"
 
+#: ../../apps/launcher/src/console-folders.tsx
+msgid "Rename a system's folder, or put it anywhere, such as on another drive. Leave it empty for the usual place."
+msgstr "Cambia el nombre de la carpeta de un sistema o ponla en cualquier lugar, como en otra unidad. Déjalo vacío para el lugar habitual."
+
 #: ../../apps/launcher/src/App.tsx
 msgid "Rename folder"
 msgstr "Renombrar carpeta"
@@ -5466,7 +5594,9 @@ msgstr "Denunciado"
 msgid "Repository"
 msgstr "Repositorio"
 
+#. Puts a system's folder back where grouping by system puts it
 #. Puts the launch options back as Quiver chose them
+#: ../../apps/launcher/src/console-folders.tsx
 #: ../../apps/launcher/src/launch-options.tsx
 msgid "Reset"
 msgstr "Restablecer"
@@ -5809,6 +5939,14 @@ msgstr "Se envía con el nombre de tu cuenta, la versión de este launcher y tu 
 #: ../../apps/launcher/src/App.tsx
 msgid "Sent. A maintainer will take a look."
 msgstr "Enviado. Un mantenedor lo revisará."
+
+#: ../../apps/launcher/src/console-folders.tsx
+msgid "Set a folder for another system"
+msgstr "Elegir una carpeta para otro sistema"
+
+#: ../../apps/launcher/src/console-folders.tsx
+msgid "Set a folder for another system…"
+msgstr "Elegir una carpeta para otro sistema…"
 
 #. Button that sets up the player's copy of the game, then starts the app
 #: ../../apps/launcher/src/App.tsx
@@ -6189,6 +6327,10 @@ msgstr "Cuadrada, de unos 512×512. La página de la app, la vista de íconos y 
 msgid "Standalone game"
 msgstr "Juego independiente"
 
+#: ../../apps/launcher/src/store.tsx
+msgid "Standalone games"
+msgstr "Juegos independientes"
+
 #: ../../apps/launcher/src/discussions.tsx
 msgid "Start a discussion"
 msgstr "Iniciar una discusión"
@@ -6330,6 +6472,14 @@ msgstr "Cambiar a la versión de Windows (Wine)"
 msgid "Sync folder"
 msgstr ""
 
+#: ../../apps/launcher/src/console-folders.tsx
+msgid "System folder names and places"
+msgstr "Nombres y ubicaciones de las carpetas de sistema"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Systems chosen for apps"
+msgstr "Sistemas elegidos para apps"
+
 #. Controller hint: what the shoulder buttons do where there are tabs, change tab
 #: ../../apps/launcher/src/spatial.ts
 msgid "Tabs"
@@ -6443,6 +6593,14 @@ msgstr "Ese nombre de usuario y esa contraseña no coinciden."
 #: ../../apps/launcher/src/account.tsx
 msgid "That username is already in use."
 msgstr "Ese nombre de usuario ya está en uso."
+
+#: ../../apps/launcher/src/store.tsx
+msgid "That's in {name}, an app's own folder, which uninstalling it would remove. Choose another folder."
+msgstr "Eso está en {name}, la carpeta propia de una app, que se eliminaría al desinstalarla. Elige otra carpeta."
+
+#: ../../apps/launcher/src/store.tsx
+msgid "That's the apps folder itself. Choose a folder in it, or somewhere else."
+msgstr "Esa es la carpeta de apps. Elige una carpeta dentro de ella o en otro lugar."
 
 #. A mod's version, by its date, inside a sentence: the 3 Jan 2025 version installed
 #: ../../apps/launcher/src/mods.tsx
@@ -6784,6 +6942,10 @@ msgstr "Demasiados intentos. Espera un momento e inténtalo de nuevo."
 msgid "Tool"
 msgstr "Herramienta"
 
+#: ../../apps/launcher/src/store.tsx
+msgid "Tools"
+msgstr "Herramientas"
+
 #. Controller hint: what Back to top does
 #: ../../apps/launcher/src/spatial.ts
 msgid "Top"
@@ -6852,6 +7014,10 @@ msgstr "Modo TV: para un control, el sofá y una Steam Deck"
 #: ../../apps/launcher/src/spatial.ts
 msgid "Type"
 msgstr "Escribir"
+
+#: ../../apps/launcher/src/store.tsx
+msgid "Type the folder's whole path, or choose it with Browse…"
+msgstr "Escribe la ruta completa de la carpeta, o elígela con Examinar…"
 
 #: ../../apps/launcher/src/sidebar.ts
 msgid "Under a minute"
@@ -7458,10 +7624,6 @@ msgstr "Ayer"
 msgid "You"
 msgstr "Tú"
 
-#: ../../apps/launcher/src/settings-page.tsx
-msgid "You added it from your own folder or program, and Quiver leaves those where you put them."
-msgstr "La agregaste desde tu propia carpeta o programa, y Quiver deja esas apps donde las pusiste."
-
 #: ../../apps/launcher/src/saves-tab.tsx
 msgid "You chose this folder."
 msgstr "Elegiste esta carpeta."
@@ -7622,6 +7784,10 @@ msgstr "Tu biblioteca está vacía"
 #: ../../apps/launcher/src/setup.tsx
 msgid "Your library syncs across your devices, and you can review apps. Everything works without an account too."
 msgstr "Tu biblioteca se sincroniza entre tus dispositivos y puedes reseñar apps. Todo funciona también sin cuenta."
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Your own folders and programs"
+msgstr "Tus propias carpetas y programas"
 
 #: ../../apps/launcher/src/tag-settings.tsx
 msgid "Your own tags, which you can rename or delete on every app at once, and the tags your apps have from the catalog, which you can hide on this computer."

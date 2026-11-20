@@ -27,6 +27,13 @@ msgstr "{0, plural, one {其他平臺還有 # 個應用程式未顯示。} other
 msgid "{0, plural, one {# app hidden from your library.} other {# apps hidden from your library.}}"
 msgstr "{0, plural, other {已從遊戲庫中隱藏 # 個應用程式。}}"
 
+#. placeholder {0}: still.apps.length
+#. placeholder {1}: still.from
+#. placeholder {2}: still.from
+#: ../../apps/launcher/src/console-folders.tsx
+msgid "{0, plural, one {# app is still in {1}. New ones go in the new folder.} other {# apps are still in {2}. New ones go in the new folder.}}"
+msgstr "{0, plural, other {還有 # 個應用程式在 {2} 中。新的會裝到新資料夾。}}"
+
 #. placeholder {0}: ids.length
 #: ../../apps/launcher/src/library-ticking.tsx
 msgid "{0, plural, one {# app shows in your library again.} other {# apps show in your library again.}}"
@@ -47,6 +54,11 @@ msgstr "{0, plural, one {# 個應用程式} other {# 個應用程式}}"
 msgid "{0, plural, one {# backup} other {# backups}}"
 msgstr ""
 
+#. placeholder {0}: Object.keys(folders).length
+#: ../../apps/launcher/src/console-folders.tsx
+msgid "{0, plural, one {# changed} other {# changed}}"
+msgstr "{0, plural, other {已變更 # 個}}"
+
 #. placeholder {0}: thread.comments
 #: ../../apps/launcher/src/discussions.tsx
 msgid "{0, plural, one {# comment} other {# comments}}"
@@ -58,6 +70,11 @@ msgstr "{0, plural, other {# 則留言}}"
 #: ../../apps/launcher/src/saves-tab.tsx
 msgid "{0, plural, one {# file} other {# files}}"
 msgstr "{0, plural, other {# 個檔案}}"
+
+#. placeholder {0}: unsorted.length
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "{0, plural, one {# installed app isn't in its system folder yet.} other {# installed apps aren't in their system folders yet.}}"
+msgstr "{0, plural, other {# 個已安裝的應用程式尚未放入其系統資料夾。}}"
 
 #. placeholder {0}: portable.length
 #: ../../apps/launcher/src/library-ticking.tsx
@@ -83,8 +100,18 @@ msgstr "{0, plural, one {要將 {1} 中的 # 個應用程式移至 {dir} 嗎？}
 
 #. placeholder {0}: unsorted.length
 #: ../../apps/launcher/src/settings-page.tsx
-msgid "{0, plural, one {Move # installed app into its console folder} other {Move # installed apps into their console folders}}"
-msgstr "{0, plural, one {將 # 個已安裝的應用程式移至對應的主機資料夾} other {將 # 個已安裝的應用程式移至對應的主機資料夾}}"
+msgid "{0, plural, one {Move # installed app into its system folder} other {Move # installed apps into their system folders}}"
+msgstr "{0, plural, other {將 # 個已安裝的應用程式移到其系統資料夾}}"
+
+#. placeholder {0}: still.apps.length
+#: ../../apps/launcher/src/console-folders.tsx
+msgid "{0, plural, one {Move it there} other {Move them there}}"
+msgstr "{0, plural, other {移到那裡}}"
+
+#. placeholder {0}: unsorted.length
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "{0, plural, one {Move it} other {Move them}}"
+msgstr "{0, plural, other {移動}}"
 
 #. placeholder {0}: own.length
 #: ../../apps/launcher/src/tag-settings.tsx
@@ -509,6 +536,7 @@ msgstr "{more, plural, one {還有 # 個} other {還有 # 個}}"
 msgid "{n, plural, one {# app selected} other {# apps selected}}"
 msgstr "{n, plural, other {已選擇 # 個應用程式}}"
 
+#: ../../apps/launcher/src/console-folders.tsx
 #: ../../apps/launcher/src/recovery.tsx
 #: ../../apps/launcher/src/tag-settings.tsx
 msgid "{n, plural, one {# app} other {# apps}}"
@@ -935,9 +963,10 @@ msgstr "引號未閉合。"
 msgid "A transparent PNG. For its Steam shortcut."
 msgstr "透明背景的 PNG 圖片，用作 Steam 快捷方式圖示。"
 
+#. How system folders are named: by abbreviation
 #: ../../apps/launcher/src/settings-page.tsx
-msgid "A Windows installer put it there, and Windows looks after where it is."
-msgstr "它由 Windows 安裝程式放在那裡，其位置由 Windows 管理。"
+msgid "Abbreviated (N64, GBC, PS2)"
+msgstr "縮寫（N64、GBC、PS2）"
 
 #: ../../apps/launcher/src/detail.tsx
 msgid "About this project"
@@ -1036,6 +1065,14 @@ msgstr "新增並獲取"
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Add another folder…"
 msgstr "新增另一個資料夾 →"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Add another system for {name}"
+msgstr "為 {name} 新增其他系統"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Add another…"
+msgstr "再新增…"
 
 #: ../../apps/launcher/src/library.tsx
 msgid "Add apps from each app's menu. It also shows apps that match these filters:"
@@ -1353,6 +1390,10 @@ msgstr "應用程式資料夾"
 msgid "Apps in that folder"
 msgstr "該資料夾中的應用程式"
 
+#: ../../apps/launcher/src/console-folders.tsx
+msgid "Apps in the old folder"
+msgstr "舊資料夾中的應用程式"
+
 #: ../../apps/launcher/src/App.tsx
 msgid "Apps in your library"
 msgstr "遊戲庫中的應用程式"
@@ -1584,9 +1625,18 @@ msgstr "瀏覽"
 msgid "Browse cards"
 msgstr "瀏覽卡片"
 
+#: ../../apps/launcher/src/console-folders.tsx
+msgid "Browse for a folder for {name}"
+msgstr "為 {name} 瀏覽資料夾"
+
 #: ../../apps/launcher/src/library.tsx
 msgid "Browse the catalog"
 msgstr "瀏覽目錄"
+
+#. Opens a folder picker for a system's apps
+#: ../../apps/launcher/src/console-folders.tsx
+msgid "Browse…"
+msgstr "瀏覽…"
 
 #. On the player's Discord profile, under Quiver Launcher's name, while no game they started from it is running
 #: ../../apps/launcher/src/settings-page.tsx
@@ -1797,6 +1847,10 @@ msgstr "為 {label} 選擇檔案"
 msgid "Choose a file…"
 msgstr "選擇檔案 →"
 
+#: ../../apps/launcher/src/console-folders.tsx
+msgid "Choose a folder for {name}"
+msgstr "為 {name} 選擇資料夾"
+
 #: ../../apps/launcher/src/store.tsx
 msgid "Choose a folder outside {name}, which is an app's own folder."
 msgstr "請選擇 {name} 以外的資料夾，它是某個應用程式自己的資料夾。"
@@ -1843,6 +1897,14 @@ msgstr "選擇一個用於啟動應用程式的程式（.exe）。"
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Choose a release"
 msgstr "選擇版本"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Choose a system for {name}"
+msgstr "為 {name} 選擇系統"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Choose a system…"
+msgstr "選擇系統…"
 
 #: ../../apps/launcher/src/correction.tsx
 msgid "Choose a topic (optional)"
@@ -2616,6 +2678,10 @@ msgid "Emulator"
 msgstr "模擬器"
 
 #: ../../apps/launcher/src/store.tsx
+msgid "Emulators"
+msgstr "模擬器"
+
+#: ../../apps/launcher/src/store.tsx
 msgid "Enter a name for its folder."
 msgstr "為其資料夾輸入名稱。"
 
@@ -2888,6 +2954,11 @@ msgstr "返回"
 msgid "Go to Community"
 msgstr "前往社群"
 
+#. Where an app goes once its systems are chosen, such as Ports/Multi-system
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Goes in {to}"
+msgstr "放入 {to}"
+
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Good copy"
 msgstr "正常副本"
@@ -3119,6 +3190,11 @@ msgctxt "README callout"
 msgid "Important"
 msgstr "重要"
 
+#. How system folders are named: by full name
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "In full (Nintendo 64, Game Boy Color, PlayStation 2)"
+msgstr "全名（Nintendo 64、Game Boy Color、PlayStation 2）"
+
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/discover.tsx
 #: ../../apps/launcher/src/game.tsx
@@ -3129,10 +3205,6 @@ msgstr "在遊戲庫中"
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "In Steam's Game Mode"
 msgstr "在 Steam 的遊戲模式中"
-
-#: ../../apps/launcher/src/settings-page.tsx
-msgid "In the default apps folder, ports go in Ports, in a folder for their console (Ports{slash}N64, say), and those for more than one console in Ports{slash}Multi-console. Emulators, tools and standalone games get folders of their own beside it. Apps you put in another folder go exactly there, and apps already installed stay where they are until you move them."
-msgstr "在預設應用程式資料夾中，移植版會放在 Ports 資料夾下對應主機的子資料夾中（例如 Ports{slash}N64）；支援多個主機的移植版會放在 Ports{slash}Multi-console 中。模擬器、工具和獨立遊戲會各自在旁邊擁有自己的資料夾。你放入其他資料夾的應用程式會留在原處；已安裝的應用程式也會留在原處，直到你移動它們。"
 
 #: ../../apps/launcher/src/file-picker.tsx
 msgid "In this folder"
@@ -3405,10 +3477,6 @@ msgstr "適用於"
 msgid "It didn't run"
 msgstr "無法執行"
 
-#: ../../apps/launcher/src/settings-page.tsx
-msgid "It doesn't have a console. Choose one on its page, and it can move into that console's folder."
-msgstr "它沒有設定主機。在它的頁面上選擇一個主機後，它就能移入該主機的資料夾。"
-
 #: ../../apps/launcher/src/App.tsx
 msgid "It gets a folder of its own in there, and updates keep installing into it."
 msgstr "它會在該位置擁有自己的資料夾，後續更新也會安裝到此資料夾中。"
@@ -3627,6 +3695,10 @@ msgstr "所有許可權範圍都不要勾選：公開版本無需任何許可權
 #: ../../apps/launcher/src/gitlab-token.tsx
 msgid "Leave the read_api scope ticked: public releases need nothing more."
 msgstr "保持勾選 read_api 範圍：公開版本不需要更多權限。"
+
+#: ../../apps/launcher/src/console-folders.tsx
+msgid "Leave them"
+msgstr "保留原處"
 
 #. Button: back from TV mode to the usual launcher
 #: ../../apps/launcher/src/App.tsx
@@ -4004,18 +4076,20 @@ msgid "Move to…"
 msgstr "移動到 →"
 
 #. placeholder {0}: n - failed.length
+#: ../../apps/launcher/src/console-folders.tsx
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Moved {0} of {n, plural, one {# app} other {# apps}}."
 msgstr "已移動 {0}/{n, plural, one {# 個應用程式} other {# 個應用程式}}。"
 
 #: ../../apps/launcher/src/settings-page.tsx
-msgid "Moved {n, plural, one {# app} other {# apps}} into console folders."
-msgstr "已將 {n, plural, one {# 個應用程式} other {# 個應用程式}} 移至對應的主機資料夾。"
-
-#: ../../apps/launcher/src/settings-page.tsx
 msgid "Moved {n, plural, one {# app} other {# apps}} into Quiver's apps folder. Once you've checked they run, you can delete your Quiver Launcher 3 folder."
 msgstr "已將 {n, plural, other {# 個應用程式}}移到 Quiver 的應用程式資料夾。確認它們能執行後，就可以刪除你的 Quiver Launcher 3 資料夾。"
 
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Moved {n, plural, one {# app} other {# apps}} into system folders."
+msgstr "已將 {n, plural, other {# 個應用程式}}移到系統資料夾。"
+
+#: ../../apps/launcher/src/console-folders.tsx
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Moved {n, plural, one {# app} other {# apps}}."
 msgstr "已移動 {n, plural, one {# 個應用程式} other {# 個應用程式}}。"
@@ -4039,12 +4113,18 @@ msgstr "正在移動應用程式"
 #. placeholder {0}: sorting.done
 #. placeholder {1}: sorting.total
 #: ../../apps/launcher/src/settings-page.tsx
-msgid "Moving apps into console folders… {0} of {1}"
-msgstr "正在將應用程式移至對應的主機資料夾 → {0}/{1}"
+msgid "Moving apps into system folders… {0} of {1}"
+msgstr "正在將應用程式移到系統資料夾… 第 {0} 個，共 {1} 個"
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Moving apps…"
 msgstr "正在移動應用程式 →"
+
+#. placeholder {0}: moving.done
+#. placeholder {1}: moving.total
+#: ../../apps/launcher/src/console-folders.tsx
+msgid "Moving apps… {0} of {1}"
+msgstr "正在移動應用程式… 第 {0} 個，共 {1} 個"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/card-menu.tsx
@@ -4079,6 +4159,10 @@ msgstr "名稱和插畫"
 #: ../../apps/launcher/src/library-view.tsx
 msgid "Name on top"
 msgstr "名稱在上方"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Name system folders"
+msgstr "系統資料夾命名"
 
 #. Library card detail: the other name (the app's or the game's) under the large one
 #: ../../apps/launcher/src/library-view.tsx
@@ -4323,6 +4407,10 @@ msgstr "未找到版本。"
 msgid "No reports yet"
 msgstr "尚無回報"
 
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "No system yet"
+msgstr "尚無系統"
+
 #: ../../apps/launcher/src/tag-settings.tsx
 msgid "No tags are hidden."
 msgstr "沒有隱藏的標籤。"
@@ -4390,6 +4478,10 @@ msgstr "尚未確認"
 #: ../../apps/launcher/src/ways-to-play.tsx
 msgid "Not for this computer"
 msgstr "不適用於這台電腦"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Not found in the catalog"
+msgstr "未在目錄中找到"
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Not found. Is its drive connected?"
@@ -4716,6 +4808,10 @@ msgstr "電腦配置："
 msgid "Pick a binding, then press the key or button to use for it."
 msgstr "選擇一個按鍵繫結，然後按下要用於該繫結的按鍵或按鈕。"
 
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Pick a system to move it, or several for Multi-system."
+msgstr "選擇一個系統以移動它，選擇多個則放入 Multi-system。"
+
 #: ../../apps/launcher/src/custom-art.tsx
 msgid "Picture from this computer"
 msgstr "來自此電腦的圖片"
@@ -4886,6 +4982,18 @@ msgstr "掌機"
 msgid "Portrait, about 600×900. The library's cards and TV mode."
 msgstr "豎版，約 600 × 900。適用於遊戲庫卡片和電視模式。"
 
+#: ../../apps/launcher/src/store.tsx
+msgid "Ports for another system"
+msgstr "其他系統的移植"
+
+#: ../../apps/launcher/src/store.tsx
+msgid "Ports for more than one system"
+msgstr "多個系統的移植"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Ports go in Ports{slash}{example}, or Ports{slash}Multi-system for several. Others get their own folders."
+msgstr "移植版放在 Ports{slash}{example}，多個系統的放在 Ports{slash}Multi-system。其他的各有自己的資料夾。"
+
 #: ../../apps/launcher/src/discussions.tsx
 msgid "Ports, games, mods and anything else."
 msgstr "移植版、遊戲、模組及其他一切。"
@@ -4943,9 +5051,13 @@ msgstr "上一個標籤頁"
 msgid "Project type"
 msgstr "專案型別"
 
+#: ../../apps/launcher/src/console-folders.tsx
+msgid "Put {name}'s folder back in the usual place"
+msgstr "將 {name} 的資料夾放回預設位置"
+
 #: ../../apps/launcher/src/settings-page.tsx
-msgid "Put new apps in a folder for their console"
-msgstr "將新應用程式放入對應主機的資料夾"
+msgid "Put new apps in a folder for their system"
+msgstr "將新應用程式放到其系統的資料夾中"
 
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Putting it in place…"
@@ -4993,6 +5105,10 @@ msgstr "Quiver 阻止了此版本，因此不會關聯其檔案。安裝前，�
 msgid "Quiver blocked this version"
 msgstr "Quiver 阻止了此版本"
 
+#: ../../apps/launcher/src/store.tsx
+msgid "Quiver can't find {where}, where this console's apps go. If it's on a drive, connect it, or change the folder in Settings › Apps folder."
+msgstr "Quiver 找不到 {where}，這是此主機應用程式的安裝位置。如果它在某個磁碟機上，請連接該磁碟機，或在 設定 › 應用程式資料夾 中變更資料夾。"
+
 #: ../../apps/launcher/src/sync-folder-page.tsx
 msgid "Quiver can't find this folder right now. If it's on a drive, plug it in. Backups carry on on this computer and go in the folder once it's back."
 msgstr ""
@@ -5016,10 +5132,6 @@ msgstr "Quiver 會檢查遊戲是否接受此副本。"
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Quiver checks your copy, and puts it where the game reads it unless the game asks for it itself. It never downloads game files."
 msgstr "Quiver 會檢查你的副本，並將其放到遊戲讀取的位置，除非遊戲本身會提示你提供檔案。Quiver 絕不會下載遊戲檔案。"
-
-#: ../../apps/launcher/src/settings-page.tsx
-msgid "Quiver couldn't look it up in the catalog to find its console. Try again once you're online."
-msgstr "Quiver 無法在目錄中查到它的主機。請連上網路後再試。"
 
 #: ../../apps/launcher/src/music.ts
 msgid "Quiver couldn't open that music file. It may have been moved or deleted."
@@ -5162,9 +5274,17 @@ msgstr "Quiver Launcher 會傳送使用情況資料來幫助改進應用程式�
 msgid "Quiver Launcher: go to your library"
 msgstr "Quiver Launcher：前往你的遊戲庫"
 
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Quiver leaves these where you put them."
+msgstr "Quiver 會將它們留在你放置的位置。"
+
 #: ../../apps/launcher/src/own.tsx
 msgid "Quiver makes a folder for it in {dir} and opens it. Put the app's files there; Play starts the first program in it."
 msgstr "Quiver 會在 {dir} 中為它建立資料夾並開啟該資料夾。請將應用程式檔案放入其中；按“遊玩”會啟動其中的第一個程式。"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Quiver needs the catalog to know their system. Try again once you're online."
+msgstr "Quiver 需要目錄才能知道它們的系統。連上網路後請再試一次。"
 
 #: ../../apps/launcher/src/saves-tab.tsx
 msgid "Quiver saw the app save here."
@@ -5336,6 +5456,10 @@ msgstr "要從 {count} 移除「{tag}」嗎？"
 msgid "Remove {name}"
 msgstr "移除 {name}"
 
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Remove {system} from {name}"
+msgstr "從 {name} 移除 {system}"
+
 #: ../../apps/launcher/src/cloud-saves-page.tsx
 msgid "Remove all"
 msgstr "全部移除"
@@ -5429,6 +5553,10 @@ msgstr "重新命名 {app} 的資料夾"
 msgid "Rename {tag}"
 msgstr "重新命名 {tag}"
 
+#: ../../apps/launcher/src/console-folders.tsx
+msgid "Rename a system's folder, or put it anywhere, such as on another drive. Leave it empty for the usual place."
+msgstr "重新命名系統的資料夾，或把它放到任何位置，例如另一個磁碟機。留空則使用預設位置。"
+
 #: ../../apps/launcher/src/App.tsx
 msgid "Rename folder"
 msgstr "重新命名資料夾"
@@ -5466,7 +5594,9 @@ msgstr "已檢舉"
 msgid "Repository"
 msgstr "程式碼儲存庫"
 
+#. Puts a system's folder back where grouping by system puts it
 #. Puts the launch options back as Quiver chose them
+#: ../../apps/launcher/src/console-folders.tsx
 #: ../../apps/launcher/src/launch-options.tsx
 msgid "Reset"
 msgstr "重置"
@@ -5809,6 +5939,14 @@ msgstr "報告會包含你的帳戶名稱、此啟動器的版本和你的系統
 #: ../../apps/launcher/src/App.tsx
 msgid "Sent. A maintainer will take a look."
 msgstr "已送出。維護者會查看。"
+
+#: ../../apps/launcher/src/console-folders.tsx
+msgid "Set a folder for another system"
+msgstr "為其他系統設定資料夾"
+
+#: ../../apps/launcher/src/console-folders.tsx
+msgid "Set a folder for another system…"
+msgstr "為其他系統設定資料夾…"
 
 #. Button that sets up the player's copy of the game, then starts the app
 #: ../../apps/launcher/src/App.tsx
@@ -6189,6 +6327,10 @@ msgstr "方形，約 512×512。應用程式頁面、圖示檢視及其快捷方
 msgid "Standalone game"
 msgstr "獨立遊戲"
 
+#: ../../apps/launcher/src/store.tsx
+msgid "Standalone games"
+msgstr "獨立遊戲"
+
 #: ../../apps/launcher/src/discussions.tsx
 msgid "Start a discussion"
 msgstr "發起討論"
@@ -6330,6 +6472,14 @@ msgstr "切換到 Windows 版本（Wine）"
 msgid "Sync folder"
 msgstr ""
 
+#: ../../apps/launcher/src/console-folders.tsx
+msgid "System folder names and places"
+msgstr "系統資料夾的名稱與位置"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Systems chosen for apps"
+msgstr "為應用程式選擇的系統"
+
 #. Controller hint: what the shoulder buttons do where there are tabs, change tab
 #: ../../apps/launcher/src/spatial.ts
 msgid "Tabs"
@@ -6443,6 +6593,14 @@ msgstr "使用者名稱和密碼不匹配。"
 #: ../../apps/launcher/src/account.tsx
 msgid "That username is already in use."
 msgstr "該使用者名稱已被使用。"
+
+#: ../../apps/launcher/src/store.tsx
+msgid "That's in {name}, an app's own folder, which uninstalling it would remove. Choose another folder."
+msgstr "它位於 {name} 中，那是某個應用程式自己的資料夾，解除安裝時會被刪除。請選擇其他資料夾。"
+
+#: ../../apps/launcher/src/store.tsx
+msgid "That's the apps folder itself. Choose a folder in it, or somewhere else."
+msgstr "這就是應用程式資料夾本身。請選擇其中或其他位置的資料夾。"
 
 #. A mod's version, by its date, inside a sentence: the 3 Jan 2025 version installed
 #: ../../apps/launcher/src/mods.tsx
@@ -6784,6 +6942,10 @@ msgstr "嘗試次數過多。請稍等片刻，然後重試。"
 msgid "Tool"
 msgstr "工具"
 
+#: ../../apps/launcher/src/store.tsx
+msgid "Tools"
+msgstr "工具"
+
 #. Controller hint: what Back to top does
 #: ../../apps/launcher/src/spatial.ts
 msgid "Top"
@@ -6852,6 +7014,10 @@ msgstr "電視模式：適用於遊戲控制器、沙發和 Steam Deck"
 #: ../../apps/launcher/src/spatial.ts
 msgid "Type"
 msgstr "型別"
+
+#: ../../apps/launcher/src/store.tsx
+msgid "Type the folder's whole path, or choose it with Browse…"
+msgstr "輸入資料夾的完整路徑，或用「瀏覽…」選擇。"
 
 #: ../../apps/launcher/src/sidebar.ts
 msgid "Under a minute"
@@ -7458,10 +7624,6 @@ msgstr "昨天"
 msgid "You"
 msgstr "你"
 
-#: ../../apps/launcher/src/settings-page.tsx
-msgid "You added it from your own folder or program, and Quiver leaves those where you put them."
-msgstr "它是你從自己的資料夾或程式加入的，Quiver 會把這類應用程式留在你放置的位置。"
-
 #: ../../apps/launcher/src/saves-tab.tsx
 msgid "You chose this folder."
 msgstr "你選擇了此資料夾。"
@@ -7622,6 +7784,10 @@ msgstr "你的遊戲庫為空"
 #: ../../apps/launcher/src/setup.tsx
 msgid "Your library syncs across your devices, and you can review apps. Everything works without an account too."
 msgstr "你的遊戲庫會在各裝置間同步，你也可以評價應用程式。不登入帳戶也能使用所有功能。"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Your own folders and programs"
+msgstr "你自己的資料夾和程式"
 
 #: ../../apps/launcher/src/tag-settings.tsx
 msgid "Your own tags, which you can rename or delete on every app at once, and the tags your apps have from the catalog, which you can hide on this computer."

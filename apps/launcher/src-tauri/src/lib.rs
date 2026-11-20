@@ -1702,6 +1702,18 @@ async fn apps_folder_states(paths: Vec<PathBuf>) -> Vec<apps_folder::FolderState
     tauri::async_runtime::spawn_blocking(move || apps_folder::states(&paths)).await.unwrap_or_default()
 }
 
+/// Removes a console folder the player's apps all moved out of, once nothing's left in it (`apps_folder::remove_empty`).
+#[tauri::command]
+fn remove_empty_console_folder(data: State<Data>, path: String) {
+    apps_folder::remove_empty(Path::new(&path), &data.apps());
+}
+
+/// Removes the default apps folder's system folders that are empty (`apps_folder::remove_empty_system_folders`).
+#[tauri::command]
+fn remove_empty_system_folders(data: State<Data>) {
+    apps_folder::remove_empty_system_folders(&data.apps());
+}
+
 /// Why the installed apps can't move to `to`, if they can't: those in the
 /// apps folder, and those kept elsewhere (with a `dir`), as 3.x's are.
 #[tauri::command]
@@ -2451,6 +2463,8 @@ pub fn run() {
             picker::browse,
             apps_folder_refusal,
             apps_folder_states,
+            remove_empty_console_folder,
+            remove_empty_system_folders,
             move_app,
             open_apps_folder,
             move_apps_folder,
