@@ -3492,10 +3492,6 @@ msgstr "It isn't linked to your Quiver account."
 msgid "It isn't where the game reads it any more. Set it up again."
 msgstr "It isn't where the game reads it any more. Set it up again."
 
-#: ../../apps/launcher/src/setup.tsx
-msgid "It looks and works differently in places, so give it a go with an open mind."
-msgstr "It looks and works differently in places, so give it a go with an open mind."
-
 #: ../../apps/launcher/src/discussions.tsx
 msgid "It may have been deleted or hidden."
 msgstr "It may have been deleted or hidden."
@@ -6278,6 +6274,10 @@ msgstr "Some AI assistance"
 #: ../../apps/launcher/src/own-copy-settings.tsx
 msgid "Some apps need your own copy of a game, like a ROM or a disc image. Tell Quiver where you keep them for each console, and it finds them for you."
 msgstr "Some apps need your own copy of a game, like a ROM or a disc image. Tell Quiver where you keep them for each console, and it finds them for you."
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "Some things look and work differently now. Take a moment to find your way around."
+msgstr "Some things look and work differently now. Take a moment to find your way around."
 
 #: ../../apps/launcher/src/library.tsx
 msgid "Someone shared a playlist? Paste its link to add it to your library. It stays up to date with theirs."

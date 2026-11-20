@@ -3493,10 +3493,6 @@ msgstr "此資訊不會關聯到你的 Quiver 帳戶。"
 msgid "It isn't where the game reads it any more. Set it up again."
 msgstr "它已不在遊戲讀取的位置。請重新設定。"
 
-#: ../../apps/launcher/src/setup.tsx
-msgid "It looks and works differently in places, so give it a go with an open mind."
-msgstr "有些地方的外觀和用法不一樣了，請帶著開放的心態試一試。"
-
 #: ../../apps/launcher/src/discussions.tsx
 msgid "It may have been deleted or hidden."
 msgstr "它可能已被刪除或隱藏。"
@@ -6279,6 +6275,10 @@ msgstr "部分使用 AI"
 #: ../../apps/launcher/src/own-copy-settings.tsx
 msgid "Some apps need your own copy of a game, like a ROM or a disc image. Tell Quiver where you keep them for each console, and it finds them for you."
 msgstr "有些應用程式需要你自己的遊戲副本，例如 ROM 或光碟映像。請告訴 Quiver 你為每臺主機將它們存放在哪裡，Quiver 會為你查詢。"
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "Some things look and work differently now. Take a moment to find your way around."
+msgstr "有些地方的外觀和用法變了，花點時間熟悉一下吧。"
 
 #: ../../apps/launcher/src/library.tsx
 msgid "Someone shared a playlist? Paste its link to add it to your library. It stays up to date with theirs."
