@@ -2571,6 +2571,11 @@ msgstr "간편 설정: Quiver Launcher가 게임 사본을 찾아 앱에 필요�
 msgid "Edit"
 msgstr "편집"
 
+#. Button beside an app's name on its page, only for catalog maintainers and admins: opens the app's entry on the website's admin pages
+#: ../../apps/launcher/src/App.tsx
+msgid "Edit in admin"
+msgstr "관리자 페이지에서 편집"
+
 #: ../../apps/launcher/src/library.tsx
 msgid "Edit playlist"
 msgstr "재생 목록 편집"
@@ -4583,6 +4588,10 @@ msgstr "불투명도"
 #: ../../apps/launcher/src/spatial.ts
 msgid "Open"
 msgstr "열기"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Open {app} in the catalog's admin pages on quiverlauncher.com"
+msgstr "quiverlauncher.com의 카탈로그 관리자 페이지에서 {app} 열기"
 
 #: ../../apps/launcher/src/announcements-ui.tsx
 msgid "Open app"

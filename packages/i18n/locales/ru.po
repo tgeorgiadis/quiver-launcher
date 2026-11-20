@@ -2571,6 +2571,11 @@ msgstr "Простая настройка: Quiver Launcher находит ваш
 msgid "Edit"
 msgstr "Изменить"
 
+#. Button beside an app's name on its page, only for catalog maintainers and admins: opens the app's entry on the website's admin pages
+#: ../../apps/launcher/src/App.tsx
+msgid "Edit in admin"
+msgstr "Изменить в админке"
+
 #: ../../apps/launcher/src/library.tsx
 msgid "Edit playlist"
 msgstr "Изменить плейлист"
@@ -4583,6 +4588,10 @@ msgstr "Непрозрачность"
 #: ../../apps/launcher/src/spatial.ts
 msgid "Open"
 msgstr "Открыть"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Open {app} in the catalog's admin pages on quiverlauncher.com"
+msgstr "Открыть {app} в админке каталога на quiverlauncher.com"
 
 #: ../../apps/launcher/src/announcements-ui.tsx
 msgid "Open app"

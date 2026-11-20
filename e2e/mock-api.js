@@ -793,6 +793,8 @@ export async function startMockApi({ pageSize = Infinity } = {}) {
     setAnalytics: account.setAnalytics,
     /** Saves an account's catalog filters, as "Save as my default" on the website does; undefined clears them. */
     setCatalogDefaults: account.setCatalogDefaults,
+    /** Makes an account staff on the website ("maintainer", "admin" or "owner"), or a player again with undefined. */
+    setRole: account.setRole,
     /** The playlists an account has saved, as libraryCollections keeps them. */
     collections: account.collections,
     reviews: account.reviews,
@@ -953,6 +955,8 @@ function mockAccount(entries) {
           id: user.id,
           name,
           provider: user.password ? "password" : "github",
+          // Staff on the website: "maintainer", "admin" or "owner"; a player has none here.
+          ...(user.role ? { role: user.role } : {}),
           ...(user.analyticsOptOut ? { analyticsOptOut: true } : {}),
           // The filters saved on the website ("Save as my default").
           ...(user.catalogDefaults ? { catalogDefaults: user.catalogDefaults } : {}),
@@ -1163,6 +1167,10 @@ function mockAccount(entries) {
     const user = users.get(name);
     if (user) user.catalogDefaults = defaults;
   };
+  const setRole = (name, role) => {
+    const user = users.get(name);
+    if (user) user.role = role;
+  };
   const collections = (name) => [...(users.get(name)?.collections.values() ?? [])];
-  return { handle, reviews, corrections, resolveCorrection, feedback, lists, analyticsCalls, setAnalytics, setCatalogDefaults, collections, cloud };
+  return { handle, reviews, corrections, resolveCorrection, feedback, lists, analyticsCalls, setAnalytics, setCatalogDefaults, setRole, collections, cloud };
 }
