@@ -775,7 +775,7 @@ export function LibraryPage({
     <>
       <PlaylistsTip panel={panel} fits={fits && !tv && !sidebar} onPanel={() => setView({ playlists: "side" })} />
         {resume && <ContinuePlaying entry={resume} played={installs[resume.id].lastPlayed!} onOpen={() => onOpen(resume)} action={action(resume)} />}
-        <div ref={bar} className={`library-bar${stacked ? " stacked" : ""}`}>
+        <div ref={bar} className={`library-bar${stacked ? " stacked" : ""}${panel ? " with-panel" : ""}`}>
           {!stacked && !panel && (
             <nav ref={tabRow} className="playlists" aria-label={t`Playlists`} onContextMenu={openPlaceMenu}>
               {inRow.map(([key, name]) => (

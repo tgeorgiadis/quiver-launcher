@@ -1309,6 +1309,17 @@ html[data-navigating] .shelf-row { scroll-snap-type: none; }
   background: var(--button); color: var(--strong); font-size: 13px; font-weight: 500;
 }
 .hidden-note .show-hidden:hover { background: var(--button-hover); }
+/*
+ * With the playlists in the side panel, the tools' row has no tabs: the search goes at its start where there's room,
+ * and on its own row under them where there isn't.
+ */
+@container library-bar (min-width: 820px) {
+  .library-bar.with-panel { flex-wrap: nowrap; }
+  .library-bar.with-panel > .search-row { order: -1; flex: 1 1 auto; justify-content: flex-start; margin-top: 0; }
+  .library-bar.with-panel > .search-row .search { flex: 1 1 auto; max-width: 560px; height: 38px; }
+  .library-bar.with-panel .library-tools { flex: 0 0 auto; margin-left: auto; }
+  .library-bar.with-panel:has(> .search-row) { margin-bottom: 24px; }
+}
 /* The tip for players from 3.x that the playlists can go down the left (library.tsx). */
 .playlists-tip .icon-only { padding: 7px; }
 /*
