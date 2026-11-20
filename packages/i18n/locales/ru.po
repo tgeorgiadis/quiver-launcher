@@ -3493,10 +3493,6 @@ msgstr "Они не связаны с вашей учётной записью Q
 msgid "It isn't where the game reads it any more. Set it up again."
 msgstr "Её больше нет там, где игра её читает. Настройте заново."
 
-#: ../../apps/launcher/src/setup.tsx
-msgid "It looks and works differently in places, so give it a go with an open mind."
-msgstr "Местами он выглядит и работает иначе, так что попробуйте его без предубеждений."
-
 #: ../../apps/launcher/src/discussions.tsx
 msgid "It may have been deleted or hidden."
 msgstr "Возможно, его удалили или скрыли."
@@ -6279,6 +6275,10 @@ msgstr "Частично с помощью ИИ"
 #: ../../apps/launcher/src/own-copy-settings.tsx
 msgid "Some apps need your own copy of a game, like a ROM or a disc image. Tell Quiver where you keep them for each console, and it finds them for you."
 msgstr "Некоторым приложениям нужна ваша копия игры, например ROM или образ диска. Укажите Quiver, где вы храните их для каждой консоли, и он найдёт их сам."
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "Some things look and work differently now. Take a moment to find your way around."
+msgstr "Кое-что теперь выглядит и работает иначе. Уделите немного времени, чтобы освоиться."
 
 #: ../../apps/launcher/src/library.tsx
 msgid "Someone shared a playlist? Paste its link to add it to your library. It stays up to date with theirs."
