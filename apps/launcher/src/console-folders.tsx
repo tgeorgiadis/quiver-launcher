@@ -128,17 +128,11 @@ export function ConsoleFolders() {
                 <Button disabled={busy} aria-label={t`Browse for a folder for ${name}`} onClick={() => void browse(group, name)}>
                   <Trans comment="Opens a folder picker for a console's apps">Browse…</Trans>
                 </Button>
-                {/* Kept in its place when there's nothing to reset, so every row's box is as wide. */}
-                <Button
-                  className={folders[group] ? undefined : "console-folder-unset"}
-                  disabled={busy || !folders[group]}
-                  aria-hidden={!folders[group] || undefined}
-                  tabIndex={folders[group] ? undefined : -1}
-                  aria-label={t`Put ${name}'s folder back in the usual place`}
-                  onClick={() => place(group, "")}
-                >
-                  <Trans comment="Puts a console's folder back where grouping by console puts it">Reset</Trans>
-                </Button>
+                {folders[group] && (
+                  <Button disabled={busy} aria-label={t`Put ${name}'s folder back in the usual place`} onClick={() => place(group, "")}>
+                    <Trans comment="Puts a console's folder back where grouping by console puts it">Reset</Trans>
+                  </Button>
+                )}
               </div>
               {problems[group] && (
                 <p id={`${id}-problem`} className="job-error console-folder-note" role="status">
