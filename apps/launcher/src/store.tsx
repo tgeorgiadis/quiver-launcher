@@ -12,7 +12,7 @@ import type { HiddenApp } from "./browse-hidden";
 import { hideOnApp, shownTags, type HiddenTags } from "./catalog-tags";
 import { native, type Config, type SaveBackup, type LaunchOptions, type MovingApp, type OldApp, type OldFilter, type Progress, type StateProblem, type V3Library, type WindowsRunner } from "./native";
 import { Recovery } from "./recovery";
-import { assetFilterFor, bestAssets, installPreference, type InstallPreference, type InstallFormat, type AssetSelection, flatpakAsset, installable, installFormat, isFlatpakAsset, isMsi, pickedBefore, releaseFor } from "./assets";
+import { assetFilterFor, bestAssets, installPreference, type InstallPreference, type InstallFormat, type AssetSelection, migrationAssets, migrationEnabled, type PreferredFormat, installable, installFormat, isMsi, pickedBefore, releaseFor } from "./assets";
 import { cameAfter, fromSite, scanAsks, installedFile, insteadOf, newestUnblocked, sameChecksum, unverifiedFile, versionLabel, withdrawnAsBlocked } from "./versions";
 import { captureError, captureFailure, failureKind, Problem, reasonOf, reportStartupFailure, setTelemetryAppsDir, setTelemetryAppsFolders, telemetryChoice, track, type TelemetryContext } from "./telemetry";
 import { appsDueToday, appsOnComputer, librarySummary } from "./usage-summary";
@@ -150,7 +150,9 @@ export type Install = {
   pick?: string;
   /** Actual package format, retained across updates independently of the global preference. */
   format?: InstallFormat;
-  /** The player declined migrating this install to Flatpak when one became available. */
+  /** Migration targets the player dismissed for this app. */
+  formatMigrationDismissed?: Partial<Record<PreferredFormat, true>>;
+  /** Legacy dismissal applies only to Flatpak. */
   flatpakMigrationDismissed?: true;
   /** The empty files its folder has, once the player or Settings chose them (Add files to folder); unset, the catalog's. Kept through updates. */
   files?: string[];
@@ -221,12 +223,12 @@ export type Asking = {
 /** How an install goes, as `get` takes it; `app`, a custom app's repository not in the library yet; `auto`, Auto Update's. */
 /** `to`: the folder a new install goes in, in a folder of its own; the default apps folder when absent. */
 /** `early`: the newest release still in its 48-hour wait, which the player asked for: it asks first. */
-type InstallOptions = { app?: CustomApp; pin?: boolean; unverified?: boolean; blocked?: string; auto?: boolean; asset?: string; platform?: Os; to?: string; early?: boolean; migrate?: boolean };
+type InstallOptions = { app?: CustomApp; pin?: boolean; unverified?: boolean; blocked?: string; auto?: boolean; asset?: string; platform?: Os; to?: string; early?: boolean; migrate?: PreferredFormat };
 /**
- * Asks whether to move an existing install to Flatpak when a release has one (`resolve`): migrate, keep the format
+ * Asks whether to move an existing install to the preferred format when a release has one (`resolve`): migrate, keep the format
  * installed (this time), or stop offering for this app.
  */
-export type FlatpakMigration = { entry: Entry; version: string; resolve: (choice: "migrate" | "keep" | "dismiss") => void };
+export type FormatMigration = { entry: Entry; version: string; target: PreferredFormat; fromFlatpak: boolean; resolve: (choice: "migrate" | "keep" | "dismiss") => void };
 
 /**
  * How a notice shows: `stays`, as a dialog to close, for one that must be read; `action`, a button on the toast that
@@ -267,8 +269,8 @@ type Launcher = {
   choice: Choice | null;
   /** What Quiver hasn't verified that an install asks the player about, one at a time. */
   asking: Asking | null;
-  /** Moving an existing install to Flatpak, waiting on the player's yes. */
-  flatpakMigration: FlatpakMigration | null;
+  /** Changing an existing install format, waiting on the player's yes. */
+  formatMigration: FormatMigration | null;
   confirming: Confirming | null;
   /** Asks the player before uninstalling (or uninstalling and removing) an app; null closes the prompt. */
   confirmUninstall: (confirming: Confirming | null) => void;
@@ -316,7 +318,7 @@ type Launcher = {
    * `blocked`: why Quiver blocked it, for one the player insisted on.
    * `asset`: the name of the release's file the player picked, in place of the one Quiver would choose.
    * `platform`: the system whose build to install, as Windows' through Wine on Linux; later updates keep to it.
-   * `migrate`: move an existing install to Flatpak; the Flatpak file is preferred and the old pick is dropped.
+   * `migrate`: request a confirmed switch to this format; the old file pick is dropped.
    */
   get: (entry: Entry, release?: Release, options?: GetOptions) => Promise<void>;
   /** Starts an app: `executable`, else its one program the player picked, else asks which of them, else the launcher's own choice. */
@@ -447,7 +449,7 @@ type Launcher = {
 };
 
 /** What Get installs with: `to`, the folder a new install goes in; the default apps folder when absent. */
-export type GetOptions = { migrate?: boolean; pin?: boolean; unverified?: boolean; blocked?: string; asset?: string; platform?: Os; to?: string; early?: boolean };
+export type GetOptions = { migrate?: PreferredFormat; pin?: boolean; unverified?: boolean; blocked?: string; asset?: string; platform?: Os; to?: string; early?: boolean };
 
 /** An app whose folder the player is choosing, with what it was going to install. */
 export type Placing = { entry: Entry; release?: Release; options?: GetOptions };
@@ -1469,9 +1471,11 @@ export type Settings = {
   /** Preferred format for new Linux installs; absent reads the legacy checkbox. */
   preferredInstallFormat?: InstallPreference;
   /**
-   * Offer to move an existing non-Flatpak install to Flatpak when a release has one (Linux). Off by default; never
+   * Offer to move an existing install to the preferred format when available (Linux). Off by default; never
    * migrates without the player confirming.
    */
+  offerFormatMigration?: boolean;
+  /** Legacy Flatpak-only migration setting. */
   offerFlatpakMigration?: boolean;
   /** Announcements dismissed here, by id (announcements.ts). */
   dismissedAnnouncements?: string[];
@@ -1479,9 +1483,12 @@ export type Settings = {
   githubToken?: string;
 };
 
-/** Whether this install can be offered Flatpak migration: Linux, managed files, not already a Flatpak or MSI. */
-export const canMigrateToFlatpak = (install: Install | undefined, os: string) =>
-  Boolean(install && !install.local && os === "linux" && !install.installer && !install.setup && !install.flatpakMigrationDismissed);
+/** Only managed native Linux installs can switch packaging, with a concrete target. */
+export const canMigrateFormat = (install: Install | undefined, os: string, target: InstallPreference): boolean =>
+  Boolean(install && !install.local && !install.wine && os === "linux" && target !== "automatic" &&
+    (!install.installer || install.installer === "flatpak") && !install.setup &&
+    (install.format ?? (install.installer === "flatpak" ? "flatpak" : undefined)) !== target &&
+    !install.formatMigrationDismissed?.[target as PreferredFormat] && !(target === "flatpak" && install.flatpakMigrationDismissed));
 
 /** The player's repository tokens, by host: in the keychain (secret_set), sent only to their host, never synced. */
 const REPOSITORY_TOKENS = "repositoryTokens";
@@ -1633,7 +1640,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
   const [choices, setChoices] = useState<Choice[]>([]);
   // Asked one at a time, in turn: Update all can come to several.
   const [questions, setQuestions] = useState<Asking[]>([]);
-  const [flatpakMigration, setFlatpakMigration] = useState<FlatpakMigration | null>(null);
+  const [formatMigrations, setFormatMigrations] = useState<FormatMigration[]>([]);
   const [confirming, confirmUninstall] = useState<Confirming | null>(null);
   const [renaming, askRename] = useState<Entry | null>(null);
   const [naming, askName] = useState<string | null>(null);
@@ -2178,17 +2185,17 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     });
   }
 
-  /** Asks whether to move this install to Flatpak; only one prompt at a time. */
-  function askFlatpakMigration(entry: Entry, version: string) {
+  /** Queue migration prompts so Update all cannot overwrite another app's answer. */
+  function askFormatMigration(entry: Entry, version: string, target: PreferredFormat, fromFlatpak: boolean) {
     return new Promise<"migrate" | "keep" | "dismiss">((resolve) => {
-      setFlatpakMigration({
-        entry,
-        version,
+      const question: FormatMigration = {
+        entry, version, target, fromFlatpak,
         resolve: (choice) => {
-          setFlatpakMigration(null);
+          setFormatMigrations((questions) => questions.filter((q) => q !== question));
           resolve(choice);
         },
-      });
+      };
+      setFormatMigrations((questions) => [...questions, question]);
     });
   }
 
@@ -2255,7 +2262,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
   }
 
   async function installNow(entry: Entry, chosen: Release | undefined, options: InstallOptions) {
-    const { app, pin = false, blocked, auto = false, migrate = false } = options;
+    const { app, pin = false, blocked, auto = false, migrate } = options;
     const updatesByItself = updatesOf(settings, installs[entry.id]) === "auto";
     // The player's own files are never downloaded over.
     if (isLocal(entry.id) || installs[entry.id]?.local) return;
@@ -2269,8 +2276,8 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     const systemFolders = { consoleFolders: settings.consoleFolders, systemFolderNames: settings.systemFolderNames };
     let version = chosen?.version ?? entry.verified?.version;
     let format: InstallFormat | undefined;
-    // Set when the player confirmed Flatpak migration (option or prompt), so the old file pick isn't reused.
-    let migrating = migrate;
+    // Set only after the player confirms migration, so the old file pick isn't reused.
+    let migrating = false;
     // A release Quiver hasn't verified, or a file of one it has, that the player said to install.
     let unverified = Boolean(options.unverified);
     // What was downloaded, for telling the site when its file was gone or wasn't the one Quiver checked.
@@ -2287,7 +2294,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       : undefined;
     const preference = config.os === "linux" && !was ? installPreference(settings) : "automatic";
     const lastPick = migrate || switchingPlatform ? undefined : was?.pick;
-    const selection: AssetSelection = { preference, format: migrate ? "flatpak" : retainedFormat, pick: lastPick };
+    const selection: AssetSelection = { preference, format: migrate ?? retainedFormat, pick: lastPick };
     const noAnswer = () => new Problem(msg`Couldn't reach quiverlauncher.com. Check your connection and try again.`);
     const stop = (stage: "unverified_prompt" | "file_choice") => {
       setJobs(({ [entry.id]: _, ...rest }) => rest);
@@ -2358,7 +2365,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       // An update that comes to the version installed, or an older one, has nothing to do: never the same files put
       // back, nor an older release, by a button or an automatic update that said a newer one. Putting them back is for
       // Reinstall, of a file that differs; going back, for the player's own choice of version.
-      if (was && !chosen && !options.platform && !was.differs && !newerThan(release, was)) {
+      if (was && !chosen && !migrate && !options.platform && !was.differs && !newerThan(release, was)) {
         setJobs(({ [entry.id]: _, ...rest }) => rest);
         if (!auto) {
           const name = entry.projectName;
@@ -2379,7 +2386,25 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       // A file the player picked that a later release names differently: they pick again, even from one.
       const missed = !stray && !candidates.length && !clicked && Boolean(custom && installSettings.releaseAssetFilter);
       if (missed) candidates = bestAssets(release.assets, config.os, config.arch, undefined, kind, platform, selection);
-      if (!clicked && selection.format && !candidates.length)
+      // Resolve migration before enforcing the old format: the old package may no longer be published.
+      const target = migrate ?? installPreference(settings);
+      if (!auto && (!clicked || migrate) && (migrate || migrationEnabled(settings)) && canMigrateFormat(was, config.os, target)) {
+        const offered = migrationAssets(release.assets, config.os, config.arch, target, installSettings.releaseAssetFilter);
+        if (offered.length) {
+          const choice = await askFormatMigration(entry, release.version, target as PreferredFormat, was?.installer === "flatpak" || was?.format === "flatpak");
+          if (choice === "migrate") {
+            candidates = offered;
+            migrating = true;
+          } else {
+            if (choice === "dismiss") {
+              setInstalls((i) => i[entry.id] ? { ...i, [entry.id]: { ...i[entry.id], formatMigrationDismissed: { ...i[entry.id].formatMigrationDismissed, [target]: true } } } : i);
+            }
+            if (migrate) return stop("file_choice");
+          }
+        }
+      }
+      if (migrate && !migrating) return stop("file_choice");
+      if (!migrating && !clicked && selection.format && !candidates.length)
         throw new Problem(msg`This release has no compatible download in the installed format. Choose another download explicitly to change formats.`);
       let [asset, ...others] = candidates;
       // An automatic update never stops to ask: it waits until the launcher starts again, or the player updates it.
@@ -2405,45 +2430,22 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       const unmatched = !asset || (others.length > 0 && asset.os === "unknown");
       if (!asset && !stray) [asset, ...others] = approved;
       if (!asset && auto) return waitForPlayer();
-      // Offer Flatpak migration when Settings says so: never during Auto Update, never over a file the player clicked,
-      // and never silently. The install already there stays until they confirm.
-      if (
-        !clicked &&
-        !migrate &&
-        !auto &&
-        settings.offerFlatpakMigration &&
-        canMigrateToFlatpak(was, config.os) &&
-        asset && !isFlatpakAsset(asset.filename)
-      ) {
-        const flatpak = flatpakAsset(release.assets, config.os, config.arch, installSettings.releaseAssetFilter, platform);
-        if (flatpak) {
-          const choice = await askFlatpakMigration(entry, release.version);
-          if (choice === "migrate") {
-            asset = flatpak;
-            others = [];
-            migrating = true;
-          } else if (choice === "dismiss") {
-            setInstalls((i) => (i[entry.id] ? { ...i, [entry.id]: { ...i[entry.id], flatpakMigrationDismissed: true } } : i));
-          }
-          // "keep": continue with the format already chosen for this install.
-        }
-      }
       // The file the player picked last time, when it's still one of these: taken again without asking.
       const again = !migrating && asset && pickedBefore([asset, ...others], lastPick);
       let pick = migrating ? undefined : lastPick;
       // The release's files a maintainer didn't tick, which Show all files offers too, once the player is asked.
       let unapproved: Asset[] = [];
       // Picked by name: later releases keep to it, as to a file picked from several.
-      if (clicked || migrating) {
+      if (clicked || (migrating && !others.length)) {
         const files = installable(release.assets, config.os).map((a) => a.filename);
         pick = files.length > 1 ? assetFilterFor(asset.filename, files) : undefined;
       } else if (again) asset = again;
-      else if (!asset || others.length || missed || unmatched || (lastPick && !again)) {
+      else if (!asset || others.length || (!migrating && (missed || unmatched || (lastPick && !again)))) {
         if (auto) return waitForPlayer();
-        unapproved = stray || custom ? [] : ofKind(release.otherAssets ?? (await otherFilesOf(entry.slug, release.version)));
+        unapproved = migrating || stray || custom ? [] : ofKind(release.otherAssets ?? (await otherFilesOf(entry.slug, release.version)));
         if (!asset && !unapproved.length) throw new Problem(noDownload);
         const choices = asset ? [asset, ...others] : [];
-        const all = [...approved, ...unapproved];
+        const all = migrating ? choices : [...approved, ...unapproved];
         const picked = await chooseFile({ entry, version: release.version, assets: choices, all, unapproved: unapproved.map((a) => a.id), unmatched });
         if (!picked) return stop("file_choice");
         asset = picked;
@@ -2519,6 +2521,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         dir: was?.dir,
         into,
         filesToAdd: files ?? catalogFiles,
+        migration: migrating,
         version: release.version,
         preferred: executables,
         program: was?.installer ? was.program : undefined,
@@ -2545,13 +2548,15 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         // The other system's build in place of the one there was: the programs the player picked, and what ran them,
         // were the old build's. Its command line stays.
         const wine = asset.os === "windows" && config.os === "linux";
-        const old = i[entry.id]?.launch;
+        const previousLaunch = i[entry.id]?.launch;
+        // A format switch must not retain an explicit path into the old package.
+        const old = migrating && previousLaunch ? { ...previousLaunch, executable: undefined } : previousLaunch;
         const launch = old && Boolean(i[entry.id]?.wine) !== wine ? (old.command ? { command: old.command } : undefined) : old;
         // Kept where it was, or in the folder it went in: one that's an apps folder already is one of its apps.
         const dir = into && !msi ? done.dir : i[entry.id]?.dir;
         const inApps = into && !msi ? Boolean(group) || appsFolders(i, config.appsDir).some((f) => samePath(f.path, into)) : i[entry.id]?.inApps;
         const kept = into && !msi ? group : i[entry.id]?.group;
-        return { ...i, [entry.id]: { dir, ...(inApps ? { inApps: true as const } : {}), ...(kept ? { group: kept } : {}), lastPlayed: i[entry.id]?.lastPlayed, ...(installedAt ? { installedAt } : {}), playTime: i[entry.id]?.playTime, ...(i[entry.id]?.copies ? { copies: i[entry.id].copies } : {}), ...(launch ? { launch } : {}), ...(updates ? { updates } : {}), ...(skip ? { skip } : {}), ...(declined ? { declined } : {}), ...(unverified ? { unverified: true } : {}), ...(blocked ? { blocked } : {}), ...(checksum ? { checksum } : {}), ...(pick ? { pick } : {}), ...(files ? { files } : {}), format, version: release.version, releasedAt: release.releasedAt, releaseId: release.id, folder, executables: msi ? [] : executables, ...(done.installer ? { installer: done.installer, ...(program ? { program } : {}) } : flatpak ? { installer: "flatpak" as const } : {}), ...(done.setup ? { setup: true as const } : {}), ...(wine ? { wine: true } : {}) } };
+        return { ...i, [entry.id]: { dir, ...(inApps ? { inApps: true as const } : {}), ...(kept ? { group: kept } : {}), lastPlayed: i[entry.id]?.lastPlayed, ...(installedAt ? { installedAt } : {}), playTime: i[entry.id]?.playTime, ...(i[entry.id]?.copies ? { copies: i[entry.id].copies } : {}), ...(launch ? { launch } : {}), ...(updates ? { updates } : {}), ...(skip ? { skip } : {}), ...(declined ? { declined } : {}), ...(unverified ? { unverified: true } : {}), ...(blocked ? { blocked } : {}), ...(checksum ? { checksum } : {}), ...(pick ? { pick } : {}), ...(files ? { files } : {}), ...(i[entry.id]?.formatMigrationDismissed ? { formatMigrationDismissed: i[entry.id].formatMigrationDismissed } : {}), ...(i[entry.id]?.flatpakMigrationDismissed ? { flatpakMigrationDismissed: true as const } : {}), format, version: release.version, releasedAt: release.releasedAt, releaseId: release.id, folder, executables: msi ? [] : done.executable ? [done.executable, ...executables] : executables, ...(done.installer ? { installer: done.installer, ...(program ? { program } : {}) } : flatpak ? { installer: "flatpak" as const } : {}), ...(done.setup ? { setup: true as const } : {}), ...(wine ? { wine: true } : {}) } };
       });
       setJobs(({ [entry.id]: _, ...rest }) => rest);
       setFinished((f) => [{ id: entry.id, version: release.version, update: Boolean(from), at: Date.now() }, ...f.filter((d) => d.id !== entry.id)]);
@@ -2909,7 +2914,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     clearFinished: () => setFinished([]),
     choice: choices[0] ?? null,
     asking: questions[0] ?? null,
-    flatpakMigration,
+    formatMigration: formatMigrations[0] ?? null,
     confirming,
     confirmUninstall,
     choosingProgram,

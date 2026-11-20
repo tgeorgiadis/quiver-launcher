@@ -331,3 +331,26 @@ test("Android takes an APK an app ships zipped, as Ghostship does", () => {
   // A release with no Android build: every archive is offered for the player to pick.
   expect(installable(files.slice(1), "android")).toHaveLength(3);
 });
+
+test("migration requires the exact preferred format and compatible Linux assets", async () => {
+  const { migrationAssets } = await import("./assets");
+  const files = [asset("Game-Flatpak.zip", "linux"), asset("Game.AppImage", "linux"), asset("Game.tar.gz", "linux")];
+  for (const [i, target] of (["flatpak", "appimage", "archive"] as const).entries()) {
+    expect(migrationAssets(files, "linux", "x64", target)).toEqual([files[i]]);
+    expect(migrationAssets(files.filter((_, j) => i !== j), "linux", "x64", target)).toEqual([]);
+    expect(migrationAssets(files, "windows", "x64", target)).toEqual([]);
+  }
+  expect(migrationAssets(files, "linux", "x64", "automatic")).toEqual([]);
+  expect(migrationAssets([asset("Game.AppImage", "linux", "arm64")], "linux", "x64", "appimage")).toEqual([]);
+  expect(migrationAssets([asset("Game.zip", "windows")], "linux", "x64", "archive")).toEqual([]);
+  expect(migrationAssets(files, "linux", "x64", "appimage", "tar.gz")).toEqual([]);
+  const variants = [asset("Game-GL.AppImage", "linux"), asset("Game-VK.AppImage", "linux")];
+  expect(migrationAssets(variants, "linux", "x64", "appimage")).toEqual(variants);
+});
+
+test("legacy migration opt-in is preserved and explicit disabling wins", async () => {
+  const { migrationEnabled } = await import("./assets");
+  expect(migrationEnabled({})).toBe(false);
+  expect(migrationEnabled({ offerFlatpakMigration: true })).toBe(true);
+  expect(migrationEnabled({ offerFlatpakMigration: true, offerFormatMigration: false })).toBe(false);
+});

@@ -1,13 +1,13 @@
 import { startTransition, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { ArrowLeft, ArrowUp, BookOpen, Save, ChevronDown, Cloud, CircleArrowDown, CircleCheck, CirclePlay, CircleUser, Compass, Disc3, Download, Eye, EyeOff, FolderInput, FolderOpen, FolderPen, FolderSearch, FolderSync, History, Info, MessagesSquare, LayoutGrid, Library, LogOut, PanelLeft, Mail, PackagePlus, Pencil, Pin, Play, Plus, Search, SettingsIcon, RotateCcw, ShieldAlert, ShieldCheck, ShieldX, SlidersHorizontal, Smile, Trash2, TriangleAlert, Tv, Wrench, X } from "lucide-react";
-import type { AppQuery, Asset, Entry, GameMatch, Os, Page, ProjectType } from "@quiverlauncher/api";
+import type { AppQuery, Asset, Release, Entry, GameMatch, Os, Page, ProjectType } from "@quiverlauncher/api";
 import { msg, plural, t } from "@lingui/core/macro";
 import { Plural, Trans } from "@lingui/react/macro";
 import { i18n } from "@quiverlauncher/i18n";
 import type { MessageDescriptor } from "@lingui/core";
 import { Artwork, EntryCard, OS_NAMES, PlatformIcons, ReleaseBadge, SourcedImage, heroSources } from "@quiverlauncher/ui";
-import { canMigrateToFlatpak, PORTABLE_FILE, availableOn, canGet, catalogOs, declinedUpdate, earlyGetOffer, earlyOffer, filesAddable, folderNameOf, hasUpdate, locatable, movable, noProgram, pulledVerified, renamable, rootOf, samePath, skipped, stillWaiting, tvModeOn, updateFor, updatesByItself, updatesOf, useLauncher, type AppMove, type Choice } from "./store";
-import { flatpakAsset } from "./assets";
+import { canMigrateFormat, PORTABLE_FILE, availableOn, canGet, catalogOs, declinedUpdate, earlyGetOffer, earlyOffer, filesAddable, folderNameOf, hasUpdate, locatable, movable, noProgram, pulledVerified, renamable, rootOf, samePath, skipped, stillWaiting, tvModeOn, updateFor, updatesByItself, updatesOf, useLauncher, type AppMove, type Choice } from "./store";
+import { migrationAssets, migrationEnabled, installPreference, type PreferredFormat } from "./assets";
 import { TabPrompt } from "./pad-hints";
 import { Dialog, FilterPill, LibraryPage, MultiPill, Popover, consoleOptions, filterLabel, pickedLabel, projectTypeOptions, withOverrides, type MultiOption } from "./library";
 import { BrowseCardOptions, useBrowseCards, useLibraryView, useSidebarFits } from "./library-view";
@@ -401,7 +401,7 @@ export function App() {
       {adding && <AddApp onClose={() => setAdding(false)} onOpen={openApp} />}
       <ChooseFile />
       <UnverifiedPrompt />
-      <FlatpakMigrationPrompt />
+      <FormatMigrationPrompt />
       <UninstallPrompt />
       <RenameFolderPrompt />
       <RenamePrompt />
@@ -1376,7 +1376,7 @@ function AppPage({
         {install && foldersOn(config.os) && <LaunchOptionsButton id={entry.id} />}
         {filesAddable(install) && foldersOn(config.os) && !(job && !("error" in job)) && <AddFilesButton entry={entry} />}
         {install?.installer && install.installer !== "flatpak" && !job && <ReinstallButton id={entry.id} />}
-        {install && <MigrateToFlatpak entry={entry} source={source} />}
+        {install && <MigrateToPreferredFormat entry={entry} source={source} />}
         {renamable(install) && foldersOn(config.os) && !(job && !("error" in job)) && (
           <button className="panel-action opens" onClick={() => askRename(entry)}>
             <FolderPen size={16} aria-hidden="true" /> <Trans>Rename folder</Trans>
@@ -1791,42 +1791,35 @@ function ReinstallButton({ id }: { id: string }) {
   );
 }
 
-/**
- * When Settings offers Flatpak migration and this install isn't a Flatpak yet, checks the latest release for one and
- * offers to migrate. Uses the same install path as Get; the player still confirms in the migration prompt.
- */
-function MigrateToFlatpak({ entry, source }: { entry: Entry; source?: Source | null }) {
+/** Offers the exact release checked; the install flow always asks before switching. */
+function MigrateToPreferredFormat({ entry, source }: { entry: Entry; source?: Source | null }) {
   const { config, settings, installs, jobs, client, github, gitlab, get } = useLauncher();
   const install = installs[entry.id];
   const job = jobs[entry.id];
-  const [flatpak, setFlatpak] = useState<string | null>(null);
+  const target = installPreference(settings);
+  const enabled = migrationEnabled(settings);
+  const [offer, setOffer] = useState<{ release: Release; target: PreferredFormat; id: string } | null>(null);
   useEffect(() => {
-    if (!settings.offerFlatpakMigration || !canMigrateToFlatpak(install, config.os) || (job && !("error" in job))) {
-      setFlatpak(null);
-      return;
-    }
+    setOffer(null);
+    if (!enabled || !canMigrateFormat(install, config.os, target) || (job && !("error" in job))) return;
     let live = true;
     const load = isCustom(entry.id)
       ? source
         ? (source.provider === "github" ? github.releases(source.repository, 1) : gitlab.releases(source.repository, 1)).then((list) => list[0])
         : Promise.resolve(undefined)
       : client.releases(entry.slug, 1).then((page) => page.items[0]);
-    load.then(
-      (release) => {
-        if (!live || !release) return setFlatpak(null);
-        const asset = flatpakAsset(release.assets, config.os, config.arch, (release.installationOverride ?? entry.launcher).releaseAssetFilter);
-        setFlatpak(asset?.filename ?? null);
-      },
-      () => live && setFlatpak(null),
-    );
-    return () => {
-      live = false;
-    };
-  }, [entry.id, entry.slug, entry.launcher, install, settings.offerFlatpakMigration, config.os, config.arch, job, client, github, gitlab, source]);
-  if (!flatpak || !install) return null;
+    load.then((release) => {
+      if (!live || !release) return;
+      if (migrationAssets(release.assets, config.os, config.arch, target, (release.installationOverride ?? entry.launcher).releaseAssetFilter).length)
+        setOffer({ release, target: target as PreferredFormat, id: entry.id });
+    }, () => live && setOffer(null));
+    return () => { live = false; };
+  }, [entry.id, entry.slug, entry.launcher, install, enabled, target, config.os, config.arch, job, client, github, gitlab, source]);
+  if (!offer || offer.id !== entry.id || offer.target !== target || !enabled || !canMigrateFormat(install, config.os, target)) return null;
+  const format = target === "archive" ? t`Archive` : target === "appimage" ? "AppImage" : "Flatpak";
   return (
-    <button className="panel-action" onClick={() => void get(entry, undefined, { asset: flatpak, migrate: true })}>
-      <PackagePlus size={16} aria-hidden="true" /> <Trans>Migrate to Flatpak</Trans>
+    <button className="panel-action" onClick={() => void get(entry, offer.release, { migrate: offer.target })}>
+      <PackagePlus size={16} aria-hidden="true" /> <Trans>Migrate to {format}</Trans>
     </button>
   );
 }
@@ -2904,36 +2897,38 @@ function ChooseFileDialog({ choice }: { choice: Choice }) {
 }
 
 /**
- * Asks before moving an existing install to Flatpak when Settings offers it and a release has one. Never runs the
+ * Asks before switching an existing install to the preferred format. Never runs the
  * install until the player says so; keeping the current format, or not asking again for this app, are both fine.
  */
-function FlatpakMigrationPrompt() {
-  const { flatpakMigration } = useLauncher();
-  if (!flatpakMigration) return null;
-  const { entry, version, resolve } = flatpakMigration;
+function FormatMigrationPrompt() {
+  const { formatMigration } = useLauncher();
+  if (!formatMigration) return null;
+  const { entry, version, target, fromFlatpak, resolve } = formatMigration;
+  const format = target === "archive" ? t`Archive` : target === "appimage" ? "AppImage" : "Flatpak";
   const name = entry.projectName;
   const release = versionLabel(version);
   return (
-    <Dialog key={`${entry.id}@flatpak:${version}`} label={t`Migrate to Flatpak?`} onClose={() => resolve("keep")}>
+    <Dialog key={`${entry.id}@${target}:${version}`} label={t`Migrate to ${format}?`} onClose={() => resolve("keep")}>
       <div className="detail-body">
         <h2>
-          <Trans>Migrate {name} to Flatpak?</Trans>
+          <Trans>Migrate {name} to {format}?</Trans>
         </h2>
         <p>
           <Trans>
-            {release} includes a Flatpak. Quiver can install it with Flatpak and keep {name} in your library. Your saves
-            and settings stay; the files Quiver installed before are replaced only after the Flatpak installs.
+            {release} includes your preferred format, {format}. Quiver will install it and keep {name} in your library.
+            Saves and settings may use different locations and may need to be moved manually.
           </Trans>
         </p>
+        {fromFlatpak && <p><Trans>The previous Flatpak stays installed; Quiver will launch the new format.</Trans></p>}
         <div className="row">
           <button className="primary" autoFocus onClick={() => resolve("migrate")}>
-            <Trans>Migrate to Flatpak</Trans>
+            <Trans>Migrate to {format}</Trans>
           </button>
           <button onClick={() => resolve("keep")}>
             <Trans>Keep current format</Trans>
           </button>
           <button onClick={() => resolve("dismiss")}>
-            <Trans>Don&apos;t ask again for this app</Trans>
+            <Trans>Don&apos;t ask again for this format</Trans>
           </button>
         </div>
       </div>

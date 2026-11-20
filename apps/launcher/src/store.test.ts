@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Entry } from "@quiverlauncher/api";
-import { canMigrateToFlatpak, type Install, sortPlan, systemFolder, appsRightIn, consoleFolderChoice, consoleFolderChoices, consoleHome, consoleHomePath, wholePath, withOwnConsoles, adoptedInstall, appRef, appsFolders, groupFolder, joinPath, rootOf, unsortedApps, folderClash, keptWhereTheyAre, ownedBy, bringsAlong, catalogMatch, declinedUpdate, earlyGet, earlyGetOffer, earlyKey, earlyOffer, earlyRelease, earlyUpdate, filesAddable, folderNameOf, renamable, folderGone, forHereKey, hasUpdate, importedPlaylists, importedTags, removedTags, withAllTags, markedInApps, retagged, withOldPictures, installFiles, keptInstall, locatable, looseInstalls, mayUpdate, movableApps, movedInside, noProgram, notOfferedYet, oncePerFolder, twinsOf, withCopiesIn, withTwins, playedRef, relocatedInstall, skipped, uniqueFiles, updateFor, mainRelease, onlyPrereleases, updatesOf, usableCatalog, wantsPrereleases, withEarlyFor, withMainRelease, withPrereleases, type ImportedApp, type LibraryItem } from "./store";
+import { canMigrateFormat, type Install, sortPlan, systemFolder, appsRightIn, consoleFolderChoice, consoleFolderChoices, consoleHome, consoleHomePath, wholePath, withOwnConsoles, adoptedInstall, appRef, appsFolders, groupFolder, joinPath, rootOf, unsortedApps, folderClash, keptWhereTheyAre, ownedBy, bringsAlong, catalogMatch, declinedUpdate, earlyGet, earlyGetOffer, earlyKey, earlyOffer, earlyRelease, earlyUpdate, filesAddable, folderNameOf, renamable, folderGone, forHereKey, hasUpdate, importedPlaylists, importedTags, removedTags, withAllTags, markedInApps, retagged, withOldPictures, installFiles, keptInstall, locatable, looseInstalls, mayUpdate, movableApps, movedInside, noProgram, notOfferedYet, oncePerFolder, twinsOf, withCopiesIn, withTwins, playedRef, relocatedInstall, skipped, uniqueFiles, updateFor, mainRelease, onlyPrereleases, updatesOf, usableCatalog, wantsPrereleases, withEarlyFor, withMainRelease, withPrereleases, type ImportedApp, type LibraryItem } from "./store";
 import type { OldApp, OldFilter } from "./native";
 
 const entry = {
@@ -10,17 +10,17 @@ const entry = {
   verified: { version: "v1.2.0", releasedAt: 20 },
 } as unknown as Entry;
 
-describe("canMigrateToFlatpak", () => {
+describe("canMigrateFormat", () => {
   const base: Install = { version: "v1.0", folder: "Game", executables: [] };
 
   it("offers only managed Linux installs that aren't already Flatpak or MSI", () => {
-    expect(canMigrateToFlatpak(base, "linux")).toBe(true);
-    expect(canMigrateToFlatpak({ ...base, installer: "flatpak" }, "linux")).toBe(false);
-    expect(canMigrateToFlatpak({ ...base, installer: "msi" }, "linux")).toBe(false);
-    expect(canMigrateToFlatpak({ ...base, local: true }, "linux")).toBe(false);
-    expect(canMigrateToFlatpak({ ...base, flatpakMigrationDismissed: true }, "linux")).toBe(false);
-    expect(canMigrateToFlatpak(base, "windows")).toBe(false);
-    expect(canMigrateToFlatpak(undefined, "linux")).toBe(false);
+    expect(canMigrateFormat(base, "linux", "flatpak")).toBe(true);
+    expect(canMigrateFormat({ ...base, installer: "flatpak" }, "linux", "flatpak")).toBe(false);
+    expect(canMigrateFormat({ ...base, installer: "msi" }, "linux", "flatpak")).toBe(false);
+    expect(canMigrateFormat({ ...base, local: true }, "linux", "flatpak")).toBe(false);
+    expect(canMigrateFormat({ ...base, flatpakMigrationDismissed: true }, "linux", "flatpak")).toBe(false);
+    expect(canMigrateFormat(base, "windows", "flatpak")).toBe(false);
+    expect(canMigrateFormat(undefined, "linux", "flatpak")).toBe(false);
   });
 });
 
@@ -924,7 +924,7 @@ describe("Flatpak updates after upstream merge", () => {
     expect(updatesOf({ autoUpdates: true }, { installer: "setup" })).toBeUndefined();
     expect(updatesOf({ autoUpdates: true }, { installer: "msi" })).toBeUndefined();
     expect(updatesOf({ autoUpdates: true }, { setup: true })).toBeUndefined();
-    expect(canMigrateToFlatpak({ version: "v1", folder: "Game", executables: [], installer: "setup" }, "linux")).toBe(false);
+    expect(canMigrateFormat({ version: "v1", folder: "Game", executables: [], installer: "setup" }, "linux", "flatpak")).toBe(false);
   });
 });
 
@@ -1005,5 +1005,25 @@ describe("console folders the player names or places", () => {
       top: at("D"),
     };
     expect(appsRightIn(installs, `${apps}\\Ports\\N64`)).toEqual([{ id: "a", folder: "A" }]);
+  });
+});
+
+describe("migration to the preferred format", () => {
+  const base: Install = { version: "1", folder: "Game", executables: [] };
+  it("supports every direction and skips the installed format", () => {
+    for (const format of ["flatpak", "appimage", "archive"] as const) {
+      const install = { ...base, format, ...(format === "flatpak" ? { installer: "flatpak" as const } : {}) };
+      for (const target of ["flatpak", "appimage", "archive"] as const)
+        expect(canMigrateFormat(install, "linux", target)).toBe(format !== target);
+      expect(canMigrateFormat(install, "linux", "automatic")).toBe(false);
+    }
+  });
+  it("keeps dismissals per target and excludes unmanaged and Windows installs", () => {
+    expect(canMigrateFormat({ ...base, formatMigrationDismissed: { appimage: true } }, "linux", "appimage")).toBe(false);
+    expect(canMigrateFormat({ ...base, formatMigrationDismissed: { appimage: true } }, "linux", "archive")).toBe(true);
+    expect(canMigrateFormat({ ...base, flatpakMigrationDismissed: true }, "linux", "archive")).toBe(true);
+    expect(canMigrateFormat({ ...base, wine: true }, "linux", "appimage")).toBe(false);
+    expect(canMigrateFormat({ ...base, local: true }, "linux", "archive")).toBe(false);
+    expect(canMigrateFormat({ ...base, setup: true }, "linux", "archive")).toBe(false);
   });
 });

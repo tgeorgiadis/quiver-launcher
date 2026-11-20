@@ -35,6 +35,9 @@ pub struct InstallRequest {
     #[serde(default)]
     pub into: Option<String>,
     pub files_to_add: Vec<String>,
+    /// A confirmed package-format switch must find its program in the new download.
+    #[serde(default)]
+    pub migration: bool,
     pub version: String,
     /// The catalog's preferred programs, for finding the one a Windows installer put on the computer.
     #[serde(default)]
@@ -55,6 +58,8 @@ pub struct InstallRequest {
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Installed {
+    /// Relative program path from this download, never an older file left in the install folder.
+    pub executable: Option<String>,
     pub dir: String,
     pub version: String,
     /// The downloaded file's `sha256:<hex>`, which tells it from the file its release is verified with later.
@@ -181,6 +186,7 @@ pub async fn install(
             .map_err(text)??;
             let path = |p: Option<PathBuf>| p.map(|p| p.to_string_lossy().into_owned());
             return Ok(Installed {
+                executable: None,
                 dir: target.to_string_lossy().into(),
                 version: req.version.clone(),
                 checksum: format!("sha256:{hash}"),
@@ -225,6 +231,7 @@ pub async fn install(
                 // In the app's folder it's an install like any other; elsewhere, Play starts the program it put there.
                 let path = |p: PathBuf| p.to_string_lossy().into_owned();
                 return Ok(Installed {
+                    executable: None,
                     dir: target.to_string_lossy().into(),
                     version: req.version.clone(),
                     checksum: format!("sha256:{hash}"),
@@ -236,6 +243,11 @@ pub async fn install(
                 });
             }
         }
+        let executable = if cfg!(target_os = "linux") {
+            downloaded_executable(&out, &req.preferred, req.migration)?
+        } else {
+            None
+        };
         tokio::task::spawn_blocking(move || -> Result<(), String> {
             // On Android an archive is only an app with an APK in it: one without (another system's build the player
             // picked) fails before it's put in the folder.
@@ -278,6 +290,7 @@ pub async fn install(
         .await
         .map_err(text)??;
         Ok(Installed {
+            executable,
             dir: target.to_string_lossy().into(),
             version: req.version.clone(),
             checksum: format!("sha256:{hash}"),
@@ -291,6 +304,19 @@ pub async fn install(
     .await;
     let _ = fs::remove_dir_all(&staging);
     result
+}
+
+/// Inspect only the staged download so a migration cannot keep launching an old executable.
+fn downloaded_executable(out: &Path, preferred: &[String], migration: bool) -> Result<Option<String>, String> {
+    if crate::flatpak::bundle_in(out).is_some() {
+        return Ok(None);
+    }
+    let executable = find_executable(out, preferred, "linux")
+        .and_then(|p| p.strip_prefix(out).ok().map(|p| p.to_string_lossy().into_owned()));
+    if migration && executable.is_none() {
+        return Err("This download has no Linux program to migrate to. The current install was kept.".into());
+    }
+    Ok(executable)
 }
 
 /// Whether a download's SHA-256 is the one it was pinned to. A file pinned to
@@ -1078,6 +1104,7 @@ mod tests {
 
     fn fetch(url: String, github_token: Option<&str>, fallback_url: Option<String>) -> Result<String, String> {
         let req = InstallRequest {
+            migration: false,
             id: "github:quiver/private".into(),
             url,
             filename: "game.zip".into(),
@@ -1773,5 +1800,36 @@ mod tests {
         }
         assert!(!link("Game.app/data") && out.join("Game.app/data/save.bin").is_file());
         assert!(!out.join("Game.app/Contents/save.bin").exists());
+    }
+}
+
+#[cfg(test)]
+mod migration_tests {
+    use super::*;
+
+    #[test]
+    fn migration_uses_the_new_download_not_an_old_program() {
+        let root = tempfile::tempdir().unwrap();
+        let old = root.path().join("installed");
+        let staged = root.path().join("staged");
+        fs::create_dir_all(&old).unwrap();
+        fs::create_dir_all(&staged).unwrap();
+        fs::write(old.join("old.sh"), "#!/bin/sh\n").unwrap();
+        assert!(downloaded_executable(&staged, &["old.sh".into()], true).is_err());
+        assert!(old.join("old.sh").exists());
+        fs::write(staged.join("Game.AppImage"), "test").unwrap();
+        assert_eq!(downloaded_executable(&staged, &["old.sh".into()], true).unwrap(), Some("Game.AppImage".into()));
+        fs::remove_file(staged.join("Game.AppImage")).unwrap();
+        fs::create_dir(staged.join("bin")).unwrap();
+        fs::write(staged.join("bin/game.sh"), "#!/bin/sh\n").unwrap();
+        assert_eq!(downloaded_executable(&staged, &[], true).unwrap(), Some("bin/game.sh".into()));
+    }
+
+    #[test]
+    fn flatpak_migration_uses_its_bundle_and_ordinary_installs_can_ask_for_a_program() {
+        let staged = tempfile::tempdir().unwrap();
+        assert_eq!(downloaded_executable(staged.path(), &[], false).unwrap(), None);
+        fs::write(staged.path().join("Game.flatpak"), "test").unwrap();
+        assert_eq!(downloaded_executable(staged.path(), &[], true).unwrap(), None);
     }
 }

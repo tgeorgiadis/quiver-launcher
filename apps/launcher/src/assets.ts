@@ -55,6 +55,7 @@ export function installFormat(name: string) {
 }
 
 export type InstallPreference = "automatic" | "flatpak" | "appimage" | "archive";
+export type PreferredFormat = Exclude<InstallPreference, "automatic">;
 export type InstallFormat = ReturnType<typeof installFormat>;
 export type AssetSelection = {
   preference?: InstallPreference;
@@ -170,6 +171,15 @@ export function bestAssets(assets: Asset[], os: Os, arch: string, filter?: strin
 export function flatpakAsset(assets: Asset[], os: Os, arch: string, filter?: string, platform?: Os): Asset | undefined {
   return bestAssets(assets, os, arch, filter, "files", platform, { format: "flatpak" }).find((a) => isFlatpakAsset(a.filename));
 }
+
+/** Migration never falls back to another format or to a Windows build. */
+export function migrationAssets(assets: Asset[], os: Os, arch: string, target: InstallPreference, filter?: string): Asset[] {
+  if (os !== "linux" || target === "automatic") return [];
+  return bestAssets(assets.filter((a) => a.os === "linux" || a.os === "unknown"), os, arch, filter, "files", undefined, { format: target });
+}
+
+export const migrationEnabled = (settings: { offerFormatMigration?: boolean; offerFlatpakMigration?: boolean }) =>
+  settings.offerFormatMigration ?? settings.offerFlatpakMigration ?? false;
 
 /**
  * Every release file this computer could install, whatever system the site

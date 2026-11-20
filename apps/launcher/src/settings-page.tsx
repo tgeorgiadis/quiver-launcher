@@ -12,7 +12,7 @@ import { i18n, LANGUAGES, type Language } from "@quiverlauncher/i18n";
 import { Button, Field, Panel } from "@quiverlauncher/ui/controls";
 import type { MessageDescriptor } from "@lingui/core";
 import { consoleHome, folderClash, parentOf, samePath, useLauncher, type AppsFolder as AppsFolderRow, type StaysReason } from "./store";
-import { installPreference, type InstallPreference } from "./assets";
+import { installPreference, migrationEnabled, type InstallPreference } from "./assets";
 import { WHEEL_SPEEDS, pageArea } from "./spatial";
 import { native, type AppsMoving } from "./native";
 import { DEFAULT_MUSIC_VOLUME, musicProblem, watchMusicProblem } from "./music";
@@ -343,7 +343,7 @@ export function LanguageSetting() {
   );
 }
 
-/** New Linux install preferences and independent, opt-in Flatpak migration. */
+/** New Linux install preferences and opt-in migration to the preferred format. */
 function LinuxInstallSettings() {
   const { config, settings, setSettings } = useLauncher();
   if (config.os !== "linux") return null;
@@ -371,15 +371,15 @@ function LinuxInstallSettings() {
       <label className="toggle">
         <input
           type="checkbox"
-          checked={Boolean(settings.offerFlatpakMigration)}
-          onChange={(e) => setSettings({ ...settings, offerFlatpakMigration: e.target.checked || undefined })}
+          checked={migrationEnabled(settings)}
+          onChange={(e) => setSettings({ ...settings, offerFormatMigration: e.target.checked, offerFlatpakMigration: undefined })}
         />
-        <Trans>Offer migration to Flatpak when available</Trans>
+        <Trans>Offer migration to the preferred install format when available</Trans>
       </label>
       <p className="muted">
         <Trans>
-          If an app you installed as an AppImage or archive later publishes a Flatpak, Quiver asks before switching.
-          It never migrates on its own. Your library entry, saves and settings stay.
+          When your preferred format becomes available for an installed app, Quiver asks before switching.
+          Automatic does not offer migrations. Saves and settings may need to be moved between formats.
         </Trans>
       </p>
     </section>

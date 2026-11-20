@@ -722,7 +722,7 @@ msgid "{received} so far"
 msgstr "{received} jusqu'ici"
 
 #: ../../apps/launcher/src/App.tsx
-msgid "{release} includes a Flatpak. Quiver can install it with Flatpak and keep {name} in your library. Your saves and settings stay; the files Quiver installed before are replaced only after the Flatpak installs."
+msgid "{release} includes your preferred format, {format}. Quiver will install it and keep {name} in your library. Saves and settings may use different locations and may need to be moved manually."
 msgstr ""
 
 #: ../../apps/launcher/src/App.tsx
@@ -1469,6 +1469,7 @@ msgstr "Les apps que vous ajoutez depuis GitLab récupèrent leurs versions sur 
 msgid "Apps you don't have yet show with Get; nothing downloads until you press it."
 msgstr "Les apps que vous n'avez pas encore s'affichent avec Obtenir ; rien n'est téléchargé tant que vous n'appuyez pas dessus."
 
+#: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Archive"
 msgstr ""
@@ -2534,7 +2535,7 @@ msgid "Don't allow"
 msgstr "Ne pas autoriser"
 
 #: ../../apps/launcher/src/App.tsx
-msgid "Don't ask again for this app"
+msgid "Don't ask again for this format"
 msgstr ""
 
 #: ../../apps/launcher/src/settings-page.tsx
@@ -3217,10 +3218,6 @@ msgstr "Adresse de l'icône"
 #: ../../apps/launcher/src/library.tsx
 msgid "Icon on its tab"
 msgstr "Icône sur son onglet"
-
-#: ../../apps/launcher/src/settings-page.tsx
-msgid "If an app you installed as an AppImage or archive later publishes a Flatpak, Quiver asks before switching. It never migrates on its own. Your library entry, saves and settings stay."
-msgstr ""
 
 #: ../../apps/launcher/src/detail.tsx
 msgid "If you installed it and are happy to accept the risk, you can keep using it; otherwise, remove it and install an available release instead."
@@ -4012,15 +4009,15 @@ msgid "Menu"
 msgstr "Menu"
 
 #: ../../apps/launcher/src/App.tsx
-msgid "Migrate {name} to Flatpak?"
+msgid "Migrate {name} to {format}?"
 msgstr ""
 
 #: ../../apps/launcher/src/App.tsx
-msgid "Migrate to Flatpak"
+msgid "Migrate to {format}"
 msgstr ""
 
 #: ../../apps/launcher/src/App.tsx
-msgid "Migrate to Flatpak?"
+msgid "Migrate to {format}?"
 msgstr ""
 
 #. Window button
@@ -4717,7 +4714,7 @@ msgid "Off"
 msgstr "Désactivé"
 
 #: ../../apps/launcher/src/settings-page.tsx
-msgid "Offer migration to Flatpak when available"
+msgid "Offer migration to the preferred install format when available"
 msgstr ""
 
 #. Updates: offer new releases to install
@@ -6774,6 +6771,10 @@ msgstr "La sauvegarde la plus récente de {name} est sur cet ordinateur uniqueme
 msgid "THE ORIGINAL GAME"
 msgstr "LE JEU ORIGINAL"
 
+#: ../../apps/launcher/src/App.tsx
+msgid "The previous Flatpak stays installed; Quiver will launch the new format."
+msgstr ""
+
 #: ../../apps/launcher/src/correction.tsx
 msgid "The problem you reported on {sent} was fixed. Thanks!"
 msgstr "Le problème que vous avez signalé le {sent} a été corrigé. Merci !"
@@ -7666,6 +7667,10 @@ msgstr "Quand {name} la demande, choisis ce fichier : {0}"
 #: ../../apps/launcher/src/own-copy-settings.tsx
 msgid "When an app needs your own copy of a game, like a ROM or a disc image, Quiver looks for it in these folders, and nowhere else."
 msgstr "Quand une app a besoin de ta propre copie d'un jeu, comme une ROM ou une image disque, Quiver la cherche uniquement dans ces dossiers."
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "When your preferred format becomes available for an installed app, Quiver asks before switching. Automatic does not offer migrations. Saves and settings may need to be moved between formats."
+msgstr ""
 
 #: ../../apps/launcher/src/setup.tsx
 msgid "Where apps install"
