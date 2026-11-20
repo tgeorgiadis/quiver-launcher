@@ -850,15 +850,17 @@ export function LibraryPage({
       {/* Filters: pills to pick from while open; the ones on stay, each removable, while it's closed. */}
       {(filtersOpen || filtering) && (
         <div id="library-filters" className="filter-bar" role="group" aria-label={t`Library filters`}>
-          <FilterFields
-            value={filters}
-            set={set}
-            many={many}
-            entries={choosable}
-            ownTags={ownTags}
-            hiddenChoice={hiddenChoice}
-            pills={{ all: filtersOpen, clear: clearFilter }}
-          />
+          <span className="filter-pills">
+            <FilterFields
+              value={filters}
+              set={set}
+              many={many}
+              entries={choosable}
+              ownTags={ownTags}
+              hiddenChoice={hiddenChoice}
+              pills={{ all: filtersOpen, clear: clearFilter }}
+            />
+          </span>
           {filtering && (
             <span className="filter-actions">
               <button type="button" className="text-button" onClick={() => setFilters({})}>
