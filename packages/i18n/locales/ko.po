@@ -4718,6 +4718,10 @@ msgstr "Quiver Launcher 열기"
 msgid "Open save folder"
 msgstr "세이브 폴더 열기"
 
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Open the folder to check. If the app saves somewhere else, choose that folder."
+msgstr ""
+
 #: ../../apps/launcher/src/downloads-page.tsx
 #: ../../apps/launcher/src/update.tsx
 msgid "Open the release page"
@@ -6656,6 +6660,10 @@ msgstr "설정 파일이 손상됐어요."
 msgid "The file with your settings is missing."
 msgstr "설정 파일이 없어요."
 
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "The files in this app's newest backup add up to {size} before it's zipped. Saves are usually under 1 MB, so it may hold files that aren't saves."
+msgstr ""
+
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "The first start's questions, in turn: the language, adding apps from Quiver Launcher 3, where apps install, usage data and signing in."
 msgstr "처음 시작할 때의 질문을 차례로 다시 해요: 언어, Quiver Launcher 3에서 앱 추가, 앱 설치 위치, 사용 데이터, 로그인."
@@ -6765,12 +6773,20 @@ msgid "There are no releases yet. Check the upstream project for downloads."
 msgstr "아직 버전이 없어요. 원본 프로젝트에서 다운로드를 확인해 보세요."
 
 #: ../../apps/launcher/src/saves-tab.tsx
+msgid "These are my saves"
+msgstr ""
+
+#: ../../apps/launcher/src/saves-tab.tsx
 msgid "These are the saves on this computer now."
 msgstr ""
 
 #: ../../apps/launcher/src/launch-options.tsx
 msgid "These go after the executable. To put the executable somewhere else, write %command% there. NAME=value at the start sets an environment variable."
 msgstr "실행 파일 뒤에 붙습니다. 실행 파일을 다른 자리에 두려면 그곳에 %command%를 쓰세요. 맨 앞의 NAME=value는 환경 변수를 설정합니다."
+
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "These may not be only saves"
+msgstr ""
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "These old copies moved safely, but some of their files were in use and stayed behind. You can delete them:"
@@ -6829,6 +6845,14 @@ msgstr "이 앱의 폴더는 옮길 수 없어요."
 msgid "This app's folder can't be renamed."
 msgstr "이 앱의 폴더는 이름을 바꿀 수 없어요."
 
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "This app's newest backup has {files} files. Saves are usually a few files, so it may hold files that aren't saves."
+msgstr ""
+
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "This app's newest backup is mostly pictures, so it may hold screenshots or textures rather than saves."
+msgstr ""
+
 #: ../../apps/launcher/src/App.tsx
 msgid "This backup's saves were in a folder Quiver hasn't kept this app's saves in on this computer. Only restore it if this is where the app saves:"
 msgstr ""
@@ -6848,6 +6872,10 @@ msgstr "이 다운로드가 Quiver가 확인한 파일과 일치하지 않아 �
 #: ../../apps/launcher/src/launch-options.tsx
 msgid "This file is outside the app's folder, so Quiver never moves or deletes it."
 msgstr "이 파일은 앱 폴더 밖에 있어서 Quiver가 옮기거나 삭제하지 않습니다."
+
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "This folder is too big to back up, so it likely holds more than saves, such as the game's own files."
+msgstr ""
 
 #: ../../apps/launcher/src/discussions.tsx
 msgid "This is waiting for Quiver staff to review it before others can see it."

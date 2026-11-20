@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { ApiError } from "@quiverlauncher/api";
-import { onSavesChanged, reportSaveLocations, savesChanged, savesOf, savesOn } from "./saves";
+import { onSavesChanged, reportSaveLocations, reportSaveWarning, savesChanged, savesOf, savesOn } from "./saves";
 
 it("names an installed app for the saves commands", () => {
   const entry = {
@@ -69,5 +69,32 @@ describe("telling the catalog where an app saved", () => {
       await reportSaveLocations(of, entry, lost);
       expect(lost.reported).not.toHaveBeenCalled();
     }
+  });
+});
+
+describe("telling the catalog a backup looks like more than saves", () => {
+  const of = savesOf("e1", { folder: "Game", version: "1.0" });
+  const entry = { slug: "game", catalogId: "cat-1" };
+  const warning = { os: "windows" as const, source: "catalog" as const, reasons: ["big" as const], bytes: 120 * 1024 * 1024, files: 40, kinds: [{ ext: "png", share: 0.9 }], fine: false, key: "big:app/saves" };
+  const via = (send: () => Promise<void>, found: typeof warning | null = warning) => ({ warning: vi.fn(async () => found), warned: vi.fn(async () => {}), send: vi.fn(send) });
+
+  it("sends the signs, size and kinds of file, never the key, and marks it sent", async () => {
+    const calls = via(async () => {});
+    await reportSaveWarning(of, entry, calls);
+    const { key, ...report } = warning;
+    expect(calls.send).toHaveBeenCalledWith(entry, report);
+    expect(calls.warned).toHaveBeenCalledWith(of, key);
+  });
+
+  it("sends nothing when there's nothing new, and tries again later what never got there", async () => {
+    const none = via(async () => {}, null);
+    await reportSaveWarning(of, entry, none);
+    expect(none.send).not.toHaveBeenCalled();
+    const refused = via(async () => Promise.reject(new ApiError(404, "No such app")));
+    await reportSaveWarning(of, entry, refused);
+    expect(refused.warned).toHaveBeenCalled();
+    const lost = via(async () => Promise.reject(new ApiError(503, "Down")));
+    await reportSaveWarning(of, entry, lost);
+    expect(lost.warned).not.toHaveBeenCalled();
   });
 });

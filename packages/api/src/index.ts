@@ -479,6 +479,20 @@ export type DownloadProblem = { version: string; file: string; problem: "missing
  */
 export type SaveLocationsReport = { os: "windows" | "linux" | "macos"; places: string[] };
 /**
+ * A save backup of an app looked like more than saves (over 16 MB, over 200 files, mostly pictures, or a folder too
+ * big to back up), or the player said its folder holds their saves (`fine`): where the folder came from, the backup's
+ * size and file count, and the extensions that filled it most with their share of its bytes. No file names.
+ */
+export type SaveWarningReport = {
+  os: "windows" | "linux" | "macos";
+  source: "catalog" | "found" | "player";
+  bytes: number;
+  files: number;
+  reasons: ("big" | "many" | "media" | "tooBig")[];
+  kinds: { ext: string; share: number }[];
+  fine: boolean;
+};
+/**
  * The catalog names programs that start an app, and the app's folder holds none of them: the programs it does
  * hold, by their paths in the folder, for the version installed. Nothing about the player or the computer.
  */
@@ -545,6 +559,11 @@ export type Client = {
    * save locations. A 404 ApiError when the site doesn't know the app or takes none of the places.
    */
   saveLocations(app: Pick<Entry, "slug" | "catalogId">, report: SaveLocationsReport): Promise<void>;
+  /**
+   * Tells the site that a save backup of an app looked like more than saves, or that the player said its folder is
+   * right, which it counts for staff. A 404 ApiError when the site doesn't know the app or takes no such report.
+   */
+  saveWarning(app: Pick<Entry, "slug" | "catalogId">, report: SaveWarningReport): Promise<void>;
   /**
    * Tells the site that none of the programs the catalog names for an app is in its folder, so staff can be
    * suggested the right one. A 404 ApiError when the site doesn't know the app.
@@ -693,6 +712,10 @@ export function createClient(base: string = DEFAULT_API, options: ClientOptions 
     },
     async saveLocations({ slug, catalogId }, report) {
       const path = `${catalogId ? `/catalog-entries/${encodeURIComponent(catalogId)}` : app(slug)}/save-locations`;
+      await answer(await request(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(report) }));
+    },
+    async saveWarning({ slug, catalogId }, report) {
+      const path = `${catalogId ? `/catalog-entries/${encodeURIComponent(catalogId)}` : app(slug)}/save-warning`;
       await answer(await request(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(report) }));
     },
     async startProgram({ slug, catalogId }, report) {

@@ -27,7 +27,7 @@ import { followTheme, type Theme } from "./theme";
 import type { LibraryView } from "./view";
 import { nearestInterfaceSize, pageZoom } from "./zoom";
 import { copiesNeeded, launchCopies } from "./own-copy";
-import { reportSaveLocations, savesChanged, savesOf, savesOn } from "./saves";
+import { reportSaveLocations, reportSaveWarning, savesChanged, savesOf, savesOn } from "./saves";
 import { reportMissedPrograms, startPatterns } from "./start-programs";
 import { folderBeforePlay } from "./sync-folder";
 import { beforePlay, onSent, retries, sendBackup, sendCurrent, type CloudApi, type Conflict, type ConfirmPlaces } from "./cloud-saves";
@@ -1786,6 +1786,20 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     });
     return () => (off(), again.stop());
   }, []);
+  /**
+   * After an app closed: where it saved (only when the backup worked) and whether its backups look like more than
+   * saves, for the catalog to list for everyone. Only from players who share usage data, and only for the catalog's own
+   * apps.
+   */
+  const tellCatalog = (id: string, install: Install, backedUp: boolean) => {
+    const entry = forUsage.current.catalog[id];
+    if (!entry?.slug || !telemetryChoice().enabled) return;
+    const of = savesOf(id, install, entry);
+    const client = forUsage.current.client;
+    void (backedUp ? reportSaveLocations(of, entry, { toReport: native.savesToReport, reported: native.savesReported, send: (app, report) => client.saveLocations(app, report) }) : Promise.resolve())
+      .then(() => reportSaveWarning(of, entry, { warning: native.savesWarning, warned: native.savesWarned, send: (app, report) => client.saveWarning(app, report) }))
+      .catch(() => {});
+  };
   useEffect(() => {
     const closed = native.onAppClosed(({ id, seconds }) => {
       const { catalog, installs } = forUsage.current;
@@ -1797,13 +1811,10 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
           (made) => {
             if (made) savesChanged(id);
             sendToCloud(id, install, made);
-            // Where it saved, for the catalog to list for everyone: only from players who share usage data, and only
-            // for the catalog's own apps.
-            const entry = catalog[id];
-            if (entry?.slug && telemetryChoice().enabled)
-              void reportSaveLocations(savesOf(id, install, entry), entry, { toReport: native.savesToReport, reported: native.savesReported, send: (app, report) => forUsage.current.client.saveLocations(app, report) }).catch(() => {});
+            tellCatalog(id, install, true);
           },
-          () => {},
+          // Refused as too big to be saves, say: the catalog hears of that too.
+          () => tellCatalog(id, install, false),
         );
     });
     // Once the catalog and the account have had time to come in, so its counts are of the library as it is.

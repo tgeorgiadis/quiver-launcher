@@ -290,7 +290,13 @@ export type SavesInfo = {
   backups: SaveBackup[];
   /** The player switched cloud saves off for this app. */
   cloudOff?: boolean;
+  /** Signs that the places hold more than saves, for the tab to ask about (saves.rs `looks`). */
+  look?: SavesLook | null;
 };
+/** Signs that a backup holds more than saves, and what filled it most. */
+export type SavesLook = { reasons: ("big" | "many" | "media" | "tooBig")[]; bytes: number; files: number; kinds: { ext: string; share: number }[] };
+/** What to tell the catalog about how an app's backups look; `key` marks it sent. */
+export type SavesWarning = SavesLook & { os: "windows" | "linux" | "macos"; source: "catalog" | "found" | "player"; fine: boolean; key: string };
 
 export const native = {
   /** Whether holding these buttons together closes the game being played (unset: Start + Select). */
@@ -362,6 +368,12 @@ export const native = {
   savesFolderTake: (of: SavesOf, folder: string, name: string) => invoke<SaveBackup>("saves_folder_take", { of, folder, name }),
   /** Those places were sent to the catalog: they aren't offered by `savesToReport` again. */
   savesReported: (of: SavesOf, places: string[]) => invoke<void>("saves_reported", { of, places }),
+  /** The player said the places Quiver backs up hold their saves: the tab stops asking while they stay the places. */
+  savesFine: (of: SavesOf) => invoke<SavesInfo | null>("saves_fine", { of }),
+  /** How an app's backups look, when the catalog hasn't been told yet; null with nothing to tell. */
+  savesWarning: (of: SavesOf) => invoke<SavesWarning | null>("saves_warning", { of }),
+  /** That report was sent (or refused): `savesWarning` doesn't offer it again. */
+  savesWarned: (of: SavesOf, key: string) => invoke<void>("saves_warned", { of, key }),
   /** Stops an app's install while it downloads; the install then fails with "cancelled". */
   cancelInstall: (id: string) => invoke<void>("cancel_install", { id }),
   /** Fails with "cancelled" when the player says no to Windows uninstalling it. */

@@ -2,7 +2,8 @@
  * Save backups (saves.rs): how the window names an app to the Rust side, and word of a new backup to an open Saves
  * tab. A backup is made after an app closes, before it updates and before it's uninstalled (store.tsx), and from the
  * tab itself (saves-tab.tsx). After an app closes, the folders the launcher saw it save in are also sent to the
- * catalog, for players who share usage data (`reportSaveLocations`).
+ * catalog, for players who share usage data (`reportSaveLocations`), and so is a backup that looks like more than saves
+ * (`reportSaveWarning`).
  */
 import { ApiError, type Client, type Entry } from "@quiverlauncher/api";
 import type { native, SavesOf } from "./native";
@@ -54,4 +55,26 @@ export async function reportSaveLocations(
     if (!(error instanceof ApiError) || error.status < 400 || error.status >= 500 || error.status === 429) return;
   }
   await via.reported(of, places);
+}
+
+/**
+ * Tells the catalog that an app's newest backup looks like more than saves, or that the player said its folder holds
+ * their saves, so staff can see which apps' save locations need a look: the system, where the folder came from, the
+ * signs, the size and file count, and the extensions that filled it most. No file names and nothing about the player.
+ * Each is sent once, as `reportSaveLocations` is.
+ */
+export async function reportSaveWarning(
+  of: SavesOf,
+  entry: Pick<Entry, "slug" | "catalogId">,
+  via: { warning: typeof native.savesWarning; warned: typeof native.savesWarned; send: Client["saveWarning"] },
+): Promise<void> {
+  const warning = await via.warning(of);
+  if (!warning) return;
+  const { key, os, source, bytes, files, reasons, kinds, fine } = warning;
+  try {
+    await via.send(entry, { os, source, bytes, files, reasons, kinds, fine });
+  } catch (error) {
+    if (!(error instanceof ApiError) || error.status < 400 || error.status >= 500 || error.status === 429) return;
+  }
+  await via.warned(of, key);
 }

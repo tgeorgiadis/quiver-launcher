@@ -4717,6 +4717,10 @@ msgstr "Open Quiver Launcher"
 msgid "Open save folder"
 msgstr "Open save folder"
 
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Open the folder to check. If the app saves somewhere else, choose that folder."
+msgstr "Open the folder to check. If the app saves somewhere else, choose that folder."
+
 #: ../../apps/launcher/src/downloads-page.tsx
 #: ../../apps/launcher/src/update.tsx
 msgid "Open the release page"
@@ -6655,6 +6659,10 @@ msgstr "The file with your settings is damaged."
 msgid "The file with your settings is missing."
 msgstr "The file with your settings is missing."
 
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "The files in this app's newest backup add up to {size} before it's zipped. Saves are usually under 1 MB, so it may hold files that aren't saves."
+msgstr "The files in this app's newest backup add up to {size} before it's zipped. Saves are usually under 1 MB, so it may hold files that aren't saves."
+
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "The first start's questions, in turn: the language, adding apps from Quiver Launcher 3, where apps install, usage data and signing in."
 msgstr "The first start's questions, in turn: the language, adding apps from Quiver Launcher 3, where apps install, usage data and signing in."
@@ -6764,12 +6772,20 @@ msgid "There are no releases yet. Check the upstream project for downloads."
 msgstr "There are no releases yet. Check the upstream project for downloads."
 
 #: ../../apps/launcher/src/saves-tab.tsx
+msgid "These are my saves"
+msgstr "These are my saves"
+
+#: ../../apps/launcher/src/saves-tab.tsx
 msgid "These are the saves on this computer now."
 msgstr "These are the saves on this computer now."
 
 #: ../../apps/launcher/src/launch-options.tsx
 msgid "These go after the executable. To put the executable somewhere else, write %command% there. NAME=value at the start sets an environment variable."
 msgstr "These go after the executable. To put the executable somewhere else, write %command% there. NAME=value at the start sets an environment variable."
+
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "These may not be only saves"
+msgstr "These may not be only saves"
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "These old copies moved safely, but some of their files were in use and stayed behind. You can delete them:"
@@ -6828,6 +6844,14 @@ msgstr "This app's folder can't be moved."
 msgid "This app's folder can't be renamed."
 msgstr "This app's folder can't be renamed."
 
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "This app's newest backup has {files} files. Saves are usually a few files, so it may hold files that aren't saves."
+msgstr "This app's newest backup has {files} files. Saves are usually a few files, so it may hold files that aren't saves."
+
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "This app's newest backup is mostly pictures, so it may hold screenshots or textures rather than saves."
+msgstr "This app's newest backup is mostly pictures, so it may hold screenshots or textures rather than saves."
+
 #: ../../apps/launcher/src/App.tsx
 msgid "This backup's saves were in a folder Quiver hasn't kept this app's saves in on this computer. Only restore it if this is where the app saves:"
 msgstr "This backup's saves were in a folder Quiver hasn't kept this app's saves in on this computer. Only restore it if this is where the app saves:"
@@ -6847,6 +6871,10 @@ msgstr "This download doesn't match the file Quiver checked, so it wasn't instal
 #: ../../apps/launcher/src/launch-options.tsx
 msgid "This file is outside the app's folder, so Quiver never moves or deletes it."
 msgstr "This file is outside the app's folder, so Quiver never moves or deletes it."
+
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "This folder is too big to back up, so it likely holds more than saves, such as the game's own files."
+msgstr "This folder is too big to back up, so it likely holds more than saves, such as the game's own files."
 
 #: ../../apps/launcher/src/discussions.tsx
 msgid "This is waiting for Quiver staff to review it before others can see it."

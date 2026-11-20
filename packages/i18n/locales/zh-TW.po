@@ -4718,6 +4718,10 @@ msgstr "開啟 Quiver Launcher"
 msgid "Open save folder"
 msgstr "開啟存檔資料夾"
 
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Open the folder to check. If the app saves somewhere else, choose that folder."
+msgstr ""
+
 #: ../../apps/launcher/src/downloads-page.tsx
 #: ../../apps/launcher/src/update.tsx
 msgid "Open the release page"
@@ -6656,6 +6660,10 @@ msgstr "設定檔案已損壞。"
 msgid "The file with your settings is missing."
 msgstr "設定檔案丟失。"
 
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "The files in this app's newest backup add up to {size} before it's zipped. Saves are usually under 1 MB, so it may hold files that aren't saves."
+msgstr ""
+
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "The first start's questions, in turn: the language, adding apps from Quiver Launcher 3, where apps install, usage data and signing in."
 msgstr "首次啟動時會依次詢問：語言、是否從 Quiver Launcher 3 新增應用程式、應用程式的安裝位置、使用情況資料，以及是否登入。"
@@ -6765,12 +6773,20 @@ msgid "There are no releases yet. Check the upstream project for downloads."
 msgstr "還沒有版本。請前往上游專案查詢下載。"
 
 #: ../../apps/launcher/src/saves-tab.tsx
+msgid "These are my saves"
+msgstr ""
+
+#: ../../apps/launcher/src/saves-tab.tsx
 msgid "These are the saves on this computer now."
 msgstr ""
 
 #: ../../apps/launcher/src/launch-options.tsx
 msgid "These go after the executable. To put the executable somewhere else, write %command% there. NAME=value at the start sets an environment variable."
 msgstr "這些會加在執行檔之後。要把執行檔放在別處，就在那裡寫 %command%。開頭的 NAME=value 用來設定環境變數。"
+
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "These may not be only saves"
+msgstr ""
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "These old copies moved safely, but some of their files were in use and stayed behind. You can delete them:"
@@ -6829,6 +6845,14 @@ msgstr "無法移動此應用程式的資料夾。"
 msgid "This app's folder can't be renamed."
 msgstr "無法重新命名此應用程式的資料夾。"
 
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "This app's newest backup has {files} files. Saves are usually a few files, so it may hold files that aren't saves."
+msgstr ""
+
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "This app's newest backup is mostly pictures, so it may hold screenshots or textures rather than saves."
+msgstr ""
+
 #: ../../apps/launcher/src/App.tsx
 msgid "This backup's saves were in a folder Quiver hasn't kept this app's saves in on this computer. Only restore it if this is where the app saves:"
 msgstr ""
@@ -6848,6 +6872,10 @@ msgstr "此下載檔案與 Quiver 檢查過的檔案不匹配，因此未安裝�
 #: ../../apps/launcher/src/launch-options.tsx
 msgid "This file is outside the app's folder, so Quiver never moves or deletes it."
 msgstr "這個檔案在應用程式資料夾之外，所以 Quiver 永遠不會移動或刪除它。"
+
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "This folder is too big to back up, so it likely holds more than saves, such as the game's own files."
+msgstr ""
 
 #: ../../apps/launcher/src/discussions.tsx
 msgid "This is waiting for Quiver staff to review it before others can see it."

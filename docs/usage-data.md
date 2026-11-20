@@ -35,6 +35,14 @@ computer, no user name, and no file names or contents. A folder you chose yourse
 once, and nothing is sent for an app whose save locations the catalog already lists. This doesn't go to Google
 Analytics.
 
+It also tells quiverlauncher.com when a catalog app's newest save backup looks like more than saves (over 16 MB, over
+200 files, mostly pictures, or a folder too big to back up), and when you say on the Saves tab that the folder holds
+your saves, so staff can see which apps' save locations need fixing (`reportSaveWarning` in `saves.ts`). It sends the
+app, the system, where the folder came from (the catalog, a folder the launcher found, or one you chose), the signs,
+the backup's size and file count, and the five file extensions that filled it most with their share of its bytes: no
+account, no identifier for the computer, and no file or folder names. Each is sent once while the folder stays the
+same. This doesn't go to Google Analytics either.
+
 Every event carries the launcher's version, how this copy was installed (installer, portable, Flatpak and so on), the
 OS, its version (on Linux, with the distribution's name) and architecture, and whether it's a Steam Deck or in Steam's
 Game Mode.

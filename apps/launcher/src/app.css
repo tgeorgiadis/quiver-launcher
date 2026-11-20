@@ -529,6 +529,8 @@ main.app-main { padding: 0 0 40px; }
 .save-source, .save-said { margin: 0; }
 .save-said { font-size: 13px; }
 .save-said.error { color: var(--red-text); }
+/* A backup that looks like more than saves: what it is and what to do, above Choose folder. */
+.save-look { display: grid; gap: 4px; padding: 10px 12px; border-left: 3px solid var(--accent); border-radius: 8px; background: var(--field); }
 /* Settings, Cloud saves (cloud-saves-page.tsx): the room used as a bar, then an app to a row that opens to its copies. */
 .storage-bar { height: 8px; max-width: 760px; border-radius: 8px; background: var(--field); overflow: hidden; }
 .storage-bar > span { display: block; height: 100%; border-radius: 8px; background: var(--accent); }
