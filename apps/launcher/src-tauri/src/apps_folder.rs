@@ -648,9 +648,47 @@ pub fn remove_empty(folder: &Path, apps: &Path) {
     }
 }
 
+/// Removes the system folders in the apps folder with nothing in them, as sorting into system folders and changing
+/// how they're named leave them (Ports/N64 once its apps are in Ports/Nintendo 64): each folder in Ports, then Ports
+/// and the folders beside it, only ever an empty one.
+pub fn remove_empty_system_folders(apps: &Path) {
+    let ports = apps.join("Ports");
+    if let Ok(entries) = fs::read_dir(&ports) {
+        for entry in entries.flatten() {
+            if entry.file_type().is_ok_and(|t| t.is_dir()) {
+                let _ = fs::remove_dir(entry.path());
+            }
+        }
+    }
+    for name in ["Ports", "Emulators", "Tools", "Games"] {
+        let _ = fs::remove_dir(apps.join(name));
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn removes_only_empty_system_folders() {
+        let root = tempfile::tempdir().unwrap();
+        let apps = root.path().join("Apps");
+        for dir in ["Ports/N64", "Ports/GBA", "Ports/Nintendo 64/sm64", "Emulators", "Tools/thing", "Game"] {
+            fs::create_dir_all(apps.join(dir)).unwrap();
+        }
+        remove_empty_system_folders(&apps);
+        assert!(!apps.join("Ports/N64").exists());
+        assert!(!apps.join("Ports/GBA").exists());
+        assert!(apps.join("Ports/Nintendo 64/sm64").is_dir());
+        assert!(!apps.join("Emulators").exists());
+        assert!(apps.join("Tools/thing").is_dir());
+        // An app's own folder at the top, empty or not, is never one of them.
+        assert!(apps.join("Game").is_dir());
+        // Once Ports is empty, it goes too.
+        fs::remove_dir_all(apps.join("Ports/Nintendo 64")).unwrap();
+        remove_empty_system_folders(&apps);
+        assert!(!apps.join("Ports").exists());
+    }
 
     #[test]
     fn moves_installed_apps_and_remembers_the_folder() {

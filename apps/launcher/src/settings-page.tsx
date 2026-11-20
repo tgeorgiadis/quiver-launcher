@@ -11,7 +11,7 @@ import { Trans } from "@lingui/react/macro";
 import { i18n, LANGUAGES, type Language } from "@quiverlauncher/i18n";
 import { Button, Field, Panel } from "@quiverlauncher/ui/controls";
 import type { MessageDescriptor } from "@lingui/core";
-import { consoleHome, folderClash, samePath, useLauncher, type AppsFolder as AppsFolderRow, type StaysReason } from "./store";
+import { consoleHome, folderClash, parentOf, samePath, useLauncher, type AppsFolder as AppsFolderRow, type StaysReason } from "./store";
 import { WHEEL_SPEEDS, pageArea } from "./spatial";
 import { native, type AppsMoving } from "./native";
 import { DEFAULT_MUSIC_VOLUME, musicProblem, watchMusicProblem } from "./music";
@@ -738,16 +738,23 @@ export function AppsFolder({ inSetup, onBusy }: { inSetup?: boolean; onBusy?: (b
     const apps = unsorted;
     const failed: { folder: string; why: string }[] = [];
     const left: string[] = [];
+    // The system folders apps leave (Ports\N64, when they're named in full now): gone once they're empty.
+    const emptied = new Set<string>();
     setSorting({ done: 0, total: apps.length });
     for (const [n, app] of apps.entries()) {
       try {
+        const was = installs[app.id];
         const moved = await moveApp(app.id, app.to);
+        if (was?.group && was.dir) emptied.add(parentOf(was.dir));
         if (moved.left) left.push(moved.left);
       } catch (e) {
         failed.push({ folder: app.folder, why: e instanceof Error ? e.message : String(e) });
       }
       setSorting({ done: n + 1, total: apps.length });
     }
+    for (const folder of emptied) await native.removeEmptyConsoleFolder(folder).catch(() => {});
+    // And any others left empty before: by renaming system folders once, or by an earlier move.
+    await native.removeEmptySystemFolders().catch(() => {});
     setSorting(null);
     const n = apps.length;
     setSorted(

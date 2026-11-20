@@ -473,6 +473,8 @@ export const native = {
   appsFolderStates: (paths: string[]) => invoke<{ exists: boolean; free?: number | null }[]>("apps_folder_states", { paths }),
   /** Removes a console folder its apps all moved out of, once nothing's left in it, and "Ports" around it if that's empty too. */
   removeEmptyConsoleFolder: (path: string) => invoke<void>("remove_empty_console_folder", { path }),
+  /** Removes the default apps folder's system folders with nothing in them (Ports\\N64 after its apps went elsewhere). */
+  removeEmptySystemFolders: () => invoke<void>("remove_empty_system_folders"),
   /**
    * Moves one app's folder into `to`, beside what's there: `dir`, its folder there; `left`, its old copy if that
    * couldn't all be deleted.

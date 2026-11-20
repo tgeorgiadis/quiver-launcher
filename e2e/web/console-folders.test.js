@@ -164,6 +164,9 @@ test("system folders named in full: an app already in one by abbreviation can mo
     const move = await page.evaluate(() => window.__calls.find((c) => c.cmd === "move_app").args);
     assert.equal(move.to, `${APPS}/Ports/Nintendo 64`);
     assert.equal(move.group, "Ports/Nintendo 64");
+    // The folder it left goes once it's empty, and any other empty system folder with it.
+    await s.until(() => page.evaluate((from) => window.__calls.some((c) => c.cmd === "remove_empty_console_folder" && c.args.path === from), N64));
+    await s.until(() => page.evaluate(() => window.__calls.some((c) => c.cmd === "remove_empty_system_folders")));
     // Back to abbreviations: Nintendo 64's app can go back too.
     await naming.selectOption("short");
     await page.getByRole("button", { name: "Move 1 installed app into its system folder" }).waitFor();
