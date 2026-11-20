@@ -2579,7 +2579,8 @@ main:has(.tick-bar) { scroll-padding-bottom: 96px; }
 /* An apps folder's path on one line: what it's in shortens with an ellipsis, its own name stays (title: all of it). */
 .apps-folder-name { flex-wrap: nowrap; }
 .apps-folder-path { display: flex; min-width: 0; white-space: nowrap; }
-.apps-folder-path-head { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.apps-folder-path-head { min-width: 0; overflow: hidden; }
+.apps-folder-path[data-cut] > :last-child::before { content: "…"; }
 .apps-folder-name .apps-folder-badge { flex: none; }
 .apps-folder-info { grid-template-columns: minmax(0, 1fr); }
 .apps-folder-name, .apps-folder-path > span:last-child { min-width: 0; }

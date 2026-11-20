@@ -543,6 +543,33 @@ const pathCut = (path: string) => {
   return Math.max(0, trimmed.lastIndexOf("\\"), trimmed.lastIndexOf("/"));
 };
 
+/**
+ * A folder's path on one line: what it's in cut short where there isn't room, then "…" and its own folder's name,
+ * flush (text-overflow's ellipsis left a gap like a space after it).
+ */
+function FolderPath({ path }: { path: string }) {
+  const head = useRef<HTMLSpanElement>(null);
+  const [cut, setCut] = useState(false);
+  useEffect(() => {
+    const el = head.current;
+    if (!el) return;
+    const check = () => setCut(el.scrollWidth > el.clientWidth + 0.5);
+    check();
+    const watch = new ResizeObserver(check);
+    watch.observe(el);
+    return () => watch.disconnect();
+  }, [path]);
+  const at = pathCut(path);
+  return (
+    <span className="apps-folder-path" data-cut={cut || undefined}>
+      <span ref={head} className="apps-folder-path-head">
+        {path.slice(0, at)}
+      </span>
+      <span>{path.slice(at)}</span>
+    </span>
+  );
+}
+
 /** What a move came to: how many moved, then any that couldn't (still where they were) and any old files left behind. */
 type MoveOutcome = { text: string; error?: boolean; left?: string[]; failed?: { folder: string; why: string }[] };
 function MoveMessage({ message }: { message: MoveOutcome }) {
@@ -743,10 +770,7 @@ export function AppsFolder({ inSetup, onBusy }: { inSetup?: boolean; onBusy?: (b
               <div className="apps-folder-info">
                 {/* On one line: what it's in shortened first, its own name kept; the whole path on hover. */}
                 <p className="apps-folder-name" title={f.path}>
-                  <span className="apps-folder-path">
-                    <span className="apps-folder-path-head">{f.path.slice(0, pathCut(f.path))}</span>
-                    <span>{f.path.slice(pathCut(f.path))}</span>
-                  </span>
+                  <FolderPath path={f.path} />
                   {f.default && <span className="apps-folder-badge">{t`Default`}</span>}
                 </p>
                 <p className={state && !state.exists ? "job-error" : "muted"}>
