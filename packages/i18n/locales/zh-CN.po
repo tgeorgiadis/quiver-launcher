@@ -6502,6 +6502,10 @@ msgstr "设置文件已损坏。"
 msgid "The file with your settings is missing."
 msgstr "设置文件丢失。"
 
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "The files in this app's newest backup add up to {size} before it's zipped. Saves are usually under 1 MB, so it may hold files that aren't saves."
+msgstr ""
+
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "The first start's questions, in turn: the language, adding apps from Quiver Launcher 3, where apps install, usage data and signing in."
 msgstr "首次启动时会依次询问：语言、是否从 Quiver Launcher 3 添加应用、应用的安装位置、使用情况数据，以及是否登录。"
@@ -6685,10 +6689,6 @@ msgstr "无法重命名此应用的文件夹。"
 
 #: ../../apps/launcher/src/saves-tab.tsx
 msgid "This app's newest backup has {files} files. Saves are usually a few files, so it may hold files that aren't saves."
-msgstr ""
-
-#: ../../apps/launcher/src/saves-tab.tsx
-msgid "This app's newest backup is {size}. Saves are usually under 1 MB, so it may hold files that aren't saves."
 msgstr ""
 
 #: ../../apps/launcher/src/saves-tab.tsx

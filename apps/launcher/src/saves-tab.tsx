@@ -34,7 +34,7 @@ function reasonLabel(reason: string) {
 export function lookText(look: SavesLook) {
   if (look.reasons.includes("tooBig")) return t`This folder is too big to back up, so it likely holds more than saves, such as the game's own files.`;
   const size = sizeLabel(look.bytes);
-  if (look.reasons.includes("big")) return t`This app's newest backup is ${size}. Saves are usually under 1 MB, so it may hold files that aren't saves.`;
+  if (look.reasons.includes("big")) return t`The files in this app's newest backup add up to ${size} before it's zipped. Saves are usually under 1 MB, so it may hold files that aren't saves.`;
   const files = look.files;
   if (look.reasons.includes("many")) return t`This app's newest backup has ${files} files. Saves are usually a few files, so it may hold files that aren't saves.`;
   return t`This app's newest backup is mostly pictures, so it may hold screenshots or textures rather than saves.`;

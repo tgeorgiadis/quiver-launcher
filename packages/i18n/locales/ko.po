@@ -6502,6 +6502,10 @@ msgstr "설정 파일이 손상됐어요."
 msgid "The file with your settings is missing."
 msgstr "설정 파일이 없어요."
 
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "The files in this app's newest backup add up to {size} before it's zipped. Saves are usually under 1 MB, so it may hold files that aren't saves."
+msgstr ""
+
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "The first start's questions, in turn: the language, adding apps from Quiver Launcher 3, where apps install, usage data and signing in."
 msgstr "처음 시작할 때의 질문을 차례로 다시 해요: 언어, Quiver Launcher 3에서 앱 추가, 앱 설치 위치, 사용 데이터, 로그인."
@@ -6685,10 +6689,6 @@ msgstr "이 앱의 폴더는 이름을 바꿀 수 없어요."
 
 #: ../../apps/launcher/src/saves-tab.tsx
 msgid "This app's newest backup has {files} files. Saves are usually a few files, so it may hold files that aren't saves."
-msgstr ""
-
-#: ../../apps/launcher/src/saves-tab.tsx
-msgid "This app's newest backup is {size}. Saves are usually under 1 MB, so it may hold files that aren't saves."
 msgstr ""
 
 #: ../../apps/launcher/src/saves-tab.tsx
