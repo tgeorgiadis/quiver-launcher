@@ -1,24 +1,30 @@
 /**
  * Browse's front page, above the whole catalog while the player isn't searching or filtering: a few featured apps,
- * then shelves of what players say runs well, what's just been updated, what's new, and the consoles with the most
- * apps. Each shelf is one request to the catalog, for this computer's apps, and See all shows the same in the grid.
+ * then shelves of what players say runs well, what's just been updated, what's new, each console maker's and the
+ * handhelds' (console-shelves.ts). Each shelf is one request to the catalog, for this computer's apps, and See all
+ * shows the same in the grid, its consoles on the console filter.
  */
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { t } from "@lingui/core/macro";
 import { i18n } from "@quiverlauncher/i18n";
 import type { AppQuery, Entry, Sort } from "@quiverlauncher/api";
 import { EntryCard } from "@quiverlauncher/ui";
-import { ALL_APPS, CONSOLE_SHELVES, FeaturedCarousel, MORE_LIKE_THIS, SEE_ALL, SHELF_SIZE, SHELF_TITLES, Shelf, featuredDay, featuredMix, likeThis, runsWell } from "@quiverlauncher/ui/discover";
+import { ALL_APPS, FeaturedCarousel, MORE_LIKE_THIS, SEE_ALL, SHELF_SIZE, SHELF_TITLES, Shelf, featuredDay, featuredMix, likeThis, runsWell } from "@quiverlauncher/ui/discover";
 import { availableOn, catalogOs, useLauncher } from "./store";
 import { browseShown } from "./browse-hidden";
 import { useBrowseCards } from "./library-view";
+import { consoleShelves, type ConsoleShelf } from "./console-shelves";
 
-export type ShelfKey = "rating" | "updated" | "added" | `console:${string}`;
-type SeeAll = { sort: Sort } | { console: string };
+export type ShelfKey = "rating" | "updated" | "added" | `consoles:${string}`;
+/** A shelf's See all: its order, or its consoles as Browse's console filter takes them. */
+type SeeAll = { sort: Sort } | { consoles: string[] };
+
+/** A console shelf's request: its console filters, "maker:Nintendo" or ids, after the colon. */
+const consolesKey = (shelf: ConsoleShelf): ShelfKey => `consoles:${shelf.consoles.join(",")}`;
 
 /**
- * The catalog's shelves, for this computer: each one request (`console:n64` a console's best rated), undefined until
- * it comes and empty if it couldn't. Browse's front page and TV mode show them.
+ * The catalog's shelves, for this computer: each one request (`consoles:maker:Nintendo` those consoles' best rated),
+ * undefined until it comes and empty if it couldn't. Browse's front page and TV mode show them.
  */
 export function useShelves(keys: readonly ShelfKey[]) {
   const { client, config, remember } = useLauncher();
@@ -26,7 +32,7 @@ export function useShelves(keys: readonly ShelfKey[]) {
   useEffect(() => {
     let live = true;
     for (const key of keys) {
-      const query: AppQuery = key.startsWith("console:") ? { console: key.slice(8), sort: "rating" } : { sort: key as Sort };
+      const query: AppQuery = key.startsWith("consoles:") ? { consoles: key.slice(9).split(","), sort: "rating" } : { sort: key as Sort };
       // What this computer runs: on Linux, Windows' apps too (catalogOs).
       client.apps({ ...query, os: catalogOs(config.os), limit: SHELF_SIZE }).then(
         (page) => {
@@ -66,8 +72,8 @@ export function Discover({
   // As in the grid: the apps in the library when the page came stay out; one added since stays, with its badge.
   const [owned] = useState(() => new Set(library.map((i) => i.id)));
   const showing = (entries: Entry[]) => browseShown(entries, { owned, showOwned, hidden, view: "hide" });
-  const systems = CONSOLE_SHELVES.filter((id) => consoles.some((c) => c.id === id));
-  const shelves = useShelves(["rating", "updated", "added", ...systems.map((id): ShelfKey => `console:${id}`)]);
+  const systems = consoleShelves(consoles);
+  const shelves = useShelves(["rating", "updated", "added", ...systems.map(consolesKey)]);
   const inLibrary = new Set(library.map((i) => i.id));
   // The day's mix of the best rated, just updated and newest, once all three have come, so the slides don't change as
   // each does; the day is the page's, so they don't change at midnight under the player either.
@@ -77,6 +83,11 @@ export function Discover({
     () => (rating && updated && added ? featuredMix({ rating: showing(rating), updated: showing(updated), added: showing(added) }, day) : null),
     [rating, updated, added, day, showOwned, [...hidden].join()], // eslint-disable-line react-hooks/exhaustive-deps
   );
+  const shelfTitle = (shelf: ConsoleShelf) => {
+    if (shelf.id === "portable") return t({ message: "Portable systems", comment: "A shelf on Browse's front page: apps for handhelds (PSP, Vita, DS, 3DS, Game Boy)" });
+    const brand = shelf.id.slice(6);
+    return brand === "OtherPlatforms" ? t({ message: "Other platforms", comment: "A shelf on Browse's front page: apps for consoles no other shelf's maker made" }) : brand;
+  };
   const consoleName = (tag: string) => (Object.hasOwn(consoleNames, tag) ? consoleNames[tag] : undefined);
   const looks = useBrowseCards();
   const card = (entry: Entry) => (
@@ -129,7 +140,7 @@ export function Discover({
       {shelf("rating", i18n._(SHELF_TITLES.rating), { sort: "rating" })}
       {shelf("updated", i18n._(SHELF_TITLES.updated), { sort: "updated" })}
       {shelf("added", i18n._(SHELF_TITLES.added), { sort: "added" })}
-      {systems.map((id) => shelf(`console:${id}`, consoleNames[id] ?? id, { console: id }))}
+      {systems.map((s) => shelf(consolesKey(s), shelfTitle(s), { consoles: s.consoles }))}
       <h2 className="discover-all">{i18n._(ALL_APPS)}</h2>
     </div>
   );

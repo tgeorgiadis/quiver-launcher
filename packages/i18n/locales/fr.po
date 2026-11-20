@@ -66,6 +66,11 @@ msgstr "{0, plural, one {Déplacer # app de {1} vers {dir} ?} other {Déplacer #
 msgid "{0, plural, one {Move # installed app into its console folder} other {Move # installed apps into their console folders}}"
 msgstr "{0, plural, one {Déplacer # appli installée dans le dossier de sa console} other {Déplacer # applis installées dans les dossiers de leur console}}"
 
+#. placeholder {0}: own.length
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "{0, plural, one {of your tags} other {of your tags}}"
+msgstr "{0, plural, one {tag à toi} other {tags à toi}}"
+
 #. placeholder {0}: elsewhere.size
 #: ../../apps/launcher/src/library.tsx
 msgid "{0, plural, one {Platforms: # app hidden} other {Platforms: # apps hidden}}"
@@ -576,6 +581,10 @@ msgstr "{newerLabel} pas encore proposée : moins de 48 heures"
 msgid "{newest} is out. You have {yours}."
 msgstr "{newest} est disponible. Vous avez {yours}."
 
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "{off, plural, one {from the catalog, # hidden} other {from the catalog, # hidden}}"
+msgstr "{off, plural, one {du catalogue, # masqué} other {du catalogue, # masqués}}"
+
 #: ../../apps/launcher/src/downloads-page.tsx
 msgid "{out} is out. You have {have}."
 msgstr "{out} est disponible. Vous avez {have}."
@@ -616,6 +625,11 @@ msgstr "{pulledVersion} a été retirée"
 #: ../../apps/launcher/src/sync-folder-page.tsx
 msgid "{put, plural, one {The saves of # app were copied in. New backups follow after you play.} other {The saves of # apps were copied in. New backups follow after you play.}}"
 msgstr ""
+
+#. The memory of the computer a player tried an app on
+#: ../../apps/launcher/src/feedback.tsx
+msgid "{ram} GB RAM"
+msgstr "{ram} Go de RAM"
 
 #: ../../apps/launcher/src/mods.tsx
 msgid "{rating, plural, one {{likes} like} other {{likes} likes}}"
@@ -1041,10 +1055,6 @@ msgstr "Ajouter ton dossier de jeux…"
 msgid "Added"
 msgstr "Ajouté"
 
-#: ../../apps/launcher/src/launch-options.tsx
-msgid "Added after the program, or write %command% where the program should go. NAME=value at the start sets an environment variable."
-msgstr "Ajoutées après le programme, ou écrivez %command% là où le programme doit figurer. NOM=valeur au début définit une variable d'environnement."
-
 #: ../../apps/launcher/src/custom.ts
 msgid "Added from {site}. Quiver hasn't checked this app."
 msgstr "Ajoutée depuis {site}. Quiver n'a pas vérifié cette app."
@@ -1093,12 +1103,14 @@ msgstr "Assisté par IA"
 #. Discover's filter: games in the library or not
 #. Library tab: every app in the library
 #. Library tab: every app in the library
+#. Lists every catalog tag
 #. Shows mods from every site
 #. Shows videos of every kind
 #. The library's platform menu while it shows every platform's apps
 #: ../../apps/launcher/src/library.tsx
 #: ../../apps/launcher/src/media.tsx
 #: ../../apps/launcher/src/mods.tsx
+#: ../../apps/launcher/src/tag-settings.tsx
 #: ../../apps/launcher/src/tv/consoles/tabs.ts
 #: ../../apps/launcher/src/tv/views/Discover.tsx
 msgid "All"
@@ -1260,6 +1272,11 @@ msgstr "Détails de l'app"
 #: ../../apps/launcher/src/detail.tsx
 msgid "APP DETAILS"
 msgstr "DÉTAILS DE L'APP"
+
+#. Browse card detail: the app's own small icon before its name, to tell apart apps for the same game
+#: ../../apps/launcher/src/browse-cards.ts
+msgid "App icon"
+msgstr "Icône de l'app"
 
 #: ../../apps/launcher/src/card-menu.tsx
 #: ../../apps/launcher/src/cloud-saves-page.tsx
@@ -1599,10 +1616,19 @@ msgstr "Build"
 msgid "Built with some AI assistance"
 msgstr "Développé avec un peu d'aide de l'IA"
 
+#: ../../apps/launcher/src/controls.tsx
+msgid "Buttons that close a game"
+msgstr "Boutons qui ferment un jeu"
+
 #. Who made a mod
 #: ../../apps/launcher/src/mods.tsx
 msgid "by {author}"
 msgstr "par {author}"
+
+#. Sorts tags by name
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "By name"
+msgstr "Par nom"
 
 #: ../../apps/launcher/src/game.tsx
 msgid "Called {title} in {region}"
@@ -1686,7 +1712,6 @@ msgstr "carrousel"
 msgid "Catalog filters"
 msgstr "Filtres du catalogue"
 
-#. Settings section: the tags apps have from the catalog, which the player can hide
 #: ../../apps/launcher/src/tag-settings.tsx
 msgid "Catalog tags"
 msgstr "Tags du catalogue"
@@ -1813,12 +1838,8 @@ msgid "Choose a file…"
 msgstr "Choisir un fichier…"
 
 #: ../../apps/launcher/src/store.tsx
-msgid "Choose a folder outside {path}, which has apps in it."
-msgstr "Choisissez un dossier en dehors de {path}, qui contient des apps."
-
-#: ../../apps/launcher/src/store.tsx
-msgid "Choose a folder that doesn't have {path} inside it."
-msgstr "Choisissez un dossier qui ne contient pas {path}."
+msgid "Choose a folder outside {name}, which is an app's own folder."
+msgstr "Choisis un dossier en dehors de {name}, qui est le dossier d'une app."
 
 #: ../../apps/launcher/src/old-library.tsx
 msgid "Choose a folder to look in"
@@ -1862,6 +1883,10 @@ msgstr "Choisir un programme"
 #: ../../apps/launcher/src/own.tsx
 msgid "Choose a program (.exe) that starts the app."
 msgstr "Choisissez un programme (.exe) qui lance l'app."
+
+#: ../../apps/launcher/src/feedback.tsx
+msgid "Choose a release"
+msgstr "Choisir une version"
 
 #: ../../apps/launcher/src/correction.tsx
 msgid "Choose a topic (optional)"
@@ -1915,6 +1940,10 @@ msgstr "Choisissez « Créer un jeton sur GitHub », puis connectez-vous à Gi
 msgid "Choose Create a token on GitLab, and sign in to GitLab."
 msgstr "Choisissez « Créer un jeton sur GitLab », puis connectez-vous à GitLab."
 
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "Choose executable…"
+msgstr "Choisir l'exécutable…"
+
 #: ../../apps/launcher/src/saves-tab.tsx
 #: ../../apps/launcher/src/sync-folder-page.tsx
 msgid "Choose folder"
@@ -1928,8 +1957,8 @@ msgid "Choose Generate token, copy it, paste it above and choose Save token."
 msgstr "Choisissez « Generate token », copiez le jeton, collez-le ci-dessus et choisissez « Enregistrer le jeton »."
 
 #: ../../apps/launcher/src/App.tsx
-msgid "Choose its program…"
-msgstr "Choisir son programme…"
+msgid "Choose its executable…"
+msgstr "Choisir son exécutable…"
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Choose music to play in the background"
@@ -1944,8 +1973,8 @@ msgid "Choose my Quiver Launcher 3 folder…"
 msgstr "Choisir mon dossier Quiver Launcher 3…"
 
 #: ../../apps/launcher/src/launch-options.tsx
-msgid "Choose program…"
-msgstr "Choisir le programme…"
+msgid "Choose the executable you want Quiver to run. It can be in any folder or drive."
+msgstr "Choisis l'exécutable que Quiver doit lancer. Il peut être dans n'importe quel dossier ou disque."
 
 #: ../../apps/launcher/src/tv/programs/RomDialog.tsx
 msgid "Choose the file…"
@@ -1966,6 +1995,10 @@ msgstr "Choisissez le programme qui lance l'app."
 #: ../../apps/launcher/src/own.tsx
 msgid "Choose the program…"
 msgstr "Choisir le programme…"
+
+#: ../../apps/launcher/src/feedback.tsx
+msgid "Choose the release you tried, or Not sure."
+msgstr "Choisissez la version que vous avez essayée, ou « Je ne sais pas »."
 
 #: ../../apps/launcher/src/file-picker.tsx
 msgid "Choose this folder"
@@ -2042,6 +2075,7 @@ msgstr "Effacer la recherche"
 #: ../../apps/launcher/src/detail.tsx
 #: ../../apps/launcher/src/mods.tsx
 #: ../../apps/launcher/src/own-copy-setup.tsx
+#: ../../apps/launcher/src/tag-settings.tsx
 #: ../../apps/launcher/src/tv/programs/RomDialog.tsx
 #: ../../apps/launcher/src/window-bar.tsx
 msgid "Close"
@@ -2053,12 +2087,12 @@ msgid "Close {title}"
 msgstr "Fermer {title}"
 
 #: ../../apps/launcher/src/controls.tsx
-msgid "Close a game by holding Start + Select for a second, for games with no way to quit"
-msgstr "Fermer un jeu en maintenant Start + Select une seconde, pour les jeux qu'on ne peut pas quitter"
+msgid "Close a game by holding buttons together for a second, for games with no way to quit"
+msgstr "Fermer un jeu en maintenant des boutons ensemble une seconde, pour les jeux qu'on ne peut pas quitter"
 
 #: ../../apps/launcher/src/tv/views/Settings.tsx
-msgid "Close a game with Start + Select"
-msgstr "Fermer un jeu avec Start + Select"
+msgid "Close a game from the controller"
+msgstr "Fermer un jeu depuis la manette"
 
 #: ../../apps/launcher/src/library-sidebar.tsx
 msgid "Close filters"
@@ -2719,6 +2753,10 @@ msgstr ""
 msgid "Every console"
 msgstr "Toutes les consoles"
 
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "Every tag is hidden."
+msgstr "Tous les tags sont masqués."
+
 #: ../../apps/launcher/src/tv/views/Settings.tsx
 msgid "Everything bigger or smaller, on top of fitting the screen: the launcher's interface size"
 msgstr "Tout en plus grand ou plus petit, en plus de l'ajustement à l'écran : la taille de l'interface du lanceur"
@@ -2734,6 +2772,10 @@ msgstr "Tout est à jour."
 #: ../../apps/launcher/src/detail.tsx
 msgid "Evidence"
 msgstr "Preuves"
+
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "Executable"
+msgstr "Exécutable"
 
 #: ../../apps/launcher/src/window-bar.tsx
 msgid "Exit full screen"
@@ -2907,10 +2949,17 @@ msgstr "De Quiver Launcher 3. Gardez ce dossier jusqu'à ce que vous déplaciez 
 msgid "From Quiver's catalog."
 msgstr "D'après le catalogue de Quiver."
 
+#. After how many catalog tags the library's apps have, when none is hidden
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "from the catalog"
+msgstr "du catalogue"
+
 #. Heading in an app's Tags menu, over the tags the catalog gave it
 #. Label on an app's page, over the tags the catalog gave it
+#. Tab: the tags apps have from the catalog
 #: ../../apps/launcher/src/card-menu.tsx
 #: ../../apps/launcher/src/detail.tsx
+#: ../../apps/launcher/src/tag-settings.tsx
 msgid "From the catalog"
 msgstr "Du catalogue"
 
@@ -3065,7 +3114,7 @@ msgstr "A des problèmes"
 msgid "Helps improve Quiver Launcher: which screens and features get used, and errors. Never your files or folders."
 msgstr "Aide à améliorer Quiver Launcher : les écrans et fonctionnalités utilisés, et les erreurs. Jamais vos fichiers ni vos dossiers."
 
-#. Beside a catalog tag the player hid on every app
+#. Lists the catalog tags hidden on every app
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/tag-settings.tsx
 msgid "Hidden"
@@ -3088,17 +3137,11 @@ msgstr "Apps masquées uniquement"
 msgid "Hidden apps shown"
 msgstr "Apps masquées affichées"
 
-#. Button: hide a catalog tag on every app
 #. Hides a post from everyone
 #: ../../apps/launcher/src/discussions.tsx
 #: ../../apps/launcher/src/feedback.tsx
-#: ../../apps/launcher/src/tag-settings.tsx
 msgid "Hide"
 msgstr "Masquer"
-
-#: ../../apps/launcher/src/tag-settings.tsx
-msgid "Hide {name}"
-msgstr "Masquer {name}"
 
 #. Button: hide every catalog tag on every app
 #: ../../apps/launcher/src/tag-settings.tsx
@@ -3172,6 +3215,11 @@ msgstr "Masquer les étapes"
 msgid "Hide them"
 msgstr "Les masquer"
 
+#. Button: hide every catalog tag the search or filter lists
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "Hide these"
+msgstr "Masquer ceux-ci"
+
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Hide your feedback for {name}"
 msgstr "Masquer votre avis sur {name}"
@@ -3182,8 +3230,8 @@ msgid "hold"
 msgstr "maintenir"
 
 #: ../../apps/launcher/src/tv/views/Settings.tsx
-msgid "Hold both for a second while a game runs, for games with no way to quit"
-msgstr "Maintenez les deux une seconde pendant le jeu, pour les jeux qu'on ne peut pas quitter"
+msgid "Hold these buttons together for a second while a game runs, for games with no way to quit"
+msgstr "Maintenez ces boutons ensemble une seconde pendant qu'un jeu tourne, pour les jeux qu'on ne peut pas quitter"
 
 #: ../../apps/launcher/src/tv/views/Details.tsx
 msgid "Hold to uninstall. Its files go to the Recycle Bin."
@@ -3642,8 +3690,8 @@ msgid "It started {program}. The next Play asks which program starts it."
 msgstr "Il se lançait avec {program}. Au prochain Jouer, Quiver demandera quel programme le lance."
 
 #: ../../apps/launcher/src/App.tsx
-msgid "It starts <0>{program}</0>, which is outside its folder, so it stays where it is. Uninstall or delete that yourself if you don't want it any more."
-msgstr "Elle lance <0>{program}</0>, qui est en dehors de son dossier et reste donc où il est. Désinstalle-le ou supprime-le toi-même si tu n'en veux plus."
+msgid "It starts <0>{executable}</0>. That file is outside the app's folder, so it won't be deleted. You can delete it yourself if you don't need it."
+msgstr "Elle lance <0>{executable}</0>. Ce fichier est en dehors du dossier de l'app, donc il ne sera pas supprimé. Tu peux le supprimer toi-même si tu n'en as pas besoin."
 
 #: ../../apps/launcher/src/tv/updates/PlayFlow.tsx
 msgid "It starts as soon as the update is installed."
@@ -3669,10 +3717,6 @@ msgstr "Ça ne s'installait pas, ne s'ouvrait pas ou ne se lançait pas."
 #: ../../apps/launcher/src/App.tsx
 msgid "It's here now."
 msgstr "Elle est ici maintenant."
-
-#: ../../apps/launcher/src/launch-options.tsx
-msgid "It's outside the app's folder, so moving, renaming, updating or uninstalling the app leaves it where it is."
-msgstr "Il est en dehors du dossier de l'app : déplacer, renommer, mettre à jour ou désinstaller l'app le laisse où il est."
 
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Its author says it's still broken after the last fix."
@@ -3860,8 +3904,8 @@ msgid "LB / RB go through the consoles; Filter/Sort narrows them to makers or ki
 msgstr "LB / RB parcourent les consoles ; Filtrer/Trier les restreint à des fabricants ou des types."
 
 #: ../../apps/launcher/src/github-token.tsx
-msgid "Leave every scope unticked: public releases need none."
-msgstr "Ne cochez aucune autorisation : les versions publiques n'en ont pas besoin."
+msgid "Leave every scope unticked: public releases need none. For a private repository, make a fine-grained token on GitHub instead, with read-only Contents access to that repository."
+msgstr "Ne cochez aucune autorisation : les versions publiques n'en ont pas besoin. Pour un dépôt privé, créez plutôt un jeton fine-grained sur GitHub, avec un accès en lecture seule à Contents pour ce dépôt."
 
 #: ../../apps/launcher/src/gitlab-token.tsx
 msgid "Leave the read_api scope ticked: public releases need nothing more."
@@ -4092,6 +4136,11 @@ msgstr "Crée un dossier dans votre dossier d'apps pour y mettre l'app."
 msgid "Manage"
 msgstr "Gérer"
 
+#. Button: opens the window listing the player's tags and the catalog's
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "Manage tags"
+msgstr "Gérer les tags"
+
 #. Menu item: rename or delete the player's tags, in Settings
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Manage tags…"
@@ -4179,6 +4228,11 @@ msgstr ""
 #: ../../apps/launcher/src/library.tsx
 msgid "More…"
 msgstr "Plus…"
+
+#. Sorts tags, the ones on the most apps first
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "Most apps"
+msgstr "Le plus d'apps"
 
 #: ../../apps/launcher/src/setup.tsx
 msgid "Most apps need your own copy of a game, like a ROM or a disc image, and Quiver Launcher has Easy setup for some of them. Add folders for a console or two now, and add more in Settings anytime."
@@ -4585,6 +4639,14 @@ msgstr "Aucune version trouvée."
 msgid "No reports yet"
 msgstr "Pas encore d’avis"
 
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "No tags are hidden."
+msgstr "Aucun tag n'est masqué."
+
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "No tags match your search."
+msgstr "Aucun tag ne correspond à ta recherche."
+
 #: ../../apps/launcher/src/tv/views/Settings.tsx
 msgid "No zooming, sliding or sweeping"
 msgstr "Sans zoom, glissement ni balayage"
@@ -4719,6 +4781,11 @@ msgstr "Pas encore joué"
 msgid "Not rated yet"
 msgstr "Pas encore noté"
 
+#. On PC specs only the app's developer and the player who shared them can see
+#: ../../apps/launcher/src/feedback.tsx
+msgid "Not shown to other players"
+msgstr "Non visible des autres joueurs"
+
 #. Which release the player tested
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Not sure"
@@ -4806,6 +4873,10 @@ msgstr "Rien à choisir dans ce dossier."
 #: ../../apps/launcher/src/tv/views/Discover.tsx
 msgid "Nothing to find here"
 msgstr "Rien à trouver ici"
+
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "Nothing, run it directly"
+msgstr "Rien, le lancer directement"
 
 #. Name, for a screen reader, of the dialog saying something failed or must be read
 #: ../../apps/launcher/src/App.tsx
@@ -4943,7 +5014,9 @@ msgstr "Autre"
 msgid "Other files"
 msgstr "Autres fichiers"
 
+#. A shelf on Browse's front page: apps for consoles no other shelf's maker made
 #: ../../apps/launcher/src/detail.tsx
+#: ../../apps/launcher/src/discover.tsx
 #: ../../apps/launcher/src/library.tsx
 #: ../../apps/launcher/src/tv/views/Discover.tsx
 msgid "Other platforms"
@@ -4995,6 +5068,11 @@ msgstr "Le mot de passe ne peut ni commencer ni finir par un espace."
 #: ../../apps/launcher/src/library.tsx
 msgid "Paste the playlist's link, like quiverlauncher.com/lists/…"
 msgstr "Collez le lien de la playlist, comme quiverlauncher.com/lists/…"
+
+#. Before the computer a player tried an app on
+#: ../../apps/launcher/src/feedback.tsx
+msgid "PC specs:"
+msgstr "Configuration du PC :"
 
 #. Controller hint in Discover's Filter list: ticks or unticks the focused maker or kind
 #: ../../apps/launcher/src/tv/views/Discover.tsx
@@ -5178,6 +5256,11 @@ msgstr "Playlists de cette app"
 msgid "Port"
 msgstr "Portage"
 
+#. A shelf on Browse's front page: apps for handhelds (PSP, Vita, DS, 3DS, Game Boy)
+#: ../../apps/launcher/src/discover.tsx
+msgid "Portable systems"
+msgstr "Consoles portables"
+
 #: ../../apps/launcher/src/custom-art.tsx
 msgid "Portrait, about 600×900. The library's cards and TV mode."
 msgstr "Portrait, environ 600×900. Les cartes de la bibliothèque et le mode TV."
@@ -5245,10 +5328,6 @@ msgstr "Lettre ou page précédente"
 #: ../../apps/launcher/src/tv/views/TabStrip.tsx
 msgid "Previous tab"
 msgstr "Onglet précédent"
-
-#: ../../apps/launcher/src/launch-options.tsx
-msgid "Program"
-msgstr "Programme"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/library.tsx
@@ -5356,6 +5435,10 @@ msgstr "Quiver n'en a trouvé aucune dans tes dossiers de jeux."
 #: ../../apps/launcher/src/saves-tab.tsx
 msgid "Quiver doesn't know where this app saves yet. Play it once, or choose the folder."
 msgstr "Quiver ne sait pas encore où cette app enregistre ses sauvegardes. Lancez-la une fois, ou choisissez le dossier."
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Quiver doesn't offer {name} for {app}, and its virus scan hasn't finished."
+msgstr "Quiver ne propose pas {name} pour {app}, et son analyse antivirus n'est pas terminée."
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Quiver doesn't offer {name} for {app}: it may be for another system, or missed when the downloads were picked."
@@ -5502,6 +5585,14 @@ msgstr "Quiver attend 48 heures avant de proposer la mise à jour d'une app, pou
 #: ../../apps/launcher/src/detail.tsx
 msgid "Quiver waits until each file has been out for 48 hours, so a hacked or malicious update can be caught before it reaches you."
 msgstr "Quiver attend que chaque fichier soit publié depuis 48 heures, pour qu'une mise à jour piratée ou malveillante puisse être repérée avant de vous parvenir."
+
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "Quiver will launch <0>{executable}</0> when you press Play."
+msgstr "Quiver lancera <0>{executable}</0> quand tu appuies sur Jouer."
+
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "Quiver will launch <0>{name}</0> when you press Play. You can choose another executable to run instead."
+msgstr "Quiver lancera <0>{name}</0> quand tu appuies sur Jouer. Tu peux choisir un autre exécutable à la place."
 
 #: ../../apps/launcher/src/detail.tsx
 msgid "Quiver won't install it."
@@ -5955,6 +6046,10 @@ msgstr "Dites comment {name} a tourné chez vous"
 msgid "Say how it ran for you"
 msgstr "Dites comment ça a tourné chez vous"
 
+#: ../../apps/launcher/src/feedback.tsx
+msgid "Say what went wrong, so the developer and other players can make sense of it."
+msgstr "Dites ce qui n’a pas marché, pour que le développeur et les autres joueurs puissent s’y retrouver."
+
 #: ../../apps/launcher/src/correction.tsx
 msgid "Say what's wrong or missing."
 msgstr "Dis ce qui est faux ou ce qui manque."
@@ -6014,6 +6109,10 @@ msgstr "Rechercher des mods"
 #: ../../apps/launcher/src/App.tsx
 msgid "Search ports, games and tools"
 msgstr "Rechercher portages, jeux et outils"
+
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "Search tags"
+msgstr "Rechercher des tags"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/own.tsx
@@ -6206,7 +6305,6 @@ msgstr "Lien de la playlist partagée"
 msgid "Shortcuts"
 msgstr "Raccourcis"
 
-#. Button: show a hidden catalog tag again
 #. Controller hint: what Confirm does, scrolling the focused control into view
 #. Makes a hidden post visible again
 #. Picks which library tab or playlist the library shows, where the tabs don't fit
@@ -6214,12 +6312,10 @@ msgstr "Raccourcis"
 #: ../../apps/launcher/src/discussions.tsx
 #: ../../apps/launcher/src/library.tsx
 #: ../../apps/launcher/src/spatial.ts
-#: ../../apps/launcher/src/tag-settings.tsx
 msgid "Show"
 msgstr "Afficher"
 
 #. A dot under the featured apps: shows that app's slide
-#: ../../apps/launcher/src/tag-settings.tsx
 #: ../ui/src/discover.tsx
 msgid "Show {name}"
 msgstr "Afficher {name}"
@@ -6293,6 +6389,10 @@ msgstr "Afficher moins"
 msgid "Show more"
 msgstr "Afficher plus"
 
+#: ../../apps/launcher/src/feedback.tsx
+msgid "Show my PC specs to other players"
+msgstr "Montrer la configuration de mon PC aux autres joueurs"
+
 #: ../../apps/launcher/src/library-view.tsx
 msgid "Show names on cards"
 msgstr "Afficher les noms sur les cartes"
@@ -6339,6 +6439,11 @@ msgstr "Afficher la bibliothèque avec une barre latérale"
 msgid "Show them"
 msgstr "Les afficher"
 
+#. Button: show again every catalog tag the search or filter lists
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "Show these"
+msgstr "Afficher ceux-ci"
+
 #: ../../apps/launcher/src/media.tsx
 msgid "Show videos"
 msgstr "Afficher les vidéos"
@@ -6346,6 +6451,11 @@ msgstr "Afficher les vidéos"
 #: ../../apps/launcher/src/controls.tsx
 msgid "Show what the buttons do along the bottom while a controller is connected"
 msgstr "Afficher le rôle des boutons en bas de l'écran quand une manette est connectée"
+
+#. Lists the catalog tags that show
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "Showing"
+msgstr "Affichés"
 
 #. Library layout: a list of names down the left
 #: ../../apps/launcher/src/view.ts
@@ -6486,6 +6596,10 @@ msgstr "Trier"
 msgid "Sort mods"
 msgstr "Trier les mods"
 
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "Sort tags"
+msgstr "Trier les tags"
+
 #: ../../apps/launcher/src/tv/views/Discover.tsx
 msgid "Sorting by release date…"
 msgstr "Tri par date de sortie…"
@@ -6570,17 +6684,9 @@ msgstr "Lancement de {name}…"
 msgid "Starts {path} on this computer."
 msgstr "Lance {path} sur cet ordinateur."
 
-#: ../../apps/launcher/src/launch-options.tsx
-msgid "Starts <0>{executable}</0>"
-msgstr "Lance <0>{executable}</0>"
-
 #: ../../apps/launcher/src/own.tsx
 msgid "Starts it where it is. Nothing is downloaded, moved or deleted."
 msgstr "Lance l'app là où elle est. Rien n'est téléchargé, déplacé ni supprimé."
-
-#: ../../apps/launcher/src/launch-options.tsx
-msgid "Starts the program Quiver finds in its folder."
-msgstr "Lance le programme que Quiver trouve dans son dossier."
 
 #: ../../apps/launcher/src/custom.ts
 msgid "Starts the program you put in its folder, {folder}."
@@ -6695,8 +6801,10 @@ msgstr "Tag"
 #. Browse card detail: the app's tags, such as Recomp or its console, over its name
 #. Menu item opening the player's tags for an app
 #. Menu item opening the player's tags for an app
+#. Settings section: the player's own tags and the catalog's
 #: ../../apps/launcher/src/browse-cards.ts
 #: ../../apps/launcher/src/card-menu.tsx
+#: ../../apps/launcher/src/tag-settings.tsx
 msgid "Tags"
 msgstr "Tags"
 
@@ -6799,6 +6907,10 @@ msgstr "la version du {date}"
 msgid "The {installedVersion} Quiver offers isn't the file you installed."
 msgstr "La {installedVersion} proposée par Quiver n'est pas le fichier que vous avez installé."
 
+#: ../../apps/launcher/src/feedback.tsx
+msgid "The app's developer sees them either way."
+msgstr "Le développeur de l’app la voit dans tous les cas."
+
 #: ../../apps/launcher/src/detail.tsx
 msgid "The developer proved they make this app"
 msgstr "Le développeur a prouvé qu'il crée cette app"
@@ -6884,10 +6996,6 @@ msgstr "Le problème que vous avez signalé le {sent} a été corrigé. Merci !"
 msgid "The problem you reported with {app} was fixed. Thanks!"
 msgstr "Le problème que vous avez signalé sur {app} a été corrigé. Merci !"
 
-#: ../../apps/launcher/src/launch-options.tsx
-msgid "The program itself"
-msgstr "Le programme lui-même"
-
 #: ../../apps/launcher/src/App.tsx
 msgid "The programs Play offers are under Play with in the app's menu."
 msgstr "Les programmes que propose Jouer se trouvent sous Jouer avec, dans le menu de l'app."
@@ -6936,10 +7044,6 @@ msgstr "La playlist partagée est à jour."
 msgid "The tags you gave your apps, including any brought over from Quiver Launcher 3. Renaming or deleting one changes it on every app that has it. The catalog's own tags aren't affected."
 msgstr "Les tags que vous avez donnés à vos apps, y compris ceux repris de Quiver Launcher 3. Renommer ou supprimer un tag le modifie sur toutes les apps qui l'ont. Les tags du catalogue ne sont pas touchés."
 
-#: ../../apps/launcher/src/tag-settings.tsx
-msgid "The tags your apps have from the catalog. A hidden tag is left off cards, the tag filter, search and playlists on this computer. To hide one on a single app, untick it in that app's Tags menu."
-msgstr "Les tags que vos apps tiennent du catalogue. Un tag masqué n'apparaît plus sur les cartes, dans le filtre par tag, la recherche ni les playlists sur cet ordinateur. Pour en masquer un sur une seule app, décochez-le dans le menu Tags de cette app."
-
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Theme"
 msgstr "Thème"
@@ -6971,6 +7075,10 @@ msgstr "Il n'y a pas encore de versions. Consultez le projet d'origine pour les 
 #: ../../apps/launcher/src/saves-tab.tsx
 msgid "These are the saves on this computer now."
 msgstr ""
+
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "These go after the executable. To put the executable somewhere else, write %command% there. NAME=value at the start sets an environment variable."
+msgstr "Ceci vient après l'exécutable. Pour placer l'exécutable ailleurs, écris %command% à cet endroit. NOM=valeur au début définit une variable d'environnement."
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "These old copies moved safely, but some of their files were in use and stayed behind. You can delete them:"
@@ -7006,8 +7114,8 @@ msgid "This app isn't installed on this computer. Install it to restore a copy."
 msgstr "Cette app n'est pas installée sur cet ordinateur. Installez-la pour restaurer une copie."
 
 #: ../../apps/launcher/src/App.tsx
-msgid "This app may keep its saves in this folder. They'll be removed with it."
-msgstr "Cette app garde peut-être ses sauvegardes dans ce dossier. Elles seront supprimées avec lui."
+msgid "This app may keep your saves in its folder. They'll go to the trash too."
+msgstr "Cette app garde peut-être tes sauvegardes dans son dossier. Elles iront aussi à la corbeille."
 
 #: ../../apps/launcher/src/app-files.tsx
 msgid "This app may stop finding its saves and settings, because it will look for them in a different place. Nothing is deleted."
@@ -7040,6 +7148,10 @@ msgstr "Cette discussion n'est pas disponible"
 #: ../../apps/launcher/src/store.tsx
 msgid "This download doesn't match the file Quiver checked, so it wasn't installed."
 msgstr "Ce téléchargement ne correspond pas au fichier vérifié par Quiver, il n'a donc pas été installé."
+
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "This file is outside the app's folder, so Quiver never moves or deletes it."
+msgstr "Ce fichier est en dehors du dossier de l'app, donc Quiver ne le déplace ni ne le supprime jamais."
 
 #. A game with no name known, as in “This game needs your own copy of the game”
 #: ../../apps/launcher/src/tv/programs/usePrograms.ts
@@ -7269,6 +7381,10 @@ msgstr "Désépingler et revenir à {version}"
 #: ../../apps/launcher/src/versions.ts
 msgid "Unpin and install {version}"
 msgstr "Désépingler et installer {version}"
+
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "Untick a tag to hide it on every app on this computer. Tick it to show it again. To hide one on a single app, untick it in that app's Tags menu."
+msgstr "Décoche un tag pour le masquer sur toutes les apps de cet ordinateur. Coche-le pour l'afficher à nouveau. Pour le masquer sur une seule app, décoche-le dans le menu Tags de cette app."
 
 #. Goes to the folder around the one shown
 #: ../../apps/launcher/src/file-picker.tsx
@@ -7606,6 +7722,11 @@ msgstr "Options d'affichage"
 msgid "View repository"
 msgstr "Voir le dépôt"
 
+#. A release file Quiver doesn't offer while its virus scan runs, in Which download?'s Show all files
+#: ../../apps/launcher/src/App.tsx
+msgid "Virus scan not finished"
+msgstr "Analyse antivirus non terminée"
+
 #: ../../apps/launcher/src/detail.tsx
 msgid "VirusTotal hasn't cleared this release, so installing it asks you to confirm first."
 msgstr "VirusTotal n'a pas encore validé cette version : pour l'installer, vous devez d'abord confirmer."
@@ -7706,6 +7827,10 @@ msgid "What players say"
 msgstr "L'avis des joueurs"
 
 #: ../../apps/launcher/src/feedback.tsx
+msgid "What went wrong, and when? What did you try to fix it?"
+msgstr "Qu’est-ce qui n’a pas marché, et quand ? Qu’avez-vous essayé pour le régler ?"
+
+#: ../../apps/launcher/src/feedback.tsx
 msgid "What worked well, and what didn't? Did you do anything to get it running or fix a problem?"
 msgstr "Qu'est-ce qui a bien marché, et qu'est-ce qui n'a pas marché ? Avez-vous fait quelque chose pour le faire tourner ou régler un problème ?"
 
@@ -7804,6 +7929,10 @@ msgstr "Quelles parties de {name} ?"
 #: ../../apps/launcher/src/tv/views/Settings.tsx
 msgid "Which tab it's in. Automatic follows the catalog."
 msgstr "L'onglet où il se trouve. Automatique suit le catalogue."
+
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "Which tags"
+msgstr "Quels tags"
 
 #: ../../apps/launcher/src/controls.tsx
 msgid "While a game runs, hold Select for a mouse pointer: the right stick moves it, RT clicks, LT right-clicks, the left stick scrolls"
@@ -8034,6 +8163,10 @@ msgstr "Votre bibliothèque est vide"
 msgid "Your library syncs across your devices, and you can review apps. Everything works without an account too."
 msgstr "Votre bibliothèque se synchronise entre vos appareils, et vous pouvez donner votre avis sur les apps. Tout fonctionne aussi sans compte."
 
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "Your own tags, which you can rename or delete on every app at once, and the tags your apps have from the catalog, which you can hide on this computer."
+msgstr "Tes propres tags, que tu peux renommer ou supprimer sur toutes les apps à la fois, et les tags que tes apps ont du catalogue, que tu peux masquer sur cet ordinateur."
+
 #: ../../apps/launcher/src/library-sidebar.tsx
 msgid "Your play"
 msgstr "Votre activité"
@@ -8059,6 +8192,7 @@ msgstr ""
 msgid "Your saves from {device} were put in place. The saves that were here are backed up."
 msgstr "Vos parties de {device} ont été mises en place. Celles qui étaient ici sont sauvegardées."
 
+#. Tab: the player's own tags
 #: ../../apps/launcher/src/detail.tsx
 #: ../../apps/launcher/src/tag-settings.tsx
 msgid "Your tags"

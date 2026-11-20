@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Entry } from "@quiverlauncher/api";
-import { sortPlan, withOwnConsoles, adoptedInstall, appRef, appsFolders, groupFolder, joinPath, rootOf, unsortedApps, folderClash, keptWhereTheyAre, ownedBy, bringsAlong, catalogMatch, declinedUpdate, earlyGet, earlyGetOffer, earlyKey, earlyOffer, earlyRelease, earlyUpdate, filesAddable, renamable, folderGone, forHereKey, hasUpdate, importedPlaylists, importedTags, removedTags, withAllTags, markedInApps, retagged, withOldPictures, installFiles, keptInstall, locatable, looseInstalls, mayUpdate, movableApps, movedInside, noProgram, notOfferedYet, oncePerFolder, twinsOf, withCopiesIn, withTwins, playedRef, relocatedInstall, skipped, uniqueFiles, updateFor, mainRelease, onlyPrereleases, updatesOf, usableCatalog, wantsPrereleases, withEarlyFor, withMainRelease, withPrereleases, type ImportedApp, type LibraryItem } from "./store";
+import { sortPlan, withOwnConsoles, adoptedInstall, appRef, appsFolders, groupFolder, joinPath, rootOf, unsortedApps, folderClash, keptWhereTheyAre, ownedBy, bringsAlong, catalogMatch, declinedUpdate, earlyGet, earlyGetOffer, earlyKey, earlyOffer, earlyRelease, earlyUpdate, filesAddable, folderNameOf, renamable, folderGone, forHereKey, hasUpdate, importedPlaylists, importedTags, removedTags, withAllTags, markedInApps, retagged, withOldPictures, installFiles, keptInstall, locatable, looseInstalls, mayUpdate, movableApps, movedInside, noProgram, notOfferedYet, oncePerFolder, twinsOf, withCopiesIn, withTwins, playedRef, relocatedInstall, skipped, uniqueFiles, updateFor, mainRelease, onlyPrereleases, updatesOf, usableCatalog, wantsPrereleases, withEarlyFor, withMainRelease, withPrereleases, type ImportedApp, type LibraryItem } from "./store";
 import type { OldApp, OldFilter } from "./native";
 
 const entry = {
@@ -364,7 +364,7 @@ describe("pre-releases", () => {
     expect(wantsPrereleases({}, { prereleases: "include" })).toBe(true);
   });
 
-  it("update as each app chose, else as the player's default, which is to offer them; an installer's never by itself", () => {
+  it("update as each app chose, else as the player's default, which is to offer them; an installer's, or a copy of a version Quiver doesn't know, never by itself", () => {
     expect(updatesOf({}, {})).toBeUndefined();
     expect(updatesOf({ autoUpdates: true }, {})).toBe("auto");
     expect(updatesOf({ autoUpdates: true }, undefined)).toBe("auto");
@@ -377,6 +377,13 @@ describe("pre-releases", () => {
     expect(updatesOf({ autoUpdates: true }, { installer: "setup" })).toBeUndefined();
     expect(updatesOf({ autoUpdates: true }, { setup: true })).toBeUndefined();
     expect(updatesOf({}, { updates: "pinned", setup: true })).toBe("pinned");
+    // A copy whose version Quiver doesn't know may already be the newest, or newer than the verified release.
+    expect(updatesOf({ autoUpdates: true }, { version: "0.0.0" })).toBeUndefined();
+    expect(updatesOf({}, { updates: "auto", version: "v0.0.0" })).toBeUndefined();
+    expect(updatesOf({}, { updates: "pinned", version: "0.0.0" })).toBe("pinned");
+    // Known: one 3.x knew the version of, and a release that really is 0.0.0, which has its date.
+    expect(updatesOf({ autoUpdates: true }, { version: "v0.2.0" })).toBe("auto");
+    expect(updatesOf({ autoUpdates: true }, { version: "0.0.0", releasedAt: 10 })).toBe("auto");
   });
 
   it("make the newest pre-release the app's update for a player who chose them", () => {
@@ -683,13 +690,18 @@ describe("several apps folders", () => {
     expect(owned.b).toBe(within.b);
   });
 
-  it("refuses a new default inside another apps folder, or around one", () => {
+  it("takes a new default inside another apps folder, or around one, but not inside an app's own folder", () => {
     const folders = appsFolders(installs, "D:\\Games");
-    expect(folderClash("D:\\Games\\More", folders)).toContain("D:\\Games");
-    expect(folderClash("C:/", folders)).toContain("QuiverLauncher3");
+    expect(folderClash("D:\\Games\\Quiver", folders)).toBeNull();
+    expect(folderClash("C:/QuiverLauncher3/Apps/Quiver", folders)).toBeNull();
+    expect(folderClash("C:/", folders)).toBeNull();
     expect(folderClash("E:/Games", folders)).toBeNull();
     // An apps folder already in the list can become the default.
     expect(folderClash("C:/QuiverLauncher3/Apps", folders)).toBeNull();
+    // An app's own folder, or one inside it, in the default (however it's written) or kept in another.
+    expect(folderClash("d:/games/sm64", folders)).toContain("sm64");
+    expect(folderClash("D:\\Games\\sm64\\Mods", folders)).toContain("sm64");
+    expect(folderClash("C:\\QuiverLauncher3\\Apps\\Zelda64Recomp\\New", folders)).toContain("Zelda64Recomp");
   });
 });
 
@@ -847,11 +859,17 @@ describe("renamable", () => {
     expect(renamable(base)).toBe(true);
     expect(renamable({ ...base, dir: "C:\\Quiver\\apps\\Xbox 360\\ArmyOfTwo", inApps: true, group: "Xbox 360" })).toBe(true);
   });
-  it("isn't a folder kept where it is, a program, or a Windows installer's", () => {
+  it("is a folder kept where it is, located or 3.x's, whatever it's called (#455)", () => {
+    expect(renamable({ ...base, dir: "D:\\Games\\Army of Two" })).toBe(true);
+    expect(renamable({ ...base, dir: "D:\\Old\\Apps\\ArmyOfTwo", inApps: true })).toBe(true);
+    expect(renamable({ ...base, dir: "C:\\Quiver\\apps\\Xbox 360\\Other", inApps: true, group: "Xbox 360" })).toBe(true);
+    expect(folderNameOf({ ...base, dir: "D:\\Games\\Army of Two" })).toBe("Army of Two");
+    expect(folderNameOf(base)).toBe("ArmyOfTwo");
+  });
+  it("isn't a program, the player's own files where they keep them, or a Windows installer's", () => {
     expect(renamable(undefined)).toBe(false);
-    expect(renamable({ ...base, dir: "D:\\Games\\ArmyOfTwo" })).toBe(false);
-    expect(renamable({ ...base, dir: "D:\\Old\\Apps\\ArmyOfTwo", inApps: true })).toBe(false);
-    expect(renamable({ ...base, dir: "C:\\Quiver\\apps\\Xbox 360\\Other", inApps: true, group: "Xbox 360" })).toBe(false);
+    expect(renamable({ ...base, dir: "D:\\Games\\ArmyOfTwo", program: "game.exe" })).toBe(false);
+    expect(renamable({ ...base, dir: "D:\\Games\\Mine", local: true })).toBe(false);
     expect(renamable({ ...base, installer: "msi" })).toBe(false);
     expect(renamable({ ...base, installer: "setup" })).toBe(false);
   });

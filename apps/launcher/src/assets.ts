@@ -17,6 +17,9 @@ const FORMATS = [
   /\.flatpak$/i,
   /\.exe$/i,
   /\.apk$/i,
+  // A Windows script, which some apps release instead of a program: an installer that fetches and builds the app,
+  // say. It runs as the app's program, as a double click would.
+  /\.(bat|cmd)$/i,
   // A Windows installer last: its setup asks the player where to put it, and usually to allow it.
   /\.msi$/i,
   // No file extension: a bare program, or a file a host names without one ("Game-v1.2-Windows"),
@@ -26,6 +29,9 @@ const FORMATS = [
 
 /** A Windows installer package, whose own setup installs it. */
 export const isMsi = (name: string) => /\.msi$/i.test(name);
+
+/** A Windows batch script, which only Windows runs: Wine has no PowerShell, which the ones apps release mostly use. */
+const isScript = (name: string) => /\.(bat|cmd)$/i.test(name);
 
 /** An Android app, which Android installs. */
 const isApk = (name: string) => /\.apk$/i.test(name);
@@ -131,6 +137,7 @@ export function installable(assets: Asset[], os: Os): Asset[] {
       formatRank(a.filename) >= 0 &&
       // Windows Installer only runs on Windows, not through Wine.
       (!isMsi(a.filename) || os === "windows") &&
+      (!isScript(a.filename) || os === "windows") &&
       // Android only installs APKs, and only Android does.
       isApk(a.filename) === (os === "android"),
   );

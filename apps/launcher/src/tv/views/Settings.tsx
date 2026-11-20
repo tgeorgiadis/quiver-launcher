@@ -17,6 +17,9 @@ import { sortName } from "./SortList";
 import { OTHER } from "../consoles/consoles";
 import { useLauncher } from "../../store";
 import { native } from "../../native";
+import { CLOSE_COMBOS } from "../../controls";
+import { usePadLabels } from "../../pad-hints";
+import { label as padLabel } from "../../spatial";
 import { INTERFACE_SIZES, nearestInterfaceSize } from "../../zoom";
 import { resolveConsole } from "../consoles/resolve";
 
@@ -180,6 +183,7 @@ function Unassigned({ onClose }: { onClose: () => void }) {
 export function Settings({ onClose }: { onClose: () => void }) {
   const { settings: s, setSettings, exit, bridge } = useTv();
   const launcher = useLauncher();
+  const labels = usePadLabels();
   const [screen, setScreen] = useState<"main" | "unassigned">("main");
   const [monitors, setMonitors] = useState<string[]>([]);
   useEffect(() => void tvNative.monitors().then((m) => setMonitors(Array.isArray(m) ? m : []), () => {}), []);
@@ -265,12 +269,21 @@ export function Settings({ onClose }: { onClose: () => void }) {
       set: set("sounds"),
     },
     {
+      // The launcher's setting (Settings → Controllers): off, or the buttons that close a game.
       kind: "choice",
-      label: t`Close a game with Start + Select`,
-      detail: t`Hold both for a second while a game runs, for games with no way to quit`,
-      options: onOffOptions,
-      value: !launcher.settings.closeComboOff,
-      set: (value) => launcher.setSettings((settings) => ({ ...settings, closeComboOff: !value })),
+      label: t`Close a game from the controller`,
+      detail: t`Hold these buttons together for a second while a game runs, for games with no way to quit`,
+      options: [
+        onOffOptions[1],
+        ...CLOSE_COMBOS.map((buttons) => ({ value: buttons.join("+"), label: buttons.map((b) => padLabel("pad", b, labels)).join(" + ") })),
+      ],
+      value: launcher.settings.closeComboOff ? false : (launcher.settings.closeCombo ?? CLOSE_COMBOS[0]).join("+"),
+      set: (value) =>
+        launcher.setSettings((settings) =>
+          value === false
+            ? { ...settings, closeComboOff: true }
+            : { ...settings, closeComboOff: false, closeCombo: value === CLOSE_COMBOS[0].join("+") ? undefined : String(value).split("+") },
+        ),
     },
     ...(bridge.config.os === "linux"
       ? [

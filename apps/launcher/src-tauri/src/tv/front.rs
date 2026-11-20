@@ -61,14 +61,14 @@ fn windows() -> Vec<Hwnd> {
 }
 
 /// Gives the game's window the front while Quiver has it; see the module's comment.
-pub fn bring_forward(root: Option<u32>, dir: PathBuf, since: u64) {
+pub fn bring_forward(root: Option<u32>, dir: Option<PathBuf>, since: u64) {
     let me = std::process::id();
     let started = Instant::now();
     let mut kept: Option<Instant> = None;
     let mut system = System::new();
     while started.elapsed() < WAIT {
         std::thread::sleep(POLL);
-        let game: Vec<u32> = super::session::game_processes(&mut system, root.map(Pid::from_u32), &dir, since).iter().map(|p| p.as_u32()).collect();
+        let game: Vec<u32> = crate::session::game_processes(&mut system, root.map(Pid::from_u32), dir.as_deref(), since).iter().map(|p| p.as_u32()).collect();
         // SAFETY: no arguments.
         let front = unsafe { GetForegroundWindow() };
         let owner = process_of(front);

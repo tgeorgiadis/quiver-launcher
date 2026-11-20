@@ -79,3 +79,26 @@ export function catalogTagCounts(apps: readonly { tags: readonly string[] }[], i
   for (const tag of also) if (!isConsole(tag) && !counts.has(tag.toLowerCase())) counts.set(tag.toLowerCase(), { tag, apps: 0 });
   return [...counts.values()].sort((a, b) => a.tag.localeCompare(b.tag, undefined, { sensitivity: "base" }));
 }
+
+/** Which of the catalog's tags the manager lists: all of them, only those showing, or only those hidden on every app. */
+export type TagFilter = "all" | "shown" | "hidden";
+/** By name, or the ones on the most apps first. */
+export type TagSort = "name" | "apps";
+
+/**
+ * The catalog's tags the manager lists: those whose name (as shown, `label`) has what's searched for, in what the filter
+ * keeps, in the order picked. By name, they keep the order they came in.
+ */
+export function listedTags<T extends { tag: string; apps: number }>(
+  tags: readonly T[],
+  h: HiddenTags | undefined,
+  { search = "", filter = "all", sort = "name", label = (tag: string) => tag }: { search?: string; filter?: TagFilter; sort?: TagSort; label?: (tag: string) => string } = {},
+): T[] {
+  const words = search.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  const listed = tags.filter(({ tag }) => {
+    if (filter !== "all" && hiddenEverywhere(h, tag) !== (filter === "hidden")) return false;
+    const name = `${label(tag)} ${tag}`.toLowerCase();
+    return words.every((w) => name.includes(w));
+  });
+  return sort === "apps" ? listed.sort((a, b) => b.apps - a.apps) : listed;
+}

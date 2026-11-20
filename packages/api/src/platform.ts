@@ -3,7 +3,7 @@ import type { Architecture, Os } from "./index";
 
 export function inferPlatform(filename: string): { os: Os; architecture: Architecture } {
   const s = filename.toLowerCase();
-  const os: Os = /windows|(?<!dar)win(?:32|64)|(?:^|[^a-z])win(?:[^a-z]|$)|\.exe$|\.msi$/.test(s)
+  const os: Os = /windows|(?<!dar)win(?:32|64)|(?:^|[^a-z])win(?:[^a-z]|$)|\.exe$|\.msi$|\.bat$|\.cmd$/.test(s)
     ? "windows"
     : /linux|appimage|flatpak|steamdeck|\.deb$|\.rpm$/.test(s)
       ? "linux"

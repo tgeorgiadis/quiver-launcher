@@ -21,11 +21,14 @@ mod picker;
 mod provider_http;
 #[cfg_attr(target_os = "android", allow(dead_code))]
 mod sandbox;
+mod script;
 mod saves;
 mod secrets;
+mod session;
 mod setup;
 mod shortcut;
 mod snapshots;
+mod specs;
 mod steam;
 mod sync_folder;
 #[cfg(windows)]
@@ -138,6 +141,13 @@ fn config(app: tauri::AppHandle, data: State<Data>) -> Config {
         steam_deck: device::steam_deck(|name| std::env::var(name).ok(), device::board_vendor()),
         package: update::package(),
     }
+}
+
+/// The computer's processor, graphics card and memory, for feedback (specs.rs). Read off the main thread: on Linux and
+/// macOS it reads files and runs sysctl.
+#[tauri::command(async)]
+fn pc_specs() -> specs::Specs {
+    specs::read()
 }
 
 /// The launcher's own JSON files: the library, installs and the catalog cache.
@@ -289,7 +299,7 @@ fn target(data: &Data, folder: &str, dir: Option<String>, preferred: &[String], 
                 return Err(if anywhere {
                     launch::program_gone(&exe)
                 } else {
-                    format!("{chosen} isn't in the app's folder any more. Choose its program again in Launch options.")
+                    format!("Can't find {chosen} in the app's folder. Choose the executable again in Launch options.")
                 });
             }
             let windows = exe.extension().is_some_and(|e| e.eq_ignore_ascii_case("exe") || e.eq_ignore_ascii_case("bat"));
@@ -304,7 +314,7 @@ fn target(data: &Data, folder: &str, dir: Option<String>, preferred: &[String], 
                 }
                 // A Windows installer's program: the player can choose it again, or run the installer again.
                 if app_dir(data, folder, dir).is_ok_and(|d| msi::installed(&d) || setup::elsewhere(&d)) {
-                    return Err(format!("The program isn't at {program} any more. Choose it again in Launch options, or run its installer again."));
+                    return Err(format!("Can't find the executable at {program}. Choose it again in Launch options, or run the installer again."));
                 }
                 return Err(format!("The program isn't at {program} any more. Remove this app and add it again from where it is now."));
             }
@@ -321,6 +331,8 @@ fn target(data: &Data, folder: &str, dir: Option<String>, preferred: &[String], 
                 return Ok(shortcut::Target { exe: flatpak.clone(), program: flatpak, args: vec!["run".into(), id], env: vec![], dir, extract_appimage: false, steam_proton: false, options });
             }
             match install::find_executable(&dir, preferred, if wine { "windows" } else { OS }) {
+                // A script that installs the app somewhere else: what it installed, once that's there (script.rs).
+                Some(exe) if cfg!(windows) && script::installs(&dir, &exe) => (script::installed(&dir).unwrap_or(exe), wine),
                 Some(exe) => (exe, wine),
                 // A folder with only a Windows build runs through Wine on Linux.
                 None if OS == "linux" && !wine => (install::find_executable(&dir, preferred, "windows").ok_or(NO_PROGRAM)?, true),
@@ -441,15 +453,16 @@ fn start(
     launch: &launch::LaunchOptions,
     presence: Option<discord::Game>,
 ) -> Result<(), String> {
+    let app_folder = app_dir(data, folder, dir.clone()).ok();
     let target = target(data, folder, dir, preferred, wine, program, launch)?;
     let (program, args, env) = target.command();
     let wine = program == Path::new("wine");
     let mut command = host::command(&program);
     command.args(&args).envs(env).current_dir(&target.dir);
-    // Its output, in a log of its own (game-logs/), so a game that fails can say why.
+    // Its output, in a log of its own (game-logs/), so a game that fails can say why (tv/session.rs).
     let log = tv::session::GameLog::new(&data.0, folder);
     let_it_come_to_the_front();
-    let spawned: std::io::Result<tv::session::Started> = sandbox::check(&program)
+    let spawned: std::io::Result<session::Started> = sandbox::check(&program)
         .and_then(|_| {
             sandbox::game(command)
                 // The game outlives the launcher's console; it shouldn't hold it open.
@@ -458,36 +471,45 @@ fn start(
                 .stderr(log.stdio())
                 .spawn()
         })
-        .map(tv::session::Started::Child);
+        .map(session::Started::Child);
     // One that needs administrator rights: Windows asks the player, as a double click would.
     #[cfg(windows)]
     let spawned = spawned.or_else(|e| match e.raw_os_error() {
         Some(elevate::REQUIRED) => elevate::start(&program, &args, &target.dir)
-            .map(|process| tv::session::Started::Elsewhere(Box::new(move || process.is_some_and(|p| p.wait())) as Waiting)),
+            .map(|process| session::Started::Elsewhere(Box::new(move || process.is_some_and(|p| p.wait())) as Waiting)),
         _ => Err(e),
     });
     spawned
         .map(|game| {
-            // Its play time: from now until it closes, or until a program it handed off to does (tv/session.rs).
+            // The app's install script: Quiver looks for what it installs from now on.
+            if let Some(folder) = app_folder.as_ref().filter(|f| cfg!(windows) && target.exe.starts_with(f) && script::installs(f, &target.exe)) {
+                script::ran(folder);
+            }
+            // Its play time: from now until it closes, or until a program it handed off to does (session.rs).
             let shown = id.as_ref().is_some_and(|id| {
                 app.state::<Running>().started(id);
                 // On the player's Discord profile while it runs (discord.rs).
                 presence.map(|game| app.state::<discord::Presence>().started(id, game)).is_some()
             });
-            let ended = {
-                let (app, id) = (app.clone(), id.clone());
-                move |seconds: Option<u64>| {
-                    let Some(id) = id else { return };
-                    app.state::<Running>().closed(&id);
-                    if shown {
-                        app.state::<discord::Presence>().closed(&id);
-                    }
-                    if let Some(seconds) = seconds {
-                        let _ = app.emit("app-closed", Played { id, seconds });
-                    }
+            // TV mode steps aside while it runs (tv/TvMode.tsx).
+            if let Some(id) = &id {
+                let _ = app.emit("app-started", id);
+            }
+            // Its folder tells the game's other processes apart only when it's the app's own: a program elsewhere may sit
+            // in a folder others share (/usr/bin, say), whose every program would count as the game.
+            let own = app_folder.as_ref().is_some_and(|f| session::inside(&target.exe, f)).then(|| target.dir.clone());
+            let (dir, folder) = (target.dir.clone(), folder.to_string());
+            session::track(game, own, move |ended| {
+                tv::session::report(&app, &ended, id.clone(), folder, &log, &dir);
+                let Some(id) = id else { return };
+                app.state::<Running>().closed(&id);
+                if shown {
+                    app.state::<discord::Presence>().closed(&id);
                 }
-            };
-            tv::session::track(&app, game, target.dir.clone(), id, folder.to_string(), log, ended);
+                if let Some(seconds) = ended.seconds {
+                    let _ = app.emit("app-closed", Played { id, seconds });
+                }
+            });
         })
         .map_err(|e| match e.kind() {
             // No, at Windows' prompt for administrator rights.
@@ -1276,10 +1298,11 @@ fn create_app_folder(data: State<Data>, name: String) -> Result<String, String> 
     Ok(name)
 }
 
-/// Renames an installed app's folder, and its Proton prefix with it: one at the
-/// top of the apps folder, or `dir`, where it is (its console's folder, say),
-/// whose own name is `from`. Not while the launcher has it running: its files
-/// are in use.
+/// Renames an installed app's folder, and its Proton prefix (named `from`, the
+/// folder name the launcher keeps for it) with it: one at the top of the apps
+/// folder, or `dir`, where it is (its console's folder, or a folder the player
+/// located), whatever that's called. Not while the launcher has it running: its
+/// files are in use.
 #[tauri::command]
 fn rename_app_folder(data: State<Data>, running: State<Running>, id: String, from: String, to: String, dir: Option<String>) -> Result<(), String> {
     if running.has(&id) {
@@ -1287,17 +1310,12 @@ fn rename_app_folder(data: State<Data>, running: State<Running>, id: String, fro
     }
     let from = install::plain_name(&from)?;
     let to = install::plain_name(&to)?;
-    let parent = match dir {
-        None => data.apps(),
-        Some(dir) => {
-            let dir = PathBuf::from(dir);
-            match (dir.parent(), dir.file_name()) {
-                (Some(parent), Some(name)) if name == from => parent.to_path_buf(),
-                _ => return Err("This app's folder can't be renamed.".into()),
-            }
-        }
+    // One kept elsewhere (a console folder, or one the player located) is renamed where it is, whatever it's called.
+    let old = match dir {
+        None => data.apps().join(from),
+        Some(dir) => PathBuf::from(dir),
     };
-    apps_folder::rename(&parent, &data.0.join("proton"), from, to)
+    apps_folder::rename(&old, &data.0.join("proton"), from, to)
 }
 
 /// Those of `names` that are files in an installed app's folder.
@@ -1329,7 +1347,7 @@ async fn pick_program(app: tauri::AppHandle, window: tauri::WebviewWindow, dir: 
         "macos" => Some(("Apps", &["app"])),
         _ => None,
     };
-    let path = picker::choose(&app, &window, picker::Want::File, "Choose the program that starts the app", dir.as_deref().map(Path::new), filter).await?;
+    let path = picker::choose(&app, &window, picker::Want::File, "Choose the executable that starts the app", dir.as_deref().map(Path::new), filter).await?;
     Some(path.to_string_lossy().into())
 }
 
@@ -1512,6 +1530,22 @@ fn asset_url(name: &str, release: &update::Release) -> Option<String> {
     release.assets.iter().find(|a| a.name == name).map(|a| a.browser_download_url.clone())
 }
 
+/// The executable Play starts when the player hasn't chosen one, as `target`
+/// finds it, for Launch options to name: relative to the app's folder when
+/// it's inside, else its full path (one a setup script installed). None when
+/// there's none, or it isn't a file Quiver picks (a Windows installer's or a
+/// Flatpak's).
+#[tauri::command]
+fn found_program(data: State<'_, Data>, folder: String, dir: Option<String>, preferred: Vec<String>, wine: bool) -> Option<String> {
+    let dir = app_dir(&data, &folder, dir).ok().filter(|d| d.is_dir())?;
+    if msi::installed(&dir) || setup::elsewhere(&dir) || flatpak::installed(&dir).is_some() {
+        return None;
+    }
+    let exe = install::find_executable(&dir, &preferred, if wine { "windows" } else { OS }).or_else(|| (OS == "linux" && !wine).then(|| install::find_executable(&dir, &preferred, "windows")).flatten())?;
+    let exe = if cfg!(windows) && script::installs(&dir, &exe) { script::installed(&dir).unwrap_or(exe) } else { exe };
+    Some(exe.strip_prefix(&dir).unwrap_or(&exe).to_string_lossy().into_owned())
+}
+
 /// The programs in an installed app's folder, relative to it, for the player
 /// to pick which ones Play starts.
 #[tauri::command]
@@ -1530,6 +1564,15 @@ fn file_kinds(data: State<'_, Data>, folder: String, dir: Option<String>) -> Res
     Ok(install::file_kinds(&app_dir(&data, &folder, dir)?))
 }
 
+/// The programs in an installed app's folder when none is one the catalog prefers, for the catalog to learn which
+/// starts it (`install::preferred_missed`); None when the catalog prefers none, or one is there. A Windows build run
+/// through Wine is looked at as Windows'.
+#[tauri::command]
+fn missed_programs(data: State<'_, Data>, folder: String, dir: Option<String>, preferred: Vec<String>, wine: bool) -> Result<Option<Vec<String>>, String> {
+    let os = if wine { "windows" } else { OS };
+    Ok(install::preferred_missed(&app_dir(&data, &folder, dir)?, &preferred, os))
+}
+
 /// Asks which program starts an installed app, starting in its folder: one
 /// inside it is kept relative to it, so it survives the folder moving; one
 /// anywhere else by its full path (`launch::chosen_program`), such as a game
@@ -1545,7 +1588,7 @@ async fn pick_executable(app: tauri::AppHandle, window: tauri::WebviewWindow, fo
     };
     let picked = match std::env::var_os("QUIVER_PICK") {
         Some(path) => Some(PathBuf::from(path)),
-        None => picker::choose(&app, &window, picker::Want::File, "Choose the program that starts the app", Some(&root), None).await,
+        None => picker::choose(&app, &window, picker::Want::File, "Choose the executable that starts the app", Some(&root), None).await,
     };
     let Some(picked) = picked else { return Ok(None) };
     if program.is_some() {
@@ -2422,9 +2465,10 @@ pub fn run() {
             tv::programs::tv_programs,
             tv::romneed::tv_place_rom,
             tv::romneed::tv_open_readme,
-            tv::session::close_combo,
-            tv::session::select_pointer,
+            session::close_combo,
+            session::select_pointer,
             config,
+            pc_specs,
             cancel_install,
             read_state,
             write_state,
@@ -2516,6 +2560,7 @@ pub fn run() {
             steam_keyboard,
             pick_executable,
             list_programs,
+            found_program,
             find_copies,
             pick_copy,
             check_copy,
@@ -2523,6 +2568,7 @@ pub fn run() {
             copy_present,
             android_app_gone,
             file_kinds,
+            missed_programs,
             list_protons,
             automatic_runner,
             pick_proton,

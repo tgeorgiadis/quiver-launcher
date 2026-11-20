@@ -6,7 +6,7 @@ import { Plural, Trans } from "@lingui/react/macro";
 import { i18n } from "@quiverlauncher/i18n";
 import type { MessageDescriptor } from "@lingui/core";
 import { Artwork, EntryCard, OS_NAMES, PlatformIcons, ReleaseBadge, SourcedImage, heroSources } from "@quiverlauncher/ui";
-import { PORTABLE_FILE, availableOn, canGet, catalogOs, declinedUpdate, earlyGetOffer, earlyOffer, filesAddable, hasUpdate, locatable, movable, noProgram, pulledVerified, renamable, rootOf, samePath, skipped, stillWaiting, updateFor, updatesOf, useLauncher, type AppMove, type Choice } from "./store";
+import { PORTABLE_FILE, availableOn, canGet, catalogOs, declinedUpdate, earlyGetOffer, earlyOffer, filesAddable, folderNameOf, hasUpdate, locatable, movable, noProgram, pulledVerified, renamable, rootOf, samePath, skipped, stillWaiting, updateFor, updatesByItself, updatesOf, useLauncher, type AppMove, type Choice } from "./store";
 import { TabPrompt } from "./pad-hints";
 import { Dialog, FilterPill, LibraryPage, MultiPill, Popover, consoleOptions, filterLabel, pickedLabel, projectTypeOptions, withOverrides, type MultiOption } from "./library";
 import { BrowseCardOptions, useBrowseCards, useLibraryView, useSidebarFits } from "./library-view";
@@ -58,8 +58,8 @@ import { AppUpdatesNotice } from "./app-updates";
 
 type Tab = "library" | "browse";
 /** A page over the library or catalog: an app's, an original game's, Downloads or Settings. */
-/** Where an app's page opens: its Releases, with a version's notes open (Downloads' See changelog), or its Player feedback. */
-export type PageAt = { releases: string } | { feedback: true } | { readme: true };
+/** Where an app's page opens: its Releases, with a version's notes open (Downloads' See changelog), its Player feedback, or its Discussions (a discussion's app name). */
+export type PageAt = { releases: string } | { feedback: true } | { readme: true } | { discussions: true };
 type View =
   | { kind: "app"; entry: Entry; at?: PageAt }
   | { kind: "game"; game: GameLink }
@@ -80,7 +80,7 @@ export function App() {
   useUpdateCheck();
   useTray();
   useDiscordPresence();
-  const { library, client, settings, setSettings, config } = useLauncher();
+  const { library, client, settings, setSettings, config, catalog } = useLauncher();
   // TV mode (tv/TvHost.tsx) shows over all this once turned on, or by itself in Steam's Game Mode.
   const setTv = (on: boolean) => setSettings({ ...settings, tvMode: on ? "on" : "off" });
   useAnnouncementsCheck(client);
@@ -123,7 +123,18 @@ export function App() {
   const openSettings = useCallback(() => open({ kind: "settings" }), [open]);
   const openCommunity = useCallback(() => open({ kind: "community" }), [open]);
   const openDiscussion = useCallback((id: string) => open({ kind: "discussion", id }), [open]);
-  const discussionNav = useMemo(() => ({ openDiscussion, openCommunity, signIn: () => setSigningIn(true) }), [openDiscussion, openCommunity]);
+  // A discussion's app name opens that app's Discussions; an app not in the catalog loaded here is asked for by its slug.
+  const openAppDiscussions = useCallback(
+    async (entryId: string, slug?: string) => {
+      const entry = catalog[entryId] ?? (slug ? (await client.app(slug).catch(() => null))?.entry : undefined);
+      if (entry) openApp(entry, { discussions: true });
+    },
+    [catalog, client, openApp],
+  );
+  const discussionNav = useMemo(
+    () => ({ openDiscussion, openCommunity, openApp: openAppDiscussions, signIn: () => setSigningIn(true) }),
+    [openDiscussion, openCommunity, openAppDiscussions],
+  );
   // An app's Tags menu asks for the player's tags, in Settings' Library section (tag-settings.tsx).
   useEffect(() => {
     const manage = () => open({ kind: "settings", section: "library" });
@@ -1004,7 +1015,7 @@ function Action({ entry, apart, reasonElsewhere }: { entry: Entry; apart?: boole
                 )
               }
             >
-              <Trans>Choose its program…</Trans>
+              <Trans>Choose its executable…</Trans>
             </button>
           )}
           {/* A local app has nothing to download: Try again plays it again. */}
@@ -1214,7 +1225,7 @@ function AppPage({
   const { own, refresh } = useOwnFeedback(entry, site);
   const { user } = useAccount();
   const [tab, setTab] = useState<"overview" | "media" | "releases" | "feedback" | "discussions" | "computer" | "saves">(
-    at && "releases" in at ? "releases" : at && "feedback" in at ? "feedback" : "overview",
+    at && "releases" in at ? "releases" : at && "feedback" in at ? "feedback" : at && "discussions" in at ? "discussions" : "overview",
   );
   // Another tab: its content keeps the last one's height until it has come (nothing loading in it, and no longer
   // changing size), so More like this, under it, doesn't come up into sight for a moment and go down again.
@@ -1736,7 +1747,7 @@ function UpdatesChoice({ id }: { id: string }) {
   const { installs, settings, setUpdates } = useLauncher();
   const install = installs[id];
   if (!install || install.local) return null;
-  const auto = !install.installer && !install.setup;
+  const auto = updatesByItself(install);
   const installedVersion = versionLabel(install.version);
   const byDefault =
     settings.autoUpdates && auto
@@ -2400,7 +2411,7 @@ function UninstallPrompt() {
   // Out of the library too: said only when it's in there.
   const leaves = confirming.remove && library.some((i) => i.id === entry.id);
   const close = () => confirmUninstall(null);
-  const program = going?.launch?.executable && outsideFolder(going.launch.executable, going.program) ? going.launch.executable : undefined;
+  const executable = going?.launch?.executable && outsideFolder(going.launch.executable, going.program) ? going.launch.executable : undefined;
   return (
     <Dialog label={t`Uninstall ${name}`} onClose={close}>
       <div className="detail-body uninstall-prompt">
@@ -2416,15 +2427,15 @@ function UninstallPrompt() {
         </p>
         {portable && (
           <p>
-            <Trans>This app may keep its saves in this folder. They&apos;ll be removed with it.</Trans>
+            <Trans>This app may keep your saves in its folder. They&apos;ll go to the trash too.</Trans>
           </p>
         )}
         {/* What it starts is somewhere else (Launch options): only its folder goes, so the player knows that stays. */}
-        {program && (
+        {executable && (
           <p>
             <Trans>
-              It starts <code>{program}</code>, which is outside its folder, so it stays where it is. Uninstall or delete that yourself if you don&apos;t
-              want it any more.
+              It starts <code>{executable}</code>. That file is outside the app&apos;s folder, so it won&apos;t be deleted. You can delete it yourself if you
+              don&apos;t need it.
             </Trans>
           </p>
         )}
@@ -2464,7 +2475,8 @@ function RenameFolderPrompt() {
   const [name, setName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const folder = renaming ? installs[renaming.id]?.folder : undefined;
+  const install = renaming ? installs[renaming.id] : undefined;
+  const folder = install && folderNameOf(install);
   useEffect(() => {
     setName(folder ?? "");
     setError(null);
@@ -2727,7 +2739,14 @@ function ChooseFileDialog({ choice }: { choice: Choice }) {
       <strong>
         {a.os === "unknown" ? t`Platform unspecified` : (OS_NAMES[a.os] ?? a.os)}
         {a.architecture !== "unknown" ? ` · ${a.architecture}` : ""}
-        {unapproved.has(a.id) ? ` · ${t({ message: "Not approved", comment: "A release file a maintainer didn't tick for the app, in Which download?'s Show all files" })}` : ""}
+        {unapproved.has(a.id)
+          ? ` · ${
+              // Its scan isn't done, which says more than "Not approved": most files the site leaves out are waiting on theirs.
+              a.scan?.verdict === "pending"
+                ? t({ message: "Virus scan not finished", comment: "A release file Quiver doesn't offer while its virus scan runs, in Which download?'s Show all files" })
+                : t({ message: "Not approved", comment: "A release file a maintainer didn't tick for the app, in Which download?'s Show all files" })
+            }`
+          : ""}
       </strong>
       <small>{a.filename}</small>
     </span>
@@ -2876,8 +2895,9 @@ function SuggestPlatform({ choice, files }: { choice: Choice; files: Asset[] }) 
  * first, and where a controller starts.
  */
 function UnverifiedPrompt() {
-  const { asking, installs } = useLauncher();
-  if (!asking) return null;
+  const { asking, choice, installs } = useLauncher();
+  // After a file choice already open for another app (Update all), not on top of it.
+  if (!asking || choice) return null;
   const { entry, file, reasons, scan, checkEndsAt, early, resolve } = asking;
   // Put in the sentences below by name.
   const release = versionLabel(asking.version);
@@ -2927,7 +2947,9 @@ function UnverifiedPrompt() {
                 ? t`Apps are set to update to the newest release right away, and ${release} is the newest. Quiver Launcher is asking in this case because of its virus scan.`
                 : `${early ? "" : `${t`Quiver doesn't offer a release of ${app} yet.`} `}${t`Quiver Launcher isn't offering this release as an update yet.`}`
             : unapproved
-              ? t`Quiver doesn't offer ${name} for ${app}: it may be for another system, or missed when the downloads were picked.`
+              ? scan?.verdict === "pending"
+                ? t`Quiver doesn't offer ${name} for ${app}, and its virus scan hasn't finished.`
+                : t`Quiver doesn't offer ${name} for ${app}: it may be for another system, or missed when the downloads were picked.`
               : unchecked
                 ? t`Quiver checked ${release}'s other files, not ${name}. It downloads as the developer published it.`
                 : t`${name} changed after ${release} finished its 48-hour wait, and the new file hasn't been out for 48 hours yet. It installs the file Quiver saw, and refuses one that changed since.`}

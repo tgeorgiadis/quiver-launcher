@@ -41,6 +41,15 @@ pub struct InstallRequest {
     pub preferred: Vec<String>,
     /// The program the app started with before an update.
     pub program: Option<String>,
+    /// The player's GitHub token, for a file of a GitHub repository asked for through GitHub's API: a private
+    /// repository's files come only that way. GitHub answers with a redirect to where the file is, which reqwest
+    /// follows without the token, as it leaves `Authorization` behind going to another host.
+    #[serde(default)]
+    pub github_token: Option<String>,
+    /// The file's browser link, tried without the token when GitHub refuses the token itself (expired or revoked):
+    /// a public repository's file still downloads that way, as it did before the token was saved.
+    #[serde(default)]
+    pub fallback_url: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -366,14 +375,20 @@ fn refused(status: reqwest::StatusCode, url: &reqwest::Url) -> String {
 
 /// Streams the file to disk, hashing as it goes; returns its SHA-256.
 async fn download(req: &InstallRequest, to: &Path, progress: &impl Fn(Progress)) -> Result<String, String> {
-    let response = reqwest::Client::builder()
-        .user_agent("QuiverLauncher/4")
-        .build()
-        .map_err(text)?
-        .get(&req.url)
-        .send()
-        .await
-        .map_err(|_| "The download failed. Check your connection and try again.".to_string())?;
+    let client = reqwest::Client::builder().user_agent("QuiverLauncher/4").build().map_err(text)?;
+    let failed = |_| "The download failed. Check your connection and try again.".to_string();
+    let token = req.github_token.as_deref().map(str::trim).filter(|t| !t.is_empty());
+    let mut request = client.get(&req.url);
+    if let Some(token) = token {
+        request = request.bearer_auth(token).header(reqwest::header::ACCEPT, "application/octet-stream");
+    }
+    let mut response = request.send().await.map_err(failed)?;
+    // GitHub refused the token itself: the browser link, without it, as before the token was saved.
+    if token.is_some() && response.status() == reqwest::StatusCode::UNAUTHORIZED {
+        if let Some(fallback) = &req.fallback_url {
+            response = client.get(fallback).send().await.map_err(failed)?;
+        }
+    }
     if response.status() == reqwest::StatusCode::NOT_FOUND {
         // Its developer deleted it, or the release, after the site last read it.
         return Err(MISSING.into());
@@ -427,7 +442,7 @@ fn tarball(name: &str) -> Option<Tarball> {
 fn has_known_extension(name: &str) -> bool {
     let lower = name.to_lowercase();
     tarball(&lower).is_some()
-        || [".zip", ".7z", ".rar", ".msi", ".exe", ".appimage", ".flatpak", ".apk", ".x86_64", ".sh"].iter().any(|end| lower.ends_with(end))
+        || [".zip", ".7z", ".rar", ".msi", ".exe", ".bat", ".cmd", ".appimage", ".flatpak", ".apk", ".x86_64", ".sh"].iter().any(|end| lower.ends_with(end))
 }
 
 /// The name a file with no known extension should have, from its first bytes;
@@ -542,9 +557,25 @@ fn unpack(file: &Path, name: &str, out: &Path) -> Result<(), String> {
     let lower = name.to_lowercase();
     if lower.ends_with(".zip") {
         let mut archive = zip::ZipArchive::new(fs::File::open(file).map_err(text)?).map_err(text)?;
+        #[cfg(unix)]
+        let mut links = Vec::new();
         for i in 0..archive.len() {
             let mut entry = archive.by_index(i).map_err(text)?;
-            let Some(path) = enclosed(entry.name()).map(|p| out.join(p)) else { continue };
+            let Some(inside) = enclosed(entry.name()) else { continue };
+            // A zip made with the Mac's Compress keeps each file's Finder details in `__MACOSX`, which no app needs and
+            // which keeps a lone wrapper folder from being hoisted.
+            if inside.starts_with("__MACOSX") {
+                continue;
+            }
+            let path = out.join(&inside);
+            // A Mac app's frameworks link `Versions/Current`; as a copy, its signature no longer verifies.
+            #[cfg(unix)]
+            if entry.unix_mode().is_some_and(|mode| mode & 0o170000 == 0o120000) {
+                let mut target = String::new();
+                entry.read_to_string(&mut target).map_err(text)?;
+                links.push((inside, target));
+                continue;
+            }
             if entry.is_dir() {
                 fs::create_dir_all(&path).map_err(text)?;
                 continue;
@@ -558,6 +589,21 @@ fn unpack(file: &Path, name: &str, out: &Path) -> Result<(), String> {
                 use std::os::unix::fs::PermissionsExt;
                 let _ = fs::set_permissions(&path, fs::Permissions::from_mode(mode & 0o777));
             }
+        }
+        // Made last, so no entry is written through a link. Only links that point down from their own folder, as a
+        // framework's do: a chain of links with `..` can lead out of `out` even when each one seems to stay inside,
+        // and one to `.` makes a folder that holds itself.
+        #[cfg(unix)]
+        for (inside, target) in links {
+            let down = !target.is_empty() && !target.starts_with('/') && !target.contains('\0') && !target.split('/').any(|p| p == ".." || p == ".");
+            let path = out.join(&inside);
+            if !down || fs::symlink_metadata(&path).is_ok() {
+                continue;
+            }
+            if let Some(parent) = path.parent() {
+                fs::create_dir_all(parent).map_err(text)?;
+            }
+            std::os::unix::fs::symlink(&target, &path).map_err(text)?;
         }
         Ok(())
     } else if let Some(packing) = tarball(&lower) {
@@ -626,11 +672,14 @@ fn enclosed(name: &str) -> Option<PathBuf> {
 }
 
 /// Hoists the contents of a lone wrapper folder, as most archives have one.
+/// A Mac app (`Game.app`) is the program itself, not a wrapper: hoisting its
+/// `Contents` leaves a folder macOS can't start.
 pub(crate) fn flatten(dir: &Path) -> io::Result<()> {
     loop {
         let entries: Vec<_> = fs::read_dir(dir)?.collect::<Result<_, _>>()?;
         let [only] = entries.as_slice() else { return Ok(()) };
-        if !only.file_type()?.is_dir() {
+        let app = Path::new(&only.file_name()).extension().is_some_and(|e| e.eq_ignore_ascii_case("app"));
+        if !only.file_type()?.is_dir() || app {
             return Ok(());
         }
         let inner = dir.join(".quiver-flatten");
@@ -648,7 +697,7 @@ pub(crate) fn flatten(dir: &Path) -> io::Result<()> {
 /// `msiexec /x` with the product's code).
 fn records() -> Vec<&'static str> {
     #[allow(unused_mut)]
-    let mut names = vec![VERSION_FILE, crate::flatpak::FILE, crate::msi::FILE, crate::msi::V3_FILE, crate::setup::FILE, crate::mods::RECORD];
+    let mut names = vec![VERSION_FILE, crate::flatpak::FILE, crate::msi::FILE, crate::msi::V3_FILE, crate::setup::FILE, crate::script::FILE, crate::mods::RECORD];
     #[cfg(target_os = "android")]
     names.push(crate::android::FILE);
     names
@@ -754,7 +803,7 @@ pub(crate) fn writable(path: &Path) {
 }
 
 /// Programs that come with an app but don't start it.
-pub(crate) const HELPERS: [&str; 6] = ["unins", "crash", "vc_redist", "dxsetup", "setup", "updater"];
+pub(crate) const HELPERS: [&str; 10] = ["unins", "crashpad", "crashreport", "crashhandler", "crashsender", "crash_", "vc_redist", "dxsetup", "setup", "updater"];
 
 /// The program to start: the first file matching the catalog's preferred
 /// executables, else the likeliest program, shallowest first.
@@ -763,26 +812,26 @@ pub fn find_executable(dir: &Path, preferred: &[String], os: &str) -> Option<Pat
     walk(dir, 0, &mut files);
     files.sort_by_key(|p| (p.components().count(), p.to_string_lossy().to_lowercase()));
     let name = |p: &PathBuf| p.file_name().map(|n| n.to_string_lossy().to_lowercase()).unwrap_or_default();
-    for pattern in preferred {
-        let Ok(glob) = glob::Pattern::new(&pattern.to_lowercase()) else { continue };
-        if let Some(hit) = files.iter().find(|p| glob.matches(&name(p))) {
-            return Some(hit.clone());
-        }
+    if let Some(hit) = preferred_in(dir, &files, preferred) {
+        return Some(hit.clone());
     }
     let helper = |n: &str| HELPERS.iter().any(|h| n.starts_with(h));
     let linux = |p: &PathBuf, n: &str| n.ends_with(".appimage") || n.ends_with(".x86_64") || is_unix_binary(p);
     // A Windows build's helper script (a run.sh beside its .exe) isn't the
     // game: with no Linux program here, there's none, and Wine runs the .exe.
     let scripts = files.iter().any(|p| linux(p, &name(p))) || !files.iter().any(|p| name(p).ends_with(".exe") && !helper(&name(p)));
-    let found = files.iter().find(|p| {
-        let n = name(p);
-        let program = match os {
-            "windows" => n.ends_with(".exe"),
-            "macos" => n.ends_with(".app"),
-            _ => linux(p, &n) || (scripts && n.ends_with(".sh")),
-        };
-        program && !helper(&n)
-    });
+    let found = if os == "windows" {
+        likeliest(dir, files.iter().filter(|p| name(p).ends_with(".exe") && !helper(&name(p))).collect())
+    } else {
+        files.iter().find(|p| {
+            let n = name(p);
+            let program = match os {
+                "macos" => n.ends_with(".app"),
+                _ => linux(p, &n) || (scripts && n.ends_with(".sh")),
+            };
+            program && !helper(&n)
+        })
+    };
     // With nothing better: a Windows build a script starts, a Mac build that's a bare program rather than an .app.
     found
         .or_else(|| {
@@ -796,7 +845,136 @@ pub fn find_executable(dir: &Path, preferred: &[String], os: &str) -> Option<Pat
                 program && !helper(&n)
             })
         })
+        // Its setup or updater, when that's the only program it has: some apps are started by theirs.
+        .or_else(|| files.iter().filter(|_| os == "windows").find(|p| name(p).ends_with(".exe") && ONLY_PROGRAMS.iter().any(|h| name(p).starts_with(h))))
         .cloned()
+}
+
+/// The first file matching the catalog's preferred programs, in their order. A pattern with a folder in it
+/// ("bin/Game.exe") is matched against the file's path in the app's folder, any other against its name.
+fn preferred_in<'a>(dir: &Path, files: &'a [PathBuf], preferred: &[String]) -> Option<&'a PathBuf> {
+    let relative = |p: &PathBuf| p.strip_prefix(dir).unwrap_or(p).to_string_lossy().replace('\\', "/").to_lowercase();
+    let name = |p: &PathBuf| p.file_name().map(|n| n.to_string_lossy().to_lowercase()).unwrap_or_default();
+    preferred.iter().find_map(|pattern| {
+        let pattern = pattern.replace('\\', "/").to_lowercase();
+        let glob = glob::Pattern::new(&pattern).ok()?;
+        let folder = pattern.contains('/');
+        files.iter().find(|p| glob.matches(&if folder { relative(p) } else { name(p) }))
+    })
+}
+
+/// Programs reported to the catalog at most, when none is its preferred one.
+const REPORTED_PROGRAMS: usize = 16;
+
+/// When the catalog names preferred programs and the app's folder has none of them: the programs it does have, by
+/// their paths in the folder, shallowest first, for the catalog to learn the right one (`start-program` on the site).
+/// None when the catalog names none, or one is there.
+pub fn preferred_missed(dir: &Path, preferred: &[String], os: &str) -> Option<Vec<String>> {
+    if preferred.is_empty() || !dir.is_dir() {
+        return None;
+    }
+    let mut files = Vec::new();
+    walk(dir, 0, &mut files);
+    files.sort_by_key(|p| (p.components().count(), p.to_string_lossy().to_lowercase()));
+    if preferred_in(dir, &files, preferred).is_some() {
+        return None;
+    }
+    let program = |p: &PathBuf| {
+        let n = p.file_name().map(|n| n.to_string_lossy().to_lowercase()).unwrap_or_default();
+        match os {
+            "windows" => n.ends_with(".exe") || n.ends_with(".bat") || n.ends_with(".cmd"),
+            "macos" => n.ends_with(".app") || is_unix_binary(p),
+            _ => n.ends_with(".appimage") || n.ends_with(".x86_64") || n.ends_with(".sh") || is_unix_binary(p),
+        }
+    };
+    let programs: Vec<String> = files
+        .iter()
+        .filter(|p| program(p))
+        .take(REPORTED_PROGRAMS)
+        .map(|p| p.strip_prefix(dir).unwrap_or(p).to_string_lossy().replace('\\', "/"))
+        .collect();
+    Some(programs)
+}
+
+/// Helpers that start an app when it has no other program.
+const ONLY_PROGRAMS: [&str; 2] = ["setup", "updater"];
+
+/// Words in a program's name that say it's a helper of the app's, not what starts it: "Game Settings.exe",
+/// "game-updater.exe", "GameBugReporter.exe".
+const HELPER_WORDS: [&str; 40] = [
+    "setup", "install", "installer", "uninstall", "uninstaller", "updater", "update", "settings", "config", "configuration", "configurator", "configuracion", "server", "dedicated",
+    "editor", "report", "reporter", "tool", "tools", "extract", "extractor", "patcher", "benchmark", "diagnostics", "debug", "debugger", "dev", "test", "tests", "handler", "helper",
+    "redist", "cli", "console", "headless", "backend", "viewer", "packer", "converter", "importer",
+];
+/// Programs of other makers that come along with an app.
+const TOOLS: [&str; 22] = [
+    "ffmpeg", "ffprobe", "ffplay", "7z", "7za", "7zr", "curl", "aria2c", "wget", "zip", "unzip", "createdump", "gh", "python", "pythonw", "cmake", "ninja", "git", "hactool", "premake5", "chdman",
+    "dolphintool",
+];
+/// Words for an earlier build kept beside the current one: "Game (classic).exe".
+const OLD_WORDS: [&str; 4] = ["classic", "legacy", "old", "deprecated"];
+/// Words in a folder's name that say nothing about which program is its app's.
+pub(crate) const COMMON_WORDS: [&str; 26] = [
+    "recomp", "recompiled", "recompilation", "static", "port", "native", "the", "for", "and", "launcher", "game", "engine", "windows", "win64", "win32", "x64", "x86", "decomp", "project",
+    "remastered", "enhanced", "open", "edition", "play", "start", "pc",
+];
+
+/// A name's words, lowercase and without accents: split at anything that isn't a letter or digit, and where a
+/// capital follows a small letter ("KameoBugReporter" is kameo, bug, reporter).
+pub(crate) fn words(name: &str) -> Vec<String> {
+    let plain = |c: char| match c {
+        'á' | 'à' | 'â' | 'ä' | 'ã' | 'å' => 'a',
+        'é' | 'è' | 'ê' | 'ë' => 'e',
+        'í' | 'ì' | 'î' | 'ï' => 'i',
+        'ó' | 'ò' | 'ô' | 'ö' | 'õ' => 'o',
+        'ú' | 'ù' | 'û' | 'ü' => 'u',
+        'ñ' => 'n',
+        'ç' => 'c',
+        c => c,
+    };
+    let mut words = vec![String::new()];
+    let mut before = ' ';
+    for c in name.chars() {
+        let small = c.to_lowercase().next().map_or(c, plain);
+        if !small.is_alphanumeric() || (c.is_uppercase() && (before.is_lowercase() || before.is_ascii_digit())) {
+            words.push(String::new());
+        }
+        if small.is_alphanumeric() {
+            words.last_mut().unwrap().push(small);
+        }
+        before = c;
+    }
+    words.retain(|w| !w.is_empty());
+    words
+}
+
+/// The program likeliest to start a Windows build, of those in its folder: the shallowest, and there one that isn't
+/// a helper by its name, isn't an earlier build kept beside the current one, is the app's own launcher, or is named
+/// most like the folder; then by name.
+fn likeliest<'a>(dir: &Path, programs: Vec<&'a PathBuf>) -> Option<&'a PathBuf> {
+    let stem = |p: &Path| p.file_stem().map(|s| s.to_string_lossy().into_owned()).unwrap_or_default();
+    let named: Vec<Vec<String>> = programs.iter().map(|p| words(&stem(p))).collect();
+    let folder = dir.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
+    let folder_words: Vec<String> = words(&folder).into_iter().filter(|w| w.len() >= 4 && !COMMON_WORDS.contains(&w.as_str())).collect();
+    let folder_name = words(&folder).concat();
+    let rank = |i: usize| {
+        let (path, words) = (programs[i], &named[i]);
+        let whole = stem(path).to_lowercase();
+        // "7za64" is 7za.
+        let tool = whole.trim_end_matches("x64").trim_end_matches("x86").trim_end_matches("64").trim_end_matches("32");
+        let helper = words.iter().any(|w| HELPER_WORDS.contains(&w.as_str()) || w.ends_with("tool")) || TOOLS.contains(&whole.as_str()) || TOOLS.contains(&tool);
+        // Old only beside the same name without the word: a game called Classic is itself.
+        let current: Vec<&String> = words.iter().filter(|w| !OLD_WORDS.contains(&w.as_str())).collect();
+        let old = current.len() < words.len() && named.iter().enumerate().any(|(j, other)| j != i && other.iter().collect::<Vec<_>>() == current);
+        let launcher = words.iter().any(|w| w.ends_with("launcher"));
+        // "Play Game.exe" is named as Game.exe is.
+        let core: String = words.iter().filter(|w| !["play", "start"].contains(&w.as_str())).map(String::as_str).collect();
+        let whole_match = if core.len() >= 3 && folder_name.contains(&core) { core.len() } else { 0 };
+        let alike = folder_words.iter().filter(|w| core.contains(w.as_str())).map(|w| w.len()).max().unwrap_or(0).max(whole_match);
+        let depth = path.strip_prefix(dir).map_or(0, |rel| rel.components().count());
+        (depth, helper, old, !launcher, std::cmp::Reverse(alike), path.file_name().map(|n| n.to_string_lossy().to_lowercase()).unwrap_or_default())
+    };
+    (0..programs.len()).min_by_key(|&i| rank(i)).map(|i| programs[i])
 }
 
 /// The kinds of file in an app's folder (their extensions, never their names), for an error report to say what was
@@ -818,7 +996,7 @@ pub fn file_kinds(dir: &Path) -> Vec<String> {
 /// not an uninstaller or a runtime's installer. Shallowest first, then by name;
 /// a Windows build's too on Linux, where Wine runs it.
 pub fn programs(dir: &Path, os: &str) -> Vec<PathBuf> {
-    const NOT_PROGRAMS: [&str; 4] = ["unins", "crash", "vc_redist", "dxsetup"];
+    const NOT_PROGRAMS: [&str; 8] = ["unins", "crashpad", "crashreport", "crashhandler", "crashsender", "crash_", "vc_redist", "dxsetup"];
     let mut files = Vec::new();
     walk(dir, 0, &mut files);
     files.sort_by_key(|p| (p.components().count(), p.to_string_lossy().to_lowercase()));
@@ -826,7 +1004,7 @@ pub fn programs(dir: &Path, os: &str) -> Vec<PathBuf> {
         .into_iter()
         .filter(|p| {
             let n = p.file_name().map(|n| n.to_string_lossy().to_lowercase()).unwrap_or_default();
-            let windows = n.ends_with(".exe") || n.ends_with(".bat");
+            let windows = n.ends_with(".exe") || n.ends_with(".bat") || n.ends_with(".cmd");
             let program = match os {
                 "windows" => windows,
                 "macos" => n.ends_with(".app"),
@@ -893,6 +1071,76 @@ fn unrar_into(_file: &Path, _out: &Path) -> Result<(), String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// A one-request HTTP server on this computer: what `answer` says to the request it gets, which goes to `seen`.
+    fn serve(answer: impl FnOnce(&str) -> String + Send + 'static) -> (u16, std::sync::mpsc::Receiver<String>) {
+        use std::io::{Read, Write};
+        let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+        let port = listener.local_addr().unwrap().port();
+        let (seen, heard) = std::sync::mpsc::channel();
+        std::thread::spawn(move || {
+            let (mut stream, _) = listener.accept().unwrap();
+            let mut buf = [0u8; 8192];
+            let n = stream.read(&mut buf).unwrap();
+            let request = String::from_utf8_lossy(&buf[..n]).to_lowercase();
+            stream.write_all(answer(&request).as_bytes()).unwrap();
+            seen.send(request).unwrap();
+        });
+        (port, heard)
+    }
+
+    fn fetch(url: String, github_token: Option<&str>, fallback_url: Option<String>) -> Result<String, String> {
+        let req = InstallRequest {
+            id: "github:quiver/private".into(),
+            url,
+            filename: "game.zip".into(),
+            checksum: None,
+            folder: "private".into(),
+            dir: None,
+            into: None,
+            files_to_add: vec![],
+            version: "v1.0.0".into(),
+            preferred: vec![],
+            program: None,
+            github_token: github_token.map(Into::into),
+            fallback_url,
+        };
+        let dir = tempfile::tempdir().unwrap();
+        tauri::async_runtime::block_on(download(&req, &dir.path().join("game.zip"), &|_| {}))
+    }
+
+    #[test]
+    fn a_private_repositorys_file_comes_through_githubs_api_with_the_token_which_its_redirect_leaves_behind() {
+        let (file_port, file_saw) = serve(|_| "HTTP/1.1 200 OK\r\nContent-Length: 5\r\nConnection: close\r\n\r\nhello".into());
+        // As GitHub's API: the file for the token, else as if there were no such repository.
+        let (api_port, api_saw) = serve(move |request| {
+            if request.contains("authorization: bearer secret") && request.contains("accept: application/octet-stream") {
+                format!("HTTP/1.1 302 Found\r\nLocation: http://localhost:{file_port}/file\r\nContent-Length: 0\r\nConnection: close\r\n\r\n")
+            } else {
+                "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\nConnection: close\r\n\r\n".into()
+            }
+        });
+        let sha = fetch(format!("http://127.0.0.1:{api_port}/repos/quiver/private/releases/assets/7"), Some(" secret "), None);
+        assert_eq!(sha.unwrap(), hex::encode(Sha256::digest(b"hello")));
+        assert!(api_saw.recv().unwrap().contains("authorization: bearer secret"));
+        assert!(!file_saw.recv().unwrap().contains("authorization"), "the token stays with GitHub's API");
+    }
+
+    #[test]
+    fn without_a_token_a_private_repositorys_file_is_missing() {
+        let (api_port, _) = serve(|_| "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\nConnection: close\r\n\r\n".into());
+        assert_eq!(fetch(format!("http://127.0.0.1:{api_port}/repos/quiver/private/releases/assets/7"), None, None), Err(MISSING.into()));
+    }
+
+    #[test]
+    fn a_token_github_refuses_falls_back_to_the_browser_link_without_it() {
+        let (file_port, file_saw) = serve(|_| "HTTP/1.1 200 OK\r\nContent-Length: 5\r\nConnection: close\r\n\r\nhello".into());
+        // As GitHub's API for an expired token: Bad credentials.
+        let (api_port, _) = serve(|_| "HTTP/1.1 401 Unauthorized\r\nContent-Length: 0\r\nConnection: close\r\n\r\n".into());
+        let sha = fetch(format!("http://127.0.0.1:{api_port}/repos/quiver/public/releases/assets/7"), Some("expired"), Some(format!("http://127.0.0.1:{file_port}/game.zip")));
+        assert_eq!(sha.unwrap(), hex::encode(Sha256::digest(b"hello")));
+        assert!(!file_saw.recv().unwrap().contains("authorization"), "the browser link goes without the token");
+    }
 
     #[test]
     fn a_refused_download_says_who_and_what_to_do_without_the_address() {
@@ -1123,6 +1371,78 @@ mod tests {
     }
 
     #[test]
+    fn tells_when_the_catalogs_program_is_missing() {
+        let dir = tempfile::tempdir().unwrap();
+        for f in ["Game.exe", "bin/tool.exe", "readme.txt", "bin/Game-1.2.exe"] {
+            let p = dir.path().join(f);
+            fs::create_dir_all(p.parent().unwrap()).unwrap();
+            fs::write(p, "").unwrap();
+        }
+        let missed = |preferred: &[&str]| preferred_missed(dir.path(), &preferred.iter().map(|p| p.to_string()).collect::<Vec<_>>(), "windows");
+        assert_eq!(missed(&[]), None);
+        assert_eq!(missed(&["game.exe"]), None);
+        assert_eq!(missed(&["Gone.exe", "bin/Game-*.exe"]), None);
+        assert_eq!(missed(&["Gone.exe"]), Some(vec!["Game.exe".into(), "bin/Game-1.2.exe".into(), "bin/tool.exe".into()]));
+        // A pattern with a folder is matched against the path.
+        assert_eq!(find_executable(dir.path(), &["BIN/game-*.exe".into()], "windows"), Some(dir.path().join("bin/Game-1.2.exe")));
+        assert_eq!(missed(&["tool.exe"]), None);
+    }
+
+    #[test]
+    fn picks_the_game_over_the_helpers_beside_it() {
+        let pick = |folder: &str, files: &[&str]| {
+            let root = tempfile::tempdir().unwrap();
+            let dir = root.path().join(folder);
+            for f in files {
+                let p = dir.join(f);
+                fs::create_dir_all(p.parent().unwrap()).unwrap();
+                fs::write(p, "").unwrap();
+            }
+            find_executable(&dir, &[], "windows").map(|p| p.strip_prefix(&dir).unwrap().to_string_lossy().replace('\\', "/"))
+        };
+        let picks = |folder: &str, files: &[&str], want: &str| assert_eq!(pick(folder, files).as_deref(), Some(want), "{files:?}");
+        // A helper by a word anywhere in its name, however it's spelled.
+        picks("Savage Wind", &["Savage Wind Configuration.exe", "savagewind.exe"], "savagewind.exe");
+        picks("Strikers", &["strikers-settings.exe", "strikers.exe"], "strikers.exe");
+        picks("sm64coopdx", &["coopdx_updater.exe", "sm64coopdx.exe"], "sm64coopdx.exe");
+        picks("PT", &["pt-updater.exe", "pt.exe"], "pt.exe");
+        picks("Kameo", &["KameoBugReporter.exe", "kameorepowered.exe"], "kameorepowered.exe");
+        picks("RedDeadRevolver", &["Configuración.exe", "RedDeadRevolver.exe"], "RedDeadRevolver.exe");
+        picks("Tenkaichi3", &["Tenkaichi3Decomp-setup.exe", "Tenkaichi3Decomp.exe"], "Tenkaichi3Decomp.exe");
+        picks("DDNet", &["DDNet-Server.exe", "DDNet.exe"], "DDNet.exe");
+        picks("SSNE", &["gctool.exe", "SSNE-Native.exe"], "SSNE-Native.exe");
+        // A game named Crash is no crash reporter.
+        picks("CrashOfTheTitans", &["crash-launcher.exe", "crashpad_handler.exe", "uninstall.exe", "builder-pack/toolchain/python/python.exe"], "crash-launcher.exe");
+        // Another maker's program that came along.
+        picks("Arena Evolved", &["ffmpeg.exe", "halo.exe"], "halo.exe");
+        picks("MegaGlest", &["7z.exe", "7za64.exe", "megaglestx64.exe"], "megaglestx64.exe");
+        // An earlier build kept beside the current one; a game named Classic is itself.
+        picks("Infamous", &["inFAMOUS Second Son (classic).exe", "inFAMOUS Second Son.exe"], "inFAMOUS Second Son.exe");
+        picks("Games", &["Sonic Classic.exe", "Tracker.exe"], "Sonic Classic.exe");
+        // The app's own launcher, then the program named like its folder.
+        picks("Wet", &["extract-xiso.exe", "wet.exe", "WetLauncher.exe"], "WetLauncher.exe");
+        picks("zamn", &["zamn.exe", "zamn_launcher.exe"], "zamn_launcher.exe");
+        picks("TimeSplitters-Recomp", &["Prepare Xbox Files.exe", "timesplitters.exe"], "timesplitters.exe");
+        picks("StrikeCollectionHD", &["hdpack_xbrz.exe", "StrikeCollectionHD.exe"], "StrikeCollectionHD.exe");
+        picks("Game", &["Play Game.exe", "The Game.exe"], "Play Game.exe");
+        // Depth still comes first: a setup at the top is the first step, whatever tools are under it.
+        picks("MP4", &["MP4-Setup.exe", "bin/mp4_xlate.exe", "llvm/bin/clang.exe"], "MP4-Setup.exe");
+        // A helper is still the program when it's the only one, and a script comes before a bare setup.
+        picks("Tools", &["Game Editor.exe"], "Game Editor.exe");
+        picks("SMT", &["Updater.exe", "data.pak"], "Updater.exe");
+        picks("Infamous 2", &["Setup.exe", "Play inFAMOUS 2.cmd"], "Play inFAMOUS 2.cmd");
+        assert_eq!(pick("None", &["unins000.exe", "vc_redist.x64.exe"]), None);
+    }
+
+    #[test]
+    fn splits_a_name_into_its_words() {
+        assert_eq!(words("KameoBugReporter"), ["kameo", "bug", "reporter"]);
+        assert_eq!(words("SM3Launcher v2"), ["sm3", "launcher", "v2"]);
+        assert_eq!(words("Configuración_del-juego"), ["configuracion", "del", "juego"]);
+        assert_eq!(words("inFAMOUS"), ["in", "famous"]);
+    }
+
+    #[test]
     fn a_script_starts_a_windows_build_with_no_program_of_its_own() {
         let dir = tempfile::tempdir().unwrap();
         for f in ["setup.bat", "bin/Start Game.bat", "bin/data.pak"] {
@@ -1287,6 +1607,18 @@ mod tests {
     }
 
     #[test]
+    fn a_release_that_is_a_script_installs_as_the_apps_program() {
+        let dir = tempfile::tempdir().unwrap();
+        let file = dir.path().join("download");
+        fs::write(&file, "<# : GT5-Installer.bat\r\n@echo off\r\n").unwrap();
+        let out = dir.path().join("GT5");
+        extract(&file, "GT5-Installer.bat", &out).unwrap();
+        flatten(&out).unwrap();
+        assert_eq!(find_executable(&out, &[], "windows"), Some(out.join("GT5-Installer.bat")));
+        assert_eq!(programs(&out, "windows"), [out.join("GT5-Installer.bat")]);
+    }
+
+    #[test]
     fn names_a_file_without_an_extension_for_its_contents() {
         let dir = tempfile::tempdir().unwrap();
         let zip = {
@@ -1308,6 +1640,7 @@ mod tests {
         assert_eq!(named("game", b"\x7FELF\x02"), None);
         assert_eq!(named("Game.AppImage", &zip), None);
         assert_eq!(named("game.x86_64", b"\x7FELF"), None);
+        assert_eq!(named("GT5-Installer.bat", b"MZ"), None);
         // And it unpacks as the archive it is.
         let file = dir.path().join(name);
         fs::write(&file, &zip).unwrap();
@@ -1418,5 +1751,69 @@ mod tests {
         fs::write(dir.path().join("Game-v1/Game.exe"), "").unwrap();
         flatten(dir.path()).unwrap();
         assert!(dir.path().join("Game.exe").exists() && dir.path().join("data").is_dir());
+    }
+
+    #[test]
+    fn a_zipped_mac_app_stays_an_app() {
+        for top in ["", "Game-v1/"] {
+            let dir = tempfile::tempdir().unwrap();
+            let zip = {
+                let mut w = zip::ZipWriter::new(io::Cursor::new(Vec::new()));
+                for name in ["Game.app/Contents/Info.plist", "Game.app/Contents/MacOS/game"] {
+                    w.start_file(format!("{top}{name}"), zip::write::SimpleFileOptions::default().unix_permissions(0o755)).unwrap();
+                    io::Write::write_all(&mut w, b"game").unwrap();
+                }
+                // As the Mac's Compress makes it.
+                w.start_file(format!("__MACOSX/{top}Game.app/Contents/._Info.plist"), zip::write::SimpleFileOptions::default()).unwrap();
+                io::Write::write_all(&mut w, b"finder").unwrap();
+                w.finish().unwrap().into_inner()
+            };
+            let file = dir.path().join("Game.zip");
+            fs::write(&file, zip).unwrap();
+            let out = dir.path().join("out");
+            extract(&file, "Game.zip", &out).unwrap();
+            flatten(&out).unwrap();
+            assert!(out.join("Game.app/Contents/MacOS/game").is_file(), "{top}");
+            assert!(!out.join("__MACOSX").exists(), "{top}");
+            assert_eq!(find_executable(&out, &[], "macos"), Some(out.join("Game.app")), "{top}");
+        }
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn a_zipped_mac_app_keeps_its_frameworks_links_but_none_that_lead_out() {
+        let dir = tempfile::tempdir().unwrap();
+        let framework = "Game.app/Contents/Frameworks/Engine.framework";
+        let zip = {
+            let mut w = zip::ZipWriter::new(io::Cursor::new(Vec::new()));
+            let options = zip::write::SimpleFileOptions::default();
+            w.start_file(format!("{framework}/Versions/A/Engine"), options).unwrap();
+            io::Write::write_all(&mut w, b"engine").unwrap();
+            w.add_symlink(format!("{framework}/Versions/Current"), "A", options).unwrap();
+            w.add_symlink(format!("{framework}/Engine"), "Versions/Current/Engine", options).unwrap();
+            // Each `..` seems to stay inside, but together they lead out of the folder.
+            w.add_symlink("Game.app/Contents/Frameworks/up", "..", options).unwrap();
+            w.add_symlink("Game.app/Contents/out", "Frameworks/up/../../..", options).unwrap();
+            w.add_symlink("Game.app/etc", "/etc", options).unwrap();
+            // A folder that holds itself.
+            w.add_symlink("Game.app/Contents/self", "./", options).unwrap();
+            // A link to where a later file goes isn't written through.
+            w.add_symlink("Game.app/data", "Contents", options).unwrap();
+            w.start_file("Game.app/data/save.bin", options).unwrap();
+            io::Write::write_all(&mut w, b"save").unwrap();
+            w.finish().unwrap().into_inner()
+        };
+        let file = dir.path().join("Game.zip");
+        fs::write(&file, zip).unwrap();
+        let out = dir.path().join("out");
+        extract(&file, "Game.zip", &out).unwrap();
+        let link = |p: &str| fs::symlink_metadata(out.join(p)).is_ok_and(|m| m.file_type().is_symlink());
+        assert!(link(&format!("{framework}/Versions/Current")) && link(&format!("{framework}/Engine")));
+        assert_eq!(fs::read(out.join(format!("{framework}/Engine"))).unwrap(), b"engine");
+        for refused in ["Game.app/Contents/Frameworks/up", "Game.app/Contents/out", "Game.app/etc", "Game.app/Contents/self"] {
+            assert!(fs::symlink_metadata(out.join(refused)).is_err(), "{refused}");
+        }
+        assert!(!link("Game.app/data") && out.join("Game.app/data/save.bin").is_file());
+        assert!(!out.join("Game.app/Contents/save.bin").exists());
     }
 }

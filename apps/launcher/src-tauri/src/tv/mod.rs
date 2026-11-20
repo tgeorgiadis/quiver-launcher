@@ -2,7 +2,7 @@
 //! commands live here; lib.rs registers them. Its settings are the launcher's.
 pub mod art;
 #[cfg(windows)]
-mod front;
+pub mod front;
 #[cfg(target_os = "linux")]
 pub mod pointer;
 pub mod programs;

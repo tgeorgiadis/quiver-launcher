@@ -7,7 +7,7 @@
  */
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type Dispatch, type ReactNode, type SetStateAction } from "react";
 import { msg, plural, t } from "@lingui/core/macro";
-import { ApiError, createClient, createGithub, createGitlab, createProviders, githubRepository, parseRepository, toRef, type Asset, type Client, type Console, type Entry, type Github, type Gitlab, type Os, type HistoryRelease, type Release, type ReleaseScan, type ReleaseStatus, type UnverifiedRelease, type Verified, type Withdrawn, type Providers, type RepositoryRef } from "@quiverlauncher/api";
+import { ApiError, createClient, createGithub, createGitlab, createProviders, githubAsset, githubProvider, githubRepository, parseRepository, toRef, type Asset, type Client, type Console, type Entry, type Github, type Gitlab, type Os, type HistoryRelease, type Release, type ReleaseScan, type ReleaseStatus, type UnverifiedRelease, type Verified, type Withdrawn, type Providers, type RepositoryRef } from "@quiverlauncher/api";
 import type { HiddenApp } from "./browse-hidden";
 import type { TvSettings } from "./tv/settings";
 import { programHints } from "./tv/programs/programs";
@@ -31,6 +31,7 @@ import type { LibraryView } from "./view";
 import { nearestInterfaceSize, pageZoom } from "./zoom";
 import { copiesNeeded, launchCopies } from "./own-copy";
 import { reportSaveLocations, savesChanged, savesOf, savesOn } from "./saves";
+import { reportMissedPrograms, startPatterns } from "./start-programs";
 import { folderBeforePlay } from "./sync-folder";
 import { beforePlay, onSent, retries, sendBackup, sendCurrent, type CloudApi, type Conflict, type ConfirmPlaces } from "./cloud-saves";
 import { activate, pick, type Language } from "@quiverlauncher/i18n";
@@ -249,6 +250,7 @@ type Launcher = {
   /** Downloads finished since the launcher started, newest first; not kept when it closes. */
   finished: Finished[];
   clearFinished: () => void;
+  /** Which file of a release to download, that an install asks the player, one at a time. */
   choice: Choice | null;
   /** What Quiver hasn't verified that an install asks the player about, one at a time. */
   asking: Asking | null;
@@ -523,13 +525,17 @@ export function appsFolders(installs: Record<string, Install>, appsDir: string):
   return [folders[0], ...folders.slice(1).sort((a, b) => a.path.localeCompare(b.path))];
 }
 
-/** Why `to` can't be a new default folder beside `folders`: one inside another would show its apps as an app's folder. */
+/**
+ * Why `to` can't be a new default folder: it's an installed app's own folder, or inside one, where new apps would
+ * install among that app's files. One inside another apps folder, or around one, is fine: each app there knows its own.
+ */
 export function folderClash(to: string, folders: AppsFolder[]): string | null {
   for (const f of folders) {
-    if (samePath(to, f.path)) continue;
-    const path = f.path;
-    if (within(to, path)) return t`Choose a folder outside ${path}, which has apps in it.`;
-    if (within(path, to)) return t`Choose a folder that doesn't have ${path} inside it.`;
+    for (const app of f.apps) {
+      const dir = app.dir ?? joinPath(f.path, app.folder);
+      const name = baseName(dir);
+      if (within(to, dir)) return t`Choose a folder outside ${name}, which is an app's own folder.`;
+    }
   }
   return null;
 }
@@ -728,12 +734,14 @@ const LOOKUP_TIMEOUT = 30_000;
 const latestOf = (releases: Release[]) => releases.find((r) => !r.prerelease) ?? releases[0];
 /**
  * Whether the player can rename an app's folder: one Quiver keeps in the apps
- * folder, at its top or in its console's folder there (Group by console). Not a
- * 3.x install or a program left where it is, and not a Windows installer's,
- * whose files are wherever its setup put them.
+ * folder, at its top or in its console's folder there (Group by console), or
+ * one kept where it is (Locate existing install, or 3.x's), renamed in place.
+ * Not a program left where it is, the player's own files where they keep them,
+ * or a Windows installer's, whose files are wherever its setup put them.
  */
-export const renamable = (install: Install | undefined) =>
-  Boolean(install && (!install.dir || (install.group && !install.program && baseName(install.dir) === install.folder)) && !install.installer);
+export const renamable = (install: Install | undefined) => Boolean(install && !install.program && !install.installer && !(install.local && install.dir));
+/** The name an app's folder has on disk: a located one keeps the name the player gave it, not the one Quiver would. */
+export const folderNameOf = (install: Install) => (install.dir ? baseName(install.dir) : install.folder);
 
 /** The empty file that has many apps keep their saves and settings in their own folder. */
 export const PORTABLE_FILE = "portable.txt";
@@ -769,12 +777,21 @@ export const catalogOs = (os: Os) => (os === "linux" ? undefined : os);
 export const canGet = (entry: Entry, os: string) => availableOn(entry, os) && Boolean(entry.verified || entry.lastReleaseVersion);
 
 /**
- * How an app updates: its own choice, else the player's default (`Settings.autoUpdates`). Unset: it offers them. A
- * Windows installer's setup waits for the player, so it never updates by itself either way.
+ * Whether an install can update by itself. A Windows installer's setup waits for the player. A copy whose version
+ * Quiver doesn't know (3.x's 0.0.0, v3.rs: one the player unzipped and pointed Quiver at, or 3.x didn't know) has
+ * every release as its update, the one it already has, or an older one when it's newer than the verified release, so
+ * only the player can tell whether to take it. It has no release date, which an install from a release always has.
  */
-export const updatesOf = (settings: Pick<Settings, "autoUpdates">, install: Pick<Install, "updates" | "installer" | "setup"> | undefined): "auto" | "pinned" | undefined => {
+export const updatesByItself = (install: Partial<Pick<Install, "installer" | "setup" | "version" | "releasedAt">> | undefined) =>
+  !install?.installer && !install?.setup && !(bare(install?.version ?? "") === "0.0.0" && !install?.releasedAt);
+
+/**
+ * How an app updates: its own choice, else the player's default (`Settings.autoUpdates`). Unset: it offers them. One
+ * that can't update by itself (`updatesByItself`) offers them either way.
+ */
+export const updatesOf = (settings: Pick<Settings, "autoUpdates">, install: Partial<Pick<Install, "updates" | "installer" | "setup" | "version" | "releasedAt">> | undefined): "auto" | "pinned" | undefined => {
   const updates = install?.updates ?? (settings.autoUpdates ? "auto" : undefined);
-  return updates === "ask" || (updates === "auto" && (install?.installer || install?.setup)) ? undefined : updates;
+  return updates === "ask" || (updates === "auto" && !updatesByItself(install)) ? undefined : updates;
 };
 
 /** Whether an app gets pre-releases: its own choice, else the player's default. */
@@ -1247,8 +1264,10 @@ export type Settings = {
   padOff?: boolean;
   /** No hints along the bottom for what a controller's buttons do. */
   padHintsOff?: boolean;
-  /** Holding Start + Select doesn't close the game being played (src-tauri/src/tv/session.rs). */
+  /** Holding buttons together doesn't close the game being played (src-tauri/src/session.rs). */
   closeComboOff?: boolean;
+  /** The buttons that close it, as gamepad.rs names them; unset is Start + Select (CLOSE_COMBOS in controls.tsx). */
+  closeCombo?: string[];
   /** Linux: holding Select while a game runs doesn't make the right stick a mouse pointer (src-tauri/src/tv/pointer.rs). */
   selectPointerOff?: boolean;
   /** The library in sections by original console: what groupBy "console" was before there were other sections. */
@@ -1458,7 +1477,8 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
   // installs there too.
   const chosenFolder = useRef(new Map<string, string>());
   const [finished, setFinished] = useState<Finished[]>([]);
-  const [choice, setChoice] = useState<Choice | null>(null);
+  // Which file to download, asked one app at a time: Update all can come to several at once.
+  const [choices, setChoices] = useState<Choice[]>([]);
   // Asked one at a time, in turn: Update all can come to several.
   const [questions, setQuestions] = useState<Asking[]>([]);
   const [confirming, confirmUninstall] = useState<Confirming | null>(null);
@@ -1699,9 +1719,10 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     document.addEventListener("visibilitychange", check);
     return () => document.removeEventListener("visibilitychange", check);
   }, [config.os]);
-  // Start + Select closes the game being played, and on Linux Select is a mouse pointer during one (gamepad.rs),
-  // in either mode, unless the player turned them off.
-  useEffect(() => void native.closeCombo(!settings.closeComboOff).catch(() => {}), [settings.closeComboOff]);
+  // Start + Select, or the buttons the player chose, close the game being played (gamepad.rs), unless they turned it off.
+  const closeCombo = settings.closeCombo?.join("+");
+  useEffect(() => void native.closeCombo(!settings.closeComboOff, closeCombo?.split("+")).catch(() => {}), [settings.closeComboOff, closeCombo]);
+  // On Linux, Select is a mouse pointer during a game (gamepad.rs), unless the player turned it off.
   useEffect(() => void native.selectPointer(!settings.selectPointerOff).catch(() => {}), [settings.selectPointerOff]);
   const tv = tvModeOn(settings, config);
   // Again as the window changes: TV mode's going full screen, or the launcher moving to another screen.
@@ -1995,6 +2016,20 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     });
   }
 
+  /** Asks the player which file of a release to download, after any app asked about before it; null: they cancelled. */
+  function chooseFile(choice: Omit<Choice, "resolve">) {
+    return new Promise<Asset | null>((resolve) => {
+      const asked: Choice = {
+        ...choice,
+        resolve: (asset) => {
+          setChoices((c) => c.filter((x) => x !== asked));
+          resolve(asset);
+        },
+      };
+      setChoices((c) => [...c, asked]);
+    });
+  }
+
   /**
    * The newest release of an app with no verified one that isn't blocked, from
    * the site's history (the list Change version reads, a hundred at a time);
@@ -2196,8 +2231,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         if (!asset && !unapproved.length) throw new Problem(msg`This release has no download for your computer.`);
         const choices = asset ? [asset, ...others] : [];
         const all = [...approved, ...unapproved];
-        const picked = await new Promise<Asset | null>((resolve) => setChoice({ entry, version: release.version, assets: choices, all, unapproved: unapproved.map((a) => a.id), unmatched, resolve }));
-        setChoice(null);
+        const picked = await chooseFile({ entry, version: release.version, assets: choices, all, unapproved: unapproved.map((a) => a.id), unmatched });
         if (!picked) return stop("file_choice");
         asset = picked;
         // Told apart from every file it could have been, as Show all files may have offered any of them.
@@ -2216,7 +2250,9 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       if (why === "changed" && auto && newestRightAway) unverified = true;
       else if (why) {
         if (auto) return waitForPlayer(asset.checkEndsAt ?? Infinity);
-        if (!(await ask({ entry, version: release.version, file: { name: asset.filename, why }, reasons: [], checkEndsAt: why === "unapproved" ? undefined : asset.checkEndsAt }))) return stop("unverified_prompt");
+        // One a maintainer didn't tick with its own scan: the scan, as it may not have finished.
+        const scan = why === "unapproved" ? asset.scan : undefined;
+        if (!(await ask({ entry, version: release.version, file: { name: asset.filename, why }, reasons: [], scan, checkEndsAt: why === "unapproved" ? undefined : asset.checkEndsAt }))) return stop("unverified_prompt");
         unverified = true;
       }
       format = installFormat(asset.filename);
@@ -2244,9 +2280,16 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
           (made) => made && (savesChanged(entry.id), sendToCloud(entry.id, was, made)),
           () => {},
         );
+      // A GitHub repository's file through GitHub's API, with the player's token, which a private repository's needs.
+      // A token GitHub refuses (expired or revoked) falls back to the browser link, as before the token was saved.
+      // The token and API are the ones its releases were listed with: its host's.
+      const githubHost = custom?.provider === "github" ? (custom.host ?? "github.com") : undefined;
+      const hostToken = githubHost ? tokensNow.current[githubHost] : undefined;
+      const viaApi = githubHost && hostToken ? githubAsset(githubProvider.apiBase(githubHost), custom!.repository, asset.id) : undefined;
       const done = await native.install({
         id: entry.id,
-        url: asset.url,
+        url: viaApi ?? asset.url,
+        ...(viaApi && { githubToken: hostToken, fallbackUrl: asset.url }),
         filename: asset.filename,
         // A file still in its own wait is checked against what Quiver saw of it, as any other.
         checksum: asset.checksum ?? asset.unverifiedChecksum,
@@ -2641,7 +2684,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     jobs,
     finished,
     clearFinished: () => setFinished([]),
-    choice,
+    choice: choices[0] ?? null,
     asking: questions[0] ?? null,
     confirming,
     confirmUninstall,
@@ -2740,8 +2783,17 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       }
       // What's in its likely save places now, to tell afterwards where it saved (saves.rs). Never in the way of playing.
       if (savesOn(config.os)) await native.savesWatch(savesOf(id, { ...install, program }, catalog[id])).catch(() => {});
-      await native.launch(id, install.folder, install.dir, install.executables, Boolean(install.wine), program, launch, presence).then(
-        () => (musicForGame(), track("app_launched", played)),
+      // The catalog's programs as they are now: a fix to them reaches this app without an update.
+      const patterns = program || launch?.executable ? install.executables : startPatterns(install, entry, config.os);
+      await native.launch(id, install.folder, install.dir, patterns, Boolean(install.wine), program, launch, presence).then(
+        () => {
+          musicForGame();
+          track("app_launched", played);
+          // None of them is in its folder: which programs are, for the catalog to learn the right one. Only from players
+          // who share usage data, only for the catalog's own apps, and never in the way of playing.
+          if (entry?.slug && !program && !launch?.executable && telemetryChoice().enabled)
+            void reportMissedPrograms(install, entry, patterns, config.os, { missed: native.missedPrograms, send: (app, report) => client.startProgram(app, report) }).catch(() => {});
+        },
         async (e) => {
           // Windows asked for administrator rights and the player said no.
           if (e === "cancelled") return;
@@ -2954,7 +3006,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       if (jobs[id] && !("error" in jobs[id])) throw new Problem(msg`Wait for its download to finish, then rename its folder.`);
       if (!name.trim()) throw new Problem(msg`Enter a name for its folder.`);
       const folder = folderNameFor(name);
-      if (folder === install.folder) return folder;
+      if (folder === folderNameOf(install) && folder === install.folder) return folder;
       // One folder, one app, as installing keeps it: none other in the same folder by that name.
       const from = placeOf(install, config.appsDir);
       const to = joinPath(parentOf(from), folder);

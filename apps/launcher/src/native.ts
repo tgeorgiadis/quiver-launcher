@@ -81,6 +81,8 @@ export type Config = {
   /** How this copy was installed, for usage data (update.rs). Missing from an older build. */
   package?: string;
 };
+/** The hardware specs.rs reads. */
+export type PcSpecs = { cpu: string | null; gpu: string | null; ramGb: number | null };
 /** A repository host's answer, fetched by the Rust side for hosts that don't send CORS headers. */
 export type ProviderHttpResponse = { status: number; headers: Record<string, string>; body: string };
 export type Progress = {
@@ -106,6 +108,10 @@ export type InstallRequest = {
   preferred?: string[];
   /** The program the app started with before an update. */
   program?: string;
+  /** The player's GitHub token, with `url` a file of a GitHub repository asked for through its API (githubAsset). */
+  githubToken?: string;
+  /** The file's browser link, downloaded without the token when GitHub refuses the token (expired or revoked). */
+  fallbackUrl?: string;
 };
 /** What an install did. A Windows installer (MSI) puts its files where its setup chose. */
 export type Installed = {
@@ -287,11 +293,13 @@ export type SavesInfo = {
 };
 
 export const native = {
-  /** Whether holding Start + Select closes the game being played. */
-  closeCombo: (on: boolean) => invoke<void>("close_combo", { on }),
+  /** Whether holding these buttons together closes the game being played (unset: Start + Select). */
+  closeCombo: (on: boolean, buttons?: string[]) => invoke<void>("close_combo", { on, buttons: buttons ?? null }),
   /** Linux: whether holding Select makes the right stick a mouse pointer while a game runs. */
   selectPointer: (on: boolean) => invoke<void>("select_pointer", { on }),
   config: () => invoke<Config>("config"),
+  /** The processor, graphics card and memory, for feedback (specs.rs); what can't be read is null. Missing from an older build, which rejects. */
+  pcSpecs: () => invoke<PcSpecs>("pc_specs"),
   readState: <T>(name: StateFile) => invoke<T | null>("read_state", { name }),
   writeState: (name: StateFile, value: unknown) => invoke<void>("write_state", { name, value }),
   stateProblems: () => invoke<StateProblem[]>("state_problems"),
@@ -493,10 +501,15 @@ export const native = {
   pickExecutable: (folder: string, dir?: string, program?: string) => invoke<string | null>("pick_executable", { folder, dir, program }),
   /** The programs in an installed app's folder, relative to it. */
   listPrograms: (folder: string, dir?: string) => invoke<string[]>("list_programs", { folder, dir }),
+  /** The executable Play starts when the player hasn't chosen one (relative to the app's folder when it's inside); null when Quiver doesn't pick a file. */
+  foundProgram: (folder: string, dir: string | undefined, preferred: string[], wine: boolean) => invoke<string | null>("found_program", { folder, dir, preferred, wine }),
   /** Whether Android no longer has an app Quiver installed from an APK; always false elsewhere. */
   androidAppGone: (folder: string, dir?: string) => invoke<boolean>("android_app_gone", { folder, dir }),
   /** The kinds of file in an installed app's folder (extensions, not names), for an error report. */
   fileKinds: (folder: string, dir?: string) => invoke<string[]>("file_kinds", { folder, dir }),
+  /** The programs in an app's folder when it has none of `preferred`; null when it has one, or `preferred` is empty. */
+  missedPrograms: (folder: string, dir: string | undefined, preferred: string[], wine: boolean) =>
+    invoke<string[] | null>("missed_programs", { folder, dir, preferred, wine }),
   listProtons: () => invoke<Proton[]>("list_protons"),
   /** What Automatic runs Windows programs with on Linux, by name (a Proton, else Wine); null with neither. */
   automaticRunner: () => invoke<string | null>("automatic_runner"),

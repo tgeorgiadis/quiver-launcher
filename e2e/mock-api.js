@@ -139,6 +139,12 @@ export async function startMockApi({ pageSize = Infinity } = {}) {
   ];
   let base = "";
   let lastQuery = new URLSearchParams();
+  /** The catalog's consoles, as its facets list them, and each one's maker. */
+  const CONSOLES = [
+    { id: "n64", name: "Nintendo 64", brand: "Nintendo" },
+    { id: "snes", name: "Super Nintendo Entertainment System", brand: "Nintendo" },
+  ];
+  const brands = Object.fromEntries(CONSOLES.map((c) => [c.id, c.brand]));
   const catalogQueries = [];
   const downloads = [];
   const downloadProblems = [];
@@ -230,7 +236,10 @@ export async function startMockApi({ pageSize = Infinity } = {}) {
       // As URL parameters, so tests read the last listing's filters the same way as before.
       lastQuery = new URLSearchParams(Object.entries(a).filter(([k, v]) => k !== "paginationOpts" && v !== undefined).map(([k, v]) => [k, String(v)]));
       const search = (a.search ?? "").toLowerCase();
-      const items = entries.filter((e) => e.name.toLowerCase().includes(search) && (!a.console || e.consoles.includes(a.console)) && (!a.consoles || a.consoles.some((c) => e.consoles.includes(c))) && (!a.platforms || a.platforms.some((o) => e.supportedOS?.includes(o))) && (!a.setup || e.launcher?.setupFiles?.length));
+      // A maker's consoles, as the facets list them: "maker" for one, "makers" beside "consoles" for several.
+      const made = (e) => [a.maker, ...(a.makers ?? [])].filter(Boolean).some((m) => e.consoles.some((c) => brands[c] === m));
+      const anySystem = a.consoles || a.makers;
+      const items = entries.filter((e) => e.name.toLowerCase().includes(search) && (!a.console || e.consoles.includes(a.console)) && (!a.maker || made(e)) && (!anySystem || (a.consoles ?? []).some((c) => e.consoles.includes(c)) || made(e)) && (!a.platforms || a.platforms.some((o) => e.supportedOS?.includes(o))) && (!a.setup || e.launcher?.setupFiles?.length));
       return page(items.map(withVersion), a.paginationOpts);
     },
     "catalog:detail": ({ slug }) => {
@@ -312,13 +321,7 @@ export async function startMockApi({ pageSize = Infinity } = {}) {
         );
       return page(all.sort((a, b) => b.releasedAt - a.releasedAt), paginationOpts);
     },
-    "catalog:facets": () => ({
-      total: entries.length,
-      consoles: [
-        { id: "n64", name: "Nintendo 64", brand: "Nintendo" },
-        { id: "snes", name: "Super Nintendo Entertainment System", brand: "Nintendo" },
-      ],
-    }),
+    "catalog:facets": () => ({ total: entries.length, consoles: CONSOLES }),
     "catalog:matchingGames": ({ search }) => {
       const text = search.trim();
       if (text.length < 2) return [];
@@ -1117,10 +1120,15 @@ function mockAccount(entries) {
       if (refused) return send(res, { error: refused }, 400);
       const key = `${name}:${body.entryId}`;
       const now = Date.now();
+      // As the site keeps PC specs: sent ones replace the earlier, and so does a choice of who sees them.
+      const before = saved.get(key);
+      const specs = body.specs ?? before?.specs;
+      const specsPublic = body.specsPublic ?? before?.specsPublic ?? true;
       saved.set(key, {
         id: `review_${name}_${body.entryId}`, userId: user.id, author: name, entryId: body.entryId,
         ...(body.entryReleaseId ? { entryReleaseId: body.entryReleaseId, version: `v${body.entryReleaseId.split("_").pop()}` } : {}),
-        result: body.result, body: note, platform: body.platform, createdAt: saved.get(key)?.createdAt ?? now, updatedAt: now,
+        result: body.result, body: note, platform: body.platform, createdAt: before?.createdAt ?? now, updatedAt: now,
+        ...(specs ? { specs, specsPublic } : {}),
       });
       reviews.push({ ...body, user: name });
       return send(res, null);
@@ -1141,8 +1149,12 @@ function mockAccount(entries) {
     const c = corrections.find((c) => c.id === id);
     Object.assign(c, { status, reply, resolvedAt: Date.now(), unseen: true });
   };
+  // Everyone's feedback on an app, as reviews.list shows it: PC specs only where their author shows them.
   const feedback = (slug) =>
-    [...saved.values()].filter((r) => r.entryId === entries.find((e) => e.slug === slug)?.id).sort((a, b) => b.createdAt - a.createdAt);
+    [...saved.values()]
+      .filter((r) => r.entryId === entries.find((e) => e.slug === slug)?.id)
+      .sort((a, b) => b.createdAt - a.createdAt)
+      .map(({ specs, specsPublic, ...r }) => (specs && specsPublic ? { ...r, specs, specsPublic } : r));
   const setAnalytics = (name, enabled) => {
     const user = users.get(name);
     if (user) user.analyticsOptOut = enabled ? undefined : true;

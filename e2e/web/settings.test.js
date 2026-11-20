@@ -134,6 +134,23 @@ test("Downloads, and every section of Settings", async () => {
   }
 });
 
+test("tags open in a window of their own, which a controller gets all around, both tabs, ticks in and leaves", async () => {
+  assert.equal(await open('button[aria-label="Settings"]'), "page: Settings");
+  await open('nav[aria-label="Settings sections"] button', { text: "Library" });
+  assert.equal(await open('section[aria-label="Tags"] button', { text: "Manage tags" }), "dialog: Manage tags");
+  await everything("Manage tags › Your tags");
+  await reach.pressOn(app, '[role="tab"]', "South", { text: "From the catalog" });
+  await s.until(() => app.execute(() => Boolean(document.querySelector('[role="dialog"] .catalog-tag'))));
+  await everything("Manage tags › From the catalog");
+  const box = '[role="dialog"] .catalog-tag input';
+  assert.equal(await app.execute((b) => document.querySelector(b).checked, box), true);
+  assert.doesNotMatch(await reach.pressOn(app, box, "South"), /^not reached/);
+  await s.until(() => app.execute((b) => !document.querySelector(b).checked, box));
+  await reach.press(app, "South");
+  await s.until(() => app.execute((b) => document.querySelector(b).checked, box));
+  assert.equal(await back(), "page: Settings");
+});
+
 test("a controller rebinds a control with its own buttons", async () => {
   const binding = 'button[aria-label="Confirm / Select: controller"]';
   assert.equal(await open('button[aria-label="Settings"]'), "page: Settings");
@@ -156,20 +173,28 @@ test("a controller rebinds a control with its own buttons", async () => {
   await s.until(async () => (await cells()).join() === "A,B");
 });
 
-test("Settings turns off closing a game with Start + Select, in either mode", async () => {
+test("Settings turns off closing a game with Start + Select, and chooses other buttons for it", async () => {
   const s2 = await openApp({ state: installed });
   const { page: p } = s2;
   const last = () => p.evaluate(() => window.__calls.filter((c) => c.cmd === "close_combo").at(-1)?.args);
   try {
-    // On from the start, without TV mode.
+    // On from the start.
     await s2.until(async () => (await last())?.on === true);
     await p.locator(".topbar button[aria-label='Settings']").click();
     await p.locator(".settings-nav button", { hasText: "Controllers" }).first().click();
-    const toggle = p.locator(".controls label.toggle", { hasText: "Start + Select" }).locator("input");
+    const toggle = p.locator(".controls label.toggle", { hasText: "Close a game" }).locator("input");
+    const buttons = p.locator(".controls .close-combo select");
+    const saved = () => p.evaluate(() => window.__calls.filter((c) => c.cmd === "write_state" && c.args.name === "settings").at(-1)?.args.value);
     assert.equal(await toggle.isChecked(), true);
+    assert.equal(await buttons.inputValue(), "Start+Select");
+    // Other buttons: the sticks pressed in.
+    await buttons.selectOption("LeftThumb+RightThumb");
+    await s2.until(async () => (await last())?.buttons?.join() === "LeftThumb,RightThumb");
+    assert.deepEqual((await saved()).closeCombo, ["LeftThumb", "RightThumb"]);
     await toggle.uncheck();
     await s2.until(async () => (await last())?.on === false);
-    assert.equal(await p.evaluate(() => window.__calls.filter((c) => c.cmd === "write_state" && c.args.name === "settings").at(-1)?.args.value.closeComboOff), true);
+    assert.equal((await saved()).closeComboOff, true);
+    assert.equal(await buttons.isDisabled(), true);
   } finally {
     await s2.close();
   }

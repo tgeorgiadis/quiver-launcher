@@ -35,6 +35,7 @@ Every plural needs all four forms: `one` (1, 21), `few` (2–4, 22–24), `many`
 | usage data | данные об использовании | |
 | sign in / sign out / account | войти / выйти / аккаунт | |
 | feedback / player | отзывы / игрок | |
+| PC specs | характеристики ПК | the computer a player tried an app on: system, processor, graphics card, memory |
 | mod | мод | |
 | launch options / launch flags | параметры запуска / флаги запуска | |
 | backup (of the library) | резервная копия | |

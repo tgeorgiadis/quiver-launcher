@@ -4,7 +4,7 @@ import { DEFAULT_BROWSE_CARDS, browseCardsOf, sampleEntry, savedBrowseCards } fr
 
 test("nothing saved is box art with every detail but New", () => {
   expect(browseCardsOf()).toEqual(DEFAULT_BROWSE_CARDS);
-  expect(browseCardsOf({})).toEqual({ look: "box", details: ["subtitle", "kinds", "rating", "updated", "platforms", "ai", "setup"] });
+  expect(browseCardsOf({})).toEqual({ look: "box", details: ["icon", "subtitle", "kinds", "rating", "updated", "platforms", "ai", "setup"] });
 });
 
 test("the saved choices are kept in order, and anything unknown is left out", () => {

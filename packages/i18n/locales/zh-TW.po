@@ -66,6 +66,11 @@ msgstr "{0, plural, one {要將 {1} 中的 # 個應用程式移至 {dir} 嗎？}
 msgid "{0, plural, one {Move # installed app into its console folder} other {Move # installed apps into their console folders}}"
 msgstr "{0, plural, one {將 # 個已安裝的應用程式移至對應的主機資料夾} other {將 # 個已安裝的應用程式移至對應的主機資料夾}}"
 
+#. placeholder {0}: own.length
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "{0, plural, one {of your tags} other {of your tags}}"
+msgstr "{0, plural, other {個我的標籤}}"
+
 #. placeholder {0}: elsewhere.size
 #: ../../apps/launcher/src/library.tsx
 msgid "{0, plural, one {Platforms: # app hidden} other {Platforms: # apps hidden}}"
@@ -576,6 +581,10 @@ msgstr "{newerLabel} 暫未提供：釋出還不到 48 小時"
 msgid "{newest} is out. You have {yours}."
 msgstr "{newest} 已釋出。你擁有的是 {yours}。"
 
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "{off, plural, one {from the catalog, # hidden} other {from the catalog, # hidden}}"
+msgstr "{off, plural, other {個目錄標籤，# 個已隱藏}}"
+
 #: ../../apps/launcher/src/downloads-page.tsx
 msgid "{out} is out. You have {have}."
 msgstr "{out} 已釋出。你擁有的是 {have}。"
@@ -616,6 +625,11 @@ msgstr "{pulledVersion} 已撤回"
 #: ../../apps/launcher/src/sync-folder-page.tsx
 msgid "{put, plural, one {The saves of # app were copied in. New backups follow after you play.} other {The saves of # apps were copied in. New backups follow after you play.}}"
 msgstr ""
+
+#. The memory of the computer a player tried an app on
+#: ../../apps/launcher/src/feedback.tsx
+msgid "{ram} GB RAM"
+msgstr "{ram} GB 記憶體"
 
 #: ../../apps/launcher/src/mods.tsx
 msgid "{rating, plural, one {{likes} like} other {{likes} likes}}"
@@ -1041,10 +1055,6 @@ msgstr "新增你的遊戲資料夾 →"
 msgid "Added"
 msgstr "已新增"
 
-#: ../../apps/launcher/src/launch-options.tsx
-msgid "Added after the program, or write %command% where the program should go. NAME=value at the start sets an environment variable."
-msgstr "新增在程式後面，或者在程式應放置的位置寫入 %command%。在開頭使用 NAME=value 設定環境變數。"
-
 #: ../../apps/launcher/src/custom.ts
 msgid "Added from {site}. Quiver hasn't checked this app."
 msgstr "已從 {site} 新增。Quiver 尚未檢查此應用程式。"
@@ -1093,12 +1103,14 @@ msgstr "AI 輔助"
 #. Discover's filter: games in the library or not
 #. Library tab: every app in the library
 #. Library tab: every app in the library
+#. Lists every catalog tag
 #. Shows mods from every site
 #. Shows videos of every kind
 #. The library's platform menu while it shows every platform's apps
 #: ../../apps/launcher/src/library.tsx
 #: ../../apps/launcher/src/media.tsx
 #: ../../apps/launcher/src/mods.tsx
+#: ../../apps/launcher/src/tag-settings.tsx
 #: ../../apps/launcher/src/tv/consoles/tabs.ts
 #: ../../apps/launcher/src/tv/views/Discover.tsx
 msgid "All"
@@ -1260,6 +1272,11 @@ msgstr "應用程式詳細資訊"
 #: ../../apps/launcher/src/detail.tsx
 msgid "APP DETAILS"
 msgstr "應用程式詳細資訊"
+
+#. Browse card detail: the app's own small icon before its name, to tell apart apps for the same game
+#: ../../apps/launcher/src/browse-cards.ts
+msgid "App icon"
+msgstr "應用程式圖示"
 
 #: ../../apps/launcher/src/card-menu.tsx
 #: ../../apps/launcher/src/cloud-saves-page.tsx
@@ -1599,10 +1616,19 @@ msgstr "構建版本"
 msgid "Built with some AI assistance"
 msgstr "在 AI 的協助下構建"
 
+#: ../../apps/launcher/src/controls.tsx
+msgid "Buttons that close a game"
+msgstr "關閉遊戲的按鍵"
+
 #. Who made a mod
 #: ../../apps/launcher/src/mods.tsx
 msgid "by {author}"
 msgstr "作者：{author}"
+
+#. Sorts tags by name
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "By name"
+msgstr "依名稱"
 
 #: ../../apps/launcher/src/game.tsx
 msgid "Called {title} in {region}"
@@ -1686,7 +1712,6 @@ msgstr "輪播圖"
 msgid "Catalog filters"
 msgstr "目錄篩選條件"
 
-#. Settings section: the tags apps have from the catalog, which the player can hide
 #: ../../apps/launcher/src/tag-settings.tsx
 msgid "Catalog tags"
 msgstr "目錄標籤"
@@ -1813,12 +1838,8 @@ msgid "Choose a file…"
 msgstr "選擇檔案 →"
 
 #: ../../apps/launcher/src/store.tsx
-msgid "Choose a folder outside {path}, which has apps in it."
-msgstr "選擇一個不在 {path} 內、且包含應用程式的資料夾。"
-
-#: ../../apps/launcher/src/store.tsx
-msgid "Choose a folder that doesn't have {path} inside it."
-msgstr "選擇一個不包含 {path} 的資料夾。"
+msgid "Choose a folder outside {name}, which is an app's own folder."
+msgstr "請選擇 {name} 以外的資料夾，它是某個應用程式自己的資料夾。"
 
 #: ../../apps/launcher/src/old-library.tsx
 msgid "Choose a folder to look in"
@@ -1862,6 +1883,10 @@ msgstr "選擇程式"
 #: ../../apps/launcher/src/own.tsx
 msgid "Choose a program (.exe) that starts the app."
 msgstr "選擇一個用於啟動應用程式的程式（.exe）。"
+
+#: ../../apps/launcher/src/feedback.tsx
+msgid "Choose a release"
+msgstr "選擇版本"
 
 #: ../../apps/launcher/src/correction.tsx
 msgid "Choose a topic (optional)"
@@ -1915,6 +1940,10 @@ msgstr "選擇“在 GitHub 上建立權杖”，然後登入 GitHub。"
 msgid "Choose Create a token on GitLab, and sign in to GitLab."
 msgstr "選擇“在 GitLab 上建立權杖”，然後登入 GitLab。"
 
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "Choose executable…"
+msgstr "選擇執行檔…"
+
 #: ../../apps/launcher/src/saves-tab.tsx
 #: ../../apps/launcher/src/sync-folder-page.tsx
 msgid "Choose folder"
@@ -1928,8 +1957,8 @@ msgid "Choose Generate token, copy it, paste it above and choose Save token."
 msgstr "選擇“生成權杖”，複製權杖並貼上到上方，然後選擇“儲存權杖”。"
 
 #: ../../apps/launcher/src/App.tsx
-msgid "Choose its program…"
-msgstr "選擇其程式 →"
+msgid "Choose its executable…"
+msgstr "選擇它的執行檔…"
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Choose music to play in the background"
@@ -1944,8 +1973,8 @@ msgid "Choose my Quiver Launcher 3 folder…"
 msgstr "選擇我的 Quiver Launcher 3 資料夾 →"
 
 #: ../../apps/launcher/src/launch-options.tsx
-msgid "Choose program…"
-msgstr "選擇程式 →"
+msgid "Choose the executable you want Quiver to run. It can be in any folder or drive."
+msgstr "選擇要讓 Quiver 執行的執行檔。它可以在任何資料夾或磁碟中。"
 
 #: ../../apps/launcher/src/tv/programs/RomDialog.tsx
 msgid "Choose the file…"
@@ -1966,6 +1995,10 @@ msgstr "選擇用於啟動應用程式的程式。"
 #: ../../apps/launcher/src/own.tsx
 msgid "Choose the program…"
 msgstr "選擇程式 →"
+
+#: ../../apps/launcher/src/feedback.tsx
+msgid "Choose the release you tried, or Not sure."
+msgstr "選擇你嘗試的版本，或選擇「不確定」。"
 
 #: ../../apps/launcher/src/file-picker.tsx
 msgid "Choose this folder"
@@ -2042,6 +2075,7 @@ msgstr "清除搜尋內容"
 #: ../../apps/launcher/src/detail.tsx
 #: ../../apps/launcher/src/mods.tsx
 #: ../../apps/launcher/src/own-copy-setup.tsx
+#: ../../apps/launcher/src/tag-settings.tsx
 #: ../../apps/launcher/src/tv/programs/RomDialog.tsx
 #: ../../apps/launcher/src/window-bar.tsx
 msgid "Close"
@@ -2053,12 +2087,12 @@ msgid "Close {title}"
 msgstr "關閉 {title}"
 
 #: ../../apps/launcher/src/controls.tsx
-msgid "Close a game by holding Start + Select for a second, for games with no way to quit"
-msgstr "同時按住 Start + Select 一秒關閉遊戲；適用於無法自行結束的遊戲"
+msgid "Close a game by holding buttons together for a second, for games with no way to quit"
+msgstr "同時按住按鍵一秒關閉遊戲；適用於無法自行結束的遊戲"
 
 #: ../../apps/launcher/src/tv/views/Settings.tsx
-msgid "Close a game with Start + Select"
-msgstr "用 Start + Select 關閉遊戲"
+msgid "Close a game from the controller"
+msgstr "用手把關閉遊戲"
 
 #: ../../apps/launcher/src/library-sidebar.tsx
 msgid "Close filters"
@@ -2719,6 +2753,10 @@ msgstr ""
 msgid "Every console"
 msgstr "所有主機"
 
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "Every tag is hidden."
+msgstr "所有標籤都已隱藏。"
+
 #: ../../apps/launcher/src/tv/views/Settings.tsx
 msgid "Everything bigger or smaller, on top of fitting the screen: the launcher's interface size"
 msgstr "在符合螢幕大小之外，再整體放大或縮小：啟動器的介面大小"
@@ -2734,6 +2772,10 @@ msgstr "所有內容均為最新版本。"
 #: ../../apps/launcher/src/detail.tsx
 msgid "Evidence"
 msgstr "證據"
+
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "Executable"
+msgstr "執行檔"
 
 #: ../../apps/launcher/src/window-bar.tsx
 msgid "Exit full screen"
@@ -2907,10 +2949,17 @@ msgstr "來自 Quiver Launcher 3。移動其中的應用程式之前，請保留
 msgid "From Quiver's catalog."
 msgstr "來自 Quiver 的目錄。"
 
+#. After how many catalog tags the library's apps have, when none is hidden
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "from the catalog"
+msgstr "個目錄標籤"
+
 #. Heading in an app's Tags menu, over the tags the catalog gave it
 #. Label on an app's page, over the tags the catalog gave it
+#. Tab: the tags apps have from the catalog
 #: ../../apps/launcher/src/card-menu.tsx
 #: ../../apps/launcher/src/detail.tsx
+#: ../../apps/launcher/src/tag-settings.tsx
 msgid "From the catalog"
 msgstr "來自目錄"
 
@@ -3065,7 +3114,7 @@ msgstr "存在問題"
 msgid "Helps improve Quiver Launcher: which screens and features get used, and errors. Never your files or folders."
 msgstr "幫助改進 Quiver Launcher：瞭解哪些螢幕和功能被使用，以及發生的錯誤。絕不會收集你的檔案或資料夾。"
 
-#. Beside a catalog tag the player hid on every app
+#. Lists the catalog tags hidden on every app
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/tag-settings.tsx
 msgid "Hidden"
@@ -3088,17 +3137,11 @@ msgstr "僅顯示已隱藏的應用程式"
 msgid "Hidden apps shown"
 msgstr "顯示已隱藏的應用程式"
 
-#. Button: hide a catalog tag on every app
 #. Hides a post from everyone
 #: ../../apps/launcher/src/discussions.tsx
 #: ../../apps/launcher/src/feedback.tsx
-#: ../../apps/launcher/src/tag-settings.tsx
 msgid "Hide"
 msgstr "隱藏"
-
-#: ../../apps/launcher/src/tag-settings.tsx
-msgid "Hide {name}"
-msgstr "隱藏 {name}"
 
 #. Button: hide every catalog tag on every app
 #: ../../apps/launcher/src/tag-settings.tsx
@@ -3172,6 +3215,11 @@ msgstr "隱藏步驟"
 msgid "Hide them"
 msgstr "隱藏它們"
 
+#. Button: hide every catalog tag the search or filter lists
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "Hide these"
+msgstr "隱藏這些"
+
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Hide your feedback for {name}"
 msgstr "隱藏你對 {name} 的反饋"
@@ -3182,8 +3230,8 @@ msgid "hold"
 msgstr "長按"
 
 #: ../../apps/launcher/src/tv/views/Settings.tsx
-msgid "Hold both for a second while a game runs, for games with no way to quit"
-msgstr "遊戲執行時同時按住兩鍵一秒；適用於無法自行結束的遊戲"
+msgid "Hold these buttons together for a second while a game runs, for games with no way to quit"
+msgstr "遊戲執行時同時按住這些按鈕一秒即可關閉，適用於無法退出的遊戲"
 
 #: ../../apps/launcher/src/tv/views/Details.tsx
 msgid "Hold to uninstall. Its files go to the Recycle Bin."
@@ -3642,8 +3690,8 @@ msgid "It started {program}. The next Play asks which program starts it."
 msgstr "它啟動了 {program}。下次按「遊玩」時會詢問要用哪個程式啟動。"
 
 #: ../../apps/launcher/src/App.tsx
-msgid "It starts <0>{program}</0>, which is outside its folder, so it stays where it is. Uninstall or delete that yourself if you don't want it any more."
-msgstr "它啟動的是 <0>{program}</0>，該程式在它的資料夾之外，因此會保留在原處。如果不再需要，請自行解除安裝或刪除。"
+msgid "It starts <0>{executable}</0>. That file is outside the app's folder, so it won't be deleted. You can delete it yourself if you don't need it."
+msgstr "它啟動的是 <0>{executable}</0>。這個檔案在應用程式資料夾之外，所以不會被刪除。如果不需要，你可以自己刪除它。"
 
 #: ../../apps/launcher/src/tv/updates/PlayFlow.tsx
 msgid "It starts as soon as the update is installed."
@@ -3669,10 +3717,6 @@ msgstr "無法安裝、開啟或啟動。"
 #: ../../apps/launcher/src/App.tsx
 msgid "It's here now."
 msgstr "它現在已在這裡。"
-
-#: ../../apps/launcher/src/launch-options.tsx
-msgid "It's outside the app's folder, so moving, renaming, updating or uninstalling the app leaves it where it is."
-msgstr "它在應用程式資料夾之外，因此移動、重新命名、更新或解除安裝該應用程式都不會動到它。"
 
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Its author says it's still broken after the last fix."
@@ -3860,8 +3904,8 @@ msgid "LB / RB go through the consoles; Filter/Sort narrows them to makers or ki
 msgstr "LB / RB 切換主機；「篩選/排序」可依廠商或類型篩選。"
 
 #: ../../apps/launcher/src/github-token.tsx
-msgid "Leave every scope unticked: public releases need none."
-msgstr "所有許可權範圍都不要勾選：公開版本無需任何許可權。"
+msgid "Leave every scope unticked: public releases need none. For a private repository, make a fine-grained token on GitHub instead, with read-only Contents access to that repository."
+msgstr "所有許可權範圍都不要勾選：公開版本無需任何許可權。如果是私有儲存庫，請改為在 GitHub 上建立 fine-grained 權杖，並為該儲存庫授予 Contents 的唯讀權限。"
 
 #: ../../apps/launcher/src/gitlab-token.tsx
 msgid "Leave the read_api scope ticked: public releases need nothing more."
@@ -4092,6 +4136,11 @@ msgstr "在你的應用程式資料夾中建立一個資料夾，用於存放該
 msgid "Manage"
 msgstr "管理"
 
+#. Button: opens the window listing the player's tags and the catalog's
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "Manage tags"
+msgstr "管理標籤"
+
 #. Menu item: rename or delete the player's tags, in Settings
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Manage tags…"
@@ -4179,6 +4228,11 @@ msgstr "更多播放清單"
 #: ../../apps/launcher/src/library.tsx
 msgid "More…"
 msgstr "更多 →"
+
+#. Sorts tags, the ones on the most apps first
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "Most apps"
+msgstr "應用程式最多"
 
 #: ../../apps/launcher/src/setup.tsx
 msgid "Most apps need your own copy of a game, like a ROM or a disc image, and Quiver Launcher has Easy setup for some of them. Add folders for a console or two now, and add more in Settings anytime."
@@ -4585,6 +4639,14 @@ msgstr "未找到版本。"
 msgid "No reports yet"
 msgstr "尚無回報"
 
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "No tags are hidden."
+msgstr "沒有隱藏的標籤。"
+
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "No tags match your search."
+msgstr "沒有符合搜尋的標籤。"
+
 #: ../../apps/launcher/src/tv/views/Settings.tsx
 msgid "No zooming, sliding or sweeping"
 msgstr "停用縮放、滑動和掃過的動畫效果"
@@ -4719,6 +4781,11 @@ msgstr "尚未遊玩"
 msgid "Not rated yet"
 msgstr "尚未評分"
 
+#. On PC specs only the app's developer and the player who shared them can see
+#: ../../apps/launcher/src/feedback.tsx
+msgid "Not shown to other players"
+msgstr "其他玩家看不到"
+
 #. Which release the player tested
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Not sure"
@@ -4806,6 +4873,10 @@ msgstr "此資料夾中沒有可供選擇的內容。"
 #: ../../apps/launcher/src/tv/views/Discover.tsx
 msgid "Nothing to find here"
 msgstr "這裡沒有可探索的內容"
+
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "Nothing, run it directly"
+msgstr "無，直接執行"
 
 #. Name, for a screen reader, of the dialog saying something failed or must be read
 #: ../../apps/launcher/src/App.tsx
@@ -4943,7 +5014,9 @@ msgstr "其他"
 msgid "Other files"
 msgstr "其他檔案"
 
+#. A shelf on Browse's front page: apps for consoles no other shelf's maker made
 #: ../../apps/launcher/src/detail.tsx
+#: ../../apps/launcher/src/discover.tsx
 #: ../../apps/launcher/src/library.tsx
 #: ../../apps/launcher/src/tv/views/Discover.tsx
 msgid "Other platforms"
@@ -4995,6 +5068,11 @@ msgstr "密碼的開頭和結尾不能有空白字元。"
 #: ../../apps/launcher/src/library.tsx
 msgid "Paste the playlist's link, like quiverlauncher.com/lists/…"
 msgstr "貼上播放清單連結，例如 quiverlauncher.com/lists/…"
+
+#. Before the computer a player tried an app on
+#: ../../apps/launcher/src/feedback.tsx
+msgid "PC specs:"
+msgstr "電腦配置："
 
 #. Controller hint in Discover's Filter list: ticks or unticks the focused maker or kind
 #: ../../apps/launcher/src/tv/views/Discover.tsx
@@ -5178,6 +5256,11 @@ msgstr "此應用程式的播放清單"
 msgid "Port"
 msgstr "移植版"
 
+#. A shelf on Browse's front page: apps for handhelds (PSP, Vita, DS, 3DS, Game Boy)
+#: ../../apps/launcher/src/discover.tsx
+msgid "Portable systems"
+msgstr "掌機"
+
 #: ../../apps/launcher/src/custom-art.tsx
 msgid "Portrait, about 600×900. The library's cards and TV mode."
 msgstr "豎版，約 600 × 900。適用於遊戲庫卡片和電視模式。"
@@ -5245,10 +5328,6 @@ msgstr "上一個字母或頁面"
 #: ../../apps/launcher/src/tv/views/TabStrip.tsx
 msgid "Previous tab"
 msgstr "上一個標籤頁"
-
-#: ../../apps/launcher/src/launch-options.tsx
-msgid "Program"
-msgstr "程式"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/library.tsx
@@ -5356,6 +5435,10 @@ msgstr "Quiver 在你的遊戲資料夾中沒有找到。"
 #: ../../apps/launcher/src/saves-tab.tsx
 msgid "Quiver doesn't know where this app saves yet. Play it once, or choose the folder."
 msgstr "Quiver 還不知道此應用程式的存檔位置。遊玩一次，或選擇資料夾。"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Quiver doesn't offer {name} for {app}, and its virus scan hasn't finished."
+msgstr "Quiver 沒有為 {app} 提供 {name}，而且它的病毒掃描還沒有完成。"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Quiver doesn't offer {name} for {app}: it may be for another system, or missed when the downloads were picked."
@@ -5502,6 +5585,14 @@ msgstr "Quiver 會等待 48 小時再提供應用程式更新，以便有時間�
 #: ../../apps/launcher/src/detail.tsx
 msgid "Quiver waits until each file has been out for 48 hours, so a hacked or malicious update can be caught before it reaches you."
 msgstr "Quiver 會等到每個檔案釋出滿 48 小時，以便在被篡改或帶有惡意的更新到達你這裡之前發現它。"
+
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "Quiver will launch <0>{executable}</0> when you press Play."
+msgstr "按下「遊玩」時，Quiver 會啟動 <0>{executable}</0>。"
+
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "Quiver will launch <0>{name}</0> when you press Play. You can choose another executable to run instead."
+msgstr "按下「遊玩」時，Quiver 會啟動 <0>{name}</0>。你可以改選其他執行檔。"
 
 #: ../../apps/launcher/src/detail.tsx
 msgid "Quiver won't install it."
@@ -5955,6 +6046,10 @@ msgstr "分享你使用 {name} 的執行體驗"
 msgid "Say how it ran for you"
 msgstr "分享你的執行體驗"
 
+#: ../../apps/launcher/src/feedback.tsx
+msgid "Say what went wrong, so the developer and other players can make sense of it."
+msgstr "說明出了什麼問題，方便開發者和其他玩家理解。"
+
 #: ../../apps/launcher/src/correction.tsx
 msgid "Say what's wrong or missing."
 msgstr "說明問題或缺少的內容。"
@@ -6014,6 +6109,10 @@ msgstr "搜尋模組"
 #: ../../apps/launcher/src/App.tsx
 msgid "Search ports, games and tools"
 msgstr "搜尋移植版、遊戲和工具"
+
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "Search tags"
+msgstr "搜尋標籤"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/own.tsx
@@ -6206,7 +6305,6 @@ msgstr "共享播放清單連結"
 msgid "Shortcuts"
 msgstr "快捷方式"
 
-#. Button: show a hidden catalog tag again
 #. Controller hint: what Confirm does, scrolling the focused control into view
 #. Makes a hidden post visible again
 #. Picks which library tab or playlist the library shows, where the tabs don't fit
@@ -6214,12 +6312,10 @@ msgstr "快捷方式"
 #: ../../apps/launcher/src/discussions.tsx
 #: ../../apps/launcher/src/library.tsx
 #: ../../apps/launcher/src/spatial.ts
-#: ../../apps/launcher/src/tag-settings.tsx
 msgid "Show"
 msgstr "顯示"
 
 #. A dot under the featured apps: shows that app's slide
-#: ../../apps/launcher/src/tag-settings.tsx
 #: ../ui/src/discover.tsx
 msgid "Show {name}"
 msgstr "顯示 {name}"
@@ -6293,6 +6389,10 @@ msgstr "顯示較少"
 msgid "Show more"
 msgstr "顯示更多"
 
+#: ../../apps/launcher/src/feedback.tsx
+msgid "Show my PC specs to other players"
+msgstr "向其他玩家顯示我的電腦配置"
+
 #: ../../apps/launcher/src/library-view.tsx
 msgid "Show names on cards"
 msgstr "在卡片上顯示名稱"
@@ -6339,6 +6439,11 @@ msgstr "以帶側邊欄的方式顯示遊戲庫"
 msgid "Show them"
 msgstr "顯示它們"
 
+#. Button: show again every catalog tag the search or filter lists
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "Show these"
+msgstr "顯示這些"
+
 #: ../../apps/launcher/src/media.tsx
 msgid "Show videos"
 msgstr "顯示影片"
@@ -6346,6 +6451,11 @@ msgstr "顯示影片"
 #: ../../apps/launcher/src/controls.tsx
 msgid "Show what the buttons do along the bottom while a controller is connected"
 msgstr "連線遊戲控制器時，在螢幕底部顯示各個按鈕的功能"
+
+#. Lists the catalog tags that show
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "Showing"
+msgstr "顯示中"
 
 #. Library layout: a list of names down the left
 #: ../../apps/launcher/src/view.ts
@@ -6486,6 +6596,10 @@ msgstr "排序"
 msgid "Sort mods"
 msgstr "排序模組"
 
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "Sort tags"
+msgstr "排序標籤"
+
 #: ../../apps/launcher/src/tv/views/Discover.tsx
 msgid "Sorting by release date…"
 msgstr "正在依發行日期排序…"
@@ -6570,17 +6684,9 @@ msgstr "正在啟動 {name} →"
 msgid "Starts {path} on this computer."
 msgstr "在此電腦上啟動 {path}。"
 
-#: ../../apps/launcher/src/launch-options.tsx
-msgid "Starts <0>{executable}</0>"
-msgstr "啟動 <0>{executable}</0>"
-
 #: ../../apps/launcher/src/own.tsx
 msgid "Starts it where it is. Nothing is downloaded, moved or deleted."
 msgstr "從當前位置啟動。不會下載、移動或刪除任何內容。"
-
-#: ../../apps/launcher/src/launch-options.tsx
-msgid "Starts the program Quiver finds in its folder."
-msgstr "啟動 Quiver 在其資料夾中找到的程式。"
 
 #: ../../apps/launcher/src/custom.ts
 msgid "Starts the program you put in its folder, {folder}."
@@ -6695,8 +6801,10 @@ msgstr "標籤"
 #. Browse card detail: the app's tags, such as Recomp or its console, over its name
 #. Menu item opening the player's tags for an app
 #. Menu item opening the player's tags for an app
+#. Settings section: the player's own tags and the catalog's
 #: ../../apps/launcher/src/browse-cards.ts
 #: ../../apps/launcher/src/card-menu.tsx
+#: ../../apps/launcher/src/tag-settings.tsx
 msgid "Tags"
 msgstr "標籤"
 
@@ -6799,6 +6907,10 @@ msgstr "{date} 版本"
 msgid "The {installedVersion} Quiver offers isn't the file you installed."
 msgstr "Quiver 提供的 {installedVersion} 並非你安裝的檔案。"
 
+#: ../../apps/launcher/src/feedback.tsx
+msgid "The app's developer sees them either way."
+msgstr "無論如何，應用程式的開發者都看得到。"
+
 #: ../../apps/launcher/src/detail.tsx
 msgid "The developer proved they make this app"
 msgstr "開發者已證明自己是此應用程式的作者"
@@ -6884,10 +6996,6 @@ msgstr "你在 {sent} 報告的問題已修復。謝謝！"
 msgid "The problem you reported with {app} was fixed. Thanks!"
 msgstr "你報告的 {app} 問題已修復。謝謝！"
 
-#: ../../apps/launcher/src/launch-options.tsx
-msgid "The program itself"
-msgstr "程式本身"
-
 #: ../../apps/launcher/src/App.tsx
 msgid "The programs Play offers are under Play with in the app's menu."
 msgstr "在應用程式選單的“使用以下方式遊玩”中，可以找到“遊玩”提供的程式。"
@@ -6936,10 +7044,6 @@ msgstr "共享播放清單已是最新版本。"
 msgid "The tags you gave your apps, including any brought over from Quiver Launcher 3. Renaming or deleting one changes it on every app that has it. The catalog's own tags aren't affected."
 msgstr "你為應用程式加上的標籤，包括從 Quiver Launcher 3 帶過來的。重新命名或刪除標籤，會改動所有帶有它的應用程式。目錄本身的標籤不受影響。"
 
-#: ../../apps/launcher/src/tag-settings.tsx
-msgid "The tags your apps have from the catalog. A hidden tag is left off cards, the tag filter, search and playlists on this computer. To hide one on a single app, untick it in that app's Tags menu."
-msgstr "你的應用程式從目錄取得的標籤。隱藏的標籤不會出現在這台電腦的卡片、標籤篩選、搜尋和播放清單中。若只要在某個應用程式上隱藏，請在該應用程式的「標籤」選單中取消勾選。"
-
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Theme"
 msgstr "主題"
@@ -6971,6 +7075,10 @@ msgstr "還沒有版本。請前往上游專案查詢下載。"
 #: ../../apps/launcher/src/saves-tab.tsx
 msgid "These are the saves on this computer now."
 msgstr ""
+
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "These go after the executable. To put the executable somewhere else, write %command% there. NAME=value at the start sets an environment variable."
+msgstr "這些會加在執行檔之後。要把執行檔放在別處，就在那裡寫 %command%。開頭的 NAME=value 用來設定環境變數。"
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "These old copies moved safely, but some of their files were in use and stayed behind. You can delete them:"
@@ -7006,8 +7114,8 @@ msgid "This app isn't installed on this computer. Install it to restore a copy."
 msgstr "此應用程式未安裝在這部電腦上。安裝後即可恢復副本。"
 
 #: ../../apps/launcher/src/App.tsx
-msgid "This app may keep its saves in this folder. They'll be removed with it."
-msgstr "此應用程式可能會將存檔儲存在此資料夾中。解除安裝時，這些存檔也會被刪除。"
+msgid "This app may keep your saves in its folder. They'll go to the trash too."
+msgstr "這個應用程式可能把你的存檔放在它的資料夾裡。存檔也會一起移到資源回收筒。"
 
 #: ../../apps/launcher/src/app-files.tsx
 msgid "This app may stop finding its saves and settings, because it will look for them in a different place. Nothing is deleted."
@@ -7040,6 +7148,10 @@ msgstr "此討論無法查看"
 #: ../../apps/launcher/src/store.tsx
 msgid "This download doesn't match the file Quiver checked, so it wasn't installed."
 msgstr "此下載檔案與 Quiver 檢查過的檔案不匹配，因此未安裝。"
+
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "This file is outside the app's folder, so Quiver never moves or deletes it."
+msgstr "這個檔案在應用程式資料夾之外，所以 Quiver 永遠不會移動或刪除它。"
 
 #. A game with no name known, as in “This game needs your own copy of the game”
 #: ../../apps/launcher/src/tv/programs/usePrograms.ts
@@ -7269,6 +7381,10 @@ msgstr "取消固定並降級到 {version}"
 #: ../../apps/launcher/src/versions.ts
 msgid "Unpin and install {version}"
 msgstr "取消固定並安裝 {version}"
+
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "Untick a tag to hide it on every app on this computer. Tick it to show it again. To hide one on a single app, untick it in that app's Tags menu."
+msgstr "取消勾選標籤即可在這台電腦的所有應用程式上隱藏它。重新勾選即可再次顯示。若只想在一個應用程式上隱藏，請在該應用程式的標籤選單中取消勾選。"
 
 #. Goes to the folder around the one shown
 #: ../../apps/launcher/src/file-picker.tsx
@@ -7606,6 +7722,11 @@ msgstr "檢視選項"
 msgid "View repository"
 msgstr "檢視程式碼儲存庫"
 
+#. A release file Quiver doesn't offer while its virus scan runs, in Which download?'s Show all files
+#: ../../apps/launcher/src/App.tsx
+msgid "Virus scan not finished"
+msgstr "病毒掃描未完成"
+
 #: ../../apps/launcher/src/detail.tsx
 msgid "VirusTotal hasn't cleared this release, so installing it asks you to confirm first."
 msgstr "VirusTotal 尚未確認此版本安全，因此安裝前需要先確認。"
@@ -7706,6 +7827,10 @@ msgid "What players say"
 msgstr "玩家評價"
 
 #: ../../apps/launcher/src/feedback.tsx
+msgid "What went wrong, and when? What did you try to fix it?"
+msgstr "出了什麼問題？在什麼時候？你嘗試過怎樣解決？"
+
+#: ../../apps/launcher/src/feedback.tsx
 msgid "What worked well, and what didn't? Did you do anything to get it running or fix a problem?"
 msgstr "哪些方面執行良好，哪些不行？你是否做了什麼設定來讓它執行或解決問題？"
 
@@ -7804,6 +7929,10 @@ msgstr "{name} 的哪份存檔？"
 #: ../../apps/launcher/src/tv/views/Settings.tsx
 msgid "Which tab it's in. Automatic follows the catalog."
 msgstr "它所在的標籤頁。「自動」會依照目錄。"
+
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "Which tags"
+msgstr "哪些標籤"
 
 #: ../../apps/launcher/src/controls.tsx
 msgid "While a game runs, hold Select for a mouse pointer: the right stick moves it, RT clicks, LT right-clicks, the left stick scrolls"
@@ -8034,6 +8163,10 @@ msgstr "你的遊戲庫為空"
 msgid "Your library syncs across your devices, and you can review apps. Everything works without an account too."
 msgstr "你的遊戲庫會在各裝置間同步，你也可以評價應用程式。不登入帳戶也能使用所有功能。"
 
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "Your own tags, which you can rename or delete on every app at once, and the tags your apps have from the catalog, which you can hide on this computer."
+msgstr "你自己的標籤可以在所有應用程式上一次重新命名或刪除；應用程式來自目錄的標籤可以在這台電腦上隱藏。"
+
 #: ../../apps/launcher/src/library-sidebar.tsx
 msgid "Your play"
 msgstr "你的遊玩記錄"
@@ -8059,6 +8192,7 @@ msgstr ""
 msgid "Your saves from {device} were put in place. The saves that were here are backed up."
 msgstr "已換上來自 {device} 的存檔。原本在這裡的存檔已備份。"
 
+#. Tab: the player's own tags
 #: ../../apps/launcher/src/detail.tsx
 #: ../../apps/launcher/src/tag-settings.tsx
 msgid "Your tags"

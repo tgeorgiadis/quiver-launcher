@@ -24,7 +24,33 @@ fetch() {
   echo "::error::$what stalled three times: Ubuntu's mirror is too slow just now. Run the job again."
   return 1
 }
+# $APT_CACHE, when set, is a folder kept between runs (the apt-install action keeps it in GitHub's cache): the package
+# lists and the packages earlier runs downloaded. When they're all this run needs, it installs from them and nothing
+# comes from the mirror. When they aren't (a package that's new, or one the runner's image has moved past), the rest
+# comes from the mirror as before, and what it got is kept, a download that stalled included, so the next run carries
+# on from there. It then leaves $APT_CACHE/.downloaded, for the action to save the folder again.
+cache=${APT_CACHE:-}
+if [ -n "$cache" ] && [ -d "$cache/lists" ]; then
+  sudo cp -r "$cache/lists/." /var/lib/apt/lists/
+  sudo cp -r "$cache/archives/." /var/cache/apt/archives/
+  sudo "${apt[@]}" install -y --no-download "$@" && exit
+  echo "::warning::What the cache kept wasn't all this run needs, so the rest comes from Ubuntu's mirror"
+fi
+
+# The lists and the packages, into $APT_CACHE, without packages the lists no longer name.
+keep() {
+  [ -n "$cache" ] || return 0
+  sudo apt-get autoclean -qq
+  rm -rf "$cache" && mkdir -p "$cache/lists" "$cache/archives"
+  sudo find /var/lib/apt/lists -maxdepth 1 -type f ! -name lock -exec cp -t "$cache/lists" {} +
+  sudo find /var/cache/apt/archives -maxdepth 1 -name '*.deb' -exec cp -t "$cache/archives" {} +
+  sudo chown -R "$(id -u):$(id -g)" "$cache"
+  touch "$cache/.downloaded"
+}
 
 fetch "The package lists" 2m update || exit
-fetch "The download" 4m install -y --download-only "$@" || exit
+fetch "The download" 4m install -y --download-only "$@"
+status=$?
+keep
+[ "$status" -eq 0 ] || exit "$status"
 sudo "${apt[@]}" install -y "$@"

@@ -115,7 +115,10 @@ export type Entry = {
   /** The version of its game it's based on: the PlayStation version, a Director's Cut. */
   basedOn?: BasedOn;
   libraryArt?: LibraryArt;
+  /** Its square icon: its own, else its game's. */
   artwork?: string;
+  /** `artwork` is its game's icon, as it has none of its own. */
+  artworkFromGame?: boolean;
   tags: string[];
   launcher: InstallSettings;
   projectType: ProjectType;
@@ -186,6 +189,8 @@ export type Asset = {
   unverifiedChecksum?: string;
   /** When that file is verified by itself, if nothing changes; none while the site's automatic publishing is off. */
   checkEndsAt?: number;
+  /** The file's own VirusTotal scan. Missing from a site older than it, and for a file Quiver hasn't sent to be scanned. */
+  scan?: ReleaseScan;
 };
 
 export type Release = {
@@ -373,7 +378,17 @@ export type Feedback = {
   fixed?: { version: string; at: number };
   /** Its author said it's still broken after the developer's fix. */
   disputed?: boolean;
+  /**
+   * The computer it was tried on, as Quiver Launcher read it. Everyone gets them unless the author unticked them;
+   * the author, the app's developer and Quiver staff get them either way. Missing from older sites.
+   */
+  specs?: FeedbackSpecs;
+  /** With specs: whether everyone may see them. */
+  specsPublic?: boolean;
 };
+
+/** The PC specs sent with feedback: the system and its version ("Windows 11", "SteamOS 3.7.13"), processor, graphics card and memory in GB. */
+export type FeedbackSpecs = { osVersion?: string; cpu?: string; gpu?: string; ramGb?: number };
 
 /** A developer's answer to feedback on their app. */
 export type FeedbackReply = {
@@ -463,6 +478,11 @@ export type DownloadProblem = { version: string; file: string; problem: "missing
  * system's folders ("data/Game/saves"). Nothing about the player or the computer.
  */
 export type SaveLocationsReport = { os: "windows" | "linux" | "macos"; places: string[] };
+/**
+ * The catalog names programs that start an app, and the app's folder holds none of them: the programs it does
+ * hold, by their paths in the folder, for the version installed. Nothing about the player or the computer.
+ */
+export type StartProgramReport = { os: "windows" | "linux" | "macos"; version: string; programs: string[] };
 
 export { ApiError } from "./errors";
 
@@ -525,6 +545,11 @@ export type Client = {
    * save locations. A 404 ApiError when the site doesn't know the app or takes none of the places.
    */
   saveLocations(app: Pick<Entry, "slug" | "catalogId">, report: SaveLocationsReport): Promise<void>;
+  /**
+   * Tells the site that none of the programs the catalog names for an app is in its folder, so staff can be
+   * suggested the right one. A 404 ApiError when the site doesn't know the app.
+   */
+  startProgram(app: Pick<Entry, "slug" | "catalogId">, report: StartProgramReport): Promise<void>;
 };
 
 export function createClient(base: string = DEFAULT_API, options: ClientOptions = {}): Client {
@@ -670,6 +695,10 @@ export function createClient(base: string = DEFAULT_API, options: ClientOptions 
       const path = `${catalogId ? `/catalog-entries/${encodeURIComponent(catalogId)}` : app(slug)}/save-locations`;
       await answer(await request(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(report) }));
     },
+    async startProgram({ slug, catalogId }, report) {
+      const path = `${catalogId ? `/catalog-entries/${encodeURIComponent(catalogId)}` : app(slug)}/start-program`;
+      await answer(await request(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(report) }));
+    },
   };
 }
 
@@ -692,6 +721,7 @@ export {
   detectProvider,
   feedProvider,
   giteaProvider,
+  githubAsset,
   githubProvider,
   githubRepository,
   gitlabProvider,

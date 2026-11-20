@@ -65,7 +65,7 @@ const sameDetails = (a: readonly LibraryDetail[], b: readonly LibraryDetail[]) =
  * A shelf of box art, medium, with names: unlike Browse's wide catalog cards.
  * A card for each app, as a new player added them; one for each game is the View menu's.
  */
-export const DEFAULT_VIEW: LibraryView = { layout: "grid", image: "box", cardScale: 1, size: "medium", names: true, nameOrder: "game", bothNames: true, continuePlaying: true, marks: true, greyUninstalled: true, byGame: false, details: ["subtitle"] };
+export const DEFAULT_VIEW: LibraryView = { layout: "grid", image: "box", cardScale: 1, size: "medium", names: true, nameOrder: "game", bothNames: true, continuePlaying: true, marks: true, greyUninstalled: true, byGame: false, details: ["icon", "subtitle"] };
 
 // The choices' names put in the language when shown (i18n._), not here, where the module loads before any is picked.
 export const LAYOUTS: [Layout, MessageDescriptor][] = [

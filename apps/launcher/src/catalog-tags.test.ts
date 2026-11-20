@@ -1,5 +1,5 @@
-import { expect, test } from "vitest";
-import { catalogTagCounts, hiddenEverywhere, hideAllEverywhere, hideEverywhere, hideNewTags, hideOnApp, hideableTags, shownTags } from "./catalog-tags";
+import { describe, expect, test } from "vitest";
+import { catalogTagCounts, hiddenEverywhere, hideAllEverywhere, hideEverywhere, hideNewTags, hideOnApp, hideableTags, listedTags, shownTags } from "./catalog-tags";
 
 const isConsole = (tag: string) => tag === "n64";
 
@@ -62,4 +62,39 @@ test("the catalog's tags with how many apps have each, hidden ones no app has am
     { tag: "recomp", apps: 2 },
     { tag: "zelda", apps: 1 },
   ]);
+});
+
+describe("listedTags", () => {
+  const tags = [
+    { tag: "007", apps: 2 },
+    { tag: "ace combat", apps: 3 },
+    { tag: "decomp", apps: 9 },
+    { tag: "Zelda", apps: 1 },
+  ];
+  const label = (tag: string) => (tag === "decomp" ? "Source port" : tag);
+  const names = (list: { tag: string }[]) => list.map((x) => x.tag);
+
+  test("all of them, in the order they came, when nothing is searched or filtered", () => {
+    expect(names(listedTags(tags, undefined))).toEqual(["007", "ace combat", "decomp", "Zelda"]);
+  });
+
+  test("searches the name shown and the tag itself, every word, whatever the case", () => {
+    expect(names(listedTags(tags, undefined, { search: "SOURCE", label }))).toEqual(["decomp"]);
+    expect(names(listedTags(tags, undefined, { search: "decomp", label }))).toEqual(["decomp"]);
+    expect(names(listedTags(tags, undefined, { search: " combat  ace " }))).toEqual(["ace combat"]);
+    expect(names(listedTags(tags, undefined, { search: "nothing" }))).toEqual([]);
+  });
+
+  test("keeps the shown or the hidden ones, the catalog's later ones too when those are hidden", () => {
+    const h = hideEverywhere({}, "zelda", true);
+    expect(names(listedTags(tags, h, { filter: "hidden" }))).toEqual(["Zelda"]);
+    expect(names(listedTags(tags, h, { filter: "shown" }))).toEqual(["007", "ace combat", "decomp"]);
+    const later = hideNewTags({}, true, ["007"]);
+    expect(names(listedTags(tags, later, { filter: "shown" }))).toEqual(["007"]);
+  });
+
+  test("the ones on the most apps first, without changing the list it was given", () => {
+    expect(names(listedTags(tags, undefined, { sort: "apps" }))).toEqual(["decomp", "ace combat", "007", "Zelda"]);
+    expect(names(tags)).toEqual(["007", "ace combat", "decomp", "Zelda"]);
+  });
 });

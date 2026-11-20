@@ -42,7 +42,7 @@ image = { version = "0.25", default-features = false, features = ["png", "jpeg",
 dirs = "6"
 crc32fast = "1"
 minisign-verify = "0.2"
-# TV mode: which processes are a game's (src/tv/session.rs).
+# Which processes are a game's, to close it from the controller (src/session.rs).
 sysinfo = { version = "0.39", default-features = false, features = ["system"] }
 base64 = "0.22"
 
@@ -81,8 +81,9 @@ junction = "1"
 # time, and the Run key Windows starts it from.
 tauri = { version = "2", features = ["tray-icon"] }
 tauri-plugin-single-instance = "2"
-# Asking for administrator rights for a program that needs them (elevate.rs), and a drive's free space (apps_folder.rs).
-windows-sys = { version = "0.61", features = ["Win32_Foundation", "Win32_Storage_FileSystem", "Win32_System_Com", "Win32_System_Registry", "Win32_System_Threading", "Win32_UI_Shell", "Win32_UI_WindowsAndMessaging"] }
+# Asking for administrator rights for a program that needs them (elevate.rs), a drive's free space (apps_folder.rs),
+# and the memory installed, for feedback (specs.rs).
+windows-sys = { version = "0.61", features = ["Win32_Foundation", "Win32_Storage_FileSystem", "Win32_System_Com", "Win32_System_Registry", "Win32_System_SystemInformation", "Win32_System_Threading", "Win32_UI_Shell", "Win32_UI_WindowsAndMessaging"] }
 winreg = "0.55"
 
 [target.'cfg(target_os = "macos")'.dependencies]

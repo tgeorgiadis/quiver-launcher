@@ -131,8 +131,9 @@ pub fn refuse(from: &Path, to: &Path, apps: &[App]) -> Option<String> {
     if staying && elsewhere(apps, to).next().is_none() {
         return Some("Apps are already installed there.".into());
     }
-    if !staying && resolved(to).starts_with(resolved(from)) {
-        return Some("Choose a folder outside the apps folder.".into());
+    // A folder inside the apps folder is fine (its apps move in one level down), but never inside one app's own.
+    if let Some(app) = apps.iter().filter(|a| a.dir.is_none()).find(|a| resolved(to).starts_with(resolved(&from.join(&a.folder)))) {
+        return Some(format!("Choose a folder outside {}'s folder.", app.folder));
     }
     if let Some((app, _)) = elsewhere(apps, to).find(|(_, dir)| resolved(to).starts_with(resolved(dir))) {
         return Some(format!("Choose a folder outside {}'s folder.", app.folder));
@@ -594,31 +595,40 @@ fn copy_counting(from: &Path, to: &Path, copied: &dyn Fn(u64)) -> io::Result<()>
     Ok(())
 }
 
-/// Renames an app's folder in `apps` from `from` to `to`, and its Proton
-/// prefix in `proton` with it, so it keeps its Wine settings and saves. Never
-/// onto a folder that's already there; a change of case alone is the same
-/// folder, so it goes ahead. Fails with nothing changed.
-pub fn rename(apps: &Path, proton: &Path, from: &str, to: &str) -> Result<(), String> {
-    if from == to {
-        return Ok(());
-    }
-    let (old, new) = (apps.join(from), apps.join(to));
+/// Renames the app folder `old` to `to`, beside where it is, and its Proton
+/// prefix in `proton` (named `prefix`, the app's folder name when it was made)
+/// with it, so it keeps its Wine settings and saves. Never onto a folder that's
+/// already there; a change of case alone is the same folder, so it goes ahead.
+/// Fails with nothing changed.
+pub fn rename(old: &Path, proton: &Path, prefix: &str, to: &str) -> Result<(), String> {
+    let (Some(parent), Some(from)) = (old.parent(), old.file_name()) else {
+        return Err("This app's folder can't be renamed.".into());
+    };
+    let from = from.to_string_lossy();
+    let new = parent.join(to);
     if !old.is_dir() {
         return Err("This app's folder isn't there any more.".into());
     }
     let same = |a: &Path, b: &Path| a.canonicalize().ok().zip(b.canonicalize().ok()).is_some_and(|(a, b)| a == b);
-    if new.exists() && !same(&old, &new) {
-        return Err(format!("There's already a folder named {to} in your apps folder. Choose another name."));
+    let (old_prefix, new_prefix) = (proton.join(prefix), proton.join(to));
+    let prefix = prefix != to && old_prefix.is_dir();
+    if from == to && !prefix {
+        return Ok(());
     }
-    let (old_prefix, new_prefix) = (proton.join(from), proton.join(to));
-    let prefix = old_prefix.is_dir();
+    if from != to && new.exists() && !same(old, &new) {
+        return Err(format!("There's already a folder named {to} next to it. Choose another name."));
+    }
     if prefix && new_prefix.exists() && !same(&old_prefix, &new_prefix) {
         return Err(format!("There's already a Proton folder named {to}. Choose another name."));
     }
-    fs::rename(&old, &new).map_err(|e| format!("Couldn't rename {from}: {e}. Close the app, and anything with its files open, then try again."))?;
+    if from != to {
+        fs::rename(old, &new).map_err(|e| format!("Couldn't rename {from}: {e}. Close the app, and anything with its files open, then try again."))?;
+    }
     if prefix {
         if let Err(e) = fs::rename(&old_prefix, &new_prefix) {
-            let _ = fs::rename(&new, &old);
+            if from != to {
+                let _ = fs::rename(&new, old);
+            }
             return Err(format!("Couldn't rename {from}'s Proton folder: {e}. Close the app, then try again."));
         }
     }
@@ -648,6 +658,21 @@ mod tests {
         assert_eq!(steps.into_inner(), vec![(0, 1), (1, 1)]);
         assert_eq!(moved.into_inner(), vec![("a".to_string(), to.join("Game").to_string_lossy().into_owned())]);
         assert_eq!(done.inside, ["a"]);
+    }
+
+    #[test]
+    fn moves_the_apps_into_a_folder_inside_the_apps_folder() {
+        let data = tempfile::tempdir().unwrap();
+        let from = current(data.path());
+        fs::create_dir_all(from.join("Game")).unwrap();
+        fs::write(from.join("Game/game.exe"), "game").unwrap();
+        let to = from.join("Quiver");
+        let done = move_apps(data.path(), &from, &to, &[app("a", "Game")], |_| {}, |_| {}).unwrap();
+        assert_eq!(fs::read_to_string(to.join("Game/game.exe")).unwrap(), "game");
+        assert!(!from.join("Game").exists());
+        assert_eq!(current(data.path()), to);
+        assert_eq!(done.inside, ["a"]);
+        assert!(done.failed.is_empty());
     }
 
     fn app(id: &str, folder: &str) -> App {
@@ -845,12 +870,15 @@ mod tests {
         fs::create_dir_all(from.join("Game")).unwrap();
         let folders = [app("g", "Game")];
         assert!(refuse(&from, &from, &folders).is_some());
-        assert!(refuse(&from, &from.join("More"), &folders).is_some());
+        // A folder inside the apps folder is fine, but not one inside an app's own folder.
+        assert!(refuse(&from, &from.join("More"), &folders).is_none());
+        assert!(refuse(&from, &from.join("Game"), &folders).unwrap().contains("Game"));
+        assert!(refuse(&from, &from.join("Game/More"), &folders).unwrap().contains("Game"));
         // Named another way (here through a link) while the new folder doesn't exist yet.
         #[cfg(unix)]
         {
             std::os::unix::fs::symlink(root.path(), root.path().join("link")).unwrap();
-            assert!(refuse(&from, &root.path().join("link/apps/More"), &folders).is_some());
+            assert!(refuse(&from, &root.path().join("link/apps/Game/More"), &folders).is_some());
         }
         assert!(refuse(&from, Path::new("relative"), &folders).is_some());
         let to = root.path().join("Games");
@@ -871,16 +899,35 @@ mod tests {
         fs::create_dir_all(apps.join("ssx3/data")).unwrap();
         fs::write(apps.join("ssx3/data/save.dat"), "saved").unwrap();
         fs::create_dir_all(proton.join("ssx3/pfx")).unwrap();
-        rename(&apps, &proton, "ssx3", "SSX 3").unwrap();
+        rename(&apps.join("ssx3"), &proton, "ssx3", "SSX 3").unwrap();
         assert_eq!(fs::read_to_string(apps.join("SSX 3/data/save.dat")).unwrap(), "saved");
         assert!(proton.join("SSX 3/pfx").is_dir());
         assert!(!apps.join("ssx3").exists() && !proton.join("ssx3").exists());
         // No prefix (never run with Proton): only the folder.
-        rename(&apps, &proton, "SSX 3", "Racing").unwrap();
+        rename(&apps.join("SSX 3"), &proton, "SSX 3", "Racing").unwrap();
         assert!(apps.join("Racing/data").is_dir() && proton.join("Racing/pfx").is_dir());
         fs::remove_dir_all(proton.join("Racing")).unwrap();
-        rename(&apps, &proton, "Racing", "SSX").unwrap();
+        rename(&apps.join("Racing"), &proton, "Racing", "SSX").unwrap();
         assert!(apps.join("SSX/data").is_dir() && !proton.join("SSX").exists());
+    }
+
+    #[test]
+    fn renames_a_located_folder_whose_name_isnt_its_prefix() {
+        let data = tempfile::tempdir().unwrap();
+        let proton = data.path().join("proton");
+        let games = data.path().join("D/Games");
+        fs::create_dir_all(games.join("Xenia Canary/content")).unwrap();
+        fs::create_dir_all(proton.join("xenia-canary/pfx")).unwrap();
+        rename(&games.join("Xenia Canary"), &proton, "xenia-canary", "Xenia").unwrap();
+        assert!(games.join("Xenia/content").is_dir() && !games.join("Xenia Canary").exists());
+        assert!(proton.join("Xenia/pfx").is_dir() && !proton.join("xenia-canary").exists());
+        // Its folder already has the name: only the prefix follows it.
+        fs::rename(proton.join("Xenia"), proton.join("old")).unwrap();
+        rename(&games.join("Xenia"), &proton, "old", "Xenia").unwrap();
+        assert!(games.join("Xenia/content").is_dir() && proton.join("Xenia/pfx").is_dir());
+        // Never onto another folder beside it.
+        fs::create_dir_all(games.join("Taken")).unwrap();
+        assert!(rename(&games.join("Xenia"), &proton, "Xenia", "Taken").unwrap_err().contains("Taken"));
     }
 
     #[test]
@@ -888,7 +935,7 @@ mod tests {
         let data = tempfile::tempdir().unwrap();
         let apps = data.path().join("apps");
         fs::create_dir_all(apps.join("ssx")).unwrap();
-        rename(&apps, &data.path().join("proton"), "ssx", "SSX").unwrap();
+        rename(&apps.join("ssx"), &data.path().join("proton"), "ssx", "SSX").unwrap();
         let names: Vec<_> = fs::read_dir(&apps).unwrap().map(|e| e.unwrap().file_name()).collect();
         assert_eq!(names, ["SSX"]);
     }
@@ -899,14 +946,14 @@ mod tests {
         let (apps, proton) = (data.path().join("apps"), data.path().join("proton"));
         fs::create_dir_all(apps.join("Game")).unwrap();
         fs::create_dir_all(apps.join("Other")).unwrap();
-        assert!(rename(&apps, &proton, "Game", "Other").unwrap_err().contains("Other"));
-        assert!(rename(&apps, &proton, "Gone", "New").unwrap_err().contains("isn't there"));
+        assert!(rename(&apps.join("Game"), &proton, "Game", "Other").unwrap_err().contains("Other"));
+        assert!(rename(&apps.join("Gone"), &proton, "Gone", "New").unwrap_err().contains("isn't there"));
         // Its prefix's new name is taken: the folder isn't renamed either.
         fs::create_dir_all(proton.join("Game")).unwrap();
         fs::create_dir_all(proton.join("New")).unwrap();
-        assert!(rename(&apps, &proton, "Game", "New").unwrap_err().contains("Proton"));
+        assert!(rename(&apps.join("Game"), &proton, "Game", "New").unwrap_err().contains("Proton"));
         assert!(apps.join("Game").is_dir() && !apps.join("New").exists());
-        rename(&apps, &proton, "Game", "Game").unwrap();
+        rename(&apps.join("Game"), &proton, "Game", "Game").unwrap();
     }
 
     #[test]
@@ -945,8 +992,11 @@ mod tests {
         assert!(done.inside.is_empty() && done.failed.is_empty());
         assert_eq!(current(data.path()), to);
         assert!(from.join("Game").is_dir());
-        // Not one inside the folder it was.
-        assert!(move_apps(data.path(), &to, &to.join("More"), &[], |_| {}, |_| {}).is_err());
+        // One inside the folder it was too, its apps staying where they are around it.
+        fs::create_dir_all(to.join("Kept")).unwrap();
+        move_apps(data.path(), &to, &to.join("More"), &[], |_| {}, |_| {}).unwrap();
+        assert_eq!(current(data.path()), to.join("More"));
+        assert!(to.join("Kept").is_dir());
     }
 
     #[test]

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { clearDraft, readDraft, saveDraft } from "./reviewDraft";
+import { NOT_SURE, clearDraft, missing, readDraft, saveDraft } from "./reviewDraft";
 
 beforeEach(() => {
   const store = new Map<string, string>();
@@ -37,4 +37,16 @@ it("ignores a draft it can't read", () => {
   expect(readDraft("u1", "e1")).toBeNull();
   localStorage.setItem("quiver-review-draft:u1:e1", JSON.stringify({ ...draft, platform: "amiga", savedAt: Date.now() }));
   expect(readDraft("u1", "e1")).toBeNull();
+});
+
+it("asks for a platform, a release picked on purpose, and a note when it didn't run well", () => {
+  expect(missing(draft, true)).toBeNull();
+  expect(missing({ ...draft, platform: "" }, true)).toBe("platform");
+  expect(missing({ ...draft, releaseId: "" }, true)).toBe("release");
+  expect(missing({ ...draft, releaseId: NOT_SURE }, true)).toBeNull();
+  // An app with no releases to pick from.
+  expect(missing({ ...draft, releaseId: "" }, false)).toBeNull();
+  expect(missing({ ...draft, body: "  " }, true)).toBe("note");
+  expect(missing({ ...draft, result: "broken", body: "" }, true)).toBe("note");
+  expect(missing({ ...draft, result: "runs", body: "" }, true)).toBeNull();
 });

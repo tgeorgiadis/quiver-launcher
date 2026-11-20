@@ -18,7 +18,7 @@ import { ChevronDown, CloudDownload, Compass, Download, FolderOpen, History, Lay
 import { plural, t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import type { Entry } from "@quiverlauncher/api";
-import { AiChip, Artwork, OS_ICONS, PlatformIcons, ReleaseAge, Score, ScrollingText, boxSubtitle, cardSources, coverOf, tagLabel } from "@quiverlauncher/ui";
+import { AiChip, Artwork, OS_ICONS, PlatformIcons, ReleaseAge, Score, ScrollingText, TitleIcon, boxSubtitle, cardSources, coverOf, ownIcon, tagLabel } from "@quiverlauncher/ui";
 import { canGet, earlyGet, hasUpdate, notOfferedYet, pulledVerified, stillWaiting, updateFor, useLauncher, useLauncherNow, type CatalogEntry, type Install, type Job } from "./store";
 import { bare, versionLabel, wayOffLabel } from "./versions";
 import { OverMenu, VersionsDialog, foldersOn } from "./detail";
@@ -158,6 +158,20 @@ type TileProps = {
  * it's drawn again only as its own app changes, not with each change to the launcher (another app's download, say),
  * which redrew every card of a large library.
  */
+/**
+ * A card's name, with the app's own icon before it when the player shows icons (Browse's card detail), so apps for the
+ * same game, with the same box art, tell apart. Not on a card whose picture is that icon already.
+ */
+function TileTitle({ text, entry, details, image }: { text: string; entry?: Entry; details: readonly LibraryDetail[]; image: CardImage }) {
+  const icon = entry && image !== "icon" && details.includes("icon") ? ownIcon(entry) : undefined;
+  return (
+    <span className={icon ? "card-title with-icon" : "card-title"}>
+      {icon && <TitleIcon key={icon} src={icon} />}
+      <ScrollingText text={text} />
+    </span>
+  );
+}
+
 export function LibraryTile(props: TileProps) {
   const { config, installs, jobs, catalog, consoleNames, inCatalog } = useLauncher();
   const id = props.entry.id;
@@ -269,9 +283,7 @@ const Tile = memo(function Tile({
             <>
               <TileTags entry={entry} details={details} consoleNames={consoleNames} />
               <span className="tile-name">
-                <span className="card-title">
-                  <ScrollingText text={large} />
-                </span>
+                <TileTitle text={large} entry={entry} details={details} image={image} />
                 <Mark copy={copy} marks={marks} gettable={gettable} />
                 {pinned && marks && <PinMark />}
                 {listed && marks && <ListedMark />}
@@ -646,9 +658,7 @@ const Game = memo(
                   <>
                     <TileTags entry={one} ports={ports} details={details} consoleNames={consoleNames} />
                     <span className="tile-name">
-                      <span className="card-title">
-                        <ScrollingText text={title} />
-                      </span>
+                      <TileTitle text={title} entry={one} details={details} image={image} />
                       <Mark copy={copy} marks={marks} gettable={gettable} />
                     </span>
                     {details.includes("subtitle") && (
