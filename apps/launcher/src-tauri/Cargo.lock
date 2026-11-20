@@ -3374,6 +3374,7 @@ dependencies = [
  "minisign-verify",
  "mslnk",
  "open",
+ "raw-window-handle",
  "reqwest 0.12.28",
  "ruzstd",
  "sdl3-sys",
@@ -3398,6 +3399,7 @@ dependencies = [
  "wayland-protocols",
  "windows-sys 0.61.2",
  "winreg",
+ "x11-dl",
  "zip",
 ]
 
