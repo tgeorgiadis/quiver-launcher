@@ -5439,6 +5439,7 @@ msgstr "최근 플레이 순(누르면 가나다순)"
 msgid "Recently updated"
 msgstr "최근 업데이트"
 
+#: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/mods.tsx
 msgid "Refresh"
 msgstr "새로 고침"

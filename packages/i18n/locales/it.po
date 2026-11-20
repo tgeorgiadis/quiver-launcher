@@ -5439,6 +5439,7 @@ msgstr "Prima i giocati di recente (premi per A–Z)"
 msgid "Recently updated"
 msgstr "Aggiornati di recente"
 
+#: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/mods.tsx
 msgid "Refresh"
 msgstr "Ricarica"

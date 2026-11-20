@@ -5439,6 +5439,7 @@ msgstr "最近遊玩的優先（按下可按 A–Z 排序）"
 msgid "Recently updated"
 msgstr "最近更新"
 
+#: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/mods.tsx
 msgid "Refresh"
 msgstr "重新整理"
