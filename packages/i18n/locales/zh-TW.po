@@ -380,6 +380,18 @@ msgstr "已安裝 {have} 個"
 msgid "{hidden, plural, one {# app you hid, kept hidden} other {# apps you hid, kept hidden}}"
 msgstr "{hidden, plural, other {# 個你隱藏的應用程式，保持隱藏}}"
 
+#: ../../apps/launcher/src/library.tsx
+msgid "{hiddenHere, plural, one {# app here is hidden.} other {# apps here are hidden.}}"
+msgstr "{hiddenHere, plural, other {這裡有 # 個應用程式被隱藏。}}"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "{hiddenHere, plural, one {# app in this playlist is hidden.} other {# apps in this playlist are hidden.}}"
+msgstr "{hiddenHere, plural, other {此播放清單中有 # 個應用程式被隱藏。}}"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "{hiddenHere, plural, one {# hidden app matches.} other {# hidden apps match.}}"
+msgstr "{hiddenHere, plural, other {有 # 個隱藏的應用程式符合條件。}}"
+
 #: ../../apps/launcher/src/App.tsx
 msgid "{hiddenLeft, plural, one {# app here is hidden.} other {# apps here are hidden.}}"
 msgstr "{hiddenLeft, plural, one {這裡有 # 個應用程式處於隱藏狀態。} other {這裡有 # 個應用程式處於隱藏狀態。}}"

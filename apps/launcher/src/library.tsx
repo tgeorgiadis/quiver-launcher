@@ -9,7 +9,7 @@
  */
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent as KeyEvent, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { Check, ChevronDown, ChevronsDownUp, ChevronsUpDown, Clock, CloudDownload, Compass, EyeOff, HardDrive, LayoutGrid, Library, List, ListPlus, MoreHorizontal, PanelLeft, PanelTop, Play, Plus, Search, SlidersHorizontal, X } from "lucide-react";
+import { Check, ChevronDown, ChevronsDownUp, ChevronsUpDown, Clock, CloudDownload, Compass, Eye, EyeOff, HardDrive, LayoutGrid, Library, List, ListPlus, MoreHorizontal, PanelLeft, PanelTop, Play, Plus, Search, SlidersHorizontal, X } from "lucide-react";
 import { msg, plural, t } from "@lingui/core/macro";
 import { Plural, Trans } from "@lingui/react/macro";
 import type { MessageDescriptor } from "@lingui/core";
@@ -322,14 +322,14 @@ export function LibraryPage({
   const filtering = Object.entries(filters).some(([key, value]) => value && (key !== "hidden" || hiddenChoice));
   // What a playlist saved from them would hold: not the hidden apps' choice.
   const toSave = Object.entries(filters).some(([key, value]) => value && key !== "hidden");
-  const matching = candidates.filter(({ entry, item }) => {
+  const passes = (entry: Entry, item?: LibraryItem) => {
     const text = [entry.projectName, ...entry.games.map((g) => g.title), ...entry.tags, ...(item?.overrides?.tags ?? [])].join(" ").toLowerCase();
-    return (
-      words.every((w) => text.includes(w)) &&
-      inTab(entry, item) &&
-      (!filtering || matches(toPlaylist(filters), facts(entry, item), makers))
-    );
-  });
+    return words.every((w) => text.includes(w)) && inTab(entry, item) && (!filtering || matches(toPlaylist(filters), facts(entry, item), makers));
+  };
+  const matching = candidates.filter(({ entry, item }) => passes(entry, item));
+  // The hidden apps the tab, search and filters would show but for the Hidden apps filter: said, with a way to show them,
+  // so a playlist of hidden apps doesn't look empty.
+  const hiddenHere = hiddenChoice && !hiddenToo ? all.filter((i) => hidden.has(i.id) && catalog[i.id] && passes(withOverrides(catalog[i.id], i.overrides), i)).length : 0;
   // Apps for other platforms than the ones picked here, unless installed here; shown for now when the player asks.
   const elsewhere = new Set(matching.flatMap(({ entry }) => (!installs[entry.id] && !forPlatforms(entry, platforms) ? [entry.id] : [])));
   // How many of them each platform not picked would show, by it in the platforms' menu.
@@ -549,7 +549,23 @@ export function LibraryPage({
   );
   // The player's own playlist open, whose apps picked by hand the selected ones can come off.
   const ownPlaylist = collection && !collection.follows ? collection.key : undefined;
-  const empty = collection && !search && !filtering ? (collection.follows ? t`Nothing in this playlist.` : t`No apps in this playlist yet. Add some from each app's menu, or edit its filters.`) : t`Nothing here.`;
+  const showHidden = (
+    <button type="button" className="show-hidden" onClick={() => setFilters({ ...filters, hidden: "show" })}>
+      <Eye size={15} aria-hidden="true" /> <Trans>Show hidden apps</Trans>
+    </button>
+  );
+  // In place of "nothing here" when hidden apps are all there is: how many, and a way to show them.
+  const hiddenNote = hiddenHere > 0 && (
+    <span className="hidden-note">
+      {collection
+        ? plural(hiddenHere, { one: "# app in this playlist is hidden.", other: "# apps in this playlist are hidden." })
+        : search || filtering
+          ? plural(hiddenHere, { one: "# hidden app matches.", other: "# hidden apps match." })
+          : plural(hiddenHere, { one: "# app here is hidden.", other: "# apps here are hidden." })}
+      {showHidden}
+    </span>
+  );
+  const empty = hiddenNote ? hiddenNote : collection && !search && !filtering ? (collection.follows ? t`Nothing in this playlist.` : t`No apps in this playlist yet. Add some from each app's menu, or edit its filters.`) : t`Nothing here.`;
   if (sidebar && page) {
     // Under headings by console, or by when they were played or added; else one list.
     const groups: [string, Entry[]][] = groupBy

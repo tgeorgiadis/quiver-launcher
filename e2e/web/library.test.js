@@ -181,6 +181,24 @@ test("players from Quiver Launcher 3 are offered the side panel once", async () 
   }
 });
 
+test("a playlist whose apps are all hidden says so, and its button shows them, in the grid and the List layout", async () => {
+  const playlists = [{ key: "pl", name: "Turtle", tags: [], consoles: [], apps: ["entry_test-port"], order: 0 }];
+  for (const layout of ["grid", "sidebar"]) {
+    const s2 = await openApp({ state: { ...installed, collections: playlists, settings: { library: { layout }, libraryTab: "pl", hidden: ["entry_test-port"] } } });
+    try {
+      const { page: p } = s2;
+      const note = p.locator(".hidden-note").first();
+      await note.waitFor();
+      assert.match(await note.innerText(), /1 app in this playlist is hidden\./);
+      await note.getByRole("button", { name: "Show hidden apps" }).click();
+      await p.locator(layout === "grid" ? "article[data-slug='test-port']" : ".sidebar-row").first().waitFor();
+      assert.equal(await p.locator(".hidden-note").count(), 0);
+    } finally {
+      await s2.close();
+    }
+  }
+});
+
 test("the library's sidebar rows line up: one icon size and one name column", async () => {
   // A catalog app with a game (two names) beside one the player added (one name): the two used to have icons of different sizes.
   const mixed = {

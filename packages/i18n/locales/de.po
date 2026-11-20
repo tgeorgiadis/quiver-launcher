@@ -380,6 +380,18 @@ msgstr "{have} installiert"
 msgid "{hidden, plural, one {# app you hid, kept hidden} other {# apps you hid, kept hidden}}"
 msgstr "{hidden, plural, one {# App, die du ausgeblendet hast, bleibt ausgeblendet} other {# Apps, die du ausgeblendet hast, bleiben ausgeblendet}}"
 
+#: ../../apps/launcher/src/library.tsx
+msgid "{hiddenHere, plural, one {# app here is hidden.} other {# apps here are hidden.}}"
+msgstr "{hiddenHere, plural, one {# App hier ist ausgeblendet.} other {# Apps hier sind ausgeblendet.}}"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "{hiddenHere, plural, one {# app in this playlist is hidden.} other {# apps in this playlist are hidden.}}"
+msgstr "{hiddenHere, plural, one {# App in dieser Playlist ist ausgeblendet.} other {# Apps in dieser Playlist sind ausgeblendet.}}"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "{hiddenHere, plural, one {# hidden app matches.} other {# hidden apps match.}}"
+msgstr "{hiddenHere, plural, one {# ausgeblendete App passt.} other {# ausgeblendete Apps passen.}}"
+
 #: ../../apps/launcher/src/App.tsx
 msgid "{hiddenLeft, plural, one {# app here is hidden.} other {# apps here are hidden.}}"
 msgstr "{hiddenLeft, plural, one {# App hier ist ausgeblendet.} other {# Apps hier sind ausgeblendet.}}"

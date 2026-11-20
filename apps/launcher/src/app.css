@@ -1227,7 +1227,7 @@ html[data-navigating] .shelf-row { scroll-snap-type: none; }
  */
 .library-bar > .search-row { margin-top: 24px; }
 .library-bar:has(> .search-row) { margin-bottom: 32px; }
-#library-filters { margin: -18px 0 30px; }
+#library-filters:not(.sidebar-filters) { margin: -18px 0 30px; }
 .search-clear { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; color: var(--muted); flex-shrink: 0; }
 .search-clear:hover, .search-clear:focus-visible { color: var(--strong); background: var(--field); }
 .quiet-select { position: relative; display: inline-flex; align-items: center; }
@@ -1301,6 +1301,14 @@ html[data-navigating] .shelf-row { scroll-snap-type: none; }
 }
 .panel-heading .menu-button { margin-right: 4px; }
 .panel-empty { margin: 4px 10px; font-size: 12.5px; }
+/* An empty tab or playlist whose apps are hidden: how many, and a button that shows them (library.tsx). */
+.hidden-note { display: inline-flex; flex-direction: column; align-items: center; gap: 12px; }
+.sidebar-empty .hidden-note { align-items: flex-start; }
+.hidden-note .show-hidden {
+  display: inline-flex; align-items: center; gap: 7px; padding: 7px 14px; border: 1px solid var(--line-strong); border-radius: 8px;
+  background: var(--button); color: var(--strong); font-size: 13px; font-weight: 500;
+}
+.hidden-note .show-hidden:hover { background: var(--button-hover); }
 /* The tip for players from 3.x that the playlists can go down the left (library.tsx). */
 .playlists-tip .icon-only { padding: 7px; }
 /*
@@ -1356,12 +1364,12 @@ html[data-navigating] .shelf-row { scroll-snap-type: none; }
  * The library's and the catalog's, under their centred search: centred with it, Clear all and the like at the end, in
  * columns as wide each side so the pills stay where they are as those come and go.
  */
-:is(#library-filters, #browse-filters) { display: grid; grid-template-columns: 1fr auto 1fr; align-items: start; gap: 8px; }
+:is(#library-filters, #browse-filters):not(.sidebar-filters) { display: grid; grid-template-columns: 1fr auto 1fr; align-items: start; gap: 8px; }
 .filter-pills { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 8px; grid-column: 2; min-width: 0; }
-:is(#library-filters, #browse-filters) > .filter-actions { grid-column: 3; justify-self: end; margin-left: 0; }
+:is(#library-filters, #browse-filters):not(.sidebar-filters) > .filter-actions { grid-column: 3; justify-self: end; margin-left: 0; }
 @media (max-width: 760px) {
-  :is(#library-filters, #browse-filters) { grid-template-columns: minmax(0, 1fr); }
-  .filter-pills, :is(#library-filters, #browse-filters) > .filter-actions { grid-column: 1; justify-self: center; }
+  :is(#library-filters, #browse-filters):not(.sidebar-filters) { grid-template-columns: minmax(0, 1fr); }
+  .filter-pills, :is(#library-filters, #browse-filters):not(.sidebar-filters) > .filter-actions { grid-column: 1; justify-self: center; }
 }
 .pill {
   position: relative; display: inline-flex; align-items: center; height: 30px; border: 1px solid var(--line); border-radius: 999px;

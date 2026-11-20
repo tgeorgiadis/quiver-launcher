@@ -380,6 +380,18 @@ msgstr "Установлена {have}"
 msgid "{hidden, plural, one {# app you hid, kept hidden} other {# apps you hid, kept hidden}}"
 msgstr "{hidden, plural, one {# скрытое вами приложение, останется скрытым} few {# скрытых вами приложения, останутся скрытыми} many {# скрытых вами приложений, останутся скрытыми} other {# скрытого вами приложения, останутся скрытыми}}"
 
+#: ../../apps/launcher/src/library.tsx
+msgid "{hiddenHere, plural, one {# app here is hidden.} other {# apps here are hidden.}}"
+msgstr "{hiddenHere, plural, one {Здесь скрыто # приложение.} few {Здесь скрыто # приложения.} many {Здесь скрыто # приложений.} other {Здесь скрыто # приложения.}}"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "{hiddenHere, plural, one {# app in this playlist is hidden.} other {# apps in this playlist are hidden.}}"
+msgstr "{hiddenHere, plural, one {В этом плейлисте скрыто # приложение.} few {В этом плейлисте скрыто # приложения.} many {В этом плейлисте скрыто # приложений.} other {В этом плейлисте скрыто # приложения.}}"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "{hiddenHere, plural, one {# hidden app matches.} other {# hidden apps match.}}"
+msgstr "{hiddenHere, plural, one {Подходит # скрытое приложение.} few {Подходят # скрытых приложения.} many {Подходят # скрытых приложений.} other {Подходят # скрытого приложения.}}"
+
 #: ../../apps/launcher/src/App.tsx
 msgid "{hiddenLeft, plural, one {# app here is hidden.} other {# apps here are hidden.}}"
 msgstr "{hiddenLeft, plural, one {# приложение отсюда скрыто.} few {# приложения отсюда скрыты.} many {# приложений отсюда скрыто.} other {# приложения отсюда скрыты.}}"
