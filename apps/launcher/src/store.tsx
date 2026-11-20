@@ -687,7 +687,8 @@ export function movableApps(installs: Record<string, Install>): MovableApps {
   return {
     inside: all.flatMap(([id, i]) => (i.dir ? [] : [{ id, folder: i.folder }])),
     // A folder of the player's own files kept in another apps folder (by changing the default) goes with that folder.
-    elsewhere: all.flatMap(([id, i]) => (i.dir && i.inApps && !i.installer ? [{ id, folder: i.folder, dir: i.dir, ...(i.group ? { group: i.group } : {}) }] : [])),
+    // A Windows installer's own folder only in a system folder, where sorting put Quiver's record of it (sortPlan).
+    elsewhere: all.flatMap(([id, i]) => (i.dir && i.inApps && (!i.installer || i.group) ? [{ id, folder: i.folder, dir: i.dir, ...(i.group ? { group: i.group } : {}) }] : [])),
     placed: all.filter(([, i]) => i.dir && !i.inApps && !i.local && !i.installer).length,
   };
 }
@@ -703,12 +704,12 @@ export function withOwnConsoles<T extends Pick<Entry, "consoles" | "basedOn">>(e
 }
 
 /** Why an app at the top of the default apps folder stays there when the others move into console folders. */
-export type StaysReason = "own" | "installer" | "noConsole" | "unknown";
+export type StaysReason = "own" | "noConsole" | "unknown";
 
 /**
  * The installed apps at the top of the default apps folder, as sorting into console folders takes them: those that
  * move (`moves`, each with that folder as `to`, which `moveApp` puts in its console's folder there), and those that
- * stay with why (`stays`): the player's own (a local app), a Windows installer's, an app the player added with no
+ * stay with why (`stays`): the player's own (a local app), an app the player added with no
  * console to go by, or one the catalog hasn't answered for. Never one in another apps folder (which may already be
  * one console's) or one chosen for it alone. `own` is the consoles the player chose for an app, by id.
  */
@@ -724,7 +725,7 @@ export function sortPlan(
   const stays: { id: string; folder: string; why: StaysReason }[] = [];
   for (const [id, i] of Object.entries(installs)) {
     // One in a system folder of this apps folder that's now named or placed otherwise (`folders`): it moves there.
-    if (folders && i.dir && i.inApps && i.group && !i.installer && catalog[id] && samePath(rootOf(i), appsDir)) {
+    if (folders && i.dir && i.inApps && i.group && catalog[id] && samePath(rootOf(i), appsDir)) {
       const key = systemKey(withOwnConsoles(catalog[id], own[id]));
       const home = key && consoleHome(key, folders, consoleNames);
       if (home && ("path" in home || home.group !== i.group)) moves.push({ id, folder: i.folder, to: appsDir });
@@ -733,7 +734,6 @@ export function sortPlan(
     if (i.dir) continue;
     const why: StaysReason | undefined =
       i.local || isLocal(id) ? "own"
-      : i.installer ? "installer"
       : !catalog[id] ? "unknown"
       : !groupFolder(withOwnConsoles(catalog[id], own[id]), consoleNames) ? "noConsole"
       : undefined;
@@ -3191,7 +3191,10 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     async moveApp(id, to) {
       // As it is now, not as of the render that offered the move: Sort into console folders moves one after another.
       const install = now.current.installs[id];
-      if (!movable(install)) throw new Problem(msg`This app's folder can't be moved.`);
+      // A Windows installer's folder here holds only Quiver's record of it, the program staying where its setup put it:
+      // that goes in its system folder with the others.
+      const sorting = samePath(to, config.appsDir) && settings.groupByConsole && Boolean(install?.installer) && (!install?.dir || Boolean(install.group));
+      if (!movable(install) && !sorting) throw new Problem(msg`This app's folder can't be moved.`);
       if (installing.current.has(id)) throw new Problem(msg`Wait for its download to finish, then move it.`);
       if (moving.current.has(id)) return {};
       // Another library entry in its very folder goes with it.

@@ -477,12 +477,10 @@ function staysWhy(why: StaysReason): { title: string; hint: string } {
       return { title: t`Not found in the catalog`, hint: t`Quiver needs the catalog to know their system. Try again once you're online.` };
     case "own":
       return { title: t`Your own folders and programs`, hint: t`Quiver leaves these where you put them.` };
-    case "installer":
-      return { title: t`Installed by a Windows installer`, hint: t`Windows looks after where these are.` };
   }
 }
 /** The order the reasons are listed in: what the player can do something about first. */
-const STAYS_ORDER: StaysReason[] = ["noConsole", "unknown", "own", "installer"];
+const STAYS_ORDER: StaysReason[] = ["noConsole", "unknown", "own"];
 
 /** A system for an app that has none, picked right where it's said, so it can move into that system's folder. */
 /** An app's systems, chosen in the list of apps that stay: one goes in its folder, several in Multi-system. */

@@ -742,6 +742,15 @@ describe("grouping new apps by console", () => {
     expect(movableApps(installs).elsewhere.find((a) => a.id === "grouped")?.group).toBe("Ports/N64");
   });
 
+  it("takes a Windows installer's record in a system folder with the apps folder, but not one where its setup put it", () => {
+    const base = { version: "1.0.0", executables: [] };
+    const installs = {
+      sorted: { ...base, folder: "Triforce", dir: "D:/Games/Ports/NS2/Triforce", inApps: true as const, group: "Ports/NS2", installer: "setup" as const },
+      placed: { ...base, folder: "Thing", dir: "C:/Program Files/Thing", inApps: true as const, installer: "msi" as const },
+    };
+    expect(movableApps(installs).elsewhere.map((a) => a.id)).toEqual(["sorted"]);
+  });
+
   it("lists the installed apps at the top of the default apps folder for sorting, none kept anywhere else", () => {
     const base = { version: "1.0.0", executables: [] };
     const port = (id: string) => ({ ...app("port", ["n64"]), id });
@@ -757,6 +766,7 @@ describe("grouping new apps by console", () => {
     const catalog = { plain: port("plain"), kept: port("kept"), sorted: port("sorted"), chosen: port("chosen"), msi: port("msi") };
     expect(unsortedApps(installs, "D:/Games", catalog)).toEqual([
       { id: "plain", folder: "sm64", to: "D:/Games" },
+      { id: "msi", folder: "Setup", to: "D:/Games" },
     ]);
   });
 });
@@ -784,11 +794,11 @@ describe("sortPlan", () => {
       setup: port("setup", ["pc"]),
     };
     const plan = sortPlan(installs, "D:/Games", catalog as never, {}, { "github:a/picked": ["gcn"] });
-    expect(plan.moves.map((a) => a.id)).toEqual(["cat", "github:a/recomp", "github:a/picked"]);
+    // A Windows installer's folder holds only Quiver's record of it: that goes in its system folder too.
+    expect(plan.moves.map((a) => a.id)).toEqual(["cat", "github:a/recomp", "github:a/picked", "setup"]);
     expect(plan.stays).toEqual([
       { id: "github:a/bare", folder: "bare", why: "noConsole" },
       { id: "local:x", folder: "Mine", why: "own" },
-      { id: "setup", folder: "Setup", why: "installer" },
       { id: "gone", folder: "Gone", why: "unknown" },
     ]);
   });

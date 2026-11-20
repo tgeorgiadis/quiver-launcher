@@ -220,3 +220,43 @@ test("an app that stays for want of a system gets systems picked right there, on
     await s.close();
   }
 });
+
+test("a controller gets down from Move to the apps that stay and an app's systems, past the closed system folders", async () => {
+  const library = [], installs = {};
+  for (const n of ["a-port", "b-port"]) {
+    const id = `github:quiver/${n}`;
+    library.push({ id, slug: "", addedAt: 1, custom: { provider: "github", repository: `quiver/${n}`, name: n } });
+    installs[id] = { version: "1.0.0", folder: n, executables: [] };
+  }
+  library[0].overrides = { consoles: ["n64"] };
+  const s = await openApp({ state: { settings: { groupByConsole: true }, library, installs } });
+  const { page } = s;
+  try {
+    await page.locator(".topbar button[aria-label='Settings']").click();
+    await page.locator('.settings-nav [data-section="apps"]').click();
+    await page.getByRole("button", { name: "Move 1 installed app into its system folder" }).waitFor();
+    await reach.install(s.app);
+    const trail = await s.app.execute(async () => {
+      const move = [...document.querySelectorAll("button")].find((b) => /^Move \d+ installed/.test(b.innerText));
+      move.focus({ focusVisible: true });
+      const out = [];
+      // Up: the closed list of system folders' summary, not its folded-away boxes.
+      await window.__reach.press("DPadUp");
+      out.push(window.__reach.focused());
+      await window.__reach.press("DPadDown");
+      await window.__reach.press("DPadDown");
+      out.push(window.__reach.focused());
+      // Confirm opens it, and Down goes into it.
+      await window.__reach.press("South");
+      await window.__reach.press("DPadDown");
+      out.push(window.__reach.focused());
+      return out;
+    });
+    assert.match(trail[0], /^summary "System folder names and places/);
+    assert.match(trail[1], /^summary "1 app stays at the top/);
+    assert.match(trail[2], /^select "Choose a system for b-port"/);
+    assert.deepEqual(s.errors, []);
+  } finally {
+    await s.close();
+  }
+});

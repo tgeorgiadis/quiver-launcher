@@ -3380,10 +3380,6 @@ msgstr "已安裝 {version} → {when}"
 msgid "Installed before Quiver offered it"
 msgstr "在 Quiver 提供之前已安裝"
 
-#: ../../apps/launcher/src/settings-page.tsx
-msgid "Installed by a Windows installer"
-msgstr "由 Windows 安裝程式安裝"
-
 #. Sort order for mods
 #: ../../apps/launcher/src/mods.tsx
 #: ../../apps/launcher/src/sort.ts
@@ -7533,10 +7529,6 @@ msgstr "Windows（Wine）"
 #: ../../apps/launcher/src/launch-options.tsx
 msgid "Windows apps"
 msgstr "Windows 應用程式"
-
-#: ../../apps/launcher/src/settings-page.tsx
-msgid "Windows looks after where these are."
-msgstr "它們的位置由 Windows 管理。"
 
 #. A release that was taken back
 #: ../../apps/launcher/src/detail.tsx

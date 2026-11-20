@@ -3380,10 +3380,6 @@ msgstr "{version} 설치됨 · {when}"
 msgid "Installed before Quiver offered it"
 msgstr "Quiver가 제공하기 전에 설치됨"
 
-#: ../../apps/launcher/src/settings-page.tsx
-msgid "Installed by a Windows installer"
-msgstr "Windows 설치 프로그램으로 설치됨"
-
 #. Sort order for mods
 #: ../../apps/launcher/src/mods.tsx
 #: ../../apps/launcher/src/sort.ts
@@ -7533,10 +7529,6 @@ msgstr "Windows (Wine)"
 #: ../../apps/launcher/src/launch-options.tsx
 msgid "Windows apps"
 msgstr "Windows 앱"
-
-#: ../../apps/launcher/src/settings-page.tsx
-msgid "Windows looks after where these are."
-msgstr "이 항목들의 위치는 Windows가 관리합니다."
 
 #. A release that was taken back
 #: ../../apps/launcher/src/detail.tsx
