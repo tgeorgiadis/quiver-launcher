@@ -149,6 +149,7 @@ export async function startMockApi({ pageSize = Infinity } = {}) {
   const downloads = [];
   const downloadProblems = [];
   const saveReports = [];
+  const saveWarnings = [];
   // While set, downloads stop halfway until it resolves; `stalls` are the ones waiting.
   let stalled = null;
   let unstall = () => {};
@@ -647,8 +648,9 @@ export async function startMockApi({ pageSize = Infinity } = {}) {
       res.writeHead(200, { "Content-Type": "image/png" });
       return res.end(PIXEL);
     }
-    // Where the launcher saw an app save, as it tells the site: noted for an app it lists.
-    const saved = url.pathname.match(/^\/api\/v1\/apps\/([^/]+)\/save-locations$/);
+    // Where the launcher saw an app save, or that a backup looked like more than saves, as it tells the site: noted for
+    // an app it lists.
+    const saved = url.pathname.match(/^\/api\/v1\/apps\/([^/]+)\/(save-locations|save-warning)$/);
     if (saved) {
       const headers = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "content-type", "Access-Control-Allow-Methods": "POST, OPTIONS" };
       if (req.method === "OPTIONS") {
@@ -662,7 +664,7 @@ export async function startMockApi({ pageSize = Infinity } = {}) {
       });
       const slug = decodeURIComponent(saved[1]);
       const listed = entries.some((e) => e.slug === slug);
-      if (listed) saveReports.push({ slug, ...body });
+      if (listed) (saved[2] === "save-warning" ? saveWarnings : saveReports).push({ slug, ...body });
       res.writeHead(listed ? 202 : 404, { ...headers, "Content-Type": "application/json" });
       return res.end(JSON.stringify(listed ? { status: "noted" } : { error: { code: "NOT_FOUND", message: "No such app" } }));
     }
@@ -814,6 +816,7 @@ export async function startMockApi({ pageSize = Infinity } = {}) {
     downloadProblems: () => downloadProblems,
     /** Where the launcher told the site an app saves, oldest first: { slug, os, places }. */
     saveReports: () => saveReports,
+    saveWarnings: () => saveWarnings,
     /** Downloads stop halfway while on, and finish when it's turned off. */
     stall(on) {
       if (on && !stalled) stalled = new Promise((resolve) => (unstall = resolve));

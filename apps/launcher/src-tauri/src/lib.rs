@@ -573,6 +573,8 @@ struct SavesInfo {
     backups: Vec<saves::Backup>,
     /// The player switched cloud saves off for this app.
     cloud_off: bool,
+    /// Signs that the places hold more than saves (saves::looks), for the tab to ask about.
+    look: Option<saves::Look>,
 }
 
 /// One backup or restore at a time, so two never read and write the same saves.
@@ -617,7 +619,8 @@ fn saves_shown(data: &Data, of: &SavesOf) -> Result<SavesInfo, String> {
     let (roots, store, os) = saves_at(data, of)?;
     let state = saves::state(&store);
     let (places, from) = saves::places(&state, &saves::catalog_templates(&of.locations, os));
-    Ok(SavesInfo { places: saves::shown(&places, &roots, &saves::chosen_abs(&state)), from, backups: saves::list(&store), cloud_off: state.cloud_off })
+    let look = saves::looks(&store, &state, &places);
+    Ok(SavesInfo { places: saves::shown(&places, &roots, &saves::chosen_abs(&state)), from, backups: saves::list(&store), cloud_off: state.cloud_off, look })
 }
 
 /// Where an app's saves are and its backups, for its Saves tab.
@@ -999,6 +1002,77 @@ async fn saves_to_report(data: State<'_, Data>, of: SavesOf) -> Result<SavesRepo
     let (roots, store, os) = saves_at(&data, &of)?;
     let places = if saves::catalog_templates(&of.locations, os).is_empty() { saves::to_report(&saves::state(&store), &roots) } else { vec![] };
     Ok(SavesReport { os, places })
+}
+
+/// The player said the places Quiver backs up hold their saves, though a backup of them looked like more.
+#[tauri::command]
+async fn saves_fine(data: State<'_, Data>, of: SavesOf) -> Result<SavesInfo, String> {
+    let (_, store, os) = saves_at(&data, &of)?;
+    {
+        let _busy = SAVES_BUSY.lock().unwrap_or_else(|e| e.into_inner());
+        let mut state = saves::state(&store);
+        let (places, _) = saves::places(&state, &saves::catalog_templates(&of.locations, os));
+        state.fine = Some(saves::places_key(&places));
+        saves::set_state(&store, &state)?;
+    }
+    saves_shown(&data, &of)
+}
+
+/// What to tell the catalog about how an app's backups look (saves::Look).
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct SavesWarning {
+    os: &'static str,
+    /// Where the places came from: "catalog", "found" or "player".
+    source: &'static str,
+    #[serde(flatten)]
+    look: saves::Look,
+    /// The player said the places hold their saves.
+    fine: bool,
+    /// What it's remembered by once sent (`saves_warned`).
+    key: String,
+}
+
+/// How an app's backups look, when the catalog hasn't been told yet: their signs, or that the player said they're
+/// saves. None when there's nothing to tell.
+#[tauri::command]
+async fn saves_warning(data: State<'_, Data>, of: SavesOf) -> Result<Option<SavesWarning>, String> {
+    let (_, store, os) = saves_at(&data, &of)?;
+    let mut state = saves::state(&store);
+    let (places, from) = saves::places(&state, &saves::catalog_templates(&of.locations, os));
+    let source = match from {
+        "catalog" => "catalog",
+        "found" => "found",
+        "you" => "player",
+        _ => return Ok(None),
+    };
+    let key = saves::places_key(&places);
+    let fine = state.fine.as_deref() == Some(key.as_str());
+    // Asked about what the newest backup shows, without the player's word.
+    state.fine = None;
+    let Some(look) = saves::looks(&store, &state, &places) else { return Ok(None) };
+    let key = if fine { format!("fine:{key}") } else { look.report_key(&key) };
+    if state.warned.contains(&key) {
+        return Ok(None);
+    }
+    Ok(Some(SavesWarning { os, source, look, fine, key }))
+}
+
+/// The catalog took (or refused) a report of how an app's backups look: it isn't sent again.
+#[tauri::command]
+async fn saves_warned(data: State<'_, Data>, of: SavesOf, key: String) -> Result<(), String> {
+    let (_, store, _) = saves_at(&data, &of)?;
+    let _busy = SAVES_BUSY.lock().unwrap_or_else(|e| e.into_inner());
+    let mut state = saves::state(&store);
+    if !state.warned.contains(&key) {
+        state.warned.push(key);
+        // A few sets of places and signs per app; the oldest are long out of date.
+        if state.warned.len() > 20 {
+            state.warned.remove(0);
+        }
+        saves::set_state(&store, &state)?;
+    }
+    Ok(())
 }
 
 /// The catalog took (or refused) a report of these places: they aren't sent again.
@@ -2491,6 +2565,9 @@ pub fn run() {
             saves_played,
             saves_to_report,
             saves_reported,
+            saves_fine,
+            saves_warning,
+            saves_warned,
             saves_cloud,
             saves_synced,
             saves_cloud_off,
