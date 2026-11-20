@@ -904,7 +904,9 @@ describe("console folders the player names or places", () => {
     expect(consoleHome("port:n64", { systemFolderNames: "full" })).toEqual({ group: "Ports/Nintendo 64" });
     expect(consoleHome("port:multi", {})).toEqual({ group: "Ports/Multi-system" });
     expect(consoleHome("emulator", { systemFolderNames: "full" })).toEqual({ group: "Emulators" });
-    // A system the catalog added since: its name, either way.
+    // In full, the catalog's name, as the row shows it; a system the catalog added since goes by it either way.
+    expect(consoleHome("port:gen", { systemFolderNames: "full" }, { gen: "Sega Genesis / Mega Drive" })).toEqual({ group: "Ports/Sega Genesis Mega Drive" });
+    expect(consoleHome("port:gen", {}, { gen: "Sega Genesis / Mega Drive" })).toEqual({ group: "Ports/GEN" });
     expect(consoleHome("port:newcon", {}, { newcon: "New Console" })).toEqual({ group: "Ports/New Console" });
     expect(consoleHome("port:n64", { consoleFolders: { "port:n64": "My N64" } })).toEqual({ group: "My N64" });
     expect(consoleHome("port:n64", { consoleFolders: { "port:n64": "D:\\Games\\N64" } })).toEqual({ path: "D:\\Games\\N64" });
@@ -918,7 +920,7 @@ describe("console folders the player names or places", () => {
   it("are the same kind of name for every system: all abbreviations, or all in full", () => {
     const groups = (naming: "short" | "full") => ["n64", "gbc", "gcn", "nds", "x360", "gen", "vita"].map((id) => systemFolder(`port:${id}`, naming));
     expect(groups("short")).toEqual(["Ports/N64", "Ports/GBC", "Ports/GCN", "Ports/NDS", "Ports/X360", "Ports/GEN", "Ports/PSV"]);
-    expect(groups("full")).toEqual(["Ports/Nintendo 64", "Ports/Game Boy Color", "Ports/GameCube", "Ports/Nintendo DS", "Ports/Xbox 360", "Ports/Genesis", "Ports/PlayStation Vita"]);
+    expect(groups("full")).toEqual(["Ports/Nintendo 64", "Ports/Game Boy Color", "Ports/GameCube", "Ports/Nintendo DS", "Ports/Xbox 360", "Ports/Sega Genesis", "Ports/PlayStation Vita"]);
   });
 
   it("move an app already in its system folder once that folder is named or placed otherwise", () => {

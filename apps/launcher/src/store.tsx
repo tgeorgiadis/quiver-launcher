@@ -453,8 +453,8 @@ export type AppsFolder = { path: string; default: boolean; apps: MovingApp[] };
 
 /**
  * Each system's folder name, by the catalog's console ids (its facets): its usual abbreviation, as its tag shows
- * (packages/ui `tagLabel`), or its name where it has none that players use, and in full. A system the catalog adds
- * later goes by the catalog's name for it either way.
+ * (packages/ui `tagLabel`), or its name where it has none that players use, and in full for when the catalog hasn't
+ * answered. In full, a system goes by the catalog's name; one the catalog adds later goes by that either way.
  */
 const SYSTEM_NAMES: Record<string, [short: string, full: string]> = {
   nes: ["NES", "Nintendo Entertainment System"], snes: ["SNES", "Super Nintendo Entertainment System"], n64: ["N64", "Nintendo 64"],
@@ -463,7 +463,7 @@ const SYSTEM_NAMES: Record<string, [short: string, full: string]> = {
   ps1: ["PS1", "PlayStation"], ps2: ["PS2", "PlayStation 2"], ps3: ["PS3", "PlayStation 3"], ps4: ["PS4", "PlayStation 4"], ps5: ["PS5", "PlayStation 5"],
   psp: ["PSP", "PlayStation Portable"], vita: ["PSV", "PlayStation Vita"],
   "og xbox": ["Xbox", "Xbox"], x360: ["X360", "Xbox 360"], xone: ["XOne", "Xbox One"],
-  sms: ["SMS", "Master System"], gg: ["GG", "Game Gear"], gen: ["GEN", "Genesis"], segacd: ["SCD", "Sega CD"], "32x": ["32X", "32X"], saturn: ["SAT", "Saturn"], dreamcast: ["DC", "Dreamcast"],
+  sms: ["SMS", "Sega Master System"], gg: ["GG", "Sega Game Gear"], gen: ["GEN", "Sega Genesis"], segacd: ["SCD", "Sega CD"], "32x": ["32X", "Sega 32X"], saturn: ["SAT", "Sega Saturn"], dreamcast: ["DC", "Sega Dreamcast"],
   cdi: ["CD-i", "CD-i"], "3do": ["3DO", "3DO"], ami: ["Amiga", "Amiga"], arcade: ["Arcade", "Arcade"], pc: ["PC", "PC"], mobile: ["Mobile", "Mobile"],
 };
 
@@ -496,8 +496,9 @@ export function systemFolder(key: string, naming: SystemNaming = "short", consol
   if (key === "port:multi") return "Ports/Multi-system";
   if (key === "port:other") return "Ports/Other";
   const id = key.replace(/^port:/, "");
-  const known = SYSTEM_NAMES[id];
-  return `Ports/${known ? known[naming === "full" ? 1 : 0] : folderNameFor(consoleNames[id] ?? id)}`;
+  // In full, the catalog's name for it, as Settings and the library show it ("Sega Dreamcast").
+  const full = consoleNames[id] ? folderNameFor(consoleNames[id]) : (SYSTEM_NAMES[id]?.[1] ?? id);
+  return `Ports/${naming === "full" ? full : (SYSTEM_NAMES[id]?.[0] ?? full)}`;
 }
 
 /**

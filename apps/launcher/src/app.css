@@ -2526,7 +2526,7 @@ main:has(.tick-bar) { scroll-padding-bottom: 96px; }
 .tv-mode .tick-bar .tool, .tv-mode .tick-bar .tick-done { height: 44px; font-size: 15px; }
 
 /* Settings › Apps folder: each console folder's name and place (console-folders.tsx), one line each in one box. */
-.console-folders { max-width: 760px; margin: 4px 0 8px; }
+.console-folders { max-width: 920px; margin: 4px 0 8px; }
 .console-folders > summary { cursor: pointer; color: var(--strong); font-weight: 600; }
 .console-folders > p { margin: 6px 0 10px; font-size: 13px; }
 .console-folder-list { margin: 0 0 10px; padding: 0; list-style: none; border: 1px solid var(--line); border-radius: 10px; }

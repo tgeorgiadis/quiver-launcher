@@ -111,6 +111,7 @@ export function ConsoleFolders() {
                   className="console-folder-path"
                   value={drafts[group] ?? (folders[group] ? pathOf(group) : "")}
                   placeholder={pathOf(group)}
+                  title={drafts[group] ?? pathOf(group)}
                   spellCheck={false}
                   autoComplete="off"
                   disabled={busy}
