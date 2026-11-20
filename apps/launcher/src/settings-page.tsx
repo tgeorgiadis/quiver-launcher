@@ -537,6 +537,12 @@ function ChooseSystem({ id, name, onPick }: { id: string; name: string; onPick: 
   );
 }
 
+/** Where a path's last folder starts (at its last separator, kept with it), for showing it whole while what it's in shortens. */
+const pathCut = (path: string) => {
+  const trimmed = path.replace(/[\\/]+$/, "");
+  return Math.max(0, trimmed.lastIndexOf("\\"), trimmed.lastIndexOf("/"));
+};
+
 /** What a move came to: how many moved, then any that couldn't (still where they were) and any old files left behind. */
 type MoveOutcome = { text: string; error?: boolean; left?: string[]; failed?: { folder: string; why: string }[] };
 function MoveMessage({ message }: { message: MoveOutcome }) {
@@ -635,6 +641,8 @@ export function AppsFolder({ inSetup, onBusy }: { inSetup?: boolean; onBusy?: (b
   // Sorting the apps already installed into console folders: how many of how many have moved.
   const [sorting, setSorting] = useState<{ done: number; total: number } | null>(null);
   const [showStays, setShowStays] = useState(false);
+  // How the last move into system folders went, said there rather than with the folders above.
+  const [sorted, setSorted] = useState<MoveOutcome | null>(null);
   // Apps given systems in the list just now: they stay in it, to add more systems (several go in Multi-system).
   const [picked, setPicked] = useState<{ id: string; folder: string }[]>([]);
   const noSystem = [...stays.filter((a) => a.why === "noConsole"), ...picked.filter((p) => installs[p.id] && !stays.some((a) => a.id === p.id))];
@@ -699,6 +707,7 @@ export function AppsFolder({ inSetup, onBusy }: { inSetup?: boolean; onBusy?: (b
   /** Moves each installed app at the top of an apps folder, or in a system folder now elsewhere, into its system's folder, one at a time. */
   const sort = async () => {
     setMessage(null);
+    setSorted(null);
     const apps = unsorted;
     const failed: { folder: string; why: string }[] = [];
     const left: string[] = [];
@@ -714,7 +723,7 @@ export function AppsFolder({ inSetup, onBusy }: { inSetup?: boolean; onBusy?: (b
     }
     setSorting(null);
     const n = apps.length;
-    setMessage(
+    setSorted(
       failed.length
         ? { text: t`Moved ${n - failed.length} of ${plural(n, { one: "# app", other: "# apps" })}.`, error: true, left, failed }
         : { text: t`Moved ${plural(n, { one: "# app", other: "# apps" })} into system folders.`, left },
@@ -725,103 +734,19 @@ export function AppsFolder({ inSetup, onBusy }: { inSetup?: boolean; onBusy?: (b
   const open = (path: string) => void native.openAppsFolder(path).catch((e) => setMessage({ text: String(e), error: true }));
   return (
     <section className="settings-section apps-folder" aria-label={t`Apps folders`}>
-      {/* Where each app goes is the desktop's: on a phone the system keeps apps where it does. */}
-      {desktop && !inSetup && (
-        <>
-          <label className="toggle">
-            <input type="checkbox" checked={Boolean(settings.askWhereToInstall)} onChange={(e) => setSettings({ ...settings, askWhereToInstall: e.target.checked || undefined })} />
-            <Trans>Ask where to install each app</Trans>
-          </label>
-          <label className="toggle">
-            <input type="checkbox" checked={Boolean(settings.groupByConsole)} onChange={(e) => setSettings({ ...settings, groupByConsole: e.target.checked || undefined })} />
-            <Trans>Put new apps in a folder for their system</Trans>
-          </label>
-        </>
-      )}
-      {/* All about system folders, together under the toggle: how they're named, the apps to move into them, and
-          where each is. */}
-      {desktop && !inSetup && settings.groupByConsole && (
-        <div className="system-folders">
-          <p className="muted">
-            <Trans>Ports go in Ports{slash}{example}, or Ports{slash}Multi-system for more than one system. Emulators, tools and games get their own folders.</Trans>
-          </p>
-          <label className="system-naming">
-            <span>
-              <Trans>Name system folders</Trans>
-            </span>
-            <select value={settings.systemFolderNames ?? "short"} onChange={(e) => setSettings({ ...settings, systemFolderNames: e.target.value === "full" ? "full" : undefined })}>
-              <option value="short">{t({ message: "Abbreviated (N64, GBC, PS2)", comment: "How system folders are named: by abbreviation" })}</option>
-              <option value="full">{t({ message: "In full (Nintendo 64, Game Boy Color, PlayStation 2)", comment: "How system folders are named: by full name" })}</option>
-            </select>
-          </label>
-          {(unsorted.length > 0 || sorting) && (
-            <div className="system-sort">
-              {sorting ? (
-                <p className="muted" role="status">
-                  <Trans>
-                    Moving apps into system folders… {sorting.done} of {sorting.total}
-                  </Trans>
-                </p>
-              ) : (
-                <>
-                  <span>
-                    {plural(unsorted.length, { one: "# installed app isn't in its system folder yet.", other: "# installed apps aren't in their system folders yet." })}
-                  </span>
-                  <Button
-                    disabled={!idle || busy}
-                    title={waitTitle}
-                    aria-label={plural(unsorted.length, { one: "Move # installed app into its system folder", other: "Move # installed apps into their system folders" })}
-                    onClick={() => void sort()}
-                  >
-                    {plural(unsorted.length, { one: "Move it", other: "Move them" })}
-                  </Button>
-                </>
-              )}
-            </div>
-          )}
-          {!sorting && (stays.length > 0 || noSystem.length > 0) && (
-            <details className="apps-staying muted" open={showStays} onToggle={(e) => setShowStays(e.currentTarget.open)}>
-              <summary>
-                {stays.length
-                  ? plural(stays.length, {
-                      one: "# app stays at the top of the apps folder",
-                      other: "# apps stay at the top of the apps folder",
-                    })
-                  : t`Systems chosen for apps`}
-              </summary>
-              {STAYS_ORDER.filter((why) => (why === "noConsole" ? noSystem.length > 0 : stays.some((a) => a.why === why))).map((why) => {
-                const { title, hint } = staysWhy(why);
-                return (
-                  <section key={why} className="stays-group" aria-label={title}>
-                    <p className="stays-head">
-                      <strong>{title}</strong> <span>{hint}</span>
-                    </p>
-                    <ul className="stays-list">
-                      {(why === "noConsole" ? noSystem : stays.filter((a) => a.why === why)).map((a) => (
-                        <li key={a.id}>
-                          <span className="stays-app">{a.folder}</span>
-                          {why === "noConsole" && (
-                            <ChooseSystem id={a.id} name={a.folder} onPick={() => setPicked((p) => (p.some((x) => x.id === a.id) ? p : [...p, { id: a.id, folder: a.folder }]))} />
-                          )}
-                        </li>
-                      ))}
-                    </ul>
-                  </section>
-                );
-              })}
-            </details>
-          )}
-          <ConsoleFolders />
-        </div>
-      )}
+      {/* The folders first, the page's main thing; then where in them new apps go. */}
       <ul className="apps-folders">
         {(inSetup ? [home] : folders).map((f) => {
           const state = states[f.path];
           return (
             <li key={f.path} className="apps-folder-row" data-default={f.default || undefined}>
               <div className="apps-folder-info">
-                <p className="apps-folder-name">
-                  <span>{f.path}</span>
+                {/* On one line: what it's in shortened first, its own name kept; the whole path on hover. */}
+                <p className="apps-folder-name" title={f.path}>
+                  <span className="apps-folder-path">
+                    <span className="apps-folder-path-head">{f.path.slice(0, pathCut(f.path))}</span>
+                    <span>{f.path.slice(pathCut(f.path))}</span>
+                  </span>
                   {f.default && <span className="apps-folder-badge">{t`Default`}</span>}
                 </p>
                 <p className={state && !state.exists ? "job-error" : "muted"}>
@@ -914,6 +839,96 @@ export function AppsFolder({ inSetup, onBusy }: { inSetup?: boolean; onBusy?: (b
         </div>
       ) : null}
       {message && <MoveMessage message={message} />}
+      {/* Where each app goes is the desktop's: on a phone the system keeps apps where it does. */}
+      {desktop && !inSetup && (
+        <>
+          <label className="toggle">
+            <input type="checkbox" checked={Boolean(settings.askWhereToInstall)} onChange={(e) => setSettings({ ...settings, askWhereToInstall: e.target.checked || undefined })} />
+            <Trans>Ask where to install each app</Trans>
+          </label>
+          <label className="toggle">
+            <input type="checkbox" checked={Boolean(settings.groupByConsole)} onChange={(e) => setSettings({ ...settings, groupByConsole: e.target.checked || undefined })} />
+            <Trans>Put new apps in a folder for their system</Trans>
+          </label>
+        </>
+      )}
+      {/* All about system folders, together under the toggle: how they're named, the apps to move into them, and
+          where each is. */}
+      {desktop && !inSetup && settings.groupByConsole && (
+        <div className="system-folders">
+          <p className="muted">
+            <Trans>Ports go in Ports{slash}{example}, or Ports{slash}Multi-system for several. Others get their own folders.</Trans>
+          </p>
+          <label className="system-naming">
+            <span>
+              <Trans>Name system folders</Trans>
+            </span>
+            <select value={settings.systemFolderNames ?? "short"} onChange={(e) => setSettings({ ...settings, systemFolderNames: e.target.value === "full" ? "full" : undefined })}>
+              <option value="short">{t({ message: "Abbreviated (N64, GBC, PS2)", comment: "How system folders are named: by abbreviation" })}</option>
+              <option value="full">{t({ message: "In full (Nintendo 64, Game Boy Color, PlayStation 2)", comment: "How system folders are named: by full name" })}</option>
+            </select>
+          </label>
+          {(unsorted.length > 0 || sorting) && (
+            <div className="system-sort">
+              {sorting ? (
+                <p className="muted" role="status">
+                  <Trans>
+                    Moving apps into system folders… {sorting.done} of {sorting.total}
+                  </Trans>
+                </p>
+              ) : (
+                <>
+                  <span>
+                    {plural(unsorted.length, { one: "# installed app isn't in its system folder yet.", other: "# installed apps aren't in their system folders yet." })}
+                  </span>
+                  <Button
+                    disabled={!idle || busy}
+                    title={waitTitle}
+                    aria-label={plural(unsorted.length, { one: "Move # installed app into its system folder", other: "Move # installed apps into their system folders" })}
+                    onClick={() => void sort()}
+                  >
+                    {plural(unsorted.length, { one: "Move it", other: "Move them" })}
+                  </Button>
+                </>
+              )}
+            </div>
+          )}
+          {sorted && <MoveMessage message={sorted} />}
+          {!sorting && (stays.length > 0 || noSystem.length > 0) && (
+            <details className="apps-staying muted" open={showStays} onToggle={(e) => setShowStays(e.currentTarget.open)}>
+              <summary>
+                {stays.length
+                  ? plural(stays.length, {
+                      one: "# app stays at the top of the apps folder",
+                      other: "# apps stay at the top of the apps folder",
+                    })
+                  : t`Systems chosen for apps`}
+              </summary>
+              {STAYS_ORDER.filter((why) => (why === "noConsole" ? noSystem.length > 0 : stays.some((a) => a.why === why))).map((why) => {
+                const { title, hint } = staysWhy(why);
+                return (
+                  <section key={why} className="stays-group" aria-label={title}>
+                    <p className="stays-head">
+                      <strong>{title}</strong> <span>{hint}</span>
+                    </p>
+                    <ul className="stays-list">
+                      {(why === "noConsole" ? noSystem : stays.filter((a) => a.why === why)).map((a) => (
+                        <li key={a.id}>
+                          <span className="stays-app">{a.folder}</span>
+                          {why === "noConsole" && (
+                            <ChooseSystem id={a.id} name={a.folder} onPick={() => setPicked((p) => (p.some((x) => x.id === a.id) ? p : [...p, { id: a.id, folder: a.folder }]))} />
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                );
+              })}
+            </details>
+          )}
+          <ConsoleFolders />
+        </div>
+      )}
     </section>
   );
 }

@@ -4942,8 +4942,8 @@ msgid "Ports for more than one system"
 msgstr "Ports für mehrere Systeme"
 
 #: ../../apps/launcher/src/settings-page.tsx
-msgid "Ports go in Ports{slash}{example}, or Ports{slash}Multi-system for more than one system. Emulators, tools and games get their own folders."
-msgstr "Ports kommen in Ports{slash}{example}, oder in Ports{slash}Multi-system bei mehr als einem System. Emulatoren, Tools und Spiele bekommen eigene Ordner."
+msgid "Ports go in Ports{slash}{example}, or Ports{slash}Multi-system for several. Others get their own folders."
+msgstr "Ports kommen in Ports{slash}{example}, oder in Ports{slash}Multi-system bei mehreren. Andere bekommen eigene Ordner."
 
 #: ../../apps/launcher/src/discussions.tsx
 msgid "Ports, games, mods and anything else."

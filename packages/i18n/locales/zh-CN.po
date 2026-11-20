@@ -4942,8 +4942,8 @@ msgid "Ports for more than one system"
 msgstr "多个系统的移植"
 
 #: ../../apps/launcher/src/settings-page.tsx
-msgid "Ports go in Ports{slash}{example}, or Ports{slash}Multi-system for more than one system. Emulators, tools and games get their own folders."
-msgstr "移植版放在 Ports{slash}{example}，多个系统的放在 Ports{slash}Multi-system。模拟器、工具和游戏各有自己的文件夹。"
+msgid "Ports go in Ports{slash}{example}, or Ports{slash}Multi-system for several. Others get their own folders."
+msgstr "移植版放在 Ports{slash}{example}，多个系统的放在 Ports{slash}Multi-system。其他的各有自己的文件夹。"
 
 #: ../../apps/launcher/src/discussions.tsx
 msgid "Ports, games, mods and anything else."
