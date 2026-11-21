@@ -41,6 +41,8 @@ import { PlayStats } from "./library-sidebar";
 import { useTopBarFit } from "./top-bar-fit";
 import { ResizeEdges, WindowControls, moveWindow, movesByPage, resizeEdges, useWindowButtons } from "./window-bar";
 import { SettingsPage, useDiscordPresence, useTray } from "./settings-page";
+import { useDownloadCache } from "./cache-fetch";
+import { CacheChoice } from "./cache-page";
 import { MANAGE_TAGS } from "./tag-settings";
 import { OPEN_APP } from "./cloud-saves-page";
 import { OldLibrary } from "./old-library";
@@ -81,6 +83,7 @@ export function App() {
   useUpdateCheck();
   useTray();
   useDiscordPresence();
+  useDownloadCache();
   const { library, client, settings, setSettings, config, catalog } = useLauncher();
   // TV mode, a larger look over the library and Browse: turned on, or by itself in Steam's Game Mode.
   const tv = tvModeOn(settings, config);
@@ -324,7 +327,7 @@ export function App() {
                 ) : view.kind === "downloads" ? (
                   <DownloadsPage back={backFrom(i)} onBack={goBack} onOpen={openApp} action={downloadAction} />
                 ) : view.kind === "settings" ? (
-                  <SettingsPage back={backFrom(i)} onBack={goBack} onRunSetup={() => setSettingUp(true)} start={view.section} />
+                  <SettingsPage back={backFrom(i)} onBack={goBack} onRunSetup={() => setSettingUp(true)} onOpen={openApp} start={view.section} />
                 ) : view.kind === "community" ? (
                   <CommunityPage back={backFrom(i)} onBack={goBack} />
                 ) : view.kind === "discussion" ? (
@@ -1406,6 +1409,7 @@ function AppPage({
         )}
         {item && <UpdatesChoice id={item.id} />}
         {item && <PrereleasesChoice id={item.id} />}
+        <CacheChoice entry={entry} />
       </div>
       {item && (
         <div className="panel-group">

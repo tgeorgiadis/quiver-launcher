@@ -2,6 +2,7 @@
 mod android;
 mod apps_folder;
 mod browser;
+mod cache;
 mod custom_art;
 mod device;
 mod discord;
@@ -74,6 +75,8 @@ struct Config {
     os: &'static str,
     arch: &'static str,
     apps_dir: String,
+    /// The download cache's folder unless the player picks another: `cache` in the data folder (beside a portable copy).
+    cache_dir: String,
     /// Where anonymous usage data goes: the website, or a stand-in in end-to-end tests.
     usage_host: String,
     /// This build's version, sent with usage data.
@@ -130,6 +133,7 @@ fn config(app: tauri::AppHandle, data: State<Data>) -> Config {
         os: OS,
         arch: ARCH,
         apps_dir: data.apps().to_string_lossy().into(),
+        cache_dir: data.0.join("cache").to_string_lossy().into(),
         usage_host: std::env::var("QUIVER_USAGE_HOST").unwrap_or_else(|_| "https://quiverlauncher.com".into()),
         version: app.package_info().version.to_string(),
         home: std::env::var(if OS == "windows" { "USERPROFILE" } else { "HOME" }).ok().filter(|h| !h.is_empty()),
@@ -250,6 +254,92 @@ async fn install(app: tauri::AppHandle, request: install::InstallRequest) -> Res
     .await;
     app.state::<Installing>().0.lock().unwrap().remove(&id);
     result
+}
+
+/// The download cache's fetches (cache.rs), one at a time: sending true cancels the one under way.
+#[derive(Default)]
+struct CacheFetching(std::sync::Mutex<Option<tokio::sync::watch::Sender<bool>>>);
+
+/// Downloads a release file into the download cache, without installing it. Its progress comes as `cache-progress`.
+#[tauri::command]
+async fn cache_fetch(app: tauri::AppHandle, request: install::InstallRequest) -> Result<(), String> {
+    let (cancel, cancelled) = tokio::sync::watch::channel(false);
+    *app.state::<CacheFetching>().0.lock().unwrap() = Some(cancel);
+    let result = install::fetch_to_cache(request, cancelled, |p| {
+        let _ = app.emit("cache-progress", p);
+    })
+    .await;
+    *app.state::<CacheFetching>().0.lock().unwrap() = None;
+    result
+}
+
+/// Stops the download cache's fetch under way; it fails with "cancelled".
+#[tauri::command]
+fn cache_fetch_cancel(fetching: State<CacheFetching>) {
+    if let Some(cancel) = fetching.0.lock().unwrap().as_ref() {
+        let _ = cancel.send(true);
+    }
+}
+
+/// Clears what a launcher closed mid-download left in the download cache (cache.rs's `clean`): only while no fetch is
+/// under way, so one coming in is never taken from under it. How many files went.
+#[tauri::command]
+async fn cache_clean(app: tauri::AppHandle, dir: String) -> Result<usize, String> {
+    if app.state::<CacheFetching>().0.lock().unwrap().is_some() {
+        return Ok(0);
+    }
+    tauri::async_runtime::spawn_blocking(move || cache::clean(Path::new(&dir))).await.map_err(|e| e.to_string())
+}
+
+/// What's in the download cache. `names`: apps' ids to their slugs, for files an older build kept without one, which
+/// move to their app's folder.
+#[tauri::command]
+async fn cache_status(dir: String, names: Option<std::collections::HashMap<String, String>>) -> Result<cache::Status, String> {
+    tauri::async_runtime::spawn_blocking(move || cache::status(Path::new(&dir), &names.unwrap_or_default())).await.map_err(|e| e.to_string())
+}
+
+/// Which of these files (`sha256:<hex>`) the download cache has.
+#[tauri::command]
+fn cache_has(dir: String, checksums: Vec<String>) -> Vec<bool> {
+    cache::has(Path::new(&dir), &checksums)
+}
+
+/// Rotates the download cache down to `limit` bytes (none for no limit), keeping `protect`'s files.
+#[tauri::command]
+async fn cache_trim(dir: String, limit: Option<u64>, protect: Vec<String>) -> Result<(), String> {
+    tauri::async_runtime::spawn_blocking(move || cache::trim(Path::new(&dir), limit, &protect)).await.map_err(|e| e.to_string())?.map_err(|e| e.to_string())
+}
+
+/// Removes these files from the download cache, or all of them when `hashes` is none.
+#[tauri::command]
+async fn cache_remove(dir: String, hashes: Option<Vec<String>>) -> Result<(), String> {
+    tauri::async_runtime::spawn_blocking(move || cache::remove(Path::new(&dir), hashes.as_deref())).await.map_err(|e| e.to_string())?.map_err(|e| e.to_string())
+}
+
+/// Shows the download cache's folder: the one settings.json names, else `cache` in the data folder. Never another
+/// path, as the page can't name one.
+#[tauri::command]
+fn cache_open(data: State<Data>) -> Result<(), String> {
+    let settings: serde_json::Value = std::fs::read(state_file(&data, "settings")?)
+        .ok()
+        .and_then(|b| serde_json::from_slice(&b).ok())
+        .unwrap_or_default();
+    let dir = settings["cache"]["dir"].as_str().map(str::trim).filter(|d| !d.is_empty()).map(PathBuf::from).unwrap_or_else(|| data.0.join("cache"));
+    std::fs::create_dir_all(&dir).map_err(|_| "Couldn't open the cache folder. Is its drive connected?".to_string())?;
+    reveal(&dir)
+}
+
+/// Shows an app's folder in the download cache: in the cache folder settings.json names (as `cache_open`), where the
+/// index says its files are. Never another path.
+#[tauri::command]
+fn cache_open_app(data: State<Data>, app: String) -> Result<(), String> {
+    let settings: serde_json::Value = std::fs::read(state_file(&data, "settings")?)
+        .ok()
+        .and_then(|b| serde_json::from_slice(&b).ok())
+        .unwrap_or_default();
+    let dir = settings["cache"]["dir"].as_str().map(str::trim).filter(|d| !d.is_empty()).map(PathBuf::from).unwrap_or_else(|| data.0.join("cache"));
+    let folder = cache::app_folder(&dir, &app).ok_or("None of this app's files are in the download cache yet.")?;
+    reveal(&folder)
 }
 
 /// Installs under way, by app id: sending true cancels one.
@@ -2507,6 +2597,7 @@ pub fn run() {
             app.manage(Snapshotted(Default::default()));
             app.manage(gamepad::Pads::default());
             app.manage(Installing::default());
+            app.manage(CacheFetching::default());
             app.manage(Running::default());
             app.manage(Watching::default());
             app.manage(discord::Presence::new());
@@ -2528,6 +2619,15 @@ pub fn run() {
             config,
             pc_specs,
             cancel_install,
+            cache_fetch,
+            cache_fetch_cancel,
+            cache_status,
+            cache_clean,
+            cache_has,
+            cache_trim,
+            cache_remove,
+            cache_open,
+            cache_open_app,
             read_state,
             write_state,
             state_problems,
