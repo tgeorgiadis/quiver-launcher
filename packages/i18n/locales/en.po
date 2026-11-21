@@ -5438,6 +5438,7 @@ msgstr "Recently played first (press for A to Z)"
 msgid "Recently updated"
 msgstr "Recently updated"
 
+#: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/mods.tsx
 msgid "Refresh"
 msgstr "Refresh"

@@ -27,6 +27,18 @@ test("the listing sends only what's set, makers as maker, and sorts only without
   expect(asked).toHaveLength(2);
 });
 
+test("Refresh's listing asks the site again rather than the webview's cache, at the same address", async () => {
+  const sent: { url: string; cache?: RequestCache }[] = [];
+  const fetch = (async (url: string, init?: RequestInit) => (sent.push({ url, cache: init?.cache }), new Response(JSON.stringify(empty)))) as typeof globalThis.fetch;
+  const client = createClient("https://api.test", { fetch });
+  await client.apps({ search: "mario" });
+  await client.apps({ search: "mario", fresh: true });
+  expect(sent).toEqual([
+    { url: "https://api.test/apps?limit=48&search=mario", cache: undefined },
+    { url: "https://api.test/apps?limit=48&search=mario", cache: "no-cache" },
+  ]);
+});
+
 test("several kinds of project, from saved filters, go as projectTypes; one goes as projectType", async () => {
   const { client, asked } = fakeApi({ "/apps?limit=48&projectTypes=port%2Cgame": empty, "/apps?limit=48&projectType=tool": empty, "/apps?limit=48": empty });
   await client.apps({ projectTypes: ["port", "game"] });

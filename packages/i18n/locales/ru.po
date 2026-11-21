@@ -5439,6 +5439,7 @@ msgstr "Сначала недавно сыгранные (нажмите для 
 msgid "Recently updated"
 msgstr "Недавно обновлённые"
 
+#: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/mods.tsx
 msgid "Refresh"
 msgstr "Обновить список"

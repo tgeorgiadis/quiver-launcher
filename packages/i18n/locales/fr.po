@@ -5439,6 +5439,7 @@ msgstr "Joués récemment d'abord (appuyez pour A à Z)"
 msgid "Recently updated"
 msgstr "Mis à jour récemment"
 
+#: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/mods.tsx
 msgid "Refresh"
 msgstr "Actualiser"

@@ -1,5 +1,5 @@
 import { startTransition, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { ArrowLeft, ArrowUp, BookOpen, Save, ChevronDown, Cloud, CircleArrowDown, CircleCheck, CirclePlay, CircleUser, Compass, Disc3, Download, Eye, EyeOff, FolderInput, FolderOpen, FolderPen, FolderSearch, FolderSync, History, Info, MessagesSquare, LayoutGrid, Library, LogOut, PanelLeft, Mail, PackagePlus, Pencil, Pin, Play, Plus, Search, SettingsIcon, RotateCcw, ShieldAlert, ShieldCheck, ShieldX, SlidersHorizontal, Smile, Trash2, TriangleAlert, Tv, Wrench, X } from "lucide-react";
+import { ArrowLeft, ArrowUp, BookOpen, Save, ChevronDown, Cloud, CircleArrowDown, CircleCheck, CirclePlay, CircleUser, Compass, Disc3, Download, Eye, EyeOff, FolderInput, FolderOpen, FolderPen, FolderSearch, FolderSync, History, Info, MessagesSquare, LayoutGrid, Library, LogOut, PanelLeft, Mail, PackagePlus, Pencil, Pin, Play, Plus, Search, SettingsIcon, RefreshCw, RotateCcw, ShieldAlert, ShieldCheck, ShieldX, SlidersHorizontal, Smile, Trash2, TriangleAlert, Tv, Wrench, X } from "lucide-react";
 import type { AppQuery, Asset, Entry, GameMatch, Os, Page, ProjectType } from "@quiverlauncher/api";
 import { msg, plural, t } from "@lingui/core/macro";
 import { Plural, Trans } from "@lingui/react/macro";
@@ -502,6 +502,8 @@ function BrowsePage({
   const only = hiddenView === "only";
   // Only hidden apps: asked for by themselves, as the catalog's pages could have them anywhere in it, and empty for pages of them.
   const [hiddenApps, setHiddenApps] = useState<Entry[] | null>(null);
+  // Refresh's presses, which ask for them again.
+  const [reloads, setReloads] = useState(0);
   useEffect(() => {
     if (!only) return setHiddenApps(null);
     let live = true;
@@ -514,7 +516,7 @@ function BrowsePage({
       setHiddenApps(found);
     });
     return () => void (live = false);
-  }, [only, client]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [only, client, reloads]); // eslint-disable-line react-hooks/exhaustive-deps
   // The last one shown again: back to the rest, rather than a view of nothing.
   useEffect(() => {
     if (!hidden.size) setHiddenView("hide");
@@ -547,6 +549,8 @@ function BrowsePage({
   const [pages, setPages] = useState<Page<Entry>[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  // Refresh's own first page on its way: its icon turns meanwhile.
+  const [refreshing, setRefreshing] = useState(false);
   const [games, setGames] = useState<GameMatch[]>([]);
   // The search whose games are in.
   const [gamesFor, setGamesFor] = useState<string | null>(null);
@@ -559,13 +563,15 @@ function BrowsePage({
   // Windows' run there), narrowed to what runs here once they come (`runs`).
   const askedOs = filters.platforms?.map((p) => (p === "here" ? catalogOs(config.os) : p));
   const platforms = askedOs?.some((p) => !p) ? undefined : [...new Set(askedOs as Os[])];
-  function load(cursor?: string | null) {
+  /** The catalog's first page, or the one after `cursor`; `fresh` (Refresh) asks the site again rather than the webview's cache. */
+  function load(cursor?: string | null, fresh = false) {
     const request = ++latest.current;
     setLoading(true);
+    setRefreshing(fresh);
     setError(null);
     client
       // A search orders by relevance.
-      .apps({ ...filters, platforms, search: query, sort: searching ? undefined : filters.sort, cursor })
+      .apps({ ...filters, platforms, search: query, sort: searching ? undefined : filters.sort, cursor, fresh })
       .then((page) => {
         if (request !== latest.current) return;
         remember(page.items);
@@ -577,12 +583,14 @@ function BrowsePage({
           setOwned((o) => new Set([...(cursor ? o : []), ...left]));
           setPages((p) => (cursor ? [...p, page] : [page]));
           setLoading(false);
+          setRefreshing(false);
         });
       })
       .catch(() => {
         if (request !== latest.current) return;
         setError(t`Couldn't reach quiverlauncher.com. Check your connection and try again.`);
         setLoading(false);
+        setRefreshing(false);
       });
   }
   useEffect(() => {
@@ -688,6 +696,8 @@ function BrowsePage({
   const mine = showOwned && hiddenView !== "only" ? entries.filter((e) => inLibrary.has(e.id)).length : 0;
   const last = only ? undefined : pages.at(-1);
   const waiting = only ? !hiddenApps && !error : loading;
+  // The same search, filters and order asked for again: apps added or updated since show without retyping the search.
+  const refresh = () => (only ? (setHiddenApps(null), setReloads((n) => n + 1)) : load(null, true));
   const typed = search.trim();
   return (
     <>
@@ -720,6 +730,15 @@ function BrowsePage({
             {filterCount > 0 && <span className="tool-count">{filterCount}</span>}
           </button>
           {/* How Browse's cards look, as the library's View menu sets its own; Settings has the same. */}
+          <button
+            className="tool icon-only refresh"
+            aria-label={t`Refresh`}
+            title={t`Refresh`}
+            aria-busy={only ? waiting : refreshing}
+            onClick={refresh}
+          >
+            <RefreshCw size={16} className={(only ? waiting : refreshing) ? "spinning" : undefined} aria-hidden="true" />
+          </button>
           <Popover label={t`View options`} icon={<LayoutGrid size={17} />} role="group" className="tool icon-only" panel="view-panel" align="end">
             {() => <BrowseCardOptions />}
           </Popover>

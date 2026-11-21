@@ -458,6 +458,8 @@ export type AppQuery = {
   hideDevelopers?: string[];
   cursor?: string | null;
   limit?: number;
+  /** Asked of the site again rather than answered from the webview's HTTP cache, which keeps a page 15 seconds: Browse's Refresh. */
+  fresh?: boolean;
 };
 
 export type Console = { id: string; name: string; brand: string };
@@ -633,8 +635,8 @@ export function createClient(base: string = DEFAULT_API, options: ClientOptions 
     const body = await response.json().catch(() => null);
     throw new ApiError(response.status, body?.error?.message ?? `The catalog answered ${response.status}`);
   }
-  async function get<T>(path: string): Promise<T> {
-    return (await answer(await request(path))).json();
+  async function get<T>(path: string, init?: RequestInit): Promise<T> {
+    return (await answer(await request(path, init))).json();
   }
   const app = (slug: string) => `/apps/${encodeURIComponent(slug)}`;
   const notFound = <T,>(e: unknown): T | null => {
@@ -666,7 +668,7 @@ export function createClient(base: string = DEFAULT_API, options: ClientOptions 
       if (q.developer) params.set("developer", q.developer);
       else if (q.hideDevelopers?.length) params.set("hideDevelopers", q.hideDevelopers.slice(0, 50).join(","));
       if (q.cursor) params.set("cursor", q.cursor);
-      return get<Page<Entry>>(`/apps?${params}`);
+      return get<Page<Entry>>(`/apps?${params}`, q.fresh ? { cache: "no-cache" } : undefined);
     },
     // No slug would ask for /apps/, which answers with the catalog's first page rather than a 404; an answer with no
     // entry in it (that page, or anything else) isn't the app either.
