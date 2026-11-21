@@ -33,6 +33,13 @@ pub struct CacheUse {
     pub version: String,
     #[serde(default)]
     pub os: Option<String>,
+    /// The file's processor architecture as the catalog has it ("x64", "arm64"), for installing it from the cache offline.
+    #[serde(default)]
+    pub arch: Option<String>,
+    /// The release's source code (its host's archive of the tag), not a build: no checksum to check it against, kept by
+    /// its own SHA-256, the app's latest alone.
+    #[serde(default)]
+    pub source: bool,
     /// The app's catalog slug, its folder's name in the cache; else its id.
     #[serde(default)]
     pub slug: Option<String>,
@@ -59,6 +66,9 @@ pub struct Cached {
     /// `<hash>/<filename>`, until it's moved (`readable`).
     #[serde(default)]
     pub path: String,
+    /// The release's source code rather than a build of it.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub source: bool,
     pub size: u64,
     /// The apps and versions it's a file of.
     #[serde(default)]
@@ -75,6 +85,8 @@ pub struct Owner {
     pub version: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub os: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub arch: Option<String>,
     /// The app's catalog slug, as its folder is named.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub slug: Option<String>,
@@ -214,7 +226,7 @@ pub fn keep(cache: &CacheUse, file: &Path, filename: &str, hash: &str) -> io::Re
     let _guard = LOCK.lock().unwrap_or_else(|e| e.into_inner());
     let mut entries = read_index(dir);
     let slug = cache.slug.clone().filter(|s| !s.trim().is_empty());
-    let owner = Owner { app: cache.app.clone(), version: cache.version.clone(), os: cache.os.clone(), slug: slug.clone() };
+    let owner = Owner { app: cache.app.clone(), version: cache.version.clone(), os: cache.os.clone(), arch: cache.arch.clone(), slug: slug.clone() };
     let at = now();
     match entries.iter_mut().find(|e| e.hash == hex) {
         // Kept already, for this app or another: one copy, where it is.
@@ -237,8 +249,18 @@ pub fn keep(cache: &CacheUse, file: &Path, filename: &str, hash: &str) -> io::Re
             fs::rename(&part, &to)?;
             let size = fs::metadata(&to)?.len();
             let filename = to.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or(filename);
-            entries.push(Cached { hash: hex.clone(), filename, path, size, apps: vec![owner], cached_at: at, used_at: at });
+            entries.push(Cached { hash: hex.clone(), filename, path, source: cache.source, size, apps: vec![owner], cached_at: at, used_at: at });
         }
+    }
+    // Source code: the app's latest alone, any it had before gone (or left to apps that share it).
+    if cache.source {
+        for entry in entries.iter_mut().filter(|e| e.hash != hex && e.source) {
+            entry.apps.retain(|o| o.app != cache.app);
+        }
+        for orphan in entries.iter().filter(|e| e.apps.is_empty()) {
+            forget(dir, orphan);
+        }
+        entries.retain(|e| !e.apps.is_empty());
     }
     // Installed only: this app's latest installed version alone, its others gone (or left to the apps that share them).
     if cache.only_this {
@@ -444,7 +466,7 @@ mod tests {
         assert_eq!(fs::read(&to).unwrap(), b"game files");
         let status = status(&cache, &HashMap::new());
         assert_eq!((status.files, status.bytes), (1, 10));
-        assert_eq!(status.entries[0].apps, vec![Owner { app: "a".into(), version: "1.0".into(), os: None, slug: None }]);
+        assert_eq!(status.entries[0].apps, vec![Owner { app: "a".into(), version: "1.0".into(), os: None, arch: None, slug: None }]);
     }
 
     #[test]
@@ -603,8 +625,8 @@ mod tests {
             let hash = sha(bytes);
             fs::create_dir_all(cache.join(&hash)).unwrap();
             fs::write(cache.join(&hash).join(name), bytes).unwrap();
-            let owner = Owner { app: app.into(), version: "2.1".into(), os: None, slug: slug.map(Into::into) };
-            Cached { hash, filename: name.into(), path: String::new(), size: bytes.len() as u64, apps: vec![owner], cached_at: 0, used_at: 0 }
+            let owner = Owner { app: app.into(), version: "2.1".into(), os: None, arch: None, slug: slug.map(Into::into) };
+            Cached { hash, filename: name.into(), path: String::new(), source: false, size: bytes.len() as u64, apps: vec![owner], cached_at: 0, used_at: 0 }
         };
         fs::create_dir_all(&cache).unwrap();
         let (a, b) = (old("a.zip", b"aaa", "id-a", Some("app-a")), old("b.zip", b"bbb", "id-b", None));
@@ -644,6 +666,29 @@ mod tests {
         assert_eq!(status(&cache, &HashMap::new()).files, 1);
         assert_eq!(clean(&cache), 0);
         assert_eq!(clean(&tmp.path().join("no-cache-yet")), 0);
+    }
+
+    #[test]
+    fn an_apps_source_code_is_kept_beside_its_builds_its_latest_alone() {
+        let (tmp, cache) = setup();
+        let source = |v: &str| CacheUse { source: true, ..uses(&cache, "a", v) };
+        put(tmp.path(), &uses(&cache, "a", "1.0"), "game-win.zip", b"build 1");
+        put(tmp.path(), &source("1.0"), "game-1.0-source.zip", b"source 1");
+        assert!(cache.join("a/1.0/game-1.0-source.zip").is_file());
+        put(tmp.path(), &source("2.0"), "game-2.0-source.zip", b"source 2");
+        let entries = status(&cache, &HashMap::new()).entries;
+        let names: Vec<(&str, bool)> = entries.iter().map(|e| (e.filename.as_str(), e.source)).collect();
+        // The new source in its version's folder; the old one gone; the build, not a source, stays.
+        assert_eq!(names, vec![("game-win.zip", false), ("game-2.0-source.zip", true)]);
+        assert!(!cache.join("a/1.0/game-1.0-source.zip").exists() && cache.join("a/1.0/game-win.zip").is_file());
+    }
+
+    #[test]
+    fn a_files_architecture_is_kept_for_installing_it_offline() {
+        let (tmp, cache) = setup();
+        put(tmp.path(), &CacheUse { os: Some("windows".into()), arch: Some("arm64".into()), ..uses(&cache, "a", "1.0") }, "g.zip", b"g");
+        let owner = &status(&cache, &HashMap::new()).entries[0].apps[0];
+        assert_eq!((owner.os.as_deref(), owner.arch.as_deref()), (Some("windows"), Some("arm64")));
     }
 
     #[test]

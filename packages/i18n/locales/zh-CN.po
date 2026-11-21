@@ -2784,6 +2784,10 @@ msgstr "无论这里如何设置，每个应用都可以在自己的设置中选
 msgid "Each app can update by itself, ask first, or stay on its version, whatever this says, from its own settings."
 msgstr "无论这里如何设置，每个应用都可以在自己的设置中选择自动更新、先询问或保留在当前版本。"
 
+#: ../../apps/launcher/src/cache-page.tsx
+msgid "Each app's source code as its host archives the release's tag, beside its files. Only the latest is kept. Release feeds have no source archive."
+msgstr "每个应用的源代码（托管平台为该版本标签生成的归档），放在其文件旁边。只保留最新的。发布订阅源没有源代码归档。"
+
 #: ../../apps/launcher/src/saves-tab.tsx
 msgid "Each backup is also kept in {folder}, which holds the newest 5 of this app from all your computers."
 msgstr ""
@@ -3797,6 +3801,11 @@ msgstr "保持 Quiver 打开，直到操作完成。"
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Keep Quiver open until it's done. Each app's old copy is deleted only once its new one is checked."
 msgstr "保持 Quiver 打开，直到操作完成。只有在新副本通过检查后，才会删除每个应用的旧副本。"
+
+#. Download cache setting: also keep the source code of each app's release it keeps
+#: ../../apps/launcher/src/cache-page.tsx
+msgid "Keep source code"
+msgstr "保留源代码"
 
 #: ../../apps/launcher/src/cache-page.tsx
 msgid "Keep the files Quiver downloads, to install them again without downloading, even offline, and as a backup of what was released. Each file is checked against the catalog before it's installed."

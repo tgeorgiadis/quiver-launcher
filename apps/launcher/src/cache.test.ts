@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 import type { Asset, Release } from "@quiverlauncher/api";
-import { DEFAULT_LIMIT_GB, cacheNames, cacheOf, orphans, cacheTargets, cacheUse, fits, installedTargets, isSelected, protectedFiles, sameVersion, withSelected } from "./cache";
+import { DEFAULT_LIMIT_GB, cacheNames, cacheOf, cachedReleases, orphans, sourceArchive, cacheTargets, cacheUse, fits, installedTargets, isSelected, protectedFiles, sameVersion, withSelected } from "./cache";
 
 const GB = 1024 ** 3;
 const sum = (c: string) => `sha256:${c.repeat(64)}`;
@@ -10,7 +10,7 @@ const entry = { id: "app", slug: "app", projectName: "The App", launcher: {} as 
 
 describe("the settings", () => {
   test("off, in the data folder, with a 50 GB limit, until the player says otherwise", () => {
-    expect(cacheOf(undefined, "/data/cache")).toEqual({ mode: "none", on: false, dir: "/data/cache", limit: DEFAULT_LIMIT_GB * GB, limitGb: 50, allPlatforms: false, apps: [] });
+    expect(cacheOf(undefined, "/data/cache")).toEqual({ mode: "none", on: false, dir: "/data/cache", limit: DEFAULT_LIMIT_GB * GB, limitGb: 50, allPlatforms: false, sources: false, apps: [] });
     expect(cacheOf({ mode: "hoarder", dir: " /big/drive ", limitGb: null, allPlatforms: true }, "/data/cache")).toMatchObject({ mode: "hoarder", on: true, dir: "/big/drive", limit: undefined, allPlatforms: true });
     expect(cacheOf({ mode: "sparkles" as never, limitGb: 5 }, "/c")).toMatchObject({ mode: "none", limit: 5 * GB });
   });
@@ -121,5 +121,55 @@ describe("orphans: what Clear orphans takes", () => {
   });
   test("nothing in the modes that keep the whole catalog, nor while off", () => {
     for (const mode of ["latest", "hoarder", "none"] as const) expect(orphans(files, cacheOf({ mode }, "/c"), [], [])).toEqual([]);
+  });
+});
+
+describe("an app's versions from the cache, for installing offline", () => {
+  const file = (hash: string, filename: string, version: string, os: string, at: number, more: { arch?: string; source?: boolean; app?: string } = {}) => ({
+    hash: hash.repeat(64), filename, path: "", size: 10, source: more.source, cachedAt: at, usedAt: at,
+    apps: [{ app: more.app ?? "duke", version, os, ...(more.arch && { arch: more.arch }) }],
+  });
+  const files = [
+    file("a", "Duke-1.0-win.zip", "1.0", "windows", 1, { arch: "x64" }),
+    file("b", "Duke-1.1-win.zip", "1.1", "windows", 5, { arch: "x64" }),
+    file("c", "Duke-1.1-linux.tar.gz", "1.1", "linux", 4),
+    file("d", "duke-1.1-source.zip", "1.1", "unknown", 6, { source: true }),
+    file("e", "Other.zip", "9", "windows", 9, { app: "other" }),
+  ];
+  test("newest kept first, each file checked by its SHA-256, never its source code nor another app's", () => {
+    const releases = cachedReleases(files, "duke");
+    expect(releases.map((r) => [r.version, r.assets.map((a) => a.filename)])).toEqual([
+      ["1.1", ["Duke-1.1-win.zip", "Duke-1.1-linux.tar.gz"]],
+      ["1.0", ["Duke-1.0-win.zip"]],
+    ]);
+    expect(releases[0].assets[0]).toMatchObject({ checksum: `sha256:${"b".repeat(64)}`, os: "windows", architecture: "x64", url: "" });
+    // One kept before architectures were: any, as the catalog's unknown is.
+    expect(releases[0].assets[1].architecture).toBe("unknown");
+    expect(cachedReleases(files, "nothing")).toEqual([]);
+  });
+});
+
+describe("a release's source code, as its host archives its tag", () => {
+  test("GitHub, GitLab, Gitea/Forgejo and Bitbucket, named <repository>-<tag>-source.zip", () => {
+    expect(sourceArchive({ provider: "github", repository: "TwilitRealm/dusklight" }, "v2.0.3")).toEqual({
+      url: "https://github.com/TwilitRealm/dusklight/archive/refs/tags/v2.0.3.zip",
+      filename: "dusklight-v2.0.3-source.zip",
+    });
+    expect(sourceArchive({ provider: "gitlab", repository: "group/sub/game" }, "1.0")?.url).toBe("https://gitlab.com/group/sub/game/-/archive/1.0/game-1.0.zip");
+    expect(sourceArchive({ provider: "gitlab", repository: "a/b", host: "https://git.example.org/" }, "1.0")?.url).toBe("https://git.example.org/a/b/-/archive/1.0/b-1.0.zip");
+    expect(sourceArchive({ provider: "gitea", repository: "a/b", host: "codeberg.org" }, "v1")?.url).toBe("https://codeberg.org/a/b/archive/v1.zip");
+    expect(sourceArchive({ provider: "bitbucket", repository: "a/b" }, "v1")?.url).toBe("https://bitbucket.org/a/b/get/v1.zip");
+  });
+  test("a tag is made safe in the address and the name", () => {
+    expect(sourceArchive({ provider: "github", repository: "a/b" }, "release/1.0 beta")).toEqual({
+      url: "https://github.com/a/b/archive/refs/tags/release%2F1.0%20beta.zip",
+      filename: "b-release_1.0_beta-source.zip",
+    });
+  });
+  test("none for a release feed, a Gitea with no host, or no repository", () => {
+    expect(sourceArchive({ provider: "feed", repository: "https://example.com/feed.json" }, "1")).toBeUndefined();
+    expect(sourceArchive({ provider: "gitea", repository: "a/b" }, "1")).toBeUndefined();
+    expect(sourceArchive({ provider: "github" }, "1")).toBeUndefined();
+    expect(sourceArchive({ provider: "github", repository: "a/b" }, " ")).toBeUndefined();
   });
 });

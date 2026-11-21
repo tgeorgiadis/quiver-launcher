@@ -93,7 +93,10 @@ export function standInForRust({ api, state = {}, config: more = {}, maximized =
     },
     // A download that stays under way till a test finishes it (window.__installs) or Cancel stops it: what an install
     // does is the real app's to show (the tests one folder up).
-    install: ({ request }) => new Promise((resolve, reject) => window.__installs.set(request.id, { resolve, reject })),
+    install: ({ request }) => {
+      (window.__installRequests ??= []).push(request);
+      return new Promise((resolve, reject) => window.__installs.set(request.id, { resolve, reject }));
+    },
     cancel_install: ({ id }) => {
       window.__installs.get(id)?.reject("cancelled");
       window.__installs.delete(id);

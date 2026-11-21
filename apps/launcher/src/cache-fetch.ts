@@ -8,7 +8,7 @@
 import { useEffect, useRef, useSyncExternalStore } from "react";
 import { cacheAsk, requestCache, subscribeCacheAsk } from "./cache-signal";
 import type { Client, Entry, Os, Release } from "@quiverlauncher/api";
-import { cacheNames, cacheOf, cacheTargets, fetches, fits, installedTargets, protectedFiles, sameVersion, type Cache, type CacheTarget, type CacheUse } from "./cache";
+import { cacheNames, cacheOf, cacheTargets, sourceArchive, fetches, fits, installedTargets, protectedFiles, sameVersion, type Cache, type CacheTarget, type CacheUse } from "./cache";
 import { native, type CacheStatus, type InstallRequest } from "./native";
 import { catalogOs, useLauncher } from "./store";
 import { isOwn } from "./custom";
@@ -65,6 +65,8 @@ export type FetchDeps = {
   protect: () => string[];
   /** The catalog as asked for: this computer's apps, unless every system's are kept. */
   catalogOs?: Os;
+  /** An app's repository and its host, for its source code (Keep source code); none when the catalog can't say. */
+  projectOf?: (slug: string) => Promise<{ provider: string; repository?: string; host?: string } | undefined>;
   /** Installed only: the catalog's apps installed here, their version and the installed file's checksum. */
   installed?: () => { id: string; slug: string; version: string; checksum?: string }[];
 };
@@ -130,6 +132,12 @@ export function fetchRequest(target: CacheTarget, cache: Cache, protect: string[
   return { id: target.app, url: target.asset.url, filename: target.asset.filename, checksum: target.asset.checksum, folder: target.slug, filesToAdd: [], version: target.version, cache: use };
 }
 
+/** A release's source code as a request to the cache alone: no checksum, kept by its own, the app's latest alone. */
+export function sourceRequest(entry: Pick<Entry, "id" | "slug">, version: string, archive: { url: string; filename: string }, cache: Cache, protect: string[]): InstallRequest {
+  const use: CacheUse = { dir: cache.dir, keep: true, app: entry.id, version, slug: entry.slug, source: true, ...(cache.limit !== undefined && { limit: cache.limit }), protect };
+  return { id: entry.id, url: archive.url, filename: archive.filename, folder: entry.slug, filesToAdd: [], version, cache: use };
+}
+
 /**
  * One run: every file the cache should keep and doesn't, fetched while it fits. `stopped` ends it between files (the
  * file under way is stopped with cacheFetchCancel). Resolves to how it went.
@@ -140,7 +148,10 @@ export async function runCacheFetch(cache: Cache, deps: FetchDeps, report: (s: F
   /** The file at the top of the list as it is now, the oldest dropping off. */
   const note = (file: CacheFile) => (state.files = [file, ...state.files.filter((f) => f.key !== file.key)].slice(0, FILES_SHOWN));
   show();
-  let used = (await deps.native.cacheStatus(cache.dir)).bytes;
+  const status = await deps.native.cacheStatus(cache.dir);
+  let used = status.bytes;
+  // The apps' versions whose source code is kept already.
+  const sources = new Set(status.entries.filter((f) => f.source).flatMap((f) => f.apps.map((o) => `${o.app}@${o.version}`)));
   const installed = new Map((deps.installed?.() ?? []).map((i) => [i.id, i]));
   for await (const entry of appsOf(cache, deps, (n) => (state.ofApps = n), only)) {
     if (stopped()) break;
@@ -149,10 +160,40 @@ export async function runCacheFetch(cache: Cache, deps: FetchDeps, report: (s: F
     show();
     const install = installed.get(entry.id);
     let targets: CacheTarget[];
+    // The release whose source code is kept: the installed one, else the newest.
+    let latest: Release | undefined;
     if (cache.mode === "installed") {
-      const release = install && (await releaseOf(deps, entry.slug, install.version).catch(() => undefined));
-      targets = release ? installedTargets(entry, release, install, cache, deps.here) : [];
-    } else targets = cacheTargets(entry, await releasesOf(cache, deps, entry.slug).catch(() => []), cache, deps.here);
+      latest = install && (await releaseOf(deps, entry.slug, install.version).catch(() => undefined));
+      targets = latest && install ? installedTargets(entry, latest, install, cache, deps.here) : [];
+    } else {
+      const releases = await releasesOf(cache, deps, entry.slug).catch(() => []);
+      latest = releases[0];
+      targets = cacheTargets(entry, releases, cache, deps.here);
+    }
+    // Keep source code: the release's, as its host archives its tag, unless it's kept already.
+    if (cache.sources && latest && !sources.has(`${entry.id}@${latest.version}`) && !stopped()) {
+      const project = await deps.projectOf?.(entry.slug).catch(() => undefined);
+      const archive = project && sourceArchive(project, latest.version);
+      if (archive) {
+        const file: CacheFile = { key: `source:${entry.id}@${latest.version}`, entry, version: latest.version, filename: archive.filename, state: "downloading", received: 0, total: null, at: Date.now() };
+        state.current = { name: entry.projectName, version: latest.version, filename: archive.filename, received: 0, total: null };
+        note(file);
+        show();
+        try {
+          await deps.native.cacheFetch(sourceRequest(entry, latest.version, archive, cache, deps.protect()));
+          state.fetched++;
+          sources.add(`${entry.id}@${latest.version}`);
+          note({ ...file, state: "kept", at: Date.now() });
+        } catch (e) {
+          if (e === "cancelled") {
+            state.files = state.files.filter((f) => f.key !== file.key);
+            break;
+          }
+          state.failed++;
+          note({ ...file, state: "failed", why: whyOf(e), at: Date.now() });
+        }
+      }
+    }
     if (!targets.length) continue;
     const held = await deps.native.cacheHas(cache.dir, targets.map((t) => t.asset.checksum)).catch(() => targets.map(() => false));
     for (const [i, target] of targets.entries()) {
@@ -279,6 +320,7 @@ export function useDownloadCache() {
       catalogOs: catalogOs(config.os),
       entryOf: async (app) => now.current.catalog[app.id] ?? (app.slug ? (await client.app(app.slug)).entry : undefined),
       protect: () => protectedFiles(now.current.installs),
+      projectOf: async (slug) => (await client.app(slug)).project,
       // The catalog's apps installed here; never the player's own files, nor apps added from a repository.
       installed: () =>
         Object.entries(now.current.installs).flatMap(([id, i]) => {

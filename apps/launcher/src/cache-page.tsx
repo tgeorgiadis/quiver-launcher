@@ -129,6 +129,17 @@ export function CacheSettingsSection({ onOpen }: { onOpen: (entry: Entry) => voi
             <input type="checkbox" checked={cache.allPlatforms} onChange={(e) => set((c) => ({ ...c, allPlatforms: e.target.checked || undefined }))} />
             <Trans comment="Download cache setting: keep a release's builds for Windows, Linux, macOS and Android, not only this computer's">Keep every system's files</Trans>
           </label>
+          <label className="toggle">
+            <input type="checkbox" checked={cache.sources} onChange={(e) => set((c) => ({ ...c, sources: e.target.checked || undefined }))} />
+            <Trans comment="Download cache setting: also keep the source code of each app's release it keeps">Keep source code</Trans>
+          </label>
+          {cache.sources && (
+            <p className="muted cache-note">
+              <Trans>
+                Each app's source code as its host archives the release's tag, beside its files. Only the latest is kept. Release feeds have no source archive.
+              </Trans>
+            </p>
+          )}
           <Field
             label={<Trans comment="Download cache setting: the most storage it uses">Storage limit</Trans>}
             hint={<Trans>When it's full, the files used longest ago make room. The files of the versions you have installed always stay.</Trans>}

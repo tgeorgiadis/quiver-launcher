@@ -2784,6 +2784,10 @@ msgstr "Cada app puede incluir versiones preliminares o no desde su propia confi
 msgid "Each app can update by itself, ask first, or stay on its version, whatever this says, from its own settings."
 msgstr "Cada app puede actualizarse sola, preguntar antes o quedarse en su versión desde su propia configuración, diga lo que diga esta opción."
 
+#: ../../apps/launcher/src/cache-page.tsx
+msgid "Each app's source code as its host archives the release's tag, beside its files. Only the latest is kept. Release feeds have no source archive."
+msgstr "El código fuente de cada app, tal como su host archiva la etiqueta de la versión, junto a sus archivos. Solo se guarda el más reciente. Los feeds de versiones no tienen archivo de código fuente."
+
 #: ../../apps/launcher/src/saves-tab.tsx
 msgid "Each backup is also kept in {folder}, which holds the newest 5 of this app from all your computers."
 msgstr ""
@@ -3797,6 +3801,11 @@ msgstr "Mantén Quiver abierto hasta que termine."
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Keep Quiver open until it's done. Each app's old copy is deleted only once its new one is checked."
 msgstr "Mantén Quiver abierto hasta que termine. La copia anterior de cada app se borra solo cuando la nueva está verificada."
+
+#. Download cache setting: also keep the source code of each app's release it keeps
+#: ../../apps/launcher/src/cache-page.tsx
+msgid "Keep source code"
+msgstr "Guardar el código fuente"
 
 #: ../../apps/launcher/src/cache-page.tsx
 msgid "Keep the files Quiver downloads, to install them again without downloading, even offline, and as a backup of what was released. Each file is checked against the catalog before it's installed."

@@ -119,7 +119,7 @@ export type InstallRequest = {
   cache?: CacheUse;
 };
 /** A file in the download cache (cache.rs). */
-export type CachedFile = { hash: string; filename: string; path: string; size: number; apps: { app: string; version: string; os?: string; slug?: string }[]; cachedAt: number; usedAt: number };
+export type CachedFile = { hash: string; filename: string; path: string; source?: boolean; size: number; apps: { app: string; version: string; os?: string; arch?: string; slug?: string }[]; cachedAt: number; usedAt: number };
 export type CacheStatus = { files: number; bytes: number; entries: CachedFile[] };
 /** What an install did. A Windows installer (MSI) puts its files where its setup chose. */
 export type Installed = {

@@ -116,6 +116,18 @@ describe("a run of the cache's fetches", () => {
     expect(fetched.map((r) => r.filename)).toEqual(["b5.zip"]);
   });
 
+  test("Keep source code: the newest release's source once, no checksum, beside its builds; not again once kept", async () => {
+    const { d, fetched } = deps([app("a"), app("b")], { a: releases.a, b: releases.b });
+    d.projectOf = async (slug) => ({ provider: "github", repository: `dev/${slug}` });
+    // b's source is kept already.
+    const status = d.native.cacheStatus;
+    d.native.cacheStatus = async (dir) => ({ ...(await status(dir)), entries: [{ hash: "x", filename: "b-5-source.zip", path: "b/5/b-5-source.zip", source: true, size: 1, apps: [{ app: "b", version: "5" }], cachedAt: 0, usedAt: 0 }] });
+    await runCacheFetch(cacheOf({ mode: "latest", sources: true }, "/cache"), d, () => {}, () => false);
+    expect(fetched.map((r) => r.filename)).toEqual(["a-2-source.zip", "a2.zip", "b5.zip"]);
+    expect(fetched[0]).toMatchObject({ url: "https://github.com/dev/a/archive/refs/tags/2.zip", version: "2", cache: { app: "a", slug: "a", source: true } });
+    expect(fetched[0].checksum).toBeUndefined();
+  });
+
   test("a file that fails counts, and the run goes on; being stopped ends it", async () => {
     const { d, fetched } = deps(catalog, releases);
     const real = d.native.cacheFetch;

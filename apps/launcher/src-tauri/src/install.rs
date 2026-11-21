@@ -415,9 +415,13 @@ fn refused(status: reqwest::StatusCode, url: &reqwest::Url) -> String {
 /// stops it with `CANCELLED`.
 pub async fn fetch_to_cache(req: InstallRequest, mut cancel: tokio::sync::watch::Receiver<bool>, progress: impl Fn(Progress)) -> Result<(), String> {
     let cache = req.cache.clone().ok_or("No download cache to fetch into.")?;
-    let checksum = req.checksum.as_deref().and_then(crate::cache::hex_of).ok_or("Only a file with a checksum is cached.")?;
+    // Only a release's source code comes without a checksum: kept by its own, as there's nothing to check it against.
+    let checksum = req.checksum.as_deref().and_then(crate::cache::hex_of);
+    if checksum.is_none() && !cache.source {
+        return Err("Only a file with a checksum is cached.".into());
+    }
     let filename = plain_name(&req.filename)?.to_string();
-    if crate::cache::has(Path::new(&cache.dir), &[checksum.clone()])[0] {
+    if checksum.as_ref().is_some_and(|c| crate::cache::has(Path::new(&cache.dir), std::slice::from_ref(c))[0]) {
         return Ok(());
     }
     // In the cache's own folder, so it's moved into place rather than copied across drives. Named for its app, version
@@ -436,7 +440,7 @@ pub async fn fetch_to_cache(req: InstallRequest, mut cancel: tokio::sync::watch:
         if !file.exists() {
             return Err(BLOCKED.to_string());
         }
-        if hash != checksum {
+        if checksum.as_ref().is_some_and(|c| *c != hash) {
             return Err(MISMATCH.to_string());
         }
         let kept = file.clone();
@@ -1225,6 +1229,41 @@ mod tests {
         assert_eq!(crate::cache::status(&cache, &Default::default()).files, 0);
         // Nothing left behind for the next fetch.
         assert!(!cache.join(".incoming").join("bad-app").exists());
+    }
+
+    #[test]
+    fn a_releases_source_code_is_kept_without_a_checksum_but_nothing_else_is() {
+        let tmp = tempfile::tempdir().unwrap();
+        let cache = tmp.path().join("cache");
+        let body = "the source at its tag";
+        let (port, _) = serve(move |_| format!("HTTP/1.1 200 OK\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}", body.len()));
+        let request = |source: bool| InstallRequest {
+            id: "app".into(),
+            url: format!("http://127.0.0.1:{port}/archive/refs/tags/v1.0.zip"),
+            filename: "app-v1.0-source.zip".into(),
+            checksum: None,
+            folder: "app".into(),
+            dir: None,
+            into: None,
+            files_to_add: vec![],
+            version: "v1.0".into(),
+            preferred: vec![],
+            program: None,
+            github_token: None,
+            fallback_url: None,
+            cache: Some(crate::cache::CacheUse { dir: cache.to_string_lossy().into(), keep: true, app: "app".into(), version: "v1.0".into(), source, ..Default::default() }),
+        };
+        let fetch = |req| {
+            let (_cancel, cancelled) = tokio::sync::watch::channel(false);
+            tauri::async_runtime::block_on(fetch_to_cache(req, cancelled, |_| {}))
+        };
+        // A build with no checksum is never kept, and nothing is asked of its host.
+        assert!(fetch(request(false)).is_err());
+        fetch(request(true)).unwrap();
+        let kept = &crate::cache::status(&cache, &Default::default()).entries[0];
+        assert!(kept.source);
+        assert_eq!(kept.hash, hex::encode(Sha256::digest(body.as_bytes())));
+        assert_eq!(fs::read_to_string(cache.join("app/v1.0/app-v1.0-source.zip")).unwrap(), body);
     }
 
     #[test]
