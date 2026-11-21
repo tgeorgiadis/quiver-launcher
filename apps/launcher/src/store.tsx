@@ -349,6 +349,8 @@ type Launcher = {
   setPrereleases: (id: string, prereleases: Install["prereleases"]) => void;
   /** Stops offering this release of an app; a newer one is offered as usual. */
   declineUpdate: (id: string, version: string) => void;
+  /** Records the update as what's installed already, downloading nothing: the player has it (`installedAs`). */
+  haveUpdate: (id: string, release: { version: string; releasedAt?: number }) => void;
   /** Sets how an installed app starts; nothing set goes back to the launcher's choice. */
   setLaunch: (id: string, launch: LaunchOptions) => void;
   /** The empty files the player chose for an app's folder, which updates keep to. */
@@ -901,13 +903,30 @@ export const catalogOs = (os: Os) => (os === "linux" ? undefined : os);
 export const canGet = (entry: Entry, os: string) => availableOn(entry, os) && Boolean(entry.verified || entry.lastReleaseVersion);
 
 /**
+ * Whether Quiver knows which release an install is. A copy it doesn't (3.x's 0.0.0, v3.rs: one the player unzipped and
+ * pointed Quiver at, or 3.x didn't know) has no release date, which an install from a release always has.
+ */
+export const versionKnown = (install: Partial<Pick<Install, "version" | "releasedAt">> | undefined) =>
+  !(bare(install?.version ?? "") === "0.0.0" && !install?.releasedAt);
+
+/**
  * Whether an install can update by itself. A Windows installer's setup waits for the player. A copy whose version
- * Quiver doesn't know (3.x's 0.0.0, v3.rs: one the player unzipped and pointed Quiver at, or 3.x didn't know) has
- * every release as its update, the one it already has, or an older one when it's newer than the verified release, so
- * only the player can tell whether to take it. It has no release date, which an install from a release always has.
+ * Quiver doesn't know has every release as its update, the one it already has, or an older one when it's newer than
+ * the verified release, so only the player can tell whether to take it.
  */
 export const updatesByItself = (install: Partial<Pick<Install, "installer" | "setup" | "version" | "releasedAt">> | undefined) =>
-  !install?.installer && !install?.setup && !(bare(install?.version ?? "") === "0.0.0" && !install?.releasedAt);
+  !install?.installer && !install?.setup && versionKnown(install);
+
+/**
+ * An install as the release the player says it already is, nothing downloaded: a copy whose version Quiver didn't know,
+ * or an app that updated itself past the version Quiver installed. It's then as an update to that release would have
+ * left it, so the next release is its update. What Quiver knew of the files it installed (their release, checksum, a
+ * block or a difference from the verified file) was of the old ones, and a release skipped is behind it now.
+ */
+export function installedAs(install: Install, release: { version: string; releasedAt?: number }): Install {
+  const { releaseId: _, checksum: __, differs: ___, blocked: ____, unverified: _____, declined: ______, skip: _______, ...kept } = install;
+  return { ...kept, version: release.version, releasedAt: release.releasedAt };
+}
 
 /**
  * How an app updates: its own choice, else the player's default (`Settings.autoUpdates`). Unset: it offers them. One
@@ -2708,6 +2727,13 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         return { ...i, [id]: prereleases ? { ...install, prereleases } : install };
       }),
     declineUpdate: (id, version) => setInstalls((i) => (i[id] ? { ...i, [id]: { ...i[id], declined: version } } : i)),
+    haveUpdate: (id, release) => {
+      const install = installs[id];
+      if (!install) return;
+      setInstalls((i) => (i[id] ? { ...i, [id]: installedAs(i[id], release) } : i));
+      // In its folder too, as installing it would: locating the folder again keeps the version.
+      native.markVersion(install.folder, install.dir, release.version).catch((e) => void native.logError(`Couldn't record ${release.version} in ${install.folder}'s folder: ${e}`));
+    },
     setLaunch: (id, launch) =>
       setInstalls((i) => {
         if (!i[id]) return i;

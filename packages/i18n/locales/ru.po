@@ -3176,6 +3176,10 @@ msgstr "У меня уже есть аккаунт"
 msgid "I followed the setup on this page and had no problems."
 msgstr "Настройка по этой странице прошла без проблем."
 
+#: ../../apps/launcher/src/App.tsx
+msgid "I have {updateVersion}"
+msgstr "У меня уже {updateVersion}"
+
 #: ../../apps/launcher/src/detail.tsx
 msgid "I understand Quiver blocked this release"
 msgstr "Я понимаю, что Quiver заблокировал эту версию"
@@ -3452,6 +3456,10 @@ msgstr "Установлены, но не в библиотеке"
 #: ../../apps/launcher/src/library.tsx
 msgid "Installed, not played yet"
 msgstr "Установлены, но ещё не запускались"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Installed, version unknown"
+msgstr "Установлена, версия неизвестна"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/downloads-page.tsx
@@ -5270,6 +5278,10 @@ msgstr "Quiver Launcher 4 создан заново с нуля. Я постар
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Quiver Launcher 4's folder"
 msgstr "Папка приложений Quiver Launcher 4"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Quiver Launcher doesn't know which version this is. {updateVersion} is available."
+msgstr "Quiver Launcher не знает, какая это версия. Доступна {updateVersion}."
 
 #: ../ui/src/index.tsx
 msgid "Quiver Launcher doesn't offer this release by itself"

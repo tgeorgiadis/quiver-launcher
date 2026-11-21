@@ -509,6 +509,8 @@ export const native = {
   installMod: (folder: string, dir: string | undefined, config: ModSettings, pkg: ModPackage, file: ModFile) =>
     invoke<InstalledMod>("install_mod", { folder, dir, config, package: pkg, file }),
   uninstallMod: (folder: string, dir: string | undefined, config: ModSettings, key: string) => invoke<void>("uninstall_mod", { folder, dir, config, key }),
+  /** Writes the release the player says an app's folder holds into its version file, as installing it does. */
+  markVersion: (folder: string, dir: string | undefined, version: string) => invoke<void>("mark_version", { folder, dir, version }),
   /** True when Steam was asked: the launcher runs under Steam or Gamescope. */
   steamKeyboard: (open: boolean) => invoke<boolean>("steam_keyboard", { open }),
   /** Asks which program starts an installed app; relative to its folder, unless it's a program the player added. */

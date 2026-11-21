@@ -1984,6 +1984,12 @@ fn uninstall_mod(data: State<'_, Data>, folder: String, dir: Option<String>, con
     mods::uninstall(&app_dir(&data, &folder, dir)?, &config, &key)
 }
 
+/// Records the release the player says an app's folder holds, nothing downloaded (`install::mark_version`).
+#[tauri::command]
+fn mark_version(data: State<'_, Data>, folder: String, dir: Option<String>, version: String) -> Result<(), String> {
+    install::mark_version(&present_app_dir(&data, &folder, dir)?, &version)
+}
+
 /// Removes an installed app; fails with "cancelled" when the player says no to Windows uninstalling it.
 #[tauri::command]
 async fn uninstall(app: tauri::AppHandle, folder: String, dir: Option<String>) -> Result<(), String> {
@@ -2620,6 +2626,7 @@ pub fn run() {
             installed_mods,
             install_mod,
             uninstall_mod,
+            mark_version,
             steam_keyboard,
             pick_executable,
             list_programs,

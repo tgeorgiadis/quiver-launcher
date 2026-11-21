@@ -3176,6 +3176,10 @@ msgstr "我已经有帐户"
 msgid "I followed the setup on this page and had no problems."
 msgstr "我按照此页面上的设置说明操作，没有遇到问题。"
 
+#: ../../apps/launcher/src/App.tsx
+msgid "I have {updateVersion}"
+msgstr "我已有 {updateVersion}"
+
 #: ../../apps/launcher/src/detail.tsx
 msgid "I understand Quiver blocked this release"
 msgstr "我了解 Quiver 已阻止此版本"
@@ -3452,6 +3456,10 @@ msgstr "已安装，不在游戏库中"
 #: ../../apps/launcher/src/library.tsx
 msgid "Installed, not played yet"
 msgstr "已安装，尚未游玩"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Installed, version unknown"
+msgstr "已安装，版本未知"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/downloads-page.tsx
@@ -5270,6 +5278,10 @@ msgstr "Quiver Launcher 4 是从头重新打造的。我尽力让它能做到 Qu
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Quiver Launcher 4's folder"
 msgstr "Quiver Launcher 4 的应用文件夹"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Quiver Launcher doesn't know which version this is. {updateVersion} is available."
+msgstr "Quiver Launcher 不知道这是哪个版本。{updateVersion} 已可用。"
 
 #: ../ui/src/index.tsx
 msgid "Quiver Launcher doesn't offer this release by itself"

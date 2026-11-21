@@ -3176,6 +3176,10 @@ msgstr "이미 계정이 있어요"
 msgid "I followed the setup on this page and had no problems."
 msgstr "이 페이지의 설정을 따랐고 문제가 없었어요."
 
+#: ../../apps/launcher/src/App.tsx
+msgid "I have {updateVersion}"
+msgstr "{updateVersion}이(가) 이미 있어요"
+
 #: ../../apps/launcher/src/detail.tsx
 msgid "I understand Quiver blocked this release"
 msgstr "Quiver가 이 버전을 차단했다는 것을 이해해요"
@@ -3452,6 +3456,10 @@ msgstr "설치됨, 라이브러리에 없음"
 #: ../../apps/launcher/src/library.tsx
 msgid "Installed, not played yet"
 msgstr "설치됨, 아직 플레이 안 함"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Installed, version unknown"
+msgstr "설치됨, 버전 알 수 없음"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/downloads-page.tsx
@@ -5270,6 +5278,10 @@ msgstr "Quiver Launcher 4는 처음부터 새로 만들었어요. Quiver Launche
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Quiver Launcher 4's folder"
 msgstr "Quiver Launcher 4의 앱 폴더"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Quiver Launcher doesn't know which version this is. {updateVersion} is available."
+msgstr "Quiver Launcher가 이 버전을 알 수 없어요. {updateVersion}을(를) 사용할 수 있어요."
 
 #: ../ui/src/index.tsx
 msgid "Quiver Launcher doesn't offer this release by itself"
