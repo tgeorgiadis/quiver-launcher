@@ -16,14 +16,15 @@
 //! - On Windows, a Quiver the helper starts runs outside Steam's processes (it breaks away from Steam's job), and a
 //!   dropped connection counts as the game closing.
 //! - On Linux, it runs inside them, where Game Mode shows its window for the question about which saves to keep. On
-//!   SIGTERM it backs up at once and hands the upload to a Quiver started outside Steam's processes
-//!   (`--upload-saves`, by systemd-run, or `flatpak run` on the host), which sends it and quits.
+//!   SIGTERM the helper, which is already waiting on the game, starts a Quiver outside Steam's processes
+//!   (`--upload-saves`, by systemd-run, or `flatpak run` on the host) that backs the saves up once the game has
+//!   closed, sends them and quits. The Quiver inside can't do it: an AppImage's mount goes with the same SIGTERM.
+//!
+//! Each step is noted in quiver.log ("shortcut: …"), for bug reports.
 //!
 //! Quiver listens on 127.0.0.1 at a port it writes to `shortcuts.json` in its data folder, with a token only the
 //! player's own programs can read there.
-#[cfg(target_os = "linux")]
-use crate::Watching;
-use crate::{Data, Running, SavesOf};
+use crate::{Data, Running};
 use serde::{Deserialize, Serialize};
 use std::io::{BufRead, BufReader, Write};
 use std::net::{TcpListener, TcpStream};
@@ -48,10 +49,6 @@ const FILE: &str = "shortcuts.json";
 const STARTING: Duration = Duration::from_secs(90);
 /// How long a Quiver with no window waits for its page to say the saves are sent before it quits anyway.
 const SENDING: Duration = Duration::from_secs(120);
-/// On Linux, of the two seconds Steam gives after its SIGTERM, how long the game has to close before its saves are
-/// backed up anyway.
-#[cfg(target_os = "linux")]
-const CLOSING: Duration = Duration::from_millis(1200);
 
 /// Where Quiver listens, in its data folder.
 #[derive(Serialize, Deserialize)]
@@ -148,17 +145,9 @@ struct Pending {
 }
 
 /// A game a shortcut started, until it closes.
-#[cfg_attr(not(target_os = "linux"), allow(dead_code))]
 struct Session {
-    id: String,
-    saves: Option<SavesOf>,
     started: Instant,
-    /// It closed as Steam stopped this Quiver (on_stop): how long it ran.
-    ended: Option<u64>,
 }
-
-/// Steam is stopping this Quiver (on_stop): the games closing now are left to that, and none reported as closed.
-static STOPPING: AtomicBool = AtomicBool::new(false);
 
 /// Quiver's side: the shortcuts waiting, the games they started, and whether to quit when they're done.
 #[derive(Default)]
@@ -170,9 +159,6 @@ pub struct Host {
     quits: AtomicBool,
     /// Games closed whose saves the page is still sending.
     sending: AtomicUsize,
-    /// Those games, should Steam stop this Quiver before they're sent.
-    #[cfg_attr(not(target_os = "linux"), allow(dead_code))]
-    closed: Mutex<Vec<(String, Option<SavesOf>)>>,
     token: Mutex<String>,
 }
 
@@ -201,6 +187,17 @@ fn read<T: for<'a> Deserialize<'a>>(reader: &mut impl BufRead) -> std::io::Resul
         return Err(std::io::ErrorKind::UnexpectedEof.into());
     }
     serde_json::from_str(&line).map_err(std::io::Error::other)
+}
+
+/// Notes a step in quiver.log, for bug reports: which app, and no paths but the program's name.
+fn note(data: &Path, what: &str) {
+    crate::append_log(&data.join("quiver.log"), &format!("shortcut: {what}"));
+}
+
+/// A program and its folder for a note: only the program's own name.
+fn run_line(program: &Path, dir: &Path) -> String {
+    let name = |p: &Path| p.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
+    format!("{} to start, in {}", name(program), name(dir))
 }
 
 // ---- Quiver's side ----
@@ -252,10 +249,7 @@ pub fn listen(app: &AppHandle, data: &Path, quits: bool) {
             }
         });
     }
-    #[cfg(target_os = "linux")]
-    if quits {
-        on_stop(app.clone());
-    }
+    note(data, &format!("listening on port {port}{}", if quits { ", with no window, for a shortcut" } else { "" }));
 }
 
 /// Removes the port's file as Quiver closes, if it's still this one's.
@@ -277,6 +271,9 @@ fn asked(app: &AppHandle, stream: TcpStream) {
         return;
     }
     let request = host.next.fetch_add(1, Ordering::SeqCst) + 1;
+    if let Some(data) = app.try_state::<Data>() {
+        note(&data.0, &format!("{}: a shortcut asks to play it", ask.app));
+    }
     let shown = Request { request, app: ask.app.clone(), hidden: ask.hidden };
     host.pending.lock().unwrap().push((request, Pending { app: ask.app, hidden: ask.hidden, args: ask.args, stream }));
     let _ = app.emit("shortcut-play", shown);
@@ -299,6 +296,7 @@ fn take(host: &Host, request: u64) -> Option<Pending> {
 pub fn shortcut_refuse(app: AppHandle, request: u64, why: String) {
     let host = app.state::<Host>();
     if let Some(mut pending) = take(&host, request) {
+        note(&app.state::<Data>().0, &format!("{}: not started{}{why}", pending.app, if why.is_empty() { "" } else { ": " }));
         let _ = send(&mut pending.stream, &Reply::Refuse(why));
     }
     quit_if_done(&app);
@@ -320,7 +318,6 @@ pub fn shortcut_start(
     program: Option<String>,
     launch: Option<crate::launch::LaunchOptions>,
     presence: Option<crate::discord::Game>,
-    saves: Option<SavesOf>,
 ) -> Result<(), String> {
     let host = app.state::<Host>();
     let Some(mut pending) = take(&host, request) else { return Err("The shortcut stopped waiting.".into()) };
@@ -335,7 +332,8 @@ pub fn shortcut_start(
     args.extend(pending.args.iter().cloned());
     send(&mut pending.stream, &Reply::Start(Run { program, args, env, dir: target.dir.clone() })).map_err(|e| e.to_string())?;
     let hidden = pending.hidden;
-    host.sessions.lock().unwrap().push((request, Session { id: id.clone(), saves, started: Instant::now(), ended: None }));
+    note(&data.0, &format!("{id}: sent the shortcut {}", run_line(&target.program, &target.dir)));
+    host.sessions.lock().unwrap().push((request, Session { started: Instant::now() }));
     let stream = pending.stream;
     std::thread::spawn(move || follow(app, request, id, hidden, stream, presence));
     Ok(())
@@ -378,14 +376,14 @@ fn follow(app: AppHandle, request: u64, id: String, hidden: bool, stream: TcpStr
     let session = {
         let mut sessions = host.sessions.lock().unwrap();
         let Some(at) = sessions.iter().position(|(r, _)| *r == request) else { return };
-        // Steam is stopping this Quiver: it backs the saves up and hands them on, with the play time (on_stop).
-        if STOPPING.load(Ordering::SeqCst) {
-            let session = &mut sessions[at].1;
-            session.ended = Some(session.started.elapsed().as_secs());
-            return;
-        }
         sessions.remove(at).1
     };
+    let data = app.state::<Data>().0.clone();
+    match (playing, ended) {
+        (true, Some(ended)) => note(&data, &format!("{id}: the game {} after {}s", if ended == "closed" { "closed" } else { "was stopped" }, session.started.elapsed().as_secs())),
+        (false, _) => note(&data, &format!("{id}: the game didn't start")),
+        _ => {}
+    }
     if playing {
         app.state::<Running>().closed(&id);
         app.state::<crate::discord::Presence>().closed(&id);
@@ -394,7 +392,6 @@ fn follow(app: AppHandle, request: u64, id: String, hidden: bool, stream: TcpStr
         (true, Some(ended)) => {
             let seconds = session.started.elapsed().as_secs();
             host.sending.fetch_add(1, Ordering::SeqCst);
-            host.closed.lock().unwrap().push((id.clone(), session.saves));
             let _ = app.emit("app-closed", Closed { id, seconds, via: if hidden { "shortcut_hidden" } else { "shortcut" }, ended });
             // The page says when the saves are sent (shortcut_done); a page that never does doesn't keep it open.
             let app = app.clone();
@@ -420,9 +417,6 @@ pub fn shortcut_done(app: AppHandle) {
             Ok(_) => break,
             Err(now) => n = now,
         }
-    }
-    if n <= 1 {
-        host.closed.lock().unwrap().clear();
     }
     quit_if_done(&app);
 }
@@ -454,61 +448,11 @@ fn quit_if_done(app: &AppHandle) {
     let busy = !host.pending.lock().unwrap().is_empty() || !host.sessions.lock().unwrap().is_empty() || host.sending.load(Ordering::SeqCst) > 0;
     let shown = app.get_webview_window("main").is_some_and(|w| w.is_visible().unwrap_or(false));
     if !busy && !shown {
+        if let Some(data) = app.try_state::<Data>() {
+            note(&data.0, "nothing left to do: quitting");
+        }
         app.exit(0);
     }
-}
-
-/// Linux: Steam's Exit Game sends SIGTERM to the shortcut's processes, this Quiver's included, and kills them two
-/// seconds later. In that time the saves are backed up here, and sending them is handed to a Quiver started outside
-/// Steam's processes, which then quits.
-#[cfg(target_os = "linux")]
-fn on_stop(app: AppHandle) {
-    static STOPPED: AtomicBool = AtomicBool::new(false);
-    extern "C" fn stopped(_: libc::c_int) {
-        STOPPED.store(true, Ordering::SeqCst);
-    }
-    unsafe { libc::signal(libc::SIGTERM, stopped as extern "C" fn(libc::c_int) as libc::sighandler_t) };
-    std::thread::spawn(move || {
-        while !STOPPED.load(Ordering::SeqCst) {
-            std::thread::sleep(Duration::from_millis(20));
-        }
-        STOPPING.store(true, Ordering::SeqCst);
-        let asked = Instant::now();
-        let host = app.state::<Host>();
-        // The games have a moment to close and write their saves, as they're asked to as well.
-        while asked.elapsed() < CLOSING && host.sessions.lock().unwrap().iter().any(|(_, s)| s.ended.is_none()) {
-            std::thread::sleep(Duration::from_millis(20));
-        }
-        let (data, running, watching) = (app.state::<Data>(), app.state::<Running>(), app.state::<Watching>());
-        // The games running or just closed, with their play time to count; and those closed already, whose saves the
-        // page may not have sent yet.
-        let mut hand: Vec<(String, Option<SavesOf>, Option<u64>)> = Vec::new();
-        for (_, session) in host.sessions.lock().unwrap().drain(..) {
-            running.closed(&session.id);
-            let seconds = session.ended.unwrap_or_else(|| session.started.elapsed().as_secs());
-            hand.push((session.id, session.saves, Some(seconds)));
-        }
-        if host.sending.load(Ordering::SeqCst) > 0 {
-            hand.extend(host.closed.lock().unwrap().drain(..).map(|(id, saves)| (id, saves, None)));
-        }
-        let log = data.0.join("quiver.log");
-        for (id, saves, seconds) in hand {
-            if let Some(of) = &saves {
-                if let Err(e) = crate::played(&data, &running, &watching, of) {
-                    crate::append_log(&log, &format!("Couldn't back up {id}'s saves as Steam stopped it: {e}"));
-                }
-            }
-            let seconds = seconds.map(|s| s.to_string());
-            let mut args = vec![UPLOAD, id.as_str()];
-            args.extend(seconds.as_deref());
-            match outside_steam(&args).map(|mut c| c.spawn()) {
-                Some(Ok(_)) => {}
-                Some(Err(e)) => crate::append_log(&log, &format!("Couldn't hand {id}'s saves on as Steam stopped it: {e}")),
-                None => crate::append_log(&log, &format!("Couldn't hand {id}'s saves on as Steam stopped it: no systemd-run")),
-            }
-        }
-        std::process::exit(0);
-    });
 }
 
 // ---- Shortcuts ----
@@ -642,46 +586,88 @@ fn ignore_polite_stops() {
 #[cfg(not(any(target_os = "linux", target_os = "macos")))]
 fn ignore_polite_stops() {}
 
+/// The game this helper started: when, and whether it has closed. For a handoff as Steam stops it (hand_off_on_stop).
+#[derive(Default)]
+struct Game {
+    started: Mutex<Option<Instant>>,
+    closed: AtomicBool,
+}
+
+static GAME: std::sync::OnceLock<Game> = std::sync::OnceLock::new();
+
+/// Linux: when Steam's Exit Game asks the shortcut to stop, the Quiver this helper started goes with it (an AppImage's
+/// mount ends on the same signal). So the helper, which is still running, starts one outside Steam's processes that
+/// backs up the saves once the game has closed, sends them, and quits; with the play time when the game was still
+/// running, which no one else will count.
+#[cfg(target_os = "linux")]
+fn hand_off_on_stop(data: PathBuf, app: String) {
+    std::thread::spawn(move || {
+        while !ASKED_TO_STOP.load(Ordering::SeqCst) {
+            std::thread::sleep(Duration::from_millis(20));
+        }
+        let game = GAME.get_or_init(Game::default);
+        let playing = (!game.closed.load(Ordering::SeqCst)).then(|| *game.started.lock().unwrap()).flatten();
+        let seconds = playing.map(|at| at.elapsed().as_secs().to_string());
+        let mut args = vec![UPLOAD, app.as_str()];
+        args.extend(seconds.as_deref());
+        match outside_steam(&args).map(|mut c| c.stdin(std::process::Stdio::null()).stdout(std::process::Stdio::null()).stderr(std::process::Stdio::null()).spawn()) {
+            Some(Ok(_)) => note(&data, &format!("{app}: Steam is stopping it; started a Quiver outside Steam to back up and send the saves")),
+            Some(Err(e)) => note(&data, &format!("{app}: Steam is stopping it, and the saves couldn't be handed on: {e}")),
+            None => note(&data, &format!("{app}: Steam is stopping it, and the saves couldn't be handed on: no systemd-run")),
+        }
+    });
+}
+
 /// The helper a shortcut runs (`--launch`): the game's exit code, or 1 when it didn't start.
 pub fn helper(args: &[String]) -> i32 {
     let Some(data) = data_dir() else { return 1 };
-    let log = data.join("quiver.log");
     let fail = |why: String| {
-        crate::append_log(&log, &format!("Shortcut: {why}"));
+        note(&data, &why);
         1
     };
     let Some((app, extra)) = parse(args) else { return fail("no app named after --launch".into()) };
     ignore_polite_stops();
+    note(&data, &format!("{app}: started"));
     let mut host = None;
     let (mut stream, token, hidden) = match connect(&data) {
         Some((stream, token)) => (stream, token, false),
         None => {
             match start_host() {
                 Ok(child) => host = child,
-                Err(e) => return fail(format!("couldn't start Quiver: {e}")),
+                Err(e) => return fail(format!("{app}: couldn't start Quiver: {e}")),
             }
+            note(&data, &format!("{app}: started Quiver with no window to answer"));
             let since = Instant::now();
             loop {
                 if let Some((stream, token)) = connect(&data) {
                     break (stream, token, true);
                 }
                 if since.elapsed() > STARTING {
-                    return fail("Quiver didn't answer".into());
+                    return fail(format!("{app}: Quiver didn't answer"));
                 }
                 std::thread::sleep(Duration::from_millis(200));
             }
         }
     };
-    let code = play(&mut stream, Ask { token, app, args: extra, hidden });
+    // A Quiver that was open already isn't among Steam's processes: it hears the game closed, or the connection drop.
+    #[cfg(target_os = "linux")]
+    if hidden {
+        hand_off_on_stop(data.clone(), app.clone());
+    }
+    let code = play(&mut stream, Ask { token, app: app.clone(), args: extra, hidden });
     // On Linux the Quiver it started runs among Steam's processes, and from its AppImage or Flatpak sandbox: it ends
     // when this does, so it's given the time to send the saves.
     if let Some(mut host) = host {
         drop(stream);
+        note(&data, &format!("{app}: waiting for Quiver to send the saves"));
         let _ = host.wait();
     }
     match code {
-        Ok(code) => code,
-        Err(why) => fail(why),
+        Ok(code) => {
+            note(&data, &format!("{app}: done"));
+            code
+        }
+        Err(why) => fail(format!("{app}: {why}")),
     }
 }
 
@@ -696,8 +682,10 @@ fn play(stream: &mut TcpStream, ask: Ask) -> Result<i32, String> {
     let mut command = crate::host::command(&run.program);
     command.args(&run.args).envs(run.env.iter().map(|(k, v)| (k, v))).current_dir(&run.dir);
     let spawned = crate::sandbox::check(&run.program).and_then(|_| crate::sandbox::game(command).spawn());
+    let game = GAME.get_or_init(Game::default);
     let status: Option<i32> = match spawned {
         Ok(mut child) => {
+            *game.started.lock().unwrap() = Some(Instant::now());
             let _ = send(stream, &Report::Started);
             child.wait().ok().and_then(|s| s.code())
         }
@@ -705,6 +693,7 @@ fn play(stream: &mut TcpStream, ask: Ask) -> Result<i32, String> {
         #[cfg(windows)]
         Err(e) if e.raw_os_error() == Some(crate::elevate::REQUIRED) => match crate::elevate::start(&run.program, &run.args, &run.dir) {
             Ok(process) => {
+                *game.started.lock().unwrap() = Some(Instant::now());
                 let _ = send(stream, &Report::Started);
                 process.map(|p| p.wait());
                 Some(0)
@@ -719,6 +708,7 @@ fn play(stream: &mut TcpStream, ask: Ask) -> Result<i32, String> {
             return Err(format!("couldn't start {}: {e}", run.program.display()));
         }
     };
+    game.closed.store(true, Ordering::SeqCst);
     let _ = send(stream, &Report::Closed { code: status, stopped: ASKED_TO_STOP.load(Ordering::SeqCst) });
     Ok(status.unwrap_or(0))
 }

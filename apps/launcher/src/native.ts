@@ -337,7 +337,7 @@ export const native = {
   shortcutRequests: () => invoke<ShortcutPlay[]>("shortcut_requests"),
   /** A shortcut asks this Quiver to start an app. */
   onShortcutPlay: (handler: (p: ShortcutPlay) => void) => listen<ShortcutPlay>("shortcut-play", (e) => handler(e.payload)),
-  /** Hands a shortcut the app's command, as `launch` would start it, for the shortcut to start; `saves` is backed up should Steam stop it. */
+  /** Hands a shortcut the app's command, as `launch` would start it, for the shortcut to start. */
   shortcutStart: (
     request: number,
     id: string,
@@ -348,8 +348,7 @@ export const native = {
     program?: string,
     launch?: LaunchOptions,
     presence?: DiscordGame,
-    saves?: SavesOf,
-  ) => invoke<void>("shortcut_start", { request, id, folder, dir, preferred, wine, program, launch, presence, saves }),
+  ) => invoke<void>("shortcut_start", { request, id, folder, dir, preferred, wine, program, launch, presence }),
   /** Tells a shortcut its app won't start: the player said no, or the window says why. */
   shortcutRefuse: (request: number, why: string) => invoke<void>("shortcut_refuse", { request, why }),
   /** The saves of a game a shortcut started are sent: a Quiver it started can quit. */

@@ -3035,9 +3035,8 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       // The catalog's programs as they are now: a fix to them reaches this app without an update.
       const patterns = program || launch?.executable ? install.executables : startPatterns(install, entry, config.os);
       // From a shortcut, the shortcut starts it, so Steam ties its overlay, controls and Stop to the game.
-      const saves = savesOn(config.os) ? savesOf(id, { ...install, program }, catalog[id]) : undefined;
       const started = shortcut
-        ? native.shortcutStart(shortcut.request, id, install.folder, install.dir, patterns, Boolean(install.wine), program, launch, presence, saves)
+        ? native.shortcutStart(shortcut.request, id, install.folder, install.dir, patterns, Boolean(install.wine), program, launch, presence)
         : native.launch(id, install.folder, install.dir, patterns, Boolean(install.wine), program, launch, presence);
       await started.then(
         () => {
@@ -3384,8 +3383,8 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     void native.shortcutRequests().then((waiting) => waiting.forEach(answer), () => {});
     return () => void listening.then((stop) => stop());
   }, []);
-  // A Quiver started to send an app's saves after Steam's Exit Game stopped it, which backed them up first: sends
-  // them, counts the session, and quits.
+  // A Quiver started to send an app's saves after Steam's Exit Game stopped it: backs them up, now the game has
+  // closed, sends them, counts the session if no one did, and quits.
   const uploading = useRef(false);
   const upload = config.shortcut?.upload;
   useEffect(() => {
@@ -3397,7 +3396,10 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     const send = async () => {
       if (!install || !savesOn(config.os)) return;
       const of = savesOf(id, install, catalog[id]);
-      const newest = (await native.savesInfo(of).catch(() => null))?.backups[0];
+      const made = await native.savesPlayed(of).catch(() => null);
+      if (made) savesChanged(id);
+      // Backed up already (the game closed before Steam stopped it): the newest backup, which the account may not have.
+      const newest = made ?? (await native.savesInfo(of).catch(() => null))?.backups[0];
       await sendToCloud(id, install, newest);
     };
     void send()

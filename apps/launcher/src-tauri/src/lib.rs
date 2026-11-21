@@ -550,7 +550,7 @@ impl Running {
 }
 
 /// An app, as the window names it for its saves (saves.rs).
-#[derive(serde::Deserialize, Clone)]
+#[derive(serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct SavesOf {
     id: String,
@@ -745,16 +745,11 @@ async fn saves_watch(data: State<'_, Data>, watching: State<'_, Watching>, of: S
 /// After an app closed: the places it wrote saves to are remembered, and its saves backed up if they changed.
 #[tauri::command]
 async fn saves_played(data: State<'_, Data>, running: State<'_, Running>, watching: State<'_, Watching>, of: SavesOf) -> Result<Option<saves::Backup>, String> {
-    played(&data, &running, &watching, &of)
-}
-
-/// What `saves_played` does, also as a shortcut's game is stopped (shortcut_play.rs).
-fn played(data: &Data, running: &Running, watching: &Watching, of: &SavesOf) -> Result<Option<saves::Backup>, String> {
     // Started again already (or a second copy still runs): the next close backs up.
     if running.has(&of.id) {
         return Ok(None);
     }
-    let (roots, store, os) = saves_at(data, of)?;
+    let (roots, store, os) = saves_at(&data, &of)?;
     let _busy = SAVES_BUSY.lock().unwrap_or_else(|e| e.into_inner());
     let mut state = saves::state(&store);
     let watch = watching.0.lock().unwrap().remove(&of.id);

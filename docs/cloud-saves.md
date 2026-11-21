@@ -68,12 +68,13 @@ none of them, and Game Mode doesn't show it at all.
   installer put somewhere): the shortcut starts the first program, or says to play it from Quiver once.
 - **Steam's Stop (Windows)** ends the shortcut and the game at once. A Quiver the shortcut starts there runs outside
   Steam's processes, so it's still there to back up and send the saves.
-- **Steam's Exit Game (Linux)** asks the shortcut's processes to stop and ends them two seconds later. The Quiver there
-  backs up the saves at once and starts another Quiver outside Steam's processes (`systemd-run --user`, or `flatpak
-  run` on the host for the Flatpak) with `--upload-saves`, which sends them and quits. Offline, the backup waits on the
-  computer, and the next start of the app sends it.
+- **Steam's Exit Game (Linux)** asks the shortcut's processes to stop and ends them two seconds later. The shortcut
+  starts a Quiver outside Steam's processes at once (`systemd-run --user`, or `flatpak run` on the host for the Flatpak)
+  with `--upload-saves`, which backs up the saves once the game has closed, sends them and quits. Offline, the backup
+  waits on the computer, and the next start of the app sends it.
 
-A Quiver a shortcut started quits once the saves are sent, unless the player opened its window. Quiver listens for
+A Quiver a shortcut started quits once the saves are sent, unless the player opened its window. Each step is noted in
+`quiver.log` ("shortcut: …"). Quiver listens for
 shortcuts on 127.0.0.1, at a port written to `shortcuts.json` in its data folder with a token only the player's own
 programs can read.
 
