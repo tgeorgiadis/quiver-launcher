@@ -511,6 +511,9 @@ fn outside_steam(args: &[&str]) -> Option<Command> {
 fn start_host() -> std::io::Result<Option<std::process::Child>> {
     let mut command = quiver(&[HOST]);
     command.stdin(std::process::Stdio::null()).stdout(std::process::Stdio::null()).stderr(std::process::Stdio::null());
+    // An AppImage's runtime lets go of its mount as soon as Quiver closes, rather than keeping Steam's shortcut
+    // "running" for seconds after (scripts/tauri-cef.sh puts this in the AppImage too).
+    command.env("REUSE_CHECK_DELAY", "0");
     #[cfg(windows)]
     {
         use std::os::windows::process::CommandExt;

@@ -2956,12 +2956,15 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       await installEntry(entry, release, { pin: options?.pin, unverified: options?.unverified || Boolean(options?.blocked), blocked: options?.blocked, asset: options?.asset, platform: options?.platform, to: options?.to, early: options?.early });
     },
     async play(id, executable, withoutCopy, shortcut) {
-      /** A shortcut's app doesn't start: with what to say, which a Quiver the shortcut started shows its window for. */
+      /**
+       * A shortcut's app doesn't start: with what to say, which a Quiver the shortcut started shows its window for
+       * first, so it stays open with it rather than quitting with nothing left to do.
+       */
       const refuse = (why?: string) => {
         if (why) setNotice(why, { stays: Boolean(shortcut) });
         if (!shortcut) return;
-        void native.shortcutRefuse(shortcut.request, why ?? "").catch(() => {});
-        if (why && shortcut.hidden) void native.shortcutWindow(true).catch(() => {});
+        const shown = why && shortcut.hidden ? native.shortcutWindow(true).catch(() => {}) : Promise.resolve();
+        void shown.then(() => native.shortcutRefuse(shortcut.request, why ?? "")).catch(() => {});
       };
       const install = installs[id];
       if (!install) return refuse(shortcut ? t`That shortcut's app isn't installed any more.` : undefined);
