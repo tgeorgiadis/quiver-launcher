@@ -172,6 +172,8 @@ const ref = <T extends "query" | "mutation" | "action">(type: T, name: string) =
 const fns = {
   refreshSession: ref("mutation", "auth:refreshSession"),
   signOut: ref("mutation", "auth:signOut"),
+  // Watched by Convex Auth so a revoked session signs out straight away.
+  isAuthenticated: ref("query", "auth:isAuthenticated"),
   signIn: ref("mutation", "auth:signInWithPassword"),
   signUp: ref("mutation", "auth:signUpWithPassword"),
   signInWithEmail: ref("mutation", "auth:signInWithEmailPassword"),
