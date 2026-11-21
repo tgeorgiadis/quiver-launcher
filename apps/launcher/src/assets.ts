@@ -129,6 +129,12 @@ export function bestAssets(assets: Asset[], os: Os, arch: string, filter?: strin
 }
 
 /**
+ * A release's files for any system: its builds, without the checksums, signatures, debug symbols and source archives
+ * beside them. What the download cache keeps of a release for every platform (cache.ts).
+ */
+export const releaseFiles = (assets: Asset[]): Asset[] => assets.filter((a) => !AUXILIARY.test(a.filename) && formatRank(a.filename) >= 0);
+
+/**
  * Every release file this computer could install, whatever system the site
  * says it's for: the player's pick when none is marked for this computer.
  */

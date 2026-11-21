@@ -34,6 +34,11 @@ msgstr "{0, plural, other {已從遊戲庫中隱藏 # 個應用程式。}}"
 msgid "{0, plural, one {# app is still in {1}. New ones go in the new folder.} other {# apps are still in {2}. New ones go in the new folder.}}"
 msgstr "{0, plural, other {還有 # 個應用程式在 {2} 中。新的會裝到新資料夾。}}"
 
+#. placeholder {0}: s.apps
+#: ../../apps/launcher/src/cache-page.tsx
+msgid "{0, plural, one {# app looked at} other {# apps looked at}}"
+msgstr "{0, plural, other {已查看 # 個應用程式}}"
+
 #. placeholder {0}: ids.length
 #: ../../apps/launcher/src/library-ticking.tsx
 msgid "{0, plural, one {# app shows in your library again.} other {# apps show in your library again.}}"
@@ -64,8 +69,25 @@ msgstr "{0, plural, other {已變更 # 個}}"
 msgid "{0, plural, one {# comment} other {# comments}}"
 msgstr "{0, plural, other {# 則留言}}"
 
+#. placeholder {0}: s.failed
+#: ../../apps/launcher/src/cache-page.tsx
+msgid "{0, plural, one {# file couldn't be downloaded} other {# files couldn't be downloaded}}"
+msgstr "{0, plural, other {# 個檔案無法下載}}"
+
+#. placeholder {0}: s.noRoom
+#: ../../apps/launcher/src/cache-page.tsx
+msgid "{0, plural, one {# file didn't fit in the storage limit} other {# files didn't fit in the storage limit}}"
+msgstr "{0, plural, other {# 個檔案超出儲存空間上限}}"
+
+#. placeholder {0}: s.fetched
+#: ../../apps/launcher/src/cache-page.tsx
+msgid "{0, plural, one {# file kept} other {# files kept}}"
+msgstr "{0, plural, other {已保留 # 個檔案}}"
+
 #. placeholder {0}: backup.files
 #. placeholder {0}: copy.files
+#. placeholder {0}: status.files
+#: ../../apps/launcher/src/cache-page.tsx
 #: ../../apps/launcher/src/cloud-saves-page.tsx
 #: ../../apps/launcher/src/saves-tab.tsx
 msgid "{0, plural, one {# file} other {# files}}"
@@ -75,6 +97,11 @@ msgstr "{0, plural, other {# 個檔案}}"
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "{0, plural, one {# installed app isn't in its system folder yet.} other {# installed apps aren't in their system folders yet.}}"
 msgstr "{0, plural, other {# 個已安裝的應用程式尚未放入其系統資料夾。}}"
+
+#. placeholder {0}: s.fetched
+#: ../../apps/launcher/src/cache-page.tsx
+msgid "{0, plural, one {# new file kept} other {# new files kept}}"
+msgstr "{0, plural, other {新保留 # 個檔案}}"
 
 #. placeholder {0}: portable.length
 #: ../../apps/launcher/src/library-ticking.tsx
@@ -122,6 +149,16 @@ msgstr "{0, plural, other {個我的標籤}}"
 #: ../../apps/launcher/src/library.tsx
 msgid "{0, plural, one {Platforms: # app hidden} other {Platforms: # apps hidden}}"
 msgstr "{0, plural, one {平臺：隱藏了 # 個應用程式} other {平臺：隱藏了 # 個應用程式}}"
+
+#. placeholder {0}: loose.length
+#: ../../apps/launcher/src/cache-page.tsx
+msgid "{0, plural, one {Remove # file ({size}) of apps that aren't among your selected titles?} other {Remove # files ({size}) of apps that aren't among your selected titles?}}"
+msgstr "{0, plural, other {要移除不在所選作品中的應用程式的 # 個檔案（{size}）嗎？}}"
+
+#. placeholder {0}: loose.length
+#: ../../apps/launcher/src/cache-page.tsx
+msgid "{0, plural, one {Remove # file ({size}) of apps that aren't installed?} other {Remove # files ({size}) of apps that aren't installed?}}"
+msgstr "{0, plural, other {要移除未安裝應用程式的 # 個檔案（{size}）嗎？}}"
 
 #. placeholder {0}: others.length
 #: ../../apps/launcher/src/own-copy-setup.tsx
@@ -268,6 +305,10 @@ msgstr "{count, plural, other {# 個副本}}"
 msgid "{count, plural, one {# discussion with new comments} other {# discussions with new comments}}"
 msgstr "{count, plural, other {# 個討論有新留言}}"
 
+#: ../../apps/launcher/src/cache-page.tsx
+msgid "{count, plural, one {# orphaned file was removed.} other {# orphaned files were removed.}}"
+msgstr "{count, plural, other {已移除 # 個孤立檔案。}}"
+
 #: ../../apps/launcher/src/library-ticking.tsx
 msgid "{count, plural, one {# selected} other {# selected}}"
 msgstr "{count, plural, other {已選擇 # 個}}"
@@ -386,6 +427,7 @@ msgstr "{failed, plural, one {# 個下載未能完成。} other {# 個下載未�
 msgid "{file} was removed from {listed} by its developer."
 msgstr "開發者已從 {listed} 中移除 {file}。"
 
+#: ../../apps/launcher/src/cache-page.tsx
 #: ../../apps/launcher/src/detail.tsx
 msgid "{files, plural, one {# file} other {# files}}"
 msgstr "{files, plural, one {# 個檔案} other {# 個檔案}}"
@@ -397,6 +439,11 @@ msgstr "{files, plural, other {已安裝的 # 個應用程式的檔案會移到�
 #: ../../apps/launcher/src/old-library.tsx
 msgid "{filters, plural, one {# tag filter, as a playlist} other {# tag filters, as playlists}}"
 msgstr "{filters, plural, other {# 個標籤篩選器，作為播放清單}}"
+
+#. A storage size in gigabytes
+#: ../../apps/launcher/src/cache-page.tsx
+msgid "{gb} GB"
+msgstr "{gb} GB"
 
 #. A mod's version on this computer: v1.2 installed
 #: ../../apps/launcher/src/mods.tsx
@@ -767,6 +814,11 @@ msgstr "僅限 {systems}"
 msgid "{tagged, plural, one {The tags you gave # app} other {The tags you gave # apps}}"
 msgstr "{tagged, plural, other {你為 # 個應用程式加上的標籤}}"
 
+#. A storage size in terabytes
+#: ../../apps/launcher/src/cache-page.tsx
+msgid "{tb} TB"
+msgstr "{tb} TB"
+
 #: ../../apps/launcher/src/sync-folder-page.tsx
 msgid "{there, plural, one {This folder already has saves of # app. Quiver offers them when you start it here.} other {This folder already has saves of # apps. Quiver offers them when you start those apps here.}}"
 msgstr ""
@@ -811,6 +863,14 @@ msgstr "已使用 {used}，共 {limit}。"
 msgid "{used} of {limit} used. Each app keeps its newest {keep} copies."
 msgstr "已使用 {used}，共 {limit}。每個應用程式保留最新的 {keep} 個副本。"
 
+#: ../../apps/launcher/src/cache-page.tsx
+msgid "{usedLabel} of {limitLabel} used"
+msgstr "已使用 {usedLabel}，共 {limitLabel}"
+
+#: ../../apps/launcher/src/cache-page.tsx
+msgid "{usedLabel} used"
+msgstr "已使用 {usedLabel}"
+
 #: ../../apps/launcher/src/App.tsx
 msgid "{verifiedVersion} · downloads can't be checked"
 msgstr "{verifiedVersion}：無法檢查下載"
@@ -822,6 +882,14 @@ msgstr "{verifiedVersion}：Quiver 尚未檢查"
 #: ../../apps/launcher/src/App.tsx
 msgid "{verifiedVersion} · withdrawn"
 msgstr "{verifiedVersion}：已撤回"
+
+#: ../../apps/launcher/src/downloads-page.tsx
+msgid "{version} · {file}"
+msgstr "{version} · {file}"
+
+#: ../../apps/launcher/src/downloads-page.tsx
+msgid "{version} · {file} · {received} of {size}"
+msgstr "{version} · {file} · {received} / {size}"
 
 #: ../../apps/launcher/src/store.tsx
 msgid "{version} can't be installed again: its release isn't available any more."
@@ -1340,6 +1408,10 @@ msgstr "任何擁有連結的人都可以在 quiverlauncher.com 上檢視它，�
 msgid "App"
 msgstr "應用程式"
 
+#: ../../apps/launcher/src/cache-page.tsx
+msgid "App {looked} of {of}"
+msgstr "第 {looked} 個應用程式，共 {of} 個"
+
 #: ../../apps/launcher/src/detail.tsx
 msgid "App details"
 msgstr "應用程式詳細資訊"
@@ -1464,6 +1536,10 @@ msgstr "你從 GitLab 新增的應用程式會直接從 GitLab 獲取版本。�
 #: ../../apps/launcher/src/library.tsx
 msgid "Apps you don't have yet show with Get; nothing downloads until you press it."
 msgstr "尚未擁有的應用程式會顯示“獲取”；只有按下按鈕後才會開始下載。"
+
+#: ../../apps/launcher/src/cache-page.tsx
+msgid "Apps you install from now on are kept as they install. Check now keeps the version you have installed of every app."
+msgstr "從現在起安裝的應用程式會在安裝時保留。「立即檢查」會保留每個應用程式已安裝的版本。"
 
 #: ../../apps/launcher/src/own.tsx
 msgid "Artwork and consoles from the game"
@@ -1684,6 +1760,16 @@ msgstr "作者：{author}"
 msgid "By name"
 msgstr "依名稱"
 
+#. Settings section: the download cache
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Cache"
+msgstr "快取"
+
+#. Menu item: the download cache keeps this installed app's file now
+#: ../../apps/launcher/src/card-menu.tsx
+msgid "Cache now"
+msgstr "立即快取"
+
 #: ../../apps/launcher/src/game.tsx
 msgid "Called {title} in {region}"
 msgstr "在 {region} 稱為 {title}"
@@ -1702,6 +1788,7 @@ msgstr "無法新增：Quiver Launcher 不知道它的來源"
 
 #: ../../apps/launcher/src/app-files.tsx
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/cache-page.tsx
 #: ../../apps/launcher/src/cloud-saves-page.tsx
 #: ../../apps/launcher/src/correction.tsx
 #: ../../apps/launcher/src/detail.tsx
@@ -1794,6 +1881,7 @@ msgstr "更改版本"
 msgid "Change version…"
 msgstr "更改版本 →"
 
+#: ../../apps/launcher/src/cache-page.tsx
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Change…"
 msgstr "更改 →"
@@ -1811,9 +1899,18 @@ msgstr "此版本結束 48 小時等待期後，GitHub 上的檔案發生了變�
 msgid "Check for updates"
 msgstr "檢查更新"
 
+#: ../../apps/launcher/src/cache-page.tsx
+#: ../../apps/launcher/src/downloads-page.tsx
+msgid "Check now"
+msgstr "立即檢查"
+
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Check yours"
 msgstr "檢查你的副本"
+
+#: ../../apps/launcher/src/cache-page.tsx
+msgid "Checked {finished}"
+msgstr "檢查於 {finished}"
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Checking the folder"
@@ -1868,6 +1965,10 @@ msgstr "選擇檔案 →"
 #: ../../apps/launcher/src/console-folders.tsx
 msgid "Choose a folder for {name}"
 msgstr "為 {name} 選擇資料夾"
+
+#: ../../apps/launcher/src/cache-page.tsx
+msgid "Choose a folder for the download cache"
+msgstr "選擇下載快取的資料夾"
 
 #: ../../apps/launcher/src/store.tsx
 msgid "Choose a folder outside {name}, which is an app's own folder."
@@ -2087,6 +2188,28 @@ msgstr "清除 {label}"
 msgid "Clear all"
 msgstr "全部清除"
 
+#: ../../apps/launcher/src/cache-page.tsx
+msgid "Clear cache"
+msgstr "清除快取"
+
+#: ../../apps/launcher/src/cache-page.tsx
+msgid "Clear cache…"
+msgstr "清除快取…"
+
+#: ../../apps/launcher/src/downloads-page.tsx
+msgid "Clear list"
+msgstr "清除清單"
+
+#. Button: removes the cache's files of apps it no longer keeps
+#: ../../apps/launcher/src/cache-page.tsx
+msgid "Clear orphans"
+msgstr "清理孤立檔案"
+
+#. Button: asks first, then removes the cache's files of apps it no longer keeps
+#: ../../apps/launcher/src/cache-page.tsx
+msgid "Clear orphans…"
+msgstr "清理孤立檔案…"
+
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/library.tsx
 msgid "Clear search"
@@ -2226,9 +2349,17 @@ msgstr "遊戲控制器"
 msgid "Controllers"
 msgstr "遊戲控制器"
 
+#: ../../apps/launcher/src/downloads-page.tsx
+msgid "Copied"
+msgstr "已複製"
+
 #: ../../apps/launcher/src/saves-tab.tsx
 msgid "Copied to your sync folder."
 msgstr ""
+
+#: ../../apps/launcher/src/downloads-page.tsx
+msgid "Copy details"
+msgstr "複製詳細資料"
 
 #: ../../apps/launcher/src/library.tsx
 msgid "Copy link"
@@ -2242,9 +2373,17 @@ msgstr ""
 msgid "Copying {folder}… {percent}%"
 msgstr "正在複製 {folder} → {percent}%"
 
+#: ../../apps/launcher/src/cache-page.tsx
+msgid "Couldn't clear the cache. Is its drive connected?"
+msgstr "無法清除快取。它所在的磁碟機已連接嗎？"
+
 #: ../../apps/launcher/src/discussions.tsx
 msgid "Couldn't delete it. Try again."
 msgstr "無法刪除。請再試一次。"
+
+#: ../../apps/launcher/src/downloads-page.tsx
+msgid "Couldn't download"
+msgstr "無法下載"
 
 #: ../../apps/launcher/src/store.tsx
 msgid "Couldn't get the saves in your sync folder. The app starts with the saves on this computer."
@@ -2290,6 +2429,10 @@ msgstr "無法連線到你的雲端存檔。備份暫時保留在這部電腦上
 #: ../../apps/launcher/src/saves-tab.tsx
 msgid "Couldn't reach your cloud saves. Check your connection and try again."
 msgstr "無法連線到你的雲端存檔。請檢查網路連線後再試一次。"
+
+#: ../../apps/launcher/src/cache-page.tsx
+msgid "Couldn't remove the orphaned files. Is the cache's drive connected?"
+msgstr "無法移除孤立檔案。快取所在的磁碟機已連接嗎？"
 
 #: ../../apps/launcher/src/github-token.tsx
 #: ../../apps/launcher/src/gitlab-token.tsx
@@ -2547,6 +2690,17 @@ msgstr "完成。你的應用程式已在遊戲庫中，但以下應用程式除
 msgid "Downgrade to {version}"
 msgstr "降級到 {version}"
 
+#. Heading in Settings: a folder of downloaded release files, kept to install again and as a backup
+#. Section of Downloads: the files the download cache downloads by itself
+#: ../../apps/launcher/src/cache-page.tsx
+#: ../../apps/launcher/src/downloads-page.tsx
+msgid "Download cache"
+msgstr "下載快取"
+
+#: ../../apps/launcher/src/cache-page.tsx
+msgid "Download cache used"
+msgstr "已使用的下載快取"
+
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/downloads-page.tsx
 #: ../../apps/launcher/src/library-sidebar.tsx
@@ -2570,14 +2724,21 @@ msgstr "正在下載 {count, plural, one {# 個應用程式} other {# 個應用�
 msgid "Downloading {count, plural, one {# app} other {# apps}}."
 msgstr "正在下載 {count, plural, one {# 個應用程式} other {# 個應用程式}}。"
 
+#. Download cache: the app and version it's downloading by itself now
+#: ../../apps/launcher/src/cache-page.tsx
+msgid "Downloading {name} {version}"
+msgstr "正在下載 {name} {version}"
+
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/card-menu.tsx
+#: ../../apps/launcher/src/downloads-page.tsx
 #: ../../apps/launcher/src/library-sidebar.tsx
 msgid "Downloading {percent}%"
 msgstr "正在下載 {percent}%"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/card-menu.tsx
+#: ../../apps/launcher/src/downloads-page.tsx
 msgid "Downloading…"
 msgstr "正在下載 →"
 
@@ -2590,6 +2751,10 @@ msgstr "下載"
 #: ../../apps/launcher/src/own.tsx
 msgid "Downloads {only}"
 msgstr "下載 {only}"
+
+#: ../../apps/launcher/src/cache-page.tsx
+msgid "Downloads start shortly after Quiver opens, then every 6 hours."
+msgstr "Quiver 開啟後不久就會開始下載，之後每 6 小時一次。"
 
 #: ../../apps/launcher/src/downloads-page.tsx
 msgid "Downloads that finish while Quiver Launcher is open show here."
@@ -2711,6 +2876,11 @@ msgstr ""
 msgid "Every console"
 msgstr "所有主機"
 
+#. Download cache mode: the newest release of every app in the catalog
+#: ../../apps/launcher/src/cache.ts
+msgid "Every latest"
+msgstr "全部最新版"
+
 #: ../../apps/launcher/src/tag-settings.tsx
 msgid "Every tag is hidden."
 msgstr "所有標籤都已隱藏。"
@@ -2820,6 +2990,10 @@ msgstr "適用於包含多個主機遊戲的資料夾。"
 #: ../../apps/launcher/src/own.tsx
 msgid "For an app the catalog doesn't have. It's yours alone; to add one for everyone, suggest it on quiverlauncher.com."
 msgstr "適用於目錄中沒有的應用程式。此應用程式僅供你自己使用；若要為所有人新增應用程式，請在 quiverlauncher.com 上提交建議。"
+
+#: ../../apps/launcher/src/cache.ts
+msgid "For archiving only. Every version of every app can need terabytes of storage and a very long time to download."
+msgstr "僅供封存。每個應用程式的每個版本可能需要數 TB 的儲存空間和很長的下載時間。"
 
 #: ../../apps/launcher/src/correction.tsx
 msgid "For example: it starts the level editor instead of the game, or it needs the US version of the game."
@@ -2976,6 +3150,10 @@ msgstr "前往社群"
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Goes in {to}"
 msgstr "放入 {to}"
+
+#: ../../apps/launcher/src/downloads-page.tsx
+msgid "Gone from where it was published"
+msgstr "已不在發布位置"
 
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Good copy"
@@ -3142,6 +3320,11 @@ msgstr "隱藏這些"
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Hide your feedback for {name}"
 msgstr "隱藏你對 {name} 的反饋"
+
+#. Download cache mode: every release of every app, to archive them
+#: ../../apps/launcher/src/cache.ts
+msgid "Hoarder"
+msgstr "收藏家"
 
 #: ../../apps/launcher/src/repository-tokens.tsx
 msgid "Host"
@@ -3432,6 +3615,8 @@ msgstr "已安裝到 {dir}"
 msgid "Installed mods"
 msgstr "已安裝的模組"
 
+#. Download cache mode
+#: ../../apps/launcher/src/cache.ts
 #: ../../apps/launcher/src/library.tsx
 msgid "Installed only"
 msgstr "僅已安裝"
@@ -3593,6 +3778,18 @@ msgstr "剛剛更新"
 msgid "Keep {keep}"
 msgstr "保留 {keep}"
 
+#. Download cache setting: keep a release's builds for Windows, Linux, macOS and Android, not only this computer's
+#: ../../apps/launcher/src/cache-page.tsx
+msgid "Keep every system's files"
+msgstr "保留所有系統的檔案"
+
+#. Toggle on an app's Manage tab: the download cache keeps this app's newest release
+#. Toggle on an app's Manage tab: the download cache keeps this app's newest release
+#: ../../apps/launcher/src/cache-page.tsx
+#: ../../apps/launcher/src/card-menu.tsx
+msgid "Keep in download cache"
+msgstr "保留在下載快取中"
+
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Keep Quiver open until it's done."
 msgstr "保持 Quiver 開啟，直到操作完成。"
@@ -3600,6 +3797,10 @@ msgstr "保持 Quiver 開啟，直到操作完成。"
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Keep Quiver open until it's done. Each app's old copy is deleted only once its new one is checked."
 msgstr "保持 Quiver 開啟，直到操作完成。只有在新副本透過檢查後，才會刪除每個應用程式的舊副本。"
+
+#: ../../apps/launcher/src/cache-page.tsx
+msgid "Keep the files Quiver downloads, to install them again without downloading, even offline, and as a backup of what was released. Each file is checked against the catalog before it's installed."
+msgstr "保留 Quiver 下載的檔案，以便不必再次下載就能重新安裝（離線也可以），並作為已發布內容的備份。每個檔案在安裝前都會與目錄核對。"
 
 #: ../../apps/launcher/src/github-token.tsx
 #: ../../apps/launcher/src/gitlab-token.tsx
@@ -3622,6 +3823,27 @@ msgstr "將此應用程式的存檔保存到我的 Quiver 帳號"
 #: ../../apps/launcher/src/sync-folder-page.tsx
 msgid "Keep your save backups in a folder of your own too, such as one inside Dropbox, OneDrive, Google Drive or Syncthing. Choose the same folder on your other computers, and Quiver offers your newest saves when you start an app there. It needs no Quiver account, and works for apps you added yourself."
 msgstr ""
+
+#: ../../apps/launcher/src/cache.ts
+msgid "Keeps every release of every app in the catalog, to archive them."
+msgstr "保留目錄中每個應用程式的每個版本，以便封存。"
+
+#: ../../apps/launcher/src/cache.ts
+msgid "Keeps the file of each app as you install it. An app's newer version takes the place of the one before."
+msgstr "在你安裝應用程式時保留其檔案。應用程式的新版本會取代先前的版本。"
+
+#: ../../apps/launcher/src/cache.ts
+msgid "Keeps the newest release of every app in the catalog, downloading them in the background."
+msgstr "在背景下載並保留目錄中每個應用程式的最新版本。"
+
+#: ../../apps/launcher/src/cache.ts
+msgid "Keeps the newest release of the apps you choose, from Manage on each app's page."
+msgstr "保留你選擇的應用程式的最新版本，可在每個應用程式頁面的「管理」中選擇。"
+
+#. Downloads, Download cache: a file it downloaded and kept, and when
+#: ../../apps/launcher/src/downloads-page.tsx
+msgid "Kept {version} · {file} · {when}"
+msgstr "已保留 {version} · {file} · {when}"
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Kept here from before."
@@ -3869,6 +4091,15 @@ msgstr "檢視其他資料夾 →"
 #: ../../apps/launcher/src/own.tsx
 msgid "Look it up"
 msgstr "查詢"
+
+#. Download cache: the app whose releases it's reading
+#: ../../apps/launcher/src/cache-page.tsx
+msgid "Looking at {name}"
+msgstr "正在查看 {name}"
+
+#: ../../apps/launcher/src/downloads-page.tsx
+msgid "Looking for files to keep…"
+msgstr "正在尋找要保留的檔案…"
 
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Looking for programs…"
@@ -4262,6 +4493,10 @@ msgstr "新留言"
 msgid "New discussions"
 msgstr "新討論"
 
+#: ../../apps/launcher/src/cache-page.tsx
+msgid "New files go in this folder. Files already in the old one stay there."
+msgstr "新檔案會放在這個資料夾。舊資料夾中的檔案會留在原處。"
+
 #: ../../apps/launcher/src/setup.tsx
 msgid "New in Quiver Launcher 4"
 msgstr "Quiver Launcher 4 的新功能"
@@ -4438,6 +4673,10 @@ msgstr "沒有隱藏的標籤。"
 msgid "No tags match your search."
 msgstr "沒有符合搜尋的標籤。"
 
+#: ../../apps/launcher/src/cache-page.tsx
+msgid "No titles chosen yet. Open an app's page, then Manage, and turn on Keep in download cache."
+msgstr "尚未選擇任何作品。開啟應用程式頁面，進入「管理」，然後開啟「保留在下載快取中」。"
+
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Nobody has said yet. Be the first."
 msgstr "還沒有人分享體驗。來做第一個吧。"
@@ -4546,6 +4785,11 @@ msgstr "僅未安裝"
 msgid "Not installed yet"
 msgstr "尚未安裝"
 
+#. Settings › Cache: a selected app none of whose files are in the cache yet
+#: ../../apps/launcher/src/cache-page.tsx
+msgid "Not kept yet"
+msgstr "尚未保留"
+
 #: ../../apps/launcher/src/app-updates.tsx
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/downloads-page.tsx
@@ -4595,6 +4839,10 @@ msgstr "其他玩家看不到"
 msgid "Not sure"
 msgstr "不確定"
 
+#: ../../apps/launcher/src/downloads-page.tsx
+msgid "Not the file Quiver checked"
+msgstr "不是 Quiver 核對過的檔案"
+
 #: ../../apps/launcher/src/saves-tab.tsx
 msgid "Not there yet. It's made when the app first saves."
 msgstr "還不存在。應用程式第一次存檔時會建立。"
@@ -4642,6 +4890,10 @@ msgstr ""
 msgid "Nothing is downloading."
 msgstr "沒有正在下載的內容。"
 
+#: ../../apps/launcher/src/cache.ts
+msgid "Nothing is kept. Each install downloads its files."
+msgstr "不保留任何檔案。每次安裝都會下載所需檔案。"
+
 #: ../../apps/launcher/src/old-library.tsx
 msgid "Nothing is moved or copied: your installed apps stay where Quiver Launcher 3 put them, and play from there. Keep your Quiver Launcher 3 folder for now, as deleting it would delete them. Once you've tried Quiver Launcher 4, you can move them into Quiver's apps folder in Settings › Apps folder."
 msgstr "不會移動或複製任何內容：已安裝的應用程式留在 Quiver Launcher 3 放置它們的位置，並從那裡執行。暫時請保留你的 Quiver Launcher 3 資料夾，刪除它會連同這些應用程式一起刪除。試用 Quiver Launcher 4 之後，你可以在 設定 › 應用程式資料夾 中把它們移到 Quiver 的應用程式資料夾。"
@@ -4649,6 +4901,10 @@ msgstr "不會移動或複製任何內容：已安裝的應用程式留在 Quive
 #: ../../apps/launcher/src/old-library.tsx
 msgid "Nothing is moved, copied or deleted, and your Quiver Launcher 3 folder stays as it is."
 msgstr "不會移動、複製或刪除任何內容，你的 Quiver Launcher 3 資料夾保持原樣。"
+
+#: ../../apps/launcher/src/cache-page.tsx
+msgid "Nothing kept yet."
+msgstr "尚未保留任何檔案。"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Nothing matches that search and those filters."
@@ -4667,7 +4923,9 @@ msgstr "無，直接執行"
 msgid "Notice"
 msgstr "通知"
 
+#. Download cache mode: nothing is kept
 #. TV mode setting
+#: ../../apps/launcher/src/cache.ts
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Off"
 msgstr "關閉"
@@ -4706,6 +4964,7 @@ msgid "Opacity"
 msgstr "不透明度"
 
 #. Controller hint: what Confirm does on an app card
+#: ../../apps/launcher/src/cache-page.tsx
 #: ../../apps/launcher/src/settings-page.tsx
 #: ../../apps/launcher/src/spatial.ts
 msgid "Open"
@@ -4715,11 +4974,16 @@ msgstr "開啟"
 msgid "Open {app} in the catalog's admin pages on quiverlauncher.com"
 msgstr "在 quiverlauncher.com 的目錄管理後台開啟 {app}"
 
+#: ../../apps/launcher/src/cache-page.tsx
+msgid "Open {shown}'s folder in the download cache"
+msgstr "開啟下載快取中 {shown} 的資料夾"
+
 #: ../../apps/launcher/src/announcements-ui.tsx
 msgid "Open app"
 msgstr "開啟應用程式"
 
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/cache-page.tsx
 #: ../../apps/launcher/src/card-menu.tsx
 #: ../../apps/launcher/src/library-tile.tsx
 #: ../../apps/launcher/src/saves-tab.tsx
@@ -5514,6 +5778,10 @@ msgstr "移除主機 {name}"
 msgid "Remove every copy of {name} from your account? Saves on your computers aren't touched."
 msgstr "從你的帳號中移除 {name} 的所有副本？你電腦上的存檔不受影響。"
 
+#: ../../apps/launcher/src/cache-page.tsx
+msgid "Remove every file in the download cache? Installed apps aren't affected."
+msgstr "要移除下載快取中的所有檔案嗎？已安裝的應用程式不受影響。"
+
 #: ../../apps/launcher/src/library.tsx
 msgid "Remove filter {on}"
 msgstr "移除篩選條件 {on}"
@@ -5550,6 +5818,11 @@ msgstr "從你的帳號中移除此副本"
 #: ../../apps/launcher/src/repository-tokens.tsx
 msgid "Remove token"
 msgstr "移除權杖"
+
+#. Downloads, Download cache: the file went as it downloaded, as antivirus software (Windows Defender) removes a file it flags
+#: ../../apps/launcher/src/downloads-page.tsx
+msgid "Removed by your antivirus"
+msgstr "已被你的防毒軟體移除"
 
 #. The GitHub token was removed
 #. The GitLab token was removed
@@ -5937,6 +6210,13 @@ msgstr "全選"
 #: ../../apps/launcher/src/library-ticking.tsx
 msgid "Selected apps"
 msgstr "所選應用程式"
+
+#. Download cache mode
+#. Heading in Settings › Cache over the apps it keeps
+#: ../../apps/launcher/src/cache-page.tsx
+#: ../../apps/launcher/src/cache.ts
+msgid "Selected titles"
+msgstr "所選作品"
 
 #. Button: send a correction to the maintainers
 #. Sends the maintainers which system a release file is for
@@ -6406,6 +6686,10 @@ msgstr "正在啟動"
 msgid "Starting {name}…"
 msgstr "正在啟動 {name} →"
 
+#: ../../apps/launcher/src/cache-page.tsx
+msgid "Starting…"
+msgstr "正在開始…"
+
 #: ../../apps/launcher/src/custom.ts
 msgid "Starts {path} on this computer."
 msgstr "在此電腦上啟動 {path}。"
@@ -6444,9 +6728,25 @@ msgstr "第 {n} 步，共 {total} 步"
 msgid "still scanning its files."
 msgstr "仍在掃描其檔案。"
 
+#. Stops the download cache's current download
+#. Stops the download cache's current download
+#: ../../apps/launcher/src/cache-page.tsx
+#: ../../apps/launcher/src/downloads-page.tsx
+msgid "Stop"
+msgstr "停止"
+
+#: ../../apps/launcher/src/cache-page.tsx
+msgid "Stop keeping {shown}"
+msgstr "不再保留 {shown}"
+
 #: ../../apps/launcher/src/sync-folder-page.tsx
 msgid "Stop keeping backups in this folder? The backups in it stay there, and the ones on this computer aren't touched."
 msgstr ""
+
+#. Menu item: the download cache no longer keeps this app's newest release
+#: ../../apps/launcher/src/card-menu.tsx
+msgid "Stop keeping in download cache"
+msgstr "不再保留在下載快取中"
 
 #: ../../apps/launcher/src/own-copy-settings.tsx
 msgid "Stop looking in {folder} for {console}"
@@ -6460,11 +6760,20 @@ msgstr "停止選擇"
 msgid "Stop sharing"
 msgstr "停止共享"
 
+#: ../../apps/launcher/src/downloads-page.tsx
+msgid "Stop the download cache"
+msgstr "停止下載快取"
+
 #. Button: no longer keep save backups in the sync folder
 #. Button: no longer keep save backups in the sync folder
 #: ../../apps/launcher/src/sync-folder-page.tsx
 msgid "Stop using"
 msgstr ""
+
+#. Download cache setting: the most storage it uses
+#: ../../apps/launcher/src/cache-page.tsx
+msgid "Storage limit"
+msgstr "儲存空間上限"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Submit a correction for a release file's platform"
@@ -6653,6 +6962,14 @@ msgstr "Quiver 提供的 {installedVersion} 並非你安裝的檔案。"
 msgid "The app's developer sees them either way."
 msgstr "無論如何，應用程式的開發者都看得到。"
 
+#: ../../apps/launcher/src/cache-page.tsx
+msgid "The cache was cleared."
+msgstr "快取已清除。"
+
+#: ../../apps/launcher/src/cache-page.tsx
+msgid "The default folder, in Quiver's data folder"
+msgstr "預設資料夾，位於 Quiver 的資料資料夾中"
+
 #: ../../apps/launcher/src/detail.tsx
 msgid "The developer proved they make this app"
 msgstr "開發者已證明自己是此應用程式的作者"
@@ -6697,6 +7014,10 @@ msgstr "設定檔案丟失。"
 #: ../../apps/launcher/src/saves-tab.tsx
 msgid "The files in this app's newest backup add up to {size} before it's zipped. Saves are usually under 1 MB, so it may hold files that aren't saves."
 msgstr ""
+
+#: ../../apps/launcher/src/downloads-page.tsx
+msgid "The files the download cache downloads by itself show here."
+msgstr "下載快取自行下載的檔案會顯示在這裡。"
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "The first start's questions, in turn: the language, adding apps from Quiver Launcher 3, where apps install, usage data and signing in."
@@ -6911,6 +7232,10 @@ msgstr "此討論無法查看"
 msgid "This download doesn't match the file Quiver checked, so it wasn't installed."
 msgstr "此下載檔案與 Quiver 檢查過的檔案不匹配，因此未安裝。"
 
+#: ../../apps/launcher/src/cache.ts
+msgid "This downloads every app in the catalog, which can take a lot of storage and bandwidth."
+msgstr "這會下載目錄中的每個應用程式，可能佔用大量儲存空間和頻寬。"
+
 #: ../../apps/launcher/src/launch-options.tsx
 msgid "This file is outside the app's folder, so Quiver never moves or deletes it."
 msgstr "這個檔案在應用程式資料夾之外，所以 Quiver 永遠不會移動或刪除它。"
@@ -6987,6 +7312,10 @@ msgstr "提示"
 #: ../../apps/launcher/src/discussions.tsx
 msgid "Title"
 msgstr "標題"
+
+#: ../../apps/launcher/src/cache-page.tsx
+msgid "Titles kept in the download cache"
+msgstr "保留在下載快取中的作品"
 
 #. When something happened, as in "Updated today"
 #: ../ui/src/index.tsx
@@ -7144,6 +7473,11 @@ msgstr "解除安裝並從遊戲庫中移除…"
 msgid "Uninstall apps"
 msgstr "解除安裝應用程式"
 
+#. Download cache storage limit: none
+#: ../../apps/launcher/src/cache-page.tsx
+msgid "Unlimited"
+msgstr "無限制"
+
 #. Moderation action
 #: ../../apps/launcher/src/discussions.tsx
 msgid "Unlock"
@@ -7180,6 +7514,7 @@ msgid "Up"
 msgstr "向上"
 
 #. On an app's card: the installed version is the newest there is
+#: ../../apps/launcher/src/cache-page.tsx
 #: ../../apps/launcher/src/library-tile.tsx
 msgid "Up to date"
 msgstr "已是最新版本"
@@ -7358,6 +7693,10 @@ msgstr "至少輸入 10 個字元。"
 #: ../../apps/launcher/src/controls.tsx
 msgid "Use controllers to move around Quiver"
 msgstr "使用遊戲控制器瀏覽 Quiver"
+
+#: ../../apps/launcher/src/cache-page.tsx
+msgid "Use default"
+msgstr "使用預設"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Use my cloud saves"
@@ -7569,6 +7908,10 @@ msgstr "玩家的評價"
 msgid "What players say"
 msgstr "玩家評價"
 
+#: ../../apps/launcher/src/cache-page.tsx
+msgid "What the download cache keeps"
+msgstr "下載快取保留的內容"
+
 #: ../../apps/launcher/src/feedback.tsx
 msgid "What went wrong, and when? What did you try to fix it?"
 msgstr "出了什麼問題？在什麼時候？你嘗試過怎樣解決？"
@@ -7610,6 +7953,10 @@ msgstr "當 {name} 提示你提供檔案時，請選擇此檔案：{0}"
 #: ../../apps/launcher/src/own-copy-settings.tsx
 msgid "When an app needs your own copy of a game, like a ROM or a disc image, Quiver looks for it in these folders, and nowhere else."
 msgstr "當應用程式需要你自己的遊戲副本（例如 ROM 或光碟映像）時，Quiver 只會在這些資料夾中查詢。"
+
+#: ../../apps/launcher/src/cache-page.tsx
+msgid "When it's full, the files used longest ago make room. The files of the versions you have installed always stay."
+msgstr "快取滿了時，最久沒使用的檔案會騰出空間。你已安裝版本的檔案一律保留。"
 
 #: ../../apps/launcher/src/setup.tsx
 msgid "Where apps install"
@@ -7866,6 +8213,10 @@ msgstr "你的遊戲庫為空"
 #: ../../apps/launcher/src/setup.tsx
 msgid "Your library syncs across your devices, and you can review apps. Everything works without an account too."
 msgstr "你的遊戲庫會在各裝置間同步，你也可以評價應用程式。不登入帳戶也能使用所有功能。"
+
+#: ../../apps/launcher/src/cache-page.tsx
+msgid "Your own folder"
+msgstr "你自己的資料夾"
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Your own folders and programs"

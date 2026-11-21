@@ -5,7 +5,7 @@
  * with a way back to the list; Back from a section goes to the list first.
  */
 import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
-import { ArrowLeft, ArrowRight, ChevronRight, Clock, Cloud, Disc3, Folder, FolderInput, FolderOpen, Gamepad2, Library, Monitor, RefreshCw, Wrench } from "lucide-react";
+import { ArrowLeft, ArrowRight, ChevronRight, Clock, Cloud, Disc3, Folder, FolderInput, FolderOpen, Gamepad2, HardDrive, Library, Monitor, RefreshCw, Wrench } from "lucide-react";
 import { msg, plural, t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import { i18n, LANGUAGES, type Language } from "@quiverlauncher/i18n";
@@ -31,14 +31,16 @@ import { RepositoryTokens } from "./repository-tokens";
 import { TelemetrySetting } from "./telemetry-ui";
 import { savesOn } from "./saves";
 import { CloudSavesSettings } from "./cloud-saves-page";
+import { CacheSettingsSection } from "./cache-page";
 import { SyncFolderSettings } from "./sync-folder-page";
 import { ConsoleFolders } from "./console-folders";
 import type { Theme } from "./theme";
+import type { Entry } from "@quiverlauncher/api";
 import { INTERFACE_SIZES } from "./zoom";
 import { GameCopySettings } from "./own-copy-settings";
 import { foldersOn, useConsolePicks } from "./detail";
 
-type Section = "general" | "library" | "apps" | "copies" | "cloud" | "controllers" | "updates" | "advanced";
+type Section = "general" | "library" | "apps" | "copies" | "cloud" | "cache" | "controllers" | "updates" | "advanced";
 // Names put in the language when shown, not here, where the module loads before any is picked.
 const SECTIONS: [Section, MessageDescriptor, ReactNode][] = [
   ["general", msg`General`, <Monitor size={17} />],
@@ -46,6 +48,7 @@ const SECTIONS: [Section, MessageDescriptor, ReactNode][] = [
   ["apps", msg`Apps folder`, <FolderOpen size={17} />],
   ["copies", msg`Game copies`, <Disc3 size={17} />],
   ["cloud", msg`Cloud saves`, <Cloud size={17} />],
+  ["cache", msg({ message: "Cache", comment: "Settings section: the download cache" }), <HardDrive size={17} />],
   ["controllers", msg`Controllers`, <Gamepad2 size={17} />],
   ["updates", msg`Updates`, <RefreshCw size={17} />],
   ["advanced", msg`Advanced`, <Wrench size={17} />],
@@ -68,7 +71,20 @@ function useSideBySide() {
 }
 
 /** `onRunSetup` opens the first start's setup (setup.tsx) again, from General. `start`: a section to open on. */
-export function SettingsPage({ back, onBack, onRunSetup, start }: { back: string; onBack: () => void; onRunSetup: () => void; start?: Section }) {
+export function SettingsPage({
+  back,
+  onBack,
+  onRunSetup,
+  onOpen,
+  start,
+}: {
+  back: string;
+  onBack: () => void;
+  onRunSetup: () => void;
+  /** An app's page, from the download cache's selected titles. */
+  onOpen: (entry: Entry) => void;
+  start?: Section;
+}) {
   const sideBySide = useSideBySide();
   const { config } = useLauncher();
   // Game copies are for computers: a phone keeps an app's files to itself.
@@ -145,6 +161,8 @@ export function SettingsPage({ back, onBack, onRunSetup, start }: { back: string
                 <CloudSavesSettings />
                 <SyncFolderSettings />
               </>
+            ) : section === "cache" ? (
+              <CacheSettingsSection onOpen={onOpen} />
             ) : section === "controllers" ? (
               <ControlSettings />
             ) : section === "updates" ? (

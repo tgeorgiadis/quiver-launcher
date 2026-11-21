@@ -21,6 +21,7 @@ export function standInForRust({ api, state = {}, config: more = {}, maximized =
     os: "linux",
     arch: "x64",
     appsDir: "/home/player/Games/Quiver",
+    cacheDir: "/home/player/.local/share/quiver/cache",
     version: "4.0.0",
     home: "/home/player",
     user: null,
@@ -35,8 +36,20 @@ export function standInForRust({ api, state = {}, config: more = {}, maximized =
   window.__calls = [];
   // Downloads under way, by app: `resolve({})` finishes one, as installed.
   window.__installs = new Map();
+  // The download cache (cache.rs): what tests put in it, by hash, and what was fetched into it.
+  window.__cache = { files: [], fetched: [] };
   const answers = {
     open_url: ({ url }) => void window.__opened.push(url),
+    cache_status: () => ({ files: window.__cache.files.length, bytes: window.__cache.files.reduce((n, f) => n + f.size, 0), entries: window.__cache.files }),
+    cache_has: ({ checksums }) => checksums.map((c) => window.__cache.files.some((f) => c.endsWith(f.hash))),
+    // A test can make a fetch fail or wait (`window.__cache.onFetch`), as a blocked file or a slow download would.
+    cache_fetch: async ({ request }) => {
+      window.__cache.fetched.push(request);
+      await window.__cache.onFetch?.(request, window.__cache.fetched.length);
+    },
+    cache_remove: ({ hashes }) => void (window.__cache.files = hashes ? window.__cache.files.filter((f) => !hashes.includes(f.hash)) : []),
+    cache_clean: () => 0,
+    cache_open_app: ({ app }) => void window.__opened.push(`cache:${app}`),
     config: () => config,
     // The computer's PC specs (specs.rs), unless a test's config says otherwise (`pcSpecs`).
     pc_specs: () => more.pcSpecs ?? { cpu: "AMD Ryzen 5 5600", gpu: "AMD Radeon RX 6600", ramGb: 16 },

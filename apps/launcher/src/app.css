@@ -535,6 +535,35 @@ main.app-main { padding: 0 0 40px; }
 .save-said.error { color: var(--red-text); }
 /* A backup that looks like more than saves: what it is and what to do, above Choose folder. */
 .save-look { display: grid; gap: 4px; padding: 10px 12px; border-left: 3px solid var(--accent); border-radius: 8px; background: var(--field); }
+/* Settings, Cache (cache-page.tsx): a mode's storage warning, the room used, the folder and what's under way. */
+.download-cache { display: grid; gap: 12px; }
+.settings-pane .download-cache button.update-choice { justify-content: flex-start; padding: 14px 16px; border: 1px solid var(--line); background: var(--panel); }
+.settings-pane .download-cache button.update-choice[aria-checked="true"] { border-color: var(--accent); background: var(--accent-soft); }
+.cache-warning { display: flex; align-items: flex-start; gap: 8px; margin: 0; padding: 10px 12px; border-left: 3px solid var(--danger); border-radius: 8px; background: var(--field); color: var(--strong); font-size: 13px; }
+.cache-warning > svg { flex: none; margin-top: 1px; color: var(--danger); }
+.cache-usage { display: grid; gap: 6px; }
+.cache-usage .save-note { margin: 0; }
+.cache-clear { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 13px; }
+.cache-titles-box { display: grid; gap: 8px; margin-top: 8px; padding-top: 14px; border-top: 1px solid var(--line); }
+.cache-titles-box h4 { margin: 0; }
+/* Down to the window's foot, in whole rows (cache-page.tsx useFittedList); more scroll inside the box. */
+/* A row is one button to the app's page, as large as the row, its picture and words plain; Open folder and Stop keeping
+   sit over its end. Settings' own button look (padding, a grey ground) kept off it. */
+.cache-title { position: relative; }
+.settings-pane .cache-titles button.cache-title-open {
+  display: flex; align-items: center; justify-content: flex-start; gap: 16px; width: 100%; padding: 8px 96px 8px 8px;
+  border: 1px solid var(--line); border-radius: 10px; background: var(--panel); color: inherit; font: inherit; text-align: left;
+}
+.settings-pane .cache-titles button.cache-title-open:hover:not(:disabled) { border-color: var(--accent); background: var(--panel); }
+.settings-pane .cache-titles button.cache-title-open:disabled { opacity: 1; cursor: default; }
+.cache-title-open .download-names { display: grid; flex: 1; gap: 2px; min-width: 0; }
+.cache-title-open .download-name { overflow: hidden; color: var(--strong); font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.cache-title-actions { position: absolute; top: 50%; right: 12px; display: flex; gap: 6px; transform: translateY(-50%); }
+.cache-titles { display: grid; gap: 6px; margin: 0; padding: 0 4px 0 0; overflow-y: auto; list-style: none; }
+.cache-folder, .cache-fetch { flex-wrap: wrap; }
+.download-cache > .text-button { justify-self: start; }
+/* Keep in download cache, on an app's Manage tab: a row as tall as the actions beside it. */
+.panel-toggle { min-height: 38px; padding: 0 12px; border-radius: 8px; background: var(--field); color: var(--strong); font-size: 13.5px; }
 /* Settings, Cloud saves (cloud-saves-page.tsx): the room used as a bar, then an app to a row that opens to its copies. */
 .storage-bar { height: 8px; max-width: 760px; border-radius: 8px; background: var(--field); overflow: hidden; }
 .storage-bar > span { display: block; height: 100%; border-radius: 8px; background: var(--accent); }

@@ -5,7 +5,7 @@
  * library while something is happening, and the Sidebar layout's foot.
  */
 import { useState, type ReactNode } from "react";
-import { ArrowLeft, Download, Play, ScrollText, TriangleAlert, X } from "lucide-react";
+import { ArrowLeft, Check, Copy, Download, HardDrive, Play, ScrollText, TriangleAlert, X } from "lucide-react";
 import { plural, t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import { i18n } from "@quiverlauncher/i18n";
@@ -21,6 +21,8 @@ import { versionLabel } from "./versions";
 import { native } from "./native";
 import { ChangelogDialog } from "./detail";
 import { isCustom, isLocal } from "./custom";
+import { cacheOf, fetches } from "./cache";
+import { clearCacheFiles, fetchNow, useFetchState, type CacheFile } from "./cache-fetch";
 
 /** What's downloading and waiting, and the apps by the player's names for them. */
 function useDownloads() {
@@ -351,6 +353,7 @@ export function DownloadsPage({
           </p>
         )}
       </DownloadSection>
+      <CacheDownloads onOpen={(entry) => onOpen(catalog[entry.id] ?? entry)} />
       {launcherNotes && launcher.available && <LauncherNotes update={launcher.available} onClose={() => setLauncherNotes(false)} />}
       {changelog && reading && (
         <ChangelogDialog
@@ -399,4 +402,101 @@ function DownloadRow({ entry, detail, action, onOpen }: { entry: Entry; detail: 
       <div className="download-action">{action}</div>
     </li>
   );
+}
+
+/**
+ * The download cache's own downloads (cache-fetch.ts), apart from the apps being installed: the one under way, then
+ * what it kept or couldn't, each by its app, version and file as published. One an antivirus took away says so, and
+ * its details copy for a report, so the release can be checked and taken out of the catalog.
+ */
+function CacheDownloads({ onOpen }: { onOpen: (entry: Entry) => void }) {
+  const { settings, config } = useLauncher();
+  const cache = cacheOf(settings.cache, config.cacheDir ?? "");
+  const run = useFetchState();
+  const [copied, setCopied] = useState<string | null>(null);
+  if (!fetches(cache) && !run.files.length) return null;
+  const copy = (f: CacheFile) => {
+    const name = f.entry.projectName;
+    const page = `https://quiverlauncher.com/apps/${f.entry.slug}`;
+    void navigator.clipboard?.writeText(`${name} ${f.version}: ${f.filename} (${whyLabel(f)})\n${page}`).then(() => setCopied(f.key));
+  };
+  return (
+    <DownloadSection
+      title={t({ message: "Download cache", comment: "Section of Downloads: the files the download cache downloads by itself" })}
+      count={run.files.length}
+      tools={
+        <span className="download-buttons">
+          {run.files.length > 0 && !run.running && (
+            <button onClick={clearCacheFiles}>
+              <Trans>Clear list</Trans>
+            </button>
+          )}
+          {fetches(cache) &&
+            (run.running ? (
+              <button onClick={() => void native.cacheFetchCancel().catch(() => {})}>
+                <X size={15} /> <Trans comment="Stops the download cache's current download">Stop</Trans>
+              </button>
+            ) : (
+              <button onClick={fetchNow}>
+                <HardDrive size={15} /> <Trans>Check now</Trans>
+              </button>
+            ))}
+        </span>
+      }
+    >
+      {run.files.length ? (
+        <ul>
+          {run.files.map((f) => {
+            const version = versionLabel(f.version);
+            const file = f.filename;
+            const when = finishedAt(f.at);
+            const percent = f.total ? Math.min(100, Math.floor(((f.received ?? 0) / f.total) * 100)) : null;
+            const received = sizeLabel(f.received ?? 0);
+            const size = f.total ? sizeLabel(f.total) : undefined;
+            const detail =
+              f.state === "downloading" ? (
+                size ? t`${version} · ${file} · ${received} of ${size}` : t`${version} · ${file}`
+              ) : f.state === "kept" ? (
+                t({ message: `Kept ${version} · ${file} · ${when}`, comment: "Downloads, Download cache: a file it downloaded and kept, and when" })
+              ) : (
+                <span className="download-failed" title={`${whyLabel(f)}: ${file}`}>
+                  <TriangleAlert size={14} aria-hidden="true" /> {whyLabel(f)}: {version} · {file}
+                </span>
+              );
+            const action =
+              f.state === "downloading" ? (
+                <div className="row progress-row">
+                  <div className="progress" aria-label={t`Downloading`}>
+                    <div className="bar" style={{ width: `${percent ?? 5}%` }} />
+                    <span>{percent === null ? t`Downloading…` : t`Downloading ${percent}%`}</span>
+                  </div>
+                  <button className="icon cancel-download" aria-label={t`Stop the download cache`} title={t`Stop`} onClick={() => void native.cacheFetchCancel().catch(() => {})}>
+                    <X size={15} />
+                  </button>
+                </div>
+              ) : f.state === "failed" ? (
+                <span className="download-buttons">
+                  <button onClick={() => copy(f)}>
+                    {copied === f.key ? <Check size={15} /> : <Copy size={15} />} {copied === f.key ? t`Copied` : t`Copy details`}
+                  </button>
+                </span>
+              ) : null;
+            return <DownloadRow key={f.key} entry={f.entry} detail={detail} onOpen={() => onOpen(f.entry)} action={action} />;
+          })}
+        </ul>
+      ) : (
+        <p className="muted">
+          {run.running ? <Trans>Looking for files to keep…</Trans> : <Trans>The files the download cache downloads by itself show here.</Trans>}
+        </p>
+      )}
+    </DownloadSection>
+  );
+}
+
+/** Why a cache download failed, as it reads. */
+function whyLabel(f: CacheFile) {
+  if (f.why === "blocked") return t({ message: "Removed by your antivirus", comment: "Downloads, Download cache: the file went as it downloaded, as antivirus software (Windows Defender) removes a file it flags" });
+  if (f.why === "mismatch") return t`Not the file Quiver checked`;
+  if (f.why === "missing") return t`Gone from where it was published`;
+  return t`Couldn't download`;
 }

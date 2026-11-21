@@ -99,8 +99,8 @@ test("the player's picture shows behind the library's grid and nowhere else, and
 });
 
 test("Settings' list stays on the screen as the page scrolls, in a window with just room for it", async () => {
-  // Room for the list's eight sections, and little more.
-  const s2 = await openApp({ state: installed, height: 434 });
+  // Room for the list's nine sections, and little more: 43 pixels a section.
+  const s2 = await openApp({ state: installed, height: 477 });
   try {
     await s2.page.locator(".topbar").waitFor();
     await s2.page.locator(".topbar button[aria-label='Settings']").click();
