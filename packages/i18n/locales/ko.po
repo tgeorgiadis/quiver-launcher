@@ -5651,6 +5651,10 @@ msgid "Quiver's maintainers trust this creator"
 msgstr "Quiver 관리자가 신뢰하는 제작자입니다"
 
 #: ../../apps/launcher/src/detail.tsx
+msgid "quiverlauncher.com can't be reached, so this is the copy saved in your download cache on {when}."
+msgstr "quiverlauncher.com에 연결할 수 없어 {when}에 다운로드 캐시에 저장된 사본을 표시합니다."
+
+#: ../../apps/launcher/src/detail.tsx
 msgid "Read more"
 msgstr "더 읽기"
 

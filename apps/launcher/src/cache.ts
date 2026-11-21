@@ -223,5 +223,12 @@ export function sourceArchive(project: { provider: string; repository?: string; 
   return url ? { url, filename: `${name}-${tag.trim().replace(/[^A-Za-z0-9._-]/g, "_")}-source.zip` } : undefined;
 }
 
+/** Whether the cache keeps an app's README: an app it keeps, by its mode. */
+export function keepsReadme(cache: Pick<Cache, "mode" | "apps" | "on">, app: string, installed: boolean) {
+  if (!cache.on) return false;
+  if (cache.mode === "latest" || cache.mode === "hoarder") return true;
+  return cache.mode === "installed" ? installed : isSelected(cache, app);
+}
+
 /** Whether a file fits in the room left, so a fetch never pushes out what's kept to make room for more. */
 export const fits = (asset: Pick<Asset, "size">, used: number, limit?: number) => limit === undefined || used + (asset.size ?? 0) <= limit;

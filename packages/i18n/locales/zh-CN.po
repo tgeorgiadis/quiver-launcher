@@ -5651,6 +5651,10 @@ msgid "Quiver's maintainers trust this creator"
 msgstr "Quiver 维护者信任此创作者"
 
 #: ../../apps/launcher/src/detail.tsx
+msgid "quiverlauncher.com can't be reached, so this is the copy saved in your download cache on {when}."
+msgstr "无法连接 quiverlauncher.com，这是 {when} 保存在你的下载缓存中的副本。"
+
+#: ../../apps/launcher/src/detail.tsx
 msgid "Read more"
 msgstr "了解详情"
 

@@ -325,12 +325,26 @@ export function resolveUrl(
   }
 }
 
+/**
+ * The pictures a README shows, by the addresses they resolve to (as `resolveUrl` resolves them): its Markdown images,
+ * its HTML `<img>`s and the dark-theme pictures of its `<picture>`s. For keeping a copy to show offline.
+ */
+export function readmeImages(text: string, bases: { rawBase?: string; htmlBase?: string }): string[] {
+  const found = [
+    ...text.matchAll(/!\[[^\]]*\]\(\s*<?([^)\s>]+)/g),
+    ...text.matchAll(/<img\b[^>]*?\ssrc\s*=\s*["']([^"']+)["']/gi),
+    ...text.matchAll(/<source\b[^>]*?\ssrcset\s*=\s*["']([^"'\s,]+)/gi),
+  ].map((m) => resolveUrl(m[1], "src", bases));
+  return [...new Set(found.filter((url) => /^https?:\/\//i.test(url)))];
+}
+
 export function Markdown({
   text,
   rawBase,
   htmlBase,
   className = "",
   alertTitles,
+  images,
 }: {
   text: string;
   rawBase?: string;
@@ -338,6 +352,8 @@ export function Markdown({
   className?: string;
   /** The alerts' headings in the page's language (alertTitles in index.tsx); English without. */
   alertTitles?: Partial<Record<AlertKind, string>>;
+  /** Pictures to show in place of the ones the README links to, by their resolved addresses: a copy kept offline. */
+  images?: Record<string, string>;
 }) {
   return (
     <div className={`markdown ${className}`}>
@@ -363,8 +379,8 @@ export function Markdown({
             ) : (
               <a href={href} target="_blank" rel="noreferrer" {...props} />
             ),
-          img: ({ node: _node, alt, ...props }) => (
-            <img alt={alt ?? ""} loading="lazy" {...props} />
+          img: ({ node: _node, alt, src, ...props }) => (
+            <img alt={alt ?? ""} loading="lazy" {...props} src={(typeof src === "string" && images?.[src]) || src} />
           ),
           p: ({ node, children, ...props }) => {
             const kind = node?.properties?.dataAlert as AlertKind | undefined;

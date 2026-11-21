@@ -2,7 +2,7 @@
 import { invoke as tauriInvoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { currentMonitor, getCurrentWindow } from "@tauri-apps/api/window";
-import type { GitlabLimit, ModSettings, ModSource, Os, SetupFile } from "@quiverlauncher/api";
+import type { GitlabLimit, ModSettings, ModSource, Os, Readme, SetupFile } from "@quiverlauncher/api";
 import { noteFailure } from "./command-failures";
 import type { CacheUse } from "./cache";
 
@@ -336,6 +336,11 @@ export const native = {
   cacheRemove: (dir: string, hashes?: string[]) => invoke<void>("cache_remove", { dir, hashes: hashes ?? null }),
   /** Shows the cache folder settings.json names, else the default one. */
   cacheOpen: () => invoke<void>("cache_open"),
+  /** Keeps an app's README and the pictures it shows (their resolved addresses), unless it's kept as it is already. Whether it kept it. */
+  cacheReadmeSave: (dir: string, app: string, slug: string, readme: Readme, images: string[]) =>
+    invoke<boolean>("cache_readme_save", { dir, app, slug, readme: { markdown: readme.markdown, rawBase: readme.rawBase, htmlBase: readme.htmlBase, fetchedAt: readme.fetchedAt }, images }),
+  /** The README the cache keeps of an app, its pictures as data: addresses; null when there's none. */
+  cacheReadmeRead: (dir: string, app: string, slug: string) => invoke<(Readme & { keptAt: number; images: Record<string, string> }) | null>("cache_readme_read", { dir, app, slug }),
   /** Shows an app's folder in the cache; fails while none of its files are kept. */
   cacheOpenApp: (app: string) => invoke<void>("cache_open_app", { app }),
   /** Starts an app; `id` names it in `onAppClosed` once it closes. `presence` is what Discord shows the player playing while it runs. */

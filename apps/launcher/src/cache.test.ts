@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 import type { Asset, Release } from "@quiverlauncher/api";
-import { DEFAULT_LIMIT_GB, cacheNames, cacheOf, cachedReleases, orphans, sourceArchive, cacheTargets, cacheUse, fits, installedTargets, isSelected, protectedFiles, sameVersion, withSelected } from "./cache";
+import { DEFAULT_LIMIT_GB, cacheNames, cacheOf, cachedReleases, keepsReadme, orphans, sourceArchive, cacheTargets, cacheUse, fits, installedTargets, isSelected, protectedFiles, sameVersion, withSelected } from "./cache";
 
 const GB = 1024 ** 3;
 const sum = (c: string) => `sha256:${c.repeat(64)}`;
@@ -172,4 +172,14 @@ describe("a release's source code, as its host archives its tag", () => {
     expect(sourceArchive({ provider: "github" }, "1")).toBeUndefined();
     expect(sourceArchive({ provider: "github", repository: "a/b" }, " ")).toBeUndefined();
   });
+});
+
+test("an app's README is kept for the apps the cache keeps, by its mode", () => {
+  const c = (mode: "none" | "installed" | "selected" | "latest", apps: { id: string; slug: string }[] = []) => cacheOf({ mode, apps }, "/c");
+  expect(keepsReadme(c("none"), "a", true)).toBe(false);
+  expect(keepsReadme(c("installed"), "a", true)).toBe(true);
+  expect(keepsReadme(c("installed"), "a", false)).toBe(false);
+  expect(keepsReadme(c("selected", [{ id: "a", slug: "a" }]), "a", false)).toBe(true);
+  expect(keepsReadme(c("selected", [{ id: "a", slug: "a" }]), "b", true)).toBe(false);
+  expect(keepsReadme(c("latest"), "anything", false)).toBe(true);
 });

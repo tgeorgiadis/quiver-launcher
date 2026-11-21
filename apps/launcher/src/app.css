@@ -537,6 +537,8 @@ main.app-main { padding: 0 0 40px; }
 .save-look { display: grid; gap: 4px; padding: 10px 12px; border-left: 3px solid var(--accent); border-radius: 8px; background: var(--field); }
 /* Settings, Cache (cache-page.tsx): a mode's storage warning, the room used, the folder and what's under way. */
 .download-cache { display: grid; gap: 12px; }
+/* Over a README the download cache kept, while quiverlauncher.com can't be reached (detail.tsx). */
+.readme-kept { margin: 0 0 12px; padding: 8px 12px; border-left: 3px solid var(--accent); border-radius: 8px; background: var(--field); color: var(--muted); font-size: 13px; }
 .settings-pane .download-cache button.update-choice { justify-content: flex-start; padding: 14px 16px; border: 1px solid var(--line); background: var(--panel); }
 .settings-pane .download-cache button.update-choice[aria-checked="true"] { border-color: var(--accent); background: var(--accent-soft); }
 .cache-warning { display: flex; align-items: flex-start; gap: 8px; margin: 0; padding: 10px 12px; border-left: 3px solid var(--danger); border-radius: 8px; background: var(--field); color: var(--strong); font-size: 13px; }

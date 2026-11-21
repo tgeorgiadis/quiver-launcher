@@ -168,6 +168,150 @@ fn forget(dir: &Path, entry: &Cached) {
         }
         folder = at.parent().map(Path::to_path_buf);
     }
+    // Its app's README goes with the app's last file: a folder with nothing else in it.
+    if let Some(app) = entry.path.split('/').next().filter(|a| !a.is_empty() && !entry.path.is_empty()) {
+        let app = dir.join(app);
+        let rest: Vec<_> = fs::read_dir(&app).into_iter().flatten().flatten().map(|e| e.file_name()).collect();
+        if rest.len() == 1 && rest[0] == README {
+            let _ = fs::remove_file(app.join(README));
+            let _ = fs::remove_dir(&app);
+        }
+    }
+}
+
+/// An app's README, kept beside its versions' folders: `readme.json` and the pictures it shows, in one zip.
+pub const README: &str = "readme.zip";
+
+/// A README as the catalog gives it (quiverlauncher.com's copy of the project's), which the app page shows.
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct ReadmeCopy {
+    pub markdown: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub raw_base: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub html_base: Option<String>,
+    /// When the site last read it from the project's host.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub fetched_at: Option<u64>,
+}
+
+/// What's in a README's zip: the README, what it was when kept (`hash`), when, and each picture's file by its address.
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+struct ReadmeIndex {
+    #[serde(flatten)]
+    readme: ReadmeCopy,
+    hash: String,
+    kept_at: u64,
+    images: HashMap<String, String>,
+}
+
+/// A kept README for the app page: its pictures as `data:` addresses, by the addresses the README gives them.
+#[derive(Serialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct ReadmeKept {
+    #[serde(flatten)]
+    pub readme: ReadmeCopy,
+    pub kept_at: u64,
+    pub images: HashMap<String, String>,
+}
+
+/// A picture for a README's zip: its address, its bytes and its type ("image/png").
+pub struct ReadmeImage {
+    pub url: String,
+    pub bytes: Vec<u8>,
+    pub mime: String,
+}
+
+/// What tells one README from another: its text and the addresses its paths resolve against.
+pub fn readme_hash(readme: &ReadmeCopy) -> String {
+    let mut hasher = Sha256::new();
+    for part in [readme.markdown.as_str(), readme.raw_base.as_deref().unwrap_or(""), readme.html_base.as_deref().unwrap_or("")] {
+        hasher.update(part.as_bytes());
+        hasher.update([0]);
+    }
+    hex::encode(hasher.finalize())
+}
+
+/// An app's README zip: in its folder, where its files are, else one named for its slug.
+fn readme_path(dir: &Path, app: &str, slug: &str) -> PathBuf {
+    app_folder(dir, app).unwrap_or_else(|| dir.join(folder_name(slug, "app"))).join(README)
+}
+
+fn read_readme_index(zip: &mut zip::ZipArchive<fs::File>) -> Option<ReadmeIndex> {
+    let mut json = String::new();
+    zip.by_name("readme.json").ok()?.read_to_string(&mut json).ok()?;
+    serde_json::from_str(&json).ok()
+}
+
+/// Whether the app's kept README is this one already (`hash`), so it needn't be kept again.
+pub fn readme_is(dir: &Path, app: &str, slug: &str, hash: &str) -> bool {
+    let Ok(file) = fs::File::open(readme_path(dir, app, slug)) else { return false };
+    zip::ZipArchive::new(file).ok().and_then(|mut z| read_readme_index(&mut z)).is_some_and(|i| i.hash == hash)
+}
+
+/// The extension a picture is kept by, from its type.
+fn image_extension(mime: &str) -> &'static str {
+    match mime.split(';').next().unwrap_or("").trim() {
+        "image/png" => "png",
+        "image/jpeg" => "jpg",
+        "image/gif" => "gif",
+        "image/webp" => "webp",
+        "image/svg+xml" => "svg",
+        "image/avif" => "avif",
+        _ => "img",
+    }
+}
+
+/// Keeps an app's README and its pictures, in place of the one before: written beside it, then moved over it, so a
+/// README is never left half there.
+pub fn keep_readme(dir: &Path, app: &str, slug: &str, readme: &ReadmeCopy, images: &[ReadmeImage]) -> io::Result<()> {
+    use std::io::Write;
+    let path = readme_path(dir, app, slug);
+    fs::create_dir_all(path.parent().ok_or_else(|| io::Error::other("no folder"))?)?;
+    let part = path.with_extension("zip.part");
+    let options = zip::write::SimpleFileOptions::default().compression_method(zip::CompressionMethod::Deflated);
+    let mut zip = zip::ZipWriter::new(fs::File::create(&part)?);
+    let mut names = HashMap::new();
+    for (i, image) in images.iter().enumerate() {
+        let name = format!("images/{i}.{}", image_extension(&image.mime));
+        zip.start_file(name.as_str(), options).map_err(io::Error::other)?;
+        zip.write_all(&image.bytes)?;
+        names.insert(image.url.clone(), name);
+    }
+    let index = ReadmeIndex { readme: readme.clone(), hash: readme_hash(readme), kept_at: now(), images: names };
+    zip.start_file("readme.json", options).map_err(io::Error::other)?;
+    zip.write_all(&serde_json::to_vec_pretty(&index).map_err(io::Error::other)?)?;
+    zip.finish().map_err(io::Error::other)?;
+    fs::rename(&part, &path)
+}
+
+/// The app's kept README, its pictures as `data:` addresses; none when there's none.
+pub fn read_readme(dir: &Path, app: &str, slug: &str) -> Option<ReadmeKept> {
+    use base64::Engine;
+    let mut zip = zip::ZipArchive::new(fs::File::open(readme_path(dir, app, slug)).ok()?).ok()?;
+    let index = read_readme_index(&mut zip)?;
+    let mut images = HashMap::new();
+    for (url, name) in &index.images {
+        let mut bytes = Vec::new();
+        let Ok(mut file) = zip.by_name(name) else { continue };
+        if file.read_to_end(&mut bytes).is_err() {
+            continue;
+        }
+        let ext = name.rsplit('.').next().unwrap_or("");
+        let mime = match ext {
+            "png" => "image/png",
+            "jpg" => "image/jpeg",
+            "gif" => "image/gif",
+            "webp" => "image/webp",
+            "svg" => "image/svg+xml",
+            "avif" => "image/avif",
+            _ => "application/octet-stream",
+        };
+        images.insert(url.clone(), format!("data:{mime};base64,{}", base64::engine::general_purpose::STANDARD.encode(&bytes)));
+    }
+    Some(ReadmeKept { readme: index.readme, kept_at: index.kept_at, images })
 }
 
 /// The SHA-256 of a file, in hex.
@@ -381,6 +525,10 @@ pub fn clean(dir: &Path) -> usize {
     // `<app>/<version>/<file>.part`, never a file the index has.
     let Ok(apps) = fs::read_dir(dir) else { return gone };
     for app in apps.flatten().map(|e| e.path()).filter(|p| p.is_dir()) {
+        // A README cut off as it was written.
+        if fs::remove_file(app.join(format!("{README}.part"))).is_ok() {
+            gone += 1;
+        }
         for version in fs::read_dir(&app).into_iter().flatten().flatten().map(|e| e.path()).filter(|p| p.is_dir()) {
             for file in fs::read_dir(&version).into_iter().flatten().flatten().map(|e| e.path()) {
                 if file.is_file() && file.extension().is_some_and(|x| x == "part") && !kept.contains(&file) && fs::remove_file(&file).is_ok() {
@@ -689,6 +837,32 @@ mod tests {
         put(tmp.path(), &CacheUse { os: Some("windows".into()), arch: Some("arm64".into()), ..uses(&cache, "a", "1.0") }, "g.zip", b"g");
         let owner = &status(&cache, &HashMap::new()).entries[0].apps[0];
         assert_eq!((owner.os.as_deref(), owner.arch.as_deref()), (Some("windows"), Some("arm64")));
+    }
+
+    #[test]
+    fn an_apps_readme_is_kept_in_one_zip_beside_its_versions_with_its_pictures() {
+        let (tmp, cache) = setup();
+        put(tmp.path(), &CacheUse { slug: Some("duke".into()), ..uses(&cache, "k1", "1.0") }, "duke.zip", b"duke");
+        let readme = ReadmeCopy { markdown: "# Duke\n![logo](res/logo.png)".into(), raw_base: Some("https://raw.example/duke/main/".into()), html_base: None, fetched_at: Some(5) };
+        let logo = "https://raw.example/duke/main/res/logo.png";
+        let image = ReadmeImage { url: logo.into(), bytes: b"\x89PNG picture".to_vec(), mime: "image/png".into() };
+        assert!(!readme_is(&cache, "k1", "duke", &readme_hash(&readme)));
+        keep_readme(&cache, "k1", "duke", &readme, &[image]).unwrap();
+        // In the app's folder, beside its versions, not in one of them.
+        assert!(cache.join("duke/readme.zip").is_file());
+        assert!(readme_is(&cache, "k1", "duke", &readme_hash(&readme)));
+        let kept = read_readme(&cache, "k1", "duke").unwrap();
+        assert_eq!(kept.readme, readme);
+        assert!(kept.images[logo].starts_with("data:image/png;base64,"));
+        // A changed README is a different one, kept in its place.
+        let newer = ReadmeCopy { markdown: "# Duke 2".into(), ..readme.clone() };
+        assert!(!readme_is(&cache, "k1", "duke", &readme_hash(&newer)));
+        keep_readme(&cache, "k1", "duke", &newer, &[]).unwrap();
+        assert_eq!(read_readme(&cache, "k1", "duke").unwrap().readme.markdown, "# Duke 2");
+        assert!(read_readme(&cache, "nothing", "nothing").is_none());
+        // It goes with the app's last file.
+        remove(&cache, None).unwrap();
+        assert!(!cache.join("duke").exists());
     }
 
     #[test]

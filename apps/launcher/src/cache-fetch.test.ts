@@ -128,6 +128,14 @@ describe("a run of the cache's fetches", () => {
     expect(fetched[0].checksum).toBeUndefined();
   });
 
+  test("each app's README is kept as the site has it now, as the run goes through it", async () => {
+    const { d } = deps(catalog, releases);
+    const readmes: string[] = [];
+    d.keepReadme = async (entry) => void readmes.push(entry.id);
+    await runCacheFetch(cacheOf({ mode: "latest" }, "/cache"), d, () => {}, () => false);
+    expect(readmes).toEqual(["a", "b", "c"]);
+  });
+
   test("a file that fails counts, and the run goes on; being stopped ends it", async () => {
     const { d, fetched } = deps(catalog, releases);
     const real = d.native.cacheFetch;

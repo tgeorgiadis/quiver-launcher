@@ -11,6 +11,7 @@ import type { Client, Entry, Os, Release } from "@quiverlauncher/api";
 import { cacheNames, cacheOf, cacheTargets, sourceArchive, fetches, fits, installedTargets, protectedFiles, sameVersion, type Cache, type CacheTarget, type CacheUse } from "./cache";
 import { native, type CacheStatus, type InstallRequest } from "./native";
 import { catalogOs, useLauncher } from "./store";
+import { readmeImages } from "@quiverlauncher/ui/markdown";
 import { isOwn } from "./custom";
 
 /** How a run is going, for Settings › Cache. */
@@ -67,6 +68,8 @@ export type FetchDeps = {
   catalogOs?: Os;
   /** An app's repository and its host, for its source code (Keep source code); none when the catalog can't say. */
   projectOf?: (slug: string) => Promise<{ provider: string; repository?: string; host?: string } | undefined>;
+  /** Keeps an app's README as the site has it now, unless kept as it is already. */
+  keepReadme?: (entry: Pick<Entry, "id" | "slug">) => Promise<unknown>;
   /** Installed only: the catalog's apps installed here, their version and the installed file's checksum. */
   installed?: () => { id: string; slug: string; version: string; checksum?: string }[];
 };
@@ -170,6 +173,8 @@ export async function runCacheFetch(cache: Cache, deps: FetchDeps, report: (s: F
       latest = releases[0];
       targets = cacheTargets(entry, releases, cache, deps.here);
     }
+    // Its README, as the site has it now, for its page while the site can't be reached.
+    if (!stopped()) await deps.keepReadme?.(entry).catch(() => {});
     // Keep source code: the release's, as its host archives its tag, unless it's kept already.
     if (cache.sources && latest && !sources.has(`${entry.id}@${latest.version}`) && !stopped()) {
       const project = await deps.projectOf?.(entry.slug).catch(() => undefined);
@@ -321,6 +326,10 @@ export function useDownloadCache() {
       entryOf: async (app) => now.current.catalog[app.id] ?? (app.slug ? (await client.app(app.slug)).entry : undefined),
       protect: () => protectedFiles(now.current.installs),
       projectOf: async (slug) => (await client.app(slug)).project,
+      keepReadme: async (entry) => {
+        const readme = await client.readme(entry.slug);
+        if (readme) await native.cacheReadmeSave(cache.dir, entry.id, entry.slug, readme, readmeImages(readme.markdown, readme));
+      },
       // The catalog's apps installed here; never the player's own files, nor apps added from a repository.
       installed: () =>
         Object.entries(now.current.installs).flatMap(([id, i]) => {

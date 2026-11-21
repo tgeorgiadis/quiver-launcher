@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { render } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { Markdown, resolveUrl } from "./markdown";
+import { Markdown, readmeImages, resolveUrl } from "./markdown";
 import source from "./markdown.tsx?raw";
 
 const bases = {
@@ -281,5 +281,30 @@ describe("untrusted README HTML", () => {
     const link = container.querySelector("a")!;
     expect(link.getAttribute("id") ?? "").not.toBe("root");
     expect(link.getAttribute("name") ?? "").not.toBe("root");
+  });
+});
+
+describe("a README's pictures, for a copy kept offline", () => {
+  const bases = { rawBase: "https://raw.githubusercontent.com/dev/game/main/", htmlBase: "https://github.com/dev/game/blob/main/" };
+  it("lists its Markdown images, HTML <img>s and dark-theme pictures, resolved as they're shown, once each", () => {
+    const text = [
+      "![Logo](res/logo.png)",
+      '<img src="docs/shot.jpg" width="400">',
+      '<picture><source media="(prefers-color-scheme: dark)" srcset="res/logo-dark.png"><img src="res/logo.png"></picture>',
+      "![badge](https://img.shields.io/badge/x-y-blue.svg)",
+      "![blob](https://github.com/dev/game/blob/main/a.gif)",
+      "[a link](docs/readme.md) and ![](data:image/png;base64,AAAA)",
+    ].join("\n");
+    expect(readmeImages(text, bases)).toEqual([
+      "https://raw.githubusercontent.com/dev/game/main/res/logo.png",
+      "https://img.shields.io/badge/x-y-blue.svg",
+      "https://raw.githubusercontent.com/dev/game/main/a.gif",
+      "https://raw.githubusercontent.com/dev/game/main/docs/shot.jpg",
+      "https://raw.githubusercontent.com/dev/game/main/res/logo-dark.png",
+    ]);
+  });
+  it("shows the kept copy in place of the picture it links to", () => {
+    const { container } = render(<Markdown text="![Logo](res/logo.png)" {...bases} images={{ "https://raw.githubusercontent.com/dev/game/main/res/logo.png": "data:image/png;base64,AAAA" }} />);
+    expect(container.querySelector("img")?.getAttribute("src")).toBe("data:image/png;base64,AAAA");
   });
 });

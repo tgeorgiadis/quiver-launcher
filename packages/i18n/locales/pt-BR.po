@@ -5651,6 +5651,10 @@ msgid "Quiver's maintainers trust this creator"
 msgstr "Os mantenedores do Quiver confiam neste criador"
 
 #: ../../apps/launcher/src/detail.tsx
+msgid "quiverlauncher.com can't be reached, so this is the copy saved in your download cache on {when}."
+msgstr "Não é possível acessar o quiverlauncher.com, então esta é a cópia salva no seu cache de downloads em {when}."
+
+#: ../../apps/launcher/src/detail.tsx
 msgid "Read more"
 msgstr "Ler mais"
 

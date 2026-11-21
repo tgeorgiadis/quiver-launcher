@@ -464,7 +464,8 @@ export type Console = { id: string; name: string; brand: string };
 export type Facets = { total: number; consoles: Console[] };
 
 /** A README in Markdown, and what its relative images and links resolve against. */
-export type Readme = { markdown: string; rawBase?: string; htmlBase?: string };
+/** A project's README: quiverlauncher.com's copy, with when it last read it from the project's host (`fetchedAt`, missing from an older site). */
+export type Readme = { markdown: string; rawBase?: string; htmlBase?: string; fetchedAt?: number };
 
 /**
  * A catalog download that failed: the release's version and the file's name as
