@@ -80,7 +80,17 @@ export type Config = {
   steamDeck?: boolean;
   /** How this copy was installed, for usage data (update.rs). Missing from an older build. */
   package?: string;
+  /**
+   * Started by a desktop or Steam shortcut, with no window (shortcut_play.rs): it quits once the game's saves are sent.
+   * `upload`: started to send this app's saves after Steam stopped it, and the seconds it was played when that's still
+   * to count. Missing from an older build.
+   */
+  shortcut?: { host: boolean; upload: [string, number | null] | null };
 };
+/** A desktop or Steam shortcut waiting to start an app through Quiver (shortcut_play.rs). `hidden`: it started this Quiver. */
+export type ShortcutPlay = { request: number; app: string; hidden: boolean };
+/** How a game ended, for usage data: it quit, or Steam's Stop or Exit Game ended it. */
+export type Closed = { id: string; seconds: number; via?: "shortcut" | "shortcut_hidden"; ended?: "closed" | "stopped" };
 /** The hardware specs.rs reads. */
 export type PcSpecs = { cpu: string | null; gpu: string | null; ramGb: number | null };
 /** A repository host's answer, fetched by the Rust side for hosts that don't send CORS headers. */
@@ -178,6 +188,8 @@ export type WindowsRunner = { kind: "wine" } | { kind: "proton"; path: string };
 
 /** An installed app, for a desktop or Steam shortcut. */
 export type ShortcutRequest = {
+  /** The app, which the shortcut names to Quiver. */
+  id: string;
   name: string;
   folder: string;
   dir?: string;
@@ -319,8 +331,31 @@ export const native = {
     invoke<void>("launch", { id, folder, dir, preferred, wine, program, launch, presence }),
   /** Discord's Rich Presence on or off (discord.rs), with its words in the player's language. */
   setDiscordPresence: (enabled: boolean, texts: { idle: string; button: string }) => invoke<void>("set_discord_presence", { enabled, texts }),
-  /** An app started with an id has closed, after running this long. */
-  onAppClosed: (handler: (p: { id: string; seconds: number }) => void) => listen<{ id: string; seconds: number }>("app-closed", (e) => handler(e.payload)),
+  /** An app started with an id has closed, after running this long; one a shortcut started says how it ended. */
+  onAppClosed: (handler: (p: Closed) => void) => listen<Closed>("app-closed", (e) => handler(e.payload)),
+  /** The shortcuts waiting for this Quiver to start their app: for a page that's only now ready. */
+  shortcutRequests: () => invoke<ShortcutPlay[]>("shortcut_requests"),
+  /** A shortcut asks this Quiver to start an app. */
+  onShortcutPlay: (handler: (p: ShortcutPlay) => void) => listen<ShortcutPlay>("shortcut-play", (e) => handler(e.payload)),
+  /** Hands a shortcut the app's command, as `launch` would start it, for the shortcut to start; `saves` is backed up should Steam stop it. */
+  shortcutStart: (
+    request: number,
+    id: string,
+    folder: string,
+    dir: string | undefined,
+    preferred: string[],
+    wine: boolean,
+    program?: string,
+    launch?: LaunchOptions,
+    presence?: DiscordGame,
+    saves?: SavesOf,
+  ) => invoke<void>("shortcut_start", { request, id, folder, dir, preferred, wine, program, launch, presence, saves }),
+  /** Tells a shortcut its app won't start: the player said no, or the window says why. */
+  shortcutRefuse: (request: number, why: string) => invoke<void>("shortcut_refuse", { request, why }),
+  /** The saves of a game a shortcut started are sent: a Quiver it started can quit. */
+  shortcutDone: () => invoke<void>("shortcut_done"),
+  /** Shows the window of a Quiver a shortcut started, for a question, or hides it again. */
+  shortcutWindow: (show: boolean) => invoke<void>("shortcut_window", { show }),
   /** Where an app's saves are and its backups (saves.rs). */
   savesInfo: (of: SavesOf) => invoke<SavesInfo | null>("saves_info", { of }),
   /** Backs up an app's saves if they changed; null when there was nothing new. Fails while the app runs. */

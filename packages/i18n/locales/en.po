@@ -600,6 +600,10 @@ msgstr "{name} is shared"
 msgid "{name} menu"
 msgstr "{name} menu"
 
+#: ../../apps/launcher/src/store.tsx
+msgid "{name} needs your copy of the game. Play it from Quiver once to set it up."
+msgstr "{name} needs your copy of the game. Play it from Quiver once to set it up."
+
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "{name} needs your own copy of the game to run, and asks for it when it starts. Choose the disc image, and Quiver checks it's one {name} takes."
 msgstr "{name} needs your own copy of the game to run, and asks for it when it starts. Choose the disc image, and Quiver checks it's one {name} takes."
@@ -5013,6 +5017,10 @@ msgstr "Play"
 msgid "Play {name}"
 msgstr "Play {name}"
 
+#: ../../apps/launcher/src/store.tsx
+msgid "Play {name} from Quiver once, to choose the program its setup installed."
+msgstr "Play {name} from Quiver once, to choose the program its setup installed."
+
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Play a music file of your own while Quiver is open. It fades out while you play."
 msgstr "Play a music file of your own while Quiver is open. It fades out while you play."
@@ -6744,6 +6752,10 @@ msgstr "That picture didn't load."
 #: ../../apps/launcher/src/library.tsx
 msgid "That playlist isn't shared any more, or the link is wrong."
 msgstr "That playlist isn't shared any more, or the link is wrong."
+
+#: ../../apps/launcher/src/store.tsx
+msgid "That shortcut's app isn't installed any more."
+msgstr "That shortcut's app isn't installed any more."
 
 #: ../../apps/launcher/src/account.tsx
 msgid "That sign-in took too long. Try again."

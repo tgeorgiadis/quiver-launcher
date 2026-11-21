@@ -18,7 +18,9 @@ The launcher sends named events only (`apps/launcher/src/telemetry.ts`):
   pinned and hidden (`library_loaded`, each launch), and once a day each catalog app installed, with its version, how
   it updates and whether an update is waiting (`app_on_computer`, at most 40).
 - **Apps:** catalog apps installed, updated, launched, closed (with the seconds played), uninstalled, added and removed,
-  by slug, and when launched or closed, the version. Apps players add are named only by kind. Installs cancelled and
+  by slug, and when launched or closed, the version, whether Play or a desktop or Steam shortcut started it (and
+  whether that shortcut had to start Quiver), and how a shortcut's game ended: it quit, Steam's Stop or Exit Game ended
+  it, or Exit Game's two seconds handed its saves to another Quiver to send. Apps players add are named only by kind. Installs cancelled and
   at what stage; failed installs and launches, why, and what kind of failure; an app's folder renamed and the apps
   folder moved; an app's menu opened and its videos played, and several apps changed at once from the library (what was changed and how many apps, not which).
 - **Mods:** the mods screen opened, and mods installed, updated, uninstalled or failing to install: the catalog app's

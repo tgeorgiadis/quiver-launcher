@@ -1102,6 +1102,7 @@ export const foldersOn = (os: string) => os !== "android" && os !== "ios";
 export function shortcutRequest(entry: Entry, install: Install, settings: Settings): ShortcutRequest {
   const art = entry.libraryArt ?? {};
   return {
+    id: entry.id,
     name: entry.projectName,
     folder: install.folder,
     dir: install.dir,
