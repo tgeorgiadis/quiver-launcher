@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Entry } from "@quiverlauncher/api";
-import { sortPlan, systemFolder, appsRightIn, consoleFolderChoice, consoleFolderChoices, consoleHome, consoleHomePath, wholePath, withOwnConsoles, adoptedInstall, appRef, appsFolders, groupFolder, joinPath, rootOf, unsortedApps, folderClash, keptWhereTheyAre, ownedBy, bringsAlong, catalogMatch, declinedUpdate, earlyGet, earlyGetOffer, earlyKey, earlyOffer, earlyRelease, earlyUpdate, filesAddable, folderNameOf, renamable, folderGone, forHereKey, hasUpdate, importedPlaylists, importedTags, removedTags, withAllTags, markedInApps, retagged, withOldPictures, installFiles, keptInstall, locatable, looseInstalls, mayUpdate, movableApps, movedInside, noProgram, notOfferedYet, oncePerFolder, twinsOf, withCopiesIn, withTwins, playedRef, relocatedInstall, skipped, uniqueFiles, updateFor, mainRelease, onlyPrereleases, updatesOf, usableCatalog, wantsPrereleases, withEarlyFor, withMainRelease, withPrereleases, installedAs, versionKnown, type ImportedApp, type LibraryItem } from "./store";
+import { sortPlan, systemFolder, appsRightIn, consoleFolderChoice, consoleFolderChoices, consoleHome, consoleHomePath, wholePath, withOwnConsoles, adoptedInstall, appRef, appsFolders, groupFolder, joinPath, rootOf, unsortedApps, folderClash, keptWhereTheyAre, ownedBy, bringsAlong, catalogMatch, declinedUpdate, earlyGet, earlyGetOffer, earlyKey, earlyOffer, earlyRelease, earlyUpdate, filesAddable, folderNameOf, renamable, folderGone, forHereKey, hasUpdate, importedPlaylists, importedTags, removedTags, withAllTags, withReplaced, markedInApps, retagged, withOldPictures, installFiles, keptInstall, locatable, looseInstalls, mayUpdate, movableApps, movedInside, noProgram, notOfferedYet, oncePerFolder, twinsOf, withCopiesIn, withTwins, playedRef, relocatedInstall, skipped, uniqueFiles, updateFor, mainRelease, onlyPrereleases, updatesOf, usableCatalog, wantsPrereleases, withEarlyFor, withMainRelease, withPrereleases, installedAs, versionKnown, type ImportedApp, type LibraryItem } from "./store";
 import type { OldApp, OldFilter } from "./native";
 
 const entry = {
@@ -999,5 +999,21 @@ describe("console folders the player names or places", () => {
       top: at("D"),
     };
     expect(appsRightIn(installs, `${apps}\\Ports\\N64`)).toEqual([{ id: "a", folder: "A" }]);
+  });
+});
+
+describe("withReplaced", () => {
+  const replaced = { from: ["game-0.4.6.AppImage", "game-0.4.7.AppImage"], to: "game.AppImage" };
+  it("points a program the update took away at the one in its place", () => {
+    expect(withReplaced({ executable: "game-0.4.7.AppImage", command: "-fullscreen" }, replaced, "/apps/Game")).toEqual({ executable: "game.AppImage", command: "-fullscreen" });
+    expect(withReplaced({ executable: "C:\\Apps\\Game\\game-0.4.6.AppImage" }, replaced, "C:\\Apps\\Game")).toEqual({ executable: "C:\\Apps\\Game\\game.AppImage" });
+    expect(withReplaced({ programs: ["game-0.4.7.AppImage", "game.AppImage", "editor.AppImage"] }, replaced, "/apps/Game")).toEqual({ programs: ["game.AppImage", "editor.AppImage"] });
+  });
+  it("leaves any other choice as it was", () => {
+    const launch = { executable: "editor.AppImage" };
+    expect(withReplaced(launch, replaced, "/apps/Game")).toEqual(launch);
+    expect(withReplaced({ executable: "/elsewhere/game-0.4.7.AppImage" }, replaced, "/apps/Game")).toEqual({ executable: "/elsewhere/game-0.4.7.AppImage" });
+    expect(withReplaced(launch, null, "/apps/Game")).toBe(launch);
+    expect(withReplaced(undefined, replaced, "/apps/Game")).toBeUndefined();
   });
 });

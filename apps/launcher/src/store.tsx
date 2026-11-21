@@ -10,7 +10,7 @@ import { msg, plural, t } from "@lingui/core/macro";
 import { ApiError, createClient, createGithub, createGitlab, createProviders, githubAsset, githubProvider, githubRepository, parseRepository, toRef, type Asset, type Client, type Console, type Entry, type Github, type Gitlab, type Os, type HistoryRelease, type Release, type ReleaseScan, type ReleaseStatus, type UnverifiedRelease, type Verified, type Withdrawn, type Providers, type RepositoryRef } from "@quiverlauncher/api";
 import type { HiddenApp } from "./browse-hidden";
 import { hideOnApp, shownTags, type HiddenTags } from "./catalog-tags";
-import { native, type Config, type SaveBackup, type LaunchOptions, type MovingApp, type OldApp, type OldFilter, type Progress, type StateProblem, type V3Library, type WindowsRunner } from "./native";
+import { native, type Config, type Installed, type SaveBackup, type LaunchOptions, type MovingApp, type OldApp, type OldFilter, type Progress, type StateProblem, type V3Library, type WindowsRunner } from "./native";
 import { Recovery } from "./recovery";
 import { assetFilterFor, bestAssets, installable, installFormat, isMsi, pickedBefore, releaseFor } from "./assets";
 import { cameAfter, fromSite, scanAsks, installedFile, insteadOf, newestUnblocked, sameChecksum, unverifiedFile, versionLabel, withdrawnAsBlocked } from "./versions";
@@ -617,6 +617,22 @@ export const samePath = (a: string, b: string) => {
     return /^[A-Za-z]:/.test(s) ? s.toLowerCase() : s;
   };
   return norm(a) === norm(b);
+};
+/**
+ * Launch options after an update took away earlier releases' copies of the app's program (`replaced.from`, in its
+ * folder `dir`) for this release's (`replaced.to`): a program they named, in the folder or by its full path, is now
+ * the new one. Anything else stays as the player chose it.
+ */
+export const withReplaced = (launch: LaunchOptions | undefined, replaced: Installed["replaced"], dir: string): LaunchOptions | undefined => {
+  if (!launch || !replaced) return launch;
+  const now = (path: string) => {
+    if (replaced.from.some((name) => samePath(path, name))) return replaced.to;
+    if (replaced.from.some((name) => samePath(path, joinPath(dir, name)))) return joinPath(dir, replaced.to);
+    return path;
+  };
+  const executable = launch.executable && now(launch.executable);
+  const programs = launch.programs && [...new Set(launch.programs.map(now))];
+  return { ...launch, ...(executable ? { executable } : {}), ...(programs ? { programs } : {}) };
 };
 /** Whether `inner` is `outer` or a folder somewhere inside it. */
 const within = (inner: string, outer: string) => {
@@ -2490,7 +2506,8 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         // were the old build's. Its command line stays.
         const wine = asset.os === "windows" && config.os === "linux";
         const old = i[entry.id]?.launch;
-        const launch = old && Boolean(i[entry.id]?.wine) !== wine ? (old.command ? { command: old.command } : undefined) : old;
+        // A program the player chose that the update took away (an earlier release's copy of it) is now this one's.
+        const launch = withReplaced(old && Boolean(i[entry.id]?.wine) !== wine ? (old.command ? { command: old.command } : undefined) : old, done.replaced, done.dir);
         // Kept where it was, or in the folder it went in: one that's an apps folder already is one of its apps.
         const dir = into && !msi ? done.dir : i[entry.id]?.dir;
         const inApps = into && !msi ? Boolean(group) || appsFolders(i, config.appsDir).some((f) => samePath(f.path, into)) : i[entry.id]?.inApps;

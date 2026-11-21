@@ -129,6 +129,8 @@ export type Installed = {
   restart: boolean;
   /** A setup program installed it, in the app's folder or outside it. Missing from the web side's stand-in. */
   setup?: boolean;
+  /** Earlier releases' copies of a single program that this release's took the place of, by their names in the app's folder. */
+  replaced?: { from: string[]; to: string } | null;
 };
 
 /** A game as Discord shows it while it runs: its name, and a picture Discord can fetch from the web. */
