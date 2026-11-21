@@ -26,7 +26,8 @@ import { useAccount } from "./account";
 import { hasFilters, inCollection, matches, newKey, pickedOutside, type AppFacts, type Collection } from "./sync";
 import { isLocal, isOwn } from "./custom";
 import { withPictures, type Pictures } from "./custom-art";
-import { LIBRARY_SORTS, compareApps, isLibrarySort, type LibrarySort } from "./sort";
+import { LIBRARY_SORTS, byRelease, compareApps, isLibrarySort, type LibrarySort } from "./sort";
+import { useGameYears } from "./game-years";
 import { keepsTab, keptFilters, type LibraryFilters } from "./view";
 import { track } from "./telemetry";
 import { native } from "./native";
@@ -297,7 +298,16 @@ export function LibraryPage({
     platforms: entry.supportedOS,
     names: [entry.projectName, ...entry.games.map((g) => g.title)],
   });
-  const sortFacts = (e: Entry) => ({ lastPlayed: installs[e.id]?.lastPlayed, installedAt: installs[e.id]?.installedAt, addedAt: inLibrary.get(e.id)?.addedAt, installed: Boolean(installs[e.id]) });
+  // The year each game first came out, looked up while a release date sort is on (game-years.ts).
+  const years = useGameYears(client, all.flatMap((item) => catalog[item.id]?.games.map((g) => g.slug) ?? []), byRelease(sort));
+  const sortFacts = (e: Entry) => ({
+    lastPlayed: installs[e.id]?.lastPlayed,
+    installedAt: installs[e.id]?.installedAt,
+    playTime: installs[e.id]?.playTime,
+    year: e.games[0] && years[e.games[0].slug],
+    addedAt: inLibrary.get(e.id)?.addedAt,
+    installed: Boolean(installs[e.id]),
+  });
   // What the tab holds before the search and filters: library apps, plus picked or listed apps not in the library.
   const candidates: { entry: Entry; item?: LibraryItem }[] = collection?.follows
     ? (loaded?.items ?? []).flatMap((i) => {

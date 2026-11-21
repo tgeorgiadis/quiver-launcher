@@ -4050,6 +4050,11 @@ msgstr "대부분의 앱은 ROM이나 디스크 이미지 같은 게임 사본�
 msgid "Most downloaded"
 msgstr "다운로드 많은 순"
 
+#. Library sort: the app played longest, all told, first
+#: ../../apps/launcher/src/sort.ts
+msgid "Most played"
+msgstr "가장 많이 플레이함"
+
 #: ../../apps/launcher/src/App.tsx
 msgid "Most relevant"
 msgstr "관련성 높은 순"
@@ -5434,6 +5439,11 @@ msgstr "최근 추가"
 msgid "Recently finished"
 msgstr "최근 완료"
 
+#. Library sort: the app installed last first
+#: ../../apps/launcher/src/sort.ts
+msgid "Recently installed"
+msgstr "최근 설치"
+
 #: ../../apps/launcher/src/sort.ts
 msgid "Recently played"
 msgstr "최근 플레이"
@@ -5459,6 +5469,16 @@ msgstr "새로 고침"
 #: ../../apps/launcher/src/App.tsx
 msgid "Reinstall {installedVersion}"
 msgstr "{installedVersion} 다시 설치"
+
+#. Library sort: by the year the game an app plays first came out (not the app's own release)
+#: ../../apps/launcher/src/sort.ts
+msgid "Release date, newest first"
+msgstr "출시일, 최신순"
+
+#. Library sort: by the year the game an app plays first came out (not the app's own release)
+#: ../../apps/launcher/src/sort.ts
+msgid "Release date, oldest first"
+msgstr "출시일, 오래된 순"
 
 #: ../../apps/launcher/src/own.tsx
 msgid "Release feed"
