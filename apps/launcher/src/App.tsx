@@ -1,12 +1,12 @@
 import { startTransition, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { ArrowLeft, ArrowUp, BookOpen, Save, ChevronDown, Cloud, CircleArrowDown, CircleCheck, CirclePlay, CircleUser, Compass, Disc3, Download, Eye, EyeOff, FolderInput, FolderOpen, FolderPen, FolderSearch, FolderSync, History, Info, MessagesSquare, LayoutGrid, Library, LogOut, PanelLeft, Mail, PackagePlus, Pencil, Pin, Play, Plus, Search, SettingsIcon, RotateCcw, ShieldAlert, ShieldCheck, ShieldX, SlidersHorizontal, Smile, Trash2, TriangleAlert, Tv, Wrench, X } from "lucide-react";
+import { ArrowLeft, ArrowUp, BookOpen, Save, ChevronDown, Cloud, CircleArrowDown, CircleCheck, CirclePlay, CircleUser, Compass, Disc3, Download, Eye, EyeOff, FolderInput, FolderOpen, FolderPen, FolderSearch, FolderSync, History, Info, MessagesSquare, LayoutGrid, Library, LogOut, PanelLeft, Mail, PackagePlus, Pencil, Pin, Play, Plus, Search, SettingsIcon, RefreshCw, RotateCcw, ShieldAlert, ShieldCheck, ShieldX, SlidersHorizontal, Smile, Trash2, TriangleAlert, Tv, Wrench, X } from "lucide-react";
 import type { AppQuery, Asset, Entry, GameMatch, Os, Page, ProjectType } from "@quiverlauncher/api";
 import { msg, plural, t } from "@lingui/core/macro";
 import { Plural, Trans } from "@lingui/react/macro";
 import { i18n } from "@quiverlauncher/i18n";
 import type { MessageDescriptor } from "@lingui/core";
 import { Artwork, EntryCard, OS_NAMES, PlatformIcons, ReleaseBadge, SourcedImage, heroSources } from "@quiverlauncher/ui";
-import { PORTABLE_FILE, availableOn, canGet, catalogOs, declinedUpdate, earlyGetOffer, earlyOffer, filesAddable, folderNameOf, hasUpdate, locatable, movable, noProgram, pulledVerified, renamable, rootOf, samePath, skipped, stillWaiting, tvModeOn, updateFor, updatesByItself, updatesOf, useLauncher, type AppMove, type Choice } from "./store";
+import { PORTABLE_FILE, availableOn, canGet, catalogOs, declinedUpdate, earlyGetOffer, earlyOffer, filesAddable, folderNameOf, hasUpdate, locatable, movable, noProgram, pulledVerified, renamable, rootOf, samePath, skipped, stillWaiting, tvModeOn, updateFor, updatesByItself, updatesOf, useLauncher, versionKnown, type AppMove, type Choice } from "./store";
 import { TabPrompt } from "./pad-hints";
 import { Dialog, FilterPill, LibraryPage, MultiPill, Popover, consoleOptions, filterLabel, pickedLabel, projectTypeOptions, withOverrides, type MultiOption } from "./library";
 import { BrowseCardOptions, useBrowseCards, useLibraryView, useSidebarFits } from "./library-view";
@@ -58,6 +58,7 @@ import { OwnCopyChips, OwnCopyPrompt } from "./own-copy-setup";
 import { copiesNeeded } from "./own-copy";
 import { GameCopiesNotice } from "./own-copy-settings";
 import { AppUpdatesNotice } from "./app-updates";
+import { ReleaseFiles } from "./release-files";
 
 type Tab = "library" | "browse";
 /** A page over the library or catalog: an app's, an original game's, Downloads or Settings. */
@@ -505,6 +506,8 @@ function BrowsePage({
   const only = hiddenView === "only";
   // Only hidden apps: asked for by themselves, as the catalog's pages could have them anywhere in it, and empty for pages of them.
   const [hiddenApps, setHiddenApps] = useState<Entry[] | null>(null);
+  // Refresh's presses, which ask for them again.
+  const [reloads, setReloads] = useState(0);
   useEffect(() => {
     if (!only) return setHiddenApps(null);
     let live = true;
@@ -517,7 +520,7 @@ function BrowsePage({
       setHiddenApps(found);
     });
     return () => void (live = false);
-  }, [only, client]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [only, client, reloads]); // eslint-disable-line react-hooks/exhaustive-deps
   // The last one shown again: back to the rest, rather than a view of nothing.
   useEffect(() => {
     if (!hidden.size) setHiddenView("hide");
@@ -550,6 +553,8 @@ function BrowsePage({
   const [pages, setPages] = useState<Page<Entry>[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  // Refresh's own first page on its way: its icon turns meanwhile.
+  const [refreshing, setRefreshing] = useState(false);
   const [games, setGames] = useState<GameMatch[]>([]);
   // The search whose games are in.
   const [gamesFor, setGamesFor] = useState<string | null>(null);
@@ -562,13 +567,15 @@ function BrowsePage({
   // Windows' run there), narrowed to what runs here once they come (`runs`).
   const askedOs = filters.platforms?.map((p) => (p === "here" ? catalogOs(config.os) : p));
   const platforms = askedOs?.some((p) => !p) ? undefined : [...new Set(askedOs as Os[])];
-  function load(cursor?: string | null) {
+  /** The catalog's first page, or the one after `cursor`; `fresh` (Refresh) asks the site again rather than the webview's cache. */
+  function load(cursor?: string | null, fresh = false) {
     const request = ++latest.current;
     setLoading(true);
+    setRefreshing(fresh);
     setError(null);
     client
       // A search orders by relevance.
-      .apps({ ...filters, platforms, search: query, sort: searching ? undefined : filters.sort, cursor })
+      .apps({ ...filters, platforms, search: query, sort: searching ? undefined : filters.sort, cursor, fresh })
       .then((page) => {
         if (request !== latest.current) return;
         remember(page.items);
@@ -580,12 +587,14 @@ function BrowsePage({
           setOwned((o) => new Set([...(cursor ? o : []), ...left]));
           setPages((p) => (cursor ? [...p, page] : [page]));
           setLoading(false);
+          setRefreshing(false);
         });
       })
       .catch(() => {
         if (request !== latest.current) return;
         setError(t`Couldn't reach quiverlauncher.com. Check your connection and try again.`);
         setLoading(false);
+        setRefreshing(false);
       });
   }
   useEffect(() => {
@@ -691,6 +700,8 @@ function BrowsePage({
   const mine = showOwned && hiddenView !== "only" ? entries.filter((e) => inLibrary.has(e.id)).length : 0;
   const last = only ? undefined : pages.at(-1);
   const waiting = only ? !hiddenApps && !error : loading;
+  // The same search, filters and order asked for again: apps added or updated since show without retyping the search.
+  const refresh = () => (only ? (setHiddenApps(null), setReloads((n) => n + 1)) : load(null, true));
   const typed = search.trim();
   return (
     <>
@@ -723,6 +734,15 @@ function BrowsePage({
             {filterCount > 0 && <span className="tool-count">{filterCount}</span>}
           </button>
           {/* How Browse's cards look, as the library's View menu sets its own; Settings has the same. */}
+          <button
+            className="tool icon-only refresh"
+            aria-label={t`Refresh`}
+            title={t`Refresh`}
+            aria-busy={only ? waiting : refreshing}
+            onClick={refresh}
+          >
+            <RefreshCw size={16} className={(only ? waiting : refreshing) ? "spinning" : undefined} aria-hidden="true" />
+          </button>
           <Popover label={t`View options`} icon={<LayoutGrid size={17} />} role="group" className="tool icon-only" panel="view-panel" align="end">
             {() => <BrowseCardOptions />}
           </Popover>
@@ -1241,7 +1261,7 @@ function AppPage({
   onOpenApp: (entry: Entry, at?: PageAt) => void;
   onSignIn: () => void;
 }) {
-  const { config, library, installs, jobs, catalog, remove, confirmUninstall, askRename, askName, managing, askManage, consoleNames, setUpdates, declineUpdate, get, switched, switchToCatalog, locateInstall, askPlace, appMoves, settings } = useLauncher();
+  const { config, library, installs, jobs, catalog, remove, confirmUninstall, askRename, askName, managing, askManage, consoleNames, setUpdates, declineUpdate, haveUpdate, get, switched, switchToCatalog, locateInstall, askPlace, appMoves, settings } = useLauncher();
   // An app the player added and switched to the catalog's shows the catalog's.
   const id = switched[opened.id] ?? opened.id;
   const item = library.find((i) => i.id === id);
@@ -1410,6 +1430,7 @@ function AppPage({
         {item && <UpdatesChoice id={item.id} />}
         {item && <PrereleasesChoice id={item.id} />}
         <CacheChoice entry={entry} />
+        {item && !isLocal(item.id) && <ReleaseFiles entry={entry} source={source} />}
       </div>
       {item && (
         <div className="panel-group">
@@ -1432,7 +1453,7 @@ function AppPage({
             }}
           >
             <Trash2 size={16} aria-hidden="true" />
-            {install && !install.local ? t`Uninstall and remove` : t`Remove from library`}
+            {install && !install.local ? t`Remove from library…` : t`Remove from library`}
           </button>
           {install?.local && (
             <p className="muted small">
@@ -1517,7 +1538,8 @@ function AppPage({
                 )}
                 {install && !install.local && (
                   <span className="muted">
-                    <Trans>Installed {installedVersion}</Trans>
+                    {/* Not 3.x's 0.0.0, which every release is newer than: the update line asks which it is. */}
+                    {versionKnown(install) ? <Trans>Installed {installedVersion}</Trans> : <Trans>Installed, version unknown</Trans>}
                   </span>
                 )}
                 {install?.unverified &&
@@ -1643,10 +1665,18 @@ function AppPage({
             {update && hasUpdate(known, install) && (
               <p className="release-pinned-line">
                 <span>
-                  <Trans>{updateVersion} is available.</Trans>
+                  {versionKnown(install) ? (
+                    <Trans>{updateVersion} is available.</Trans>
+                  ) : (
+                    <Trans>Quiver Launcher doesn&apos;t know which version this is. {updateVersion} is available.</Trans>
+                  )}
                 </span>
                 <button type="button" className="link-button" onClick={() => declineUpdate(entry.id, update.version)}>
                   <Trans>Skip this update</Trans>
+                </button>
+                {/* A copy unzipped by hand, or an app that updated itself: the player tells Quiver once, nothing downloaded. */}
+                <button type="button" className="link-button" onClick={() => haveUpdate(entry.id, update)}>
+                  <Trans>I have {updateVersion}</Trans>
                 </button>
               </p>
             )}
@@ -1818,7 +1848,8 @@ function UpdatesChoice({ id }: { id: string }) {
         <option value="default">{byDefault}</option>
         <option value="ask">{t({ message: "Offer them", comment: "Updates: offer new releases to install" })}</option>
         {auto && <option value="auto">{t`Install automatically`}</option>}
-        <option value="pinned">{t`Always stay on ${installedVersion}`}</option>
+        {/* Staying on a version Quiver doesn't know would be staying on 0.0.0. */}
+        {(versionKnown(install) || install.updates === "pinned") && <option value="pinned">{t`Always stay on ${installedVersion}`}</option>}
       </select>
     </label>
   );
@@ -2438,7 +2469,11 @@ function ProgramPrompt() {
   );
 }
 
-/** Deleting an app's files takes a yes. Cancel comes first, where a controller starts, and B or Escape is Cancel too. */
+/**
+ * Deleting an app's files takes a yes. Cancel comes first, where a controller starts, and B or Escape is Cancel too.
+ * Taking an installed app out of the library asks the same way, with Keep files beside it, for files the player still
+ * wants: it leaves the library and its folder stays where it is.
+ */
 function UninstallPrompt() {
   const { confirming, confirmUninstall, uninstall, remove, library, installs } = useLauncher();
   const [portable, setPortable] = useState(false);
@@ -2459,24 +2494,37 @@ function UninstallPrompt() {
   const name = entry.projectName;
   // Out of the library too: said only when it's in there.
   const leaves = confirming.remove && library.some((i) => i.id === entry.id);
+  // Files to keep: an install of Quiver's (a local app's are the player's and always stay).
+  const keepable = leaves && going && !going.local;
   const close = () => confirmUninstall(null);
+  const go = (keepFiles: boolean) => {
+    close();
+    void (confirming.remove ? remove(entry.id, keepFiles) : uninstall(entry.id));
+    then?.();
+  };
   const executable = going?.launch?.executable && outsideFolder(going.launch.executable, going.program) ? going.launch.executable : undefined;
   return (
-    <Dialog label={t`Uninstall ${name}`} onClose={close}>
+    <Dialog label={keepable ? t`Remove ${name}` : t`Uninstall ${name}`} onClose={close}>
       <div className="detail-body uninstall-prompt">
         <h2>
-          <Trash2 size={18} /> {leaves ? t`Uninstall ${name} and remove it from your library?` : t`Uninstall ${name}?`}
+          <Trash2 size={18} /> {keepable ? t`Remove ${name} from your library?` : leaves ? t`Uninstall ${name} and remove it from your library?` : t`Uninstall ${name}?`}
         </h2>
         <p>
-          {leaves
-            ? t`Its files go to the trash, and it leaves your library.`
-            : confirming.remove
-              ? t`Its files go to the trash.`
-              : t`Its files go to the trash. ${name} stays in your library, so you can get it again.`}
+          {keepable
+            ? t`Uninstall and remove sends its files to the trash. Keep files leaves them where they are, and Locate existing install can add them back later.`
+            : leaves
+              ? t`Its files go to the trash, and it leaves your library.`
+              : confirming.remove
+                ? t`Its files go to the trash.`
+                : t`Its files go to the trash. ${name} stays in your library, so you can get it again.`}
         </p>
         {portable && (
           <p>
-            <Trans>This app may keep your saves in its folder. They&apos;ll go to the trash too.</Trans>
+            {keepable ? (
+              <Trans>This app may keep your saves in its folder. Uninstalling sends them to the trash too.</Trans>
+            ) : (
+              <Trans>This app may keep your saves in its folder. They&apos;ll go to the trash too.</Trans>
+            )}
           </p>
         )}
         {/* What it starts is somewhere else (Launch options): only its folder goes, so the player knows that stays. */}
@@ -2492,14 +2540,12 @@ function UninstallPrompt() {
           <button className="primary" autoFocus onClick={close}>
             <Trans>Cancel</Trans>
           </button>
-          <button
-            className="danger"
-            onClick={() => {
-              close();
-              void (confirming.remove ? remove(entry.id) : uninstall(entry.id));
-              then?.();
-            }}
-          >
+          {keepable && (
+            <button onClick={() => go(true)}>
+              <Trans comment="Button: takes an app out of the library and leaves its files on the computer">Keep files</Trans>
+            </button>
+          )}
+          <button className="danger" onClick={() => go(false)}>
             {leaves ? t`Uninstall and remove` : t`Uninstall`}
           </button>
         </div>

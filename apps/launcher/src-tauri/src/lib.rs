@@ -1911,6 +1911,15 @@ fn copy_present(data: State<'_, Data>, folder: String, dir: Option<String>, wine
     present_app_dir(&data, &folder, dir).is_ok_and(|d| own_copy::present(&file, Path::new(&path), &d, wine))
 }
 
+/// What's already where the app reads its copy (`destination`), put there by the player before Quiver knew of it,
+/// if anything: the path, for the launcher to check and keep as the copy. Null when the copy only goes by flag or
+/// environment variable, or nothing's there.
+#[tauri::command]
+fn copy_in_place(data: State<'_, Data>, folder: String, dir: Option<String>, wine: bool, file: own_copy::SetupFile) -> Option<String> {
+    let app_dir = present_app_dir(&data, &folder, dir).ok()?;
+    own_copy::in_place(&file, &app_dir, wine).map(|p| p.to_string_lossy().into_owned())
+}
+
 /// Asks the player for a folder on this computer, opening in `dir` when it's
 /// one; null if they cancel. `QUIVER_PICK_FOLDER` answers instead in
 /// end-to-end tests.
@@ -2135,6 +2144,12 @@ async fn install_mod(
 #[tauri::command]
 fn uninstall_mod(data: State<'_, Data>, folder: String, dir: Option<String>, config: mods::Config, key: String) -> Result<(), String> {
     mods::uninstall(&app_dir(&data, &folder, dir)?, &config, &key)
+}
+
+/// Records the release the player says an app's folder holds, nothing downloaded (`install::mark_version`).
+#[tauri::command]
+fn mark_version(data: State<'_, Data>, folder: String, dir: Option<String>, version: String) -> Result<(), String> {
+    install::mark_version(&present_app_dir(&data, &folder, dir)?, &version)
 }
 
 /// Removes an installed app; fails with "cancelled" when the player says no to Windows uninstalling it.
@@ -2785,6 +2800,7 @@ pub fn run() {
             installed_mods,
             install_mod,
             uninstall_mod,
+            mark_version,
             steam_keyboard,
             pick_executable,
             list_programs,
@@ -2794,6 +2810,7 @@ pub fn run() {
             check_copy,
             place_copy,
             copy_present,
+            copy_in_place,
             android_app_gone,
             file_kinds,
             missed_programs,

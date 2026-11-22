@@ -117,6 +117,8 @@ export type InstallRequest = {
   fallbackUrl?: string;
   /** The download cache, while it's on (cache.ts): the file comes from it when it's there, and is kept in it as it says. */
   cache?: CacheUse;
+  /** False: a download that's a Windows setup program is kept as a file, not run (`Settings.runSetupPrograms` off). Unset: run. */
+  runSetup?: boolean;
 };
 /** A file in the download cache (cache.rs). */
 export type CachedFile = { hash: string; filename: string; path: string; source?: boolean; size: number; apps: { app: string; version: string; os?: string; arch?: string; slug?: string }[]; cachedAt: number; usedAt: number };
@@ -540,6 +542,8 @@ export const native = {
   installMod: (folder: string, dir: string | undefined, config: ModSettings, pkg: ModPackage, file: ModFile) =>
     invoke<InstalledMod>("install_mod", { folder, dir, config, package: pkg, file }),
   uninstallMod: (folder: string, dir: string | undefined, config: ModSettings, key: string) => invoke<void>("uninstall_mod", { folder, dir, config, key }),
+  /** Writes the release the player says an app's folder holds into its version file, as installing it does. */
+  markVersion: (folder: string, dir: string | undefined, version: string) => invoke<void>("mark_version", { folder, dir, version }),
   /** True when Steam was asked: the launcher runs under Steam or Gamescope. */
   steamKeyboard: (open: boolean) => invoke<boolean>("steam_keyboard", { open }),
   /** Asks which program starts an installed app; relative to its folder, unless it's a program the player added. */
@@ -575,6 +579,8 @@ export const native = {
   /** Puts a checked copy where the app reads it; where it went, or null when the app is told by flag or variable. */
   placeCopy: (folder: string, dir: string | undefined, wine: boolean, file: SetupFile, path: string) =>
     invoke<string | null>("place_copy", { folder, dir, wine, file, path }),
+  /** What's already where the app reads its copy, put there by the player before Quiver knew of it: its path, or null. */
+  copyInPlace: (folder: string, dir: string | undefined, wine: boolean, file: SetupFile) => invoke<string | null>("copy_in_place", { folder, dir, wine, file }),
   copyPresent: (folder: string, dir: string | undefined, wine: boolean, file: SetupFile, path: string) =>
     invoke<boolean>("copy_present", { folder, dir, wine, file, path }),
   onCopyProgress: (handler: (p: CopyProgress) => void) => listen<CopyProgress>("copy-progress", (e) => handler(e.payload)),

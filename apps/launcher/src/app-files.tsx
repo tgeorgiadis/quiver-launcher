@@ -193,6 +193,23 @@ export function PortableDefaultSetting() {
       <p className="muted">
         <Trans>Apps that support it keep their saves and settings in their own folder. Apps you&apos;ve already installed don&apos;t change.</Trans>
       </p>
+      {config.os === "windows" && (
+        <>
+          <label className="toggle">
+            <input type="checkbox" checked={Boolean(settings.runSetupPrograms)} onChange={(e) => setSettings({ ...settings, runSetupPrograms: e.target.checked || undefined })} />
+            <span>
+              <Trans>Run setup programs for me</Trans>
+            </span>
+          </label>
+          <p className="muted">
+            {settings.runSetupPrograms ? (
+              <Trans>When a download is a setup program, Quiver runs it once while installing, and Play starts what it installed.</Trans>
+            ) : (
+              <Trans>A download that&apos;s a setup program stays in the app&apos;s folder as it is, and Play starts it, so you install the app yourself.</Trans>
+            )}
+          </p>
+        </>
+      )}
     </section>
   );
 }

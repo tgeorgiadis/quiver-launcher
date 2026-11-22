@@ -108,6 +108,11 @@ msgstr "{0, plural, other {新保留 # 個檔案}}"
 msgid "{0, plural, one {# of them may keep your saves in its folder. They'll go to the trash too.} other {# of them may keep your saves in their folders. They'll go to the trash too.}}"
 msgstr "{0, plural, other {其中 # 個可能把存檔放在自己的資料夾裡，存檔也會一併移到資源回收筒。}}"
 
+#. placeholder {0}: portable.length
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "{0, plural, one {# of them may keep your saves in its folder. Uninstalling sends them to the trash too.} other {# of them may keep your saves in their folders. Uninstalling sends them to the trash too.}}"
+msgstr "{0, plural, other {其中 # 個應用程式可能把你的存檔放在它們的資料夾裡。解除安裝時存檔也會一起移到資源回收筒。}}"
+
 #. placeholder {0}: library.apps.length
 #: ../../apps/launcher/src/old-library.tsx
 msgid "{0, plural, one {If you already installed it somewhere else, show Quiver the folder.} other {If you already installed them somewhere else, show Quiver the folder.}}"
@@ -256,6 +261,10 @@ msgstr "{broken, plural, one {# 個損壞} other {# 個損壞}}"
 msgid "{broken, plural, one {# doesn't run} other {# don't run}}"
 msgstr "{broken, plural, one {# 個無法執行} other {# 個無法執行}}"
 
+#: ../../apps/launcher/src/downloads.ts
+msgid "{bySetup, plural, one {Update all leaves out # app that updates with its setup program, which waits for you. Update it on its own.} other {Update all leaves out # apps that update with their setup programs, which wait for you. Update them one at a time.}}"
+msgstr "{bySetup, plural, other {「全部更新」會略過 # 個透過安裝程式更新的應用程式，因為安裝程式需要你操作。請逐一更新。}}"
+
 #. A version of a game, by the console it came out on: PlayStation version
 #: ../../apps/launcher/src/game.tsx
 msgid "{console} version"
@@ -352,10 +361,6 @@ msgid "{count, plural, one {Removing # app…} other {Removing # apps…}}"
 msgstr "{count, plural, other {正在移除 # 個應用程式…}}"
 
 #: ../../apps/launcher/src/library-ticking.tsx
-msgid "{count, plural, one {Uninstall # app and remove it from your library?} other {Uninstall and remove # apps from your library?}}"
-msgstr "{count, plural, other {解除安裝 # 個應用程式並從遊戲庫中移除？}}"
-
-#: ../../apps/launcher/src/library-ticking.tsx
 msgid "{count, plural, one {Uninstall # app?} other {Uninstall # apps?}}"
 msgstr "{count, plural, other {解除安裝 # 個應用程式？}}"
 
@@ -433,8 +438,8 @@ msgid "{files, plural, one {# file} other {# files}}"
 msgstr "{files, plural, one {# 個檔案} other {# 個檔案}}"
 
 #: ../../apps/launcher/src/library-ticking.tsx
-msgid "{files, plural, one {The files of the one installed go to the trash, and they all leave your library.} other {The files of the # installed go to the trash, and they all leave your library.}}"
-msgstr "{files, plural, other {已安裝的 # 個應用程式的檔案會移到資源回收筒，所有應用程式都會從遊戲庫中移除。}}"
+msgid "{files, plural, one {Uninstall and remove sends the files of the one installed to the trash. Keep files leaves them where they are, and Locate existing install can add them back later.} other {Uninstall and remove sends the files of the # installed to the trash. Keep files leaves them where they are, and Locate existing install can add them back later.}}"
+msgstr "{files, plural, other {「解除安裝並移除」會把已安裝的 # 個應用程式的檔案移到資源回收筒。「保留檔案」會讓檔案留在原處，之後可以用「定位現有安裝」重新加入。}}"
 
 #: ../../apps/launcher/src/old-library.tsx
 msgid "{filters, plural, one {# tag filter, as a playlist} other {# tag filters, as playlists}}"
@@ -955,6 +960,14 @@ msgstr "+ 新建播放清單 →"
 msgid "+ New tag…"
 msgstr "+ 新建標籤 →"
 
+#: ../../apps/launcher/src/release-files.tsx
+msgid "<0>*</0> is any text and <1>?</1> one character, over the whole name: <2>*portable*x64*</2>"
+msgstr "<0>*</0> 代表任意文字，<1>?</1> 代表一個字元，需符合整個檔名：<2>*portable*x64*</2>"
+
+#: ../../apps/launcher/src/release-files.tsx
+msgid "<0>/…/</0> is a regular expression: <1>/^game-(win|linux)/</1>"
+msgstr "<0>/…/</0> 是正規表示式：<1>/^game-(win|linux)/</1>"
+
 #: ../../apps/launcher/src/setup.tsx
 msgid "<0>Easy setup:</0> for apps that support it, you only provide your ROM or disc image, which Quiver finds in the folders you set up"
 msgstr "<0>輕鬆設定：</0>對於支援此功能的應用程式，你只需提供 ROM 或光碟映像，Quiver 會在你設定的資料夾中找到它"
@@ -986,6 +999,10 @@ msgstr "<0>兩種遊戲庫檢視：</0>受 Steam 啟發的清單，以及格狀�
 #: ../../apps/launcher/src/custom-art.tsx
 msgid "A cover's address follows your account. The other pictures, and any from a file, stay on this computer."
 msgstr "封面圖片的地址與你的帳戶繫結。其他圖片以及從檔案新增的圖片僅儲存在此電腦上。"
+
+#: ../../apps/launcher/src/app-files.tsx
+msgid "A download that's a setup program stays in the app's folder as it is, and Play starts it, so you install the app yourself."
+msgstr "屬於安裝程式的下載會原樣保留在應用程式資料夾中，按「遊玩」會執行它，由你自行安裝應用程式。"
 
 #: ../../apps/launcher/src/setup.tsx
 msgid "A few quick questions to get you started. You can change any of these later in Settings."
@@ -1554,6 +1571,11 @@ msgstr "與“設定”中的相同：{name}"
 msgid "Ask a question, share a tip or talk about this app. For how it ran, use Player feedback."
 msgstr "提問、分享技巧或聊聊這個應用程式。執行狀況請寫在玩家意見回饋裡。"
 
+#. Button: have Quiver ask for the player's copy of the game at Play again
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "Ask me again"
+msgstr ""
+
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Ask where to install each app"
 msgstr "每次安裝應用程式時詢問安裝位置"
@@ -1802,6 +1824,7 @@ msgstr "無法新增：Quiver Launcher 不知道它的來源"
 #: ../../apps/launcher/src/own-copy-setup.tsx
 #: ../../apps/launcher/src/own.tsx
 #: ../../apps/launcher/src/recovery.tsx
+#: ../../apps/launcher/src/release-files.tsx
 #: ../../apps/launcher/src/saves-tab.tsx
 #: ../../apps/launcher/src/settings-page.tsx
 #: ../../apps/launcher/src/sync-folder-page.tsx
@@ -2772,6 +2795,10 @@ msgstr "拖動以調整大小。雙擊可適應視窗。"
 msgid "e.g. --fullscreen"
 msgstr "例如：--fullscreen"
 
+#: ../../apps/launcher/src/release-files.tsx
+msgid "e.g. EXIT1, *portable*x64*, !setup"
+msgstr "例如 EXIT1, *portable*x64*, !setup"
+
 #: ../../apps/launcher/src/launch-options.tsx
 msgid "e.g. gamemoderun %command% --fullscreen"
 msgstr "例如：gamemoderun %command% --fullscreen"
@@ -2926,6 +2953,14 @@ msgstr "檔案"
 #: ../../apps/launcher/src/app-files.tsx
 msgid "File name, like config.ini"
 msgstr "檔名，例如 config.ini"
+
+#: ../../apps/launcher/src/release-files.tsx
+msgid "Files of {version}"
+msgstr "{version} 的檔案"
+
+#: ../../apps/launcher/src/release-files.tsx
+msgid "Filter"
+msgstr "篩選"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/library-sidebar.tsx
@@ -3363,6 +3398,10 @@ msgstr "我已經有帳戶"
 msgid "I followed the setup on this page and had no problems."
 msgstr "我按照此頁面上的設定說明操作，沒有遇到問題。"
 
+#: ../../apps/launcher/src/App.tsx
+msgid "I have {updateVersion}"
+msgstr "我已有 {updateVersion}"
+
 #: ../../apps/launcher/src/detail.tsx
 msgid "I understand Quiver blocked this release"
 msgstr "我瞭解 Quiver 已封鎖此版本"
@@ -3370,6 +3409,11 @@ msgstr "我瞭解 Quiver 已封鎖此版本"
 #: ../../apps/launcher/src/detail.tsx
 msgid "I understand this release was withdrawn, and I accept the risk"
 msgstr "我瞭解此版本已撤回，並願意承擔風險"
+
+#. Button: the player set up their copy of the game themselves
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "I've already set it up, don't ask again"
+msgstr ""
 
 #. Library card image
 #: ../../apps/launcher/src/custom-art.tsx
@@ -3384,6 +3428,10 @@ msgstr "圖示地址"
 #: ../../apps/launcher/src/library.tsx
 msgid "Icon on its tab"
 msgstr "其標籤頁上的圖示"
+
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "If {name} plays fine with it, choose I've already set it up below, and Quiver won't ask again."
+msgstr ""
 
 #: ../../apps/launcher/src/detail.tsx
 msgid "If you installed it and are happy to accept the risk, you can keep using it; otherwise, remove it and install an available release instead."
@@ -3643,6 +3691,10 @@ msgid "Installed, not played yet"
 msgstr "已安裝，尚未遊玩"
 
 #: ../../apps/launcher/src/App.tsx
+msgid "Installed, version unknown"
+msgstr "已安裝，版本未知"
+
+#: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/downloads-page.tsx
 #: ../../apps/launcher/src/library-sidebar.tsx
 #: ../../apps/launcher/src/library.tsx
@@ -3793,6 +3845,12 @@ msgstr "保留所有系統的檔案"
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Keep in download cache"
 msgstr "保留在下載快取中"
+#. Button: takes an app out of the library and leaves its files on the computer
+#. Button: takes an app out of the library and leaves its files on the computer
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "Keep files"
+msgstr "保留檔案"
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Keep Quiver open until it's done."
@@ -3950,6 +4008,10 @@ msgstr "保留原處"
 msgid "Leave TV mode"
 msgstr "退出電視模式"
 
+#: ../../apps/launcher/src/release-files.tsx
+msgid "Left out"
+msgstr "已排除"
+
 #: ../../apps/launcher/src/card-menu.tsx
 #: ../../apps/launcher/src/launch-options.tsx
 msgid "Let Quiver choose"
@@ -4064,6 +4126,10 @@ msgstr "正在載入版本"
 #: ../../apps/launcher/src/game.tsx
 msgid "Loading the game"
 msgstr "正在載入遊戲"
+
+#: ../../apps/launcher/src/release-files.tsx
+msgid "Loading the newest release…"
+msgstr "正在載入最新版本…"
 
 #: ../../apps/launcher/src/cloud-saves-page.tsx
 msgid "Loading your cloud saves…"
@@ -4193,6 +4259,10 @@ msgstr "由 Quiver 管理"
 #: ../../apps/launcher/src/library.tsx
 msgid "Manually managed"
 msgstr "手動管理"
+
+#: ../../apps/launcher/src/release-files.tsx
+msgid "Matches"
+msgstr "符合"
 
 #: ../../apps/launcher/src/game.tsx
 msgid "Matching games"
@@ -4650,6 +4720,10 @@ msgstr "還沒有播放清單。按 + 新增一個，或將篩選條件儲存為
 msgid "No programs found in its folder."
 msgstr "其資料夾中沒有找到程式。"
 
+#: ../../apps/launcher/src/release-files.tsx
+msgid "No release files to show yet."
+msgstr "目前沒有可顯示的版本檔案。"
+
 #: ../../apps/launcher/src/detail.tsx
 msgid "No release notes provided."
 msgstr "未提供版本說明。"
@@ -4715,6 +4789,10 @@ msgstr "Quiver 找到的檔案都不像是 {game}。"
 msgid "None of them are installed."
 msgstr "它們都沒有安裝。"
 
+#: ../../apps/launcher/src/release-files.tsx
+msgid "None of these files match, so this release couldn't be installed."
+msgstr "這些檔案都不符合，因此無法安裝此版本。"
+
 #: ../../apps/launcher/src/own.tsx
 msgid "None of this release's files are for this computer."
 msgstr "此版本的檔案均不適用於此電腦。"
@@ -4723,10 +4801,18 @@ msgstr "此版本的檔案均不適用於此電腦。"
 msgid "None of this release's files are for this device."
 msgstr "此版本的檔案均不適用於此裝置。"
 
+#: ../../apps/launcher/src/store.tsx
+msgid "None of this release's files match your release files filter \"{filter}\". Change it under Release files, on the app's Manage tab."
+msgstr "此版本沒有檔案符合你的版本檔案篩選 \"{filter}\"。請在應用程式「管理」分頁的「版本檔案」中修改。"
+
 #. Mouse wheel speed: the system's
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Normal"
 msgstr "普通"
+
+#: ../../apps/launcher/src/release-files.tsx
+msgid "Not a valid pattern: {invalid}"
+msgstr "無效的模式：{invalid}"
 
 #. A release file a maintainer didn't tick for the app, in Which download?'s Show all files
 #: ../../apps/launcher/src/App.tsx
@@ -5516,6 +5602,10 @@ msgstr "Quiver 尚未發現此版本。"
 msgid "Quiver installing or launching it"
 msgstr "Quiver 正在安裝或啟動它"
 
+#: ../../apps/launcher/src/release-files.tsx
+msgid "Quiver installs and updates this app only from the release files that match. Useful when one repository ships several apps or builds."
+msgstr "Quiver 只會用符合的版本檔案安裝和更新此應用程式。適用於一個儲存庫發布多個應用程式或建置的情況。"
+
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Quiver is measuring the apps and the free space on the drive. This can take a moment."
 msgstr "Quiver 正在測量應用程式大小和驅動器可用空間。可能需要一點時間。"
@@ -5543,6 +5633,10 @@ msgstr "Quiver Launcher 4 是從頭重新打造的。我盡力讓它能做到 Qu
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Quiver Launcher 4's folder"
 msgstr "Quiver Launcher 4 的應用程式資料夾"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Quiver Launcher doesn't know which version this is. {updateVersion} is available."
+msgstr "Quiver Launcher 不知道這是哪個版本。{updateVersion} 已可用。"
 
 #: ../ui/src/index.tsx
 msgid "Quiver Launcher doesn't offer this release by itself"
@@ -5716,6 +5810,7 @@ msgstr "最近遊玩的優先（按下可按 A–Z 排序）"
 msgid "Recently updated"
 msgstr "最近更新"
 
+#: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/mods.tsx
 msgid "Refresh"
 msgstr "重新整理"
@@ -5727,6 +5822,11 @@ msgstr "重新安裝 {installedVersion}"
 #: ../../apps/launcher/src/own.tsx
 msgid "Release feed"
 msgstr ""
+
+#. Button: which of a release's files the app installs from
+#: ../../apps/launcher/src/release-files.tsx
+msgid "Release files"
+msgstr "版本檔案"
 
 #. Tab of an app's page
 #. Which of an app's releases it gets: main releases only, or pre-releases too
@@ -5764,8 +5864,13 @@ msgid "Remove “{tag}” from {count}?"
 msgstr "要從 {count} 移除「{tag}」嗎？"
 
 #: ../../apps/launcher/src/app-files.tsx
+#: ../../apps/launcher/src/App.tsx
 msgid "Remove {name}"
 msgstr "移除 {name}"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Remove {name} from your library?"
+msgstr "要從你的遊戲庫中移除 {name} 嗎？"
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Remove {system} from {name}"
@@ -5809,6 +5914,8 @@ msgstr "從 {0} 中移除"
 msgid "Remove from library"
 msgstr "從遊戲庫中移除"
 
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/card-menu.tsx
 #: ../../apps/launcher/src/library-ticking.tsx
 msgid "Remove from library…"
 msgstr "從遊戲庫中移除…"
@@ -5994,6 +6101,10 @@ msgstr "再次執行安裝程式"
 msgid "Run setup again"
 msgstr "再次執行設定程式"
 
+#: ../../apps/launcher/src/app-files.tsx
+msgid "Run setup programs for me"
+msgstr "替我執行安裝程式"
+
 #: ../../apps/launcher/src/launch-options.tsx
 msgid "Run with"
 msgstr "使用以下方式執行"
@@ -6018,6 +6129,7 @@ msgstr "與系統相同"
 #: ../../apps/launcher/src/launch-options.tsx
 #: ../../apps/launcher/src/library.tsx
 #: ../../apps/launcher/src/own.tsx
+#: ../../apps/launcher/src/release-files.tsx
 #: ../../apps/launcher/src/tag-settings.tsx
 msgid "Save"
 msgstr "儲存"
@@ -6267,6 +6379,10 @@ msgstr "報告會包含你的帳戶名稱、此啟動器的版本和你的系統
 msgid "Sent. A maintainer will take a look."
 msgstr "已送出。維護者會查看。"
 
+#: ../../apps/launcher/src/release-files.tsx
+msgid "Separate several with commas; <0>!</0> in front leaves files out: <1>!setup</1>"
+msgstr "多個模式以逗號分隔；前面加上 <0>!</0> 可排除檔案：<1>!setup</1>"
+
 #: ../../apps/launcher/src/console-folders.tsx
 msgid "Set a folder for another system"
 msgstr "為其他系統設定資料夾"
@@ -6279,6 +6395,11 @@ msgstr "為其他系統設定資料夾…"
 #: ../../apps/launcher/src/App.tsx
 msgid "Set up and play"
 msgstr "設定並遊玩"
+
+#. The player said they set up their copy of the game themselves
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "Set up by you"
+msgstr ""
 
 #: ../../apps/launcher/src/setup.tsx
 msgid "Set up Quiver Launcher"
@@ -6898,6 +7019,10 @@ msgstr "已在 {version} 上測試"
 msgid "Tested release"
 msgstr "已測試的版本"
 
+#: ../../apps/launcher/src/release-files.tsx
+msgid "Text matches anywhere in the name: <0>EXIT1</0>"
+msgstr "文字可符合檔名中的任何位置：<0>EXIT1</0>"
+
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Thanks for sharing how it ran."
 msgstr "感謝你分享執行體驗。"
@@ -7148,6 +7273,10 @@ msgstr "這裡還沒有模組。"
 msgid "There are no releases yet. Check the upstream project for downloads."
 msgstr "還沒有版本。請前往上游專案查詢下載。"
 
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "There's already a file where {name} reads it."
+msgstr ""
+
 #: ../../apps/launcher/src/saves-tab.tsx
 msgid "These are my saves"
 msgstr ""
@@ -7204,6 +7333,10 @@ msgstr "此應用程式未安裝在這部電腦上。安裝後即可恢復副本
 #: ../../apps/launcher/src/App.tsx
 msgid "This app may keep your saves in its folder. They'll go to the trash too."
 msgstr "這個應用程式可能把你的存檔放在它的資料夾裡。存檔也會一起移到資源回收筒。"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "This app may keep your saves in its folder. Uninstalling sends them to the trash too."
+msgstr "這個應用程式可能把你的存檔放在它的資料夾裡。解除安裝時存檔也會一起移到資源回收筒。"
 
 #: ../../apps/launcher/src/app-files.tsx
 msgid "This app may stop finding its saves and settings, because it will look for them in a different place. Nothing is deleted."
@@ -7473,14 +7606,13 @@ msgid "Uninstall {name}?"
 msgstr "要解除安裝 {name} 嗎？"
 
 #: ../../apps/launcher/src/App.tsx
-#: ../../apps/launcher/src/card-menu.tsx
 #: ../../apps/launcher/src/library-ticking.tsx
 msgid "Uninstall and remove"
 msgstr "解除安裝並移除"
 
-#: ../../apps/launcher/src/library-ticking.tsx
-msgid "Uninstall and remove from library…"
-msgstr "解除安裝並從遊戲庫中移除…"
+#: ../../apps/launcher/src/App.tsx
+msgid "Uninstall and remove sends its files to the trash. Keep files leaves them where they are, and Locate existing install can add them back later."
+msgstr "「解除安裝並移除」會把它的檔案移到資源回收筒。「保留檔案」會讓檔案留在原處，之後可以用「定位現有安裝」重新加入。"
 
 #: ../../apps/launcher/src/library-ticking.tsx
 msgid "Uninstall apps"
@@ -7550,8 +7682,7 @@ msgstr "更新"
 msgid "Update all"
 msgstr "全部更新"
 
-#: ../../apps/launcher/src/downloads-page.tsx
-#: ../../apps/launcher/src/library.tsx
+#: ../../apps/launcher/src/downloads.ts
 msgid "Update all ({updateCount})"
 msgstr "全部更新（{updateCount}）"
 
@@ -7694,6 +7825,10 @@ msgstr "正在更新 →"
 #: ../../apps/launcher/src/telemetry-ui.tsx
 msgid "Usage data"
 msgstr "使用情況資料"
+
+#: ../../apps/launcher/src/release-files.tsx
+msgid "Use all files again"
+msgstr "重新使用所有檔案"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Use an https:// image address."
@@ -7963,6 +8098,10 @@ msgstr "有什麼問題或缺少什麼？"
 msgid "When {name} asks for it, pick this file: {0}"
 msgstr "當 {name} 提示你提供檔案時，請選擇此檔案：{0}"
 
+#: ../../apps/launcher/src/app-files.tsx
+msgid "When a download is a setup program, Quiver runs it once while installing, and Play starts what it installed."
+msgstr "下載的是安裝程式時，Quiver 會在安裝過程中執行一次，「遊玩」則啟動它安裝的程式。"
+
 #: ../../apps/launcher/src/own-copy-settings.tsx
 msgid "When an app needs your own copy of a game, like a ROM or a disc image, Quiver looks for it in these folders, and nowhere else."
 msgstr "當應用程式需要你自己的遊戲副本（例如 ROM 或光碟映像）時，Quiver 只會在這些資料夾中查詢。"
@@ -8085,6 +8224,10 @@ msgstr "你還沒有為任何應用程式加上標籤。可在應用程式選單
 #: ../../apps/launcher/src/correction.tsx
 msgid "You reported a problem on {sent}. A maintainer will take a look."
 msgstr "你在 {sent} 報告了問題。維護者會檢視。"
+
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "You set it up yourself, so Quiver doesn't ask for it when you play."
+msgstr ""
 
 #: ../../apps/launcher/src/App.tsx
 msgid "You skipped {updateVersion}. Quiver Launcher offers the next new release."

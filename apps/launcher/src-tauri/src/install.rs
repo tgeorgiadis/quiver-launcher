@@ -57,6 +57,14 @@ pub struct InstallRequest {
     /// kept in it once downloaded when `keep` says so.
     #[serde(default)]
     pub cache: Option<crate::cache::CacheUse>,
+    /// A download that's a Windows setup program is run while it installs (setup.rs). False (the player turned it off
+    /// in Settings), it's kept in the app's folder as any other file, and Play starts it.
+    #[serde(default = "yes")]
+    pub run_setup: bool,
+}
+
+fn yes() -> bool {
+    true
 }
 
 #[derive(Serialize)]
@@ -230,12 +238,14 @@ pub async fn install(
         let out = staging.join("out");
         let dir = target.clone();
         let unpacked = out.clone();
-        // A download that's a Windows setup program is run, not kept as the app: it installs the app itself.
+        let run_setup = req.run_setup;
+        // A download that's a Windows setup program is run, not kept as the app: it installs the app itself. Unless the
+        // player turned that off: then it's kept, as any other file.
         let installer = tokio::task::spawn_blocking(move || -> Result<Option<(PathBuf, crate::setup::Kind)>, String> {
             extract(&file, &filename, &unpacked)?;
             flatten(&unpacked).map_err(text)?;
             drop_records(&unpacked);
-            Ok(if cfg!(windows) { crate::setup::installer_in(&unpacked) } else { None })
+            Ok(if cfg!(windows) && run_setup { crate::setup::installer_in(&unpacked) } else { None })
         })
         .await
         .map_err(text)??;
@@ -355,6 +365,12 @@ pub fn may_install_into(dir: &Path) -> bool {
 /// apps folder is one, whether it was brought in with its own path or became one of the apps folder's.
 pub fn is_install(dir: &Path) -> bool {
     dir.join(VERSION_FILE).is_file() || dir.join("version.txt").is_file()
+}
+
+/// Records the release the player says a folder holds in its version file, as installing that release does: the
+/// folder is then an install of it, and locating it again keeps the version (v3.rs `existing`).
+pub fn mark_version(dir: &Path, version: &str) -> Result<(), String> {
+    fs::write(dir.join(VERSION_FILE), version).map_err(text)
 }
 
 #[cfg(test)]
@@ -1164,6 +1180,16 @@ mod tests {
         (port, heard)
     }
 
+    #[test]
+    fn setup_programs_run_unless_the_player_turned_that_off() {
+        let base = serde_json::json!({ "id": "a", "url": "u", "filename": "f.zip", "folder": "a", "filesToAdd": [], "version": "1" });
+        let req: InstallRequest = serde_json::from_value(base.clone()).unwrap();
+        assert!(req.run_setup, "run when the launcher doesn't say");
+        let mut off = base;
+        off["runSetup"] = false.into();
+        assert!(!serde_json::from_value::<InstallRequest>(off).unwrap().run_setup);
+    }
+
     fn fetch(url: String, github_token: Option<&str>, fallback_url: Option<String>) -> Result<String, String> {
         let req = InstallRequest {
             id: "github:quiver/private".into(),
@@ -1180,6 +1206,7 @@ mod tests {
             github_token: github_token.map(Into::into),
             fallback_url,
             cache: None,
+            run_setup: true,
         };
         let dir = tempfile::tempdir().unwrap();
         tauri::async_runtime::block_on(download(&req, &dir.path().join("game.zip"), &|_| {}))
@@ -1217,6 +1244,7 @@ mod tests {
             github_token: None,
             fallback_url: None,
             cache: Some(crate::cache::CacheUse { dir: cache.to_string_lossy().into(), keep: true, app: "bad".into(), version: "1.0".into(), ..Default::default() }),
+            run_setup: true,
         };
         let (_cancel, cancelled) = tokio::sync::watch::channel(false);
         // As Windows Defender does: the file goes as soon as it's written, from where it's named for its release.
@@ -1252,6 +1280,7 @@ mod tests {
             github_token: None,
             fallback_url: None,
             cache: Some(crate::cache::CacheUse { dir: cache.to_string_lossy().into(), keep: true, app: "app".into(), version: "v1.0".into(), source, ..Default::default() }),
+            run_setup: true,
         };
         let fetch = |req| {
             let (_cancel, cancelled) = tokio::sync::watch::channel(false);
@@ -1287,6 +1316,7 @@ mod tests {
             github_token: None,
             fallback_url: None,
             cache: Some(crate::cache::CacheUse { dir: cache.to_string_lossy().into(), keep, app: "cached-app".into(), version: "1.0".into(), ..Default::default() }),
+            run_setup: true,
         };
         let run = |req: InstallRequest| {
             let (_cancel, cancelled) = tokio::sync::watch::channel(false);

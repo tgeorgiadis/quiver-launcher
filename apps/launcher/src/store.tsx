@@ -12,7 +12,7 @@ import type { HiddenApp } from "./browse-hidden";
 import { hideOnApp, shownTags, type HiddenTags } from "./catalog-tags";
 import { native, type Config, type SaveBackup, type LaunchOptions, type MovingApp, type OldApp, type OldFilter, type Progress, type StateProblem, type V3Library, type WindowsRunner } from "./native";
 import { Recovery } from "./recovery";
-import { assetFilterFor, bestAssets, installable, installFormat, isMsi, pickedBefore, releaseFor } from "./assets";
+import { assetFilterFor, bestAssets, installable, installFormat, isMsi, pickedBefore, releaseFor, wantedFiles } from "./assets";
 import { cameAfter, fromSite, scanAsks, installedFile, insteadOf, newestUnblocked, sameChecksum, unverifiedFile, versionLabel, withdrawnAsBlocked } from "./versions";
 import { captureError, captureFailure, failureKind, Problem, reasonOf, reportStartupFailure, setTelemetryAppsDir, setTelemetryAppsFolders, telemetryChoice, track, type TelemetryContext } from "./telemetry";
 import { appsDueToday, appsOnComputer, librarySummary } from "./usage-summary";
@@ -61,6 +61,11 @@ export type LibraryItem = {
     pictures?: Pictures;
     tags?: string[];
     consoles?: string[];
+    /**
+     * Which release files Quiver installs it from, as Quiver Launcher 3's release asset filter: the player's own
+     * patterns (`parseFileFilter` in assets.ts), over the catalog's. This device only.
+     */
+    releaseFiles?: string;
   };
   /** Changed here and not yet saved to the account. */
   pending?: { added?: boolean; name?: boolean; cover?: boolean; tags?: boolean; consoles?: boolean; removed?: boolean };
@@ -154,10 +159,15 @@ export type Install = {
   /** The player's own copies of its game, by the catalog's setup file id (own-copy.ts). Kept through updates. */
   copies?: Record<string, OwnCopy>;
 };
-/** The player's copy of an app's game, checked and put where the app reads it. */
+/**
+ * The player's copy of an app's game, checked and put where the app reads it; or, `yours`, one the player says they
+ * set up themselves, which Quiver doesn't ask for at Play.
+ */
 export type OwnCopy = {
-  /** Where the player keeps it. */
+  /** Where the player keeps it; empty when it's `yours`. */
   path: string;
+  /** The player said they set it up themselves: Quiver didn't check it or put it anywhere, and passes the game nothing. */
+  yours?: true;
   /** Where Quiver put it for the app, when the catalog says where. */
   placed?: string;
   /** The dump it matched ("US 1.0"), when it matched one. */
@@ -192,6 +202,7 @@ export type Choice = {
   resolve: (asset: Asset | null) => void;
 };
 /** Deleting an app's files, waiting on the player's yes: `remove` takes it out of the library too, and `then` runs after. */
+/** `remove`: it leaves the library too, and the player can keep its files instead of uninstalling it. */
 export type Confirming = { entry: Entry; remove?: boolean; then?: () => void };
 /**
  * What Quiver hasn't verified, waiting on the player's yes before it installs (`resolve(true)`): the newest release of
@@ -315,8 +326,8 @@ type Launcher = {
   reinstall: (id: string) => Promise<void>;
   /** Stops a download; whatever was installed before stays as it was. */
   cancel: (id: string) => void;
-  /** Uninstalls the app and takes it out of the library. */
-  remove: (id: string) => Promise<void>;
+  /** Uninstalls the app and takes it out of the library; with `keepFiles`, only takes it out, its files left where they are. */
+  remove: (id: string, keepFiles?: boolean) => Promise<void>;
   /** Deletes the app's files (to the trash), keeping it in the library to get again. */
   uninstall: (id: string) => Promise<void>;
   /** A repository from any supported host: the catalog's app when it lists it, else what adding it would install. */
@@ -351,6 +362,8 @@ type Launcher = {
   setPrereleases: (id: string, prereleases: Install["prereleases"]) => void;
   /** Stops offering this release of an app; a newer one is offered as usual. */
   declineUpdate: (id: string, version: string) => void;
+  /** Records the update as what's installed already, downloading nothing: the player has it (`installedAs`). */
+  haveUpdate: (id: string, release: { version: string; releasedAt?: number }) => void;
   /** Sets how an installed app starts; nothing set goes back to the launcher's choice. */
   setLaunch: (id: string, launch: LaunchOptions) => void;
   /** The empty files the player chose for an app's folder, which updates keep to. */
@@ -359,6 +372,8 @@ type Launcher = {
   setCopy: (id: string, fileId: string, copy: OwnCopy | undefined) => void;
   /** Sets the player's own name and artwork; undefined shows the catalog's. */
   customize: (id: string, overrides: { name?: string; cover?: string; pictures?: Pictures }) => void;
+  /** Sets which release files an app installs from (`LibraryItem.overrides.releaseFiles`); empty takes them all again. */
+  setReleaseFiles: (id: string, filter: string) => void;
   /** The player's own tags on an app; hand-picked collections are tags. */
   setTags: (id: string, tags: string[]) => void;
   /** Renames one of the player's tags on every app that has it; with no new name, takes it off them all. */
@@ -903,13 +918,36 @@ export const catalogOs = (os: Os) => (os === "linux" ? undefined : os);
 export const canGet = (entry: Entry, os: string) => availableOn(entry, os) && Boolean(entry.verified || entry.lastReleaseVersion);
 
 /**
+ * Whether Quiver knows which release an install is. A copy it doesn't (3.x's 0.0.0, v3.rs: one the player unzipped and
+ * pointed Quiver at, or 3.x didn't know) has no release date, which an install from a release always has.
+ */
+export const versionKnown = (install: Partial<Pick<Install, "version" | "releasedAt">> | undefined) =>
+  !(bare(install?.version ?? "") === "0.0.0" && !install?.releasedAt);
+
+/**
  * Whether an install can update by itself. A Windows installer's setup waits for the player. A copy whose version
- * Quiver doesn't know (3.x's 0.0.0, v3.rs: one the player unzipped and pointed Quiver at, or 3.x didn't know) has
- * every release as its update, the one it already has, or an older one when it's newer than the verified release, so
- * only the player can tell whether to take it. It has no release date, which an install from a release always has.
+ * Quiver doesn't know has every release as its update, the one it already has, or an older one when it's newer than
+ * the verified release, so only the player can tell whether to take it.
  */
 export const updatesByItself = (install: Partial<Pick<Install, "installer" | "setup" | "version" | "releasedAt">> | undefined) =>
-  !install?.installer && !install?.setup && !(bare(install?.version ?? "") === "0.0.0" && !install?.releasedAt);
+  !install?.installer && !install?.setup && versionKnown(install);
+
+/**
+ * An install as the release the player says it already is, nothing downloaded: a copy whose version Quiver didn't know,
+ * or an app that updated itself past the version Quiver installed. It's then as an update to that release would have
+ * left it, so the next release is its update. What Quiver knew of the files it installed (their release, checksum, a
+ * block or a difference from the verified file) was of the old ones, and a release skipped is behind it now.
+ */
+export function installedAs(install: Install, release: { version: string; releasedAt?: number }): Install {
+  const { releaseId: _, checksum: __, differs: ___, blocked: ____, unverified: _____, declined: ______, skip: _______, ...kept } = install;
+  return { ...kept, version: release.version, releasedAt: release.releasedAt };
+}
+
+/**
+ * Whether an app's update opens a setup window that waits for the player: one installed by its setup program or an MSI
+ * package. Update all leaves these out, as each needs the player there; they update one at a time, from their own button.
+ */
+export const updatesWithSetup = (install: Pick<Install, "installer" | "setup"> | undefined) => Boolean(install?.setup || install?.installer);
 
 /**
  * How an app updates: its own choice, else the player's default (`Settings.autoUpdates`). Unset: it offers them. One
@@ -1369,6 +1407,12 @@ export type Settings = {
   language?: Language;
   /** New installs get `portable.txt` in their folder, beside what the catalog asks for. */
   portableByDefault?: boolean;
+  /**
+   * A download that's a Windows setup program is run while it installs (setup.rs), and Play starts what it installed.
+   * Unset: it's kept in the app's folder as a file, for the player to run. An app its setup already installed still
+   * updates through its setup either way.
+   */
+  runSetupPrograms?: boolean;
   /** Every new install asks where it goes first (Install to…), whichever button started it. */
   askWhereToInstall?: boolean;
   /** New installs go in a folder for their console inside the apps folder (`groupFolder`). */
@@ -1634,6 +1678,8 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     return () => void off.then((stop) => stop());
   }, [setNotice]);
   const library = useMemo(() => allItems.filter((i) => !i.removed), [allItems]);
+  /** The player's release files filter for an app, if they set one. */
+  const releaseFilesOf = (id: string) => library.find((i) => i.id === id)?.overrides?.releaseFiles;
   // The consoles the player chose for an app, by id: where grouping by console puts it, as the library shows it.
   const ownConsoles = useMemo(() => Object.fromEntries(library.flatMap((i) => (i.overrides?.consoles ? [[i.id, i.overrides.consoles]] : []))), [library]);
   // The catalog comes from the site's REST API, which Cloudflare caches for every player; only the account uses Convex.
@@ -2014,6 +2060,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       filter: custom ? undefined : (r) => (r.installationOverride ?? entry.launcher).releaseAssetFilter,
       kind: was ? (was.installer === "msi" ? "msi" : "files") : undefined,
       platform: platform ?? (was ? (was.wine ? "windows" : config.os) : undefined),
+      files: releaseFilesOf(entry.id),
     });
   };
 
@@ -2239,6 +2286,8 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     const was = installs[entry.id];
     const from = was?.version;
     const portableByDefault = settings.portableByDefault && config.os !== "android" && config.os !== "ios";
+    // Kept as a file, not run: never for an app its setup already installed, whose update goes through its setup again.
+    const keepSetup = !settings.runSetupPrograms && !was?.setup;
     // The player's, read here: further down, `settings` is the catalog's for installing it.
     const groupByConsole = Boolean(settings.groupByConsole);
     // The download cache, as the player set it: the file from it when it's there, and kept in it as its mode says.
@@ -2257,6 +2306,9 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     // through Wine. Switching drops the file picked for the other one.
     const platform = options.platform ?? (was?.wine ? "windows" : undefined);
     const lastPick = options.platform && was && options.platform !== (was.wine ? "windows" : config.os) ? undefined : was?.pick;
+    // The player's own release files filter: only the files it keeps are installed, unless they click one themselves.
+    const mine = releaseFilesOf(entry.id);
+    const wanted = (list: Asset[]) => wantedFiles(list, mine);
     const noAnswer = () => new Problem(msg`Couldn't reach quiverlauncher.com. Check your connection and try again.`);
     const stop = (stage: "unverified_prompt" | "file_choice") => {
       setJobs(({ [entry.id]: _, ...rest }) => rest);
@@ -2347,28 +2399,33 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         ? []
         : clicked
           ? !kind || isMsi(clicked.filename) === (kind === "msi") ? [clicked] : []
-          : bestAssets(release.assets, config.os, config.arch, settings.releaseAssetFilter, kind, platform);
+          : bestAssets(wanted(release.assets), config.os, config.arch, settings.releaseAssetFilter, kind, platform);
       // A file the player picked that a later release names differently: they pick again, even from one.
       const missed = !stray && !candidates.length && !clicked && Boolean(custom && settings.releaseAssetFilter);
-      if (missed) candidates = bestAssets(release.assets, config.os, config.arch, undefined, kind, platform);
+      if (missed) candidates = bestAssets(wanted(release.assets), config.os, config.arch, undefined, kind, platform);
       let [asset, ...others] = candidates;
       // An automatic update never stops to ask: it waits until the launcher starts again, or the player updates it.
       const waitForPlayer = (until = Infinity) => {
         waiting.current.set(`${entry.id}@${bare(release!.version)}`, until);
         setJobs(({ [entry.id]: _, ...rest }) => rest);
       };
-      if (!asset && kind && bestAssets(release.assets, config.os, config.arch).length && !bestAssets(release.assets, config.os, config.arch, undefined, kind).length)
+      if (!asset && kind && bestAssets(wanted(release.assets), config.os, config.arch).length && !bestAssets(wanted(release.assets), config.os, config.arch, undefined, kind).length)
         throw new Problem(
           kind === "msi"
             ? msg`This release has no Windows installer (MSI) to update it with. Uninstall it, then get it again to install this release's download.`
             : msg`This release only comes as a Windows installer (MSI). Uninstall it, then get it again to install it that way.`,
         );
       // A phone or tablet is a device, not a computer.
-      const noDownload =
-        config.os === "android" ? msg`This release has no download for your device.` : msg`This release has no download for your computer.`;
+      const filter = mine?.trim() ?? "";
+      const filtered = Boolean(filter) && installable(release.assets, config.os).length > 0 && !installable(wanted(release.assets), config.os).length;
+      const noDownload = filtered
+        ? msg`None of this release's files match your release files filter "${filter}". Change it under Release files, on the app's Manage tab.`
+        : config.os === "android"
+          ? msg`This release has no download for your device.`
+          : msg`This release has no download for your computer.`;
       // Of the release's files, the ones this computer can install, of the kind installed.
       const ofKind = (list: Asset[]) => installable(list, config.os).filter((a) => !kind || isMsi(a.filename) === (kind === "msi"));
-      const approved = ofKind(release.assets);
+      const approved = ofKind(wanted(release.assets));
       // None marked for this computer: the player picks from the files there are, as they may know which runs. Files
       // the site put on no platform aren't marked for it either (a PS5 or Switch build can be one), so several of them
       // ask the same way, not as files for this computer.
@@ -2387,7 +2444,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       } else if (again) asset = again;
       else if (!asset || others.length || missed || unmatched) {
         if (auto) return waitForPlayer();
-        unapproved = stray || custom ? [] : ofKind(release.otherAssets ?? (await otherFilesOf(entry.slug, release.version)));
+        unapproved = stray || custom ? [] : ofKind(wanted(release.otherAssets ?? (await otherFilesOf(entry.slug, release.version))));
         if (!asset && !unapproved.length) throw new Problem(noDownload);
         const choices = asset ? [asset, ...others] : [];
         const all = [...approved, ...unapproved];
@@ -2470,6 +2527,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         preferred: executables,
         program: was?.installer ? was.program : undefined,
         ...(cacheNow && { cache: cacheUse(cacheNow, { id: entry.id, version: release.version, os: asset.os, arch: asset.architecture, slug: entry.slug }, protectedFiles(installs)) }),
+        ...(keepSetup && { runSetup: false }),
       });
       // Installed only, keeping every system's files or source code: those come once it's in, in the background.
       if (cacheNow?.mode === "installed" && (cacheNow.allPlatforms || cacheNow.sources) && !custom) requestCache([entry.id]);
@@ -2527,7 +2585,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         );
         if (!custom) {
           void client.downloadProblem(entry, { version: release.version, file, problem: error }).catch(() => {});
-          const fits = (r: Release) => bestAssets(r.assets, config.os, config.arch, (r.installationOverride ?? entry.launcher).releaseAssetFilter, kind).length > 0;
+          const fits = (r: Release) => bestAssets(wantedFiles(r.assets, releaseFilesOf(entry.id)), config.os, config.arch, (r.installationOverride ?? entry.launcher).releaseAssetFilter, kind).length > 0;
           instead = insteadOf((await client.releases(entry.slug, 5, null, prereleasesFor(entry.id)).catch(() => null))?.items ?? [], release.version, was, fits);
         }
       }
@@ -2732,6 +2790,13 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         return { ...i, [id]: prereleases ? { ...install, prereleases } : install };
       }),
     declineUpdate: (id, version) => setInstalls((i) => (i[id] ? { ...i, [id]: { ...i[id], declined: version } } : i)),
+    haveUpdate: (id, release) => {
+      const install = installs[id];
+      if (!install) return;
+      setInstalls((i) => (i[id] ? { ...i, [id]: installedAs(i[id], release) } : i));
+      // In its folder too, as installing it would: locating the folder again keeps the version.
+      native.markVersion(install.folder, install.dir, release.version).catch((e) => void native.logError(`Couldn't record ${release.version} in ${install.folder}'s folder: ${e}`));
+    },
     setLaunch: (id, launch) =>
       setInstalls((i) => {
         if (!i[id]) return i;
@@ -2831,6 +2896,16 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     },
     settings,
     setSettings,
+    setReleaseFiles: (id, filter) => {
+      const releaseFiles = filter.trim() || undefined;
+      setLibrary((l) => l.map((i) => (i.id !== id ? i : { ...i, overrides: { ...i.overrides, releaseFiles } })));
+      // Which release it can update to is looked up again, by the new filter.
+      setCatalog((c) => {
+        if (!c[id]?.forHere) return c;
+        const { forHere: _, ...entry } = c[id];
+        return { ...c, [id]: entry };
+      });
+    },
     customize: (id, { name, cover, pictures }) =>
       setLibrary((l) =>
         l.map((i) => {
@@ -2996,10 +3071,16 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         captureFailure("reinstall", e, appRef(id, entry.slug));
       }
     },
-    async remove(id) {
+    async remove(id, keepFiles) {
+      if (keepFiles) {
+        // Its folder is on its way somewhere else: it stays, as it would for an uninstall.
+        if (moving.current.has(id)) return void setNotice(t`Wait for it to finish moving, then try again.`);
+        // Only out of the library: its folder stays as it is, for Locate existing install to find again.
+        chosenFolder.current.delete(id);
+      }
       // Saying no when Windows asks to uninstall it keeps it, in the library too.
-      if (await uninstall(id).then(() => false, (e) => (captureFailure("remove", e, appRef(id, catalog[id]?.slug ?? "")), e === "cancelled"))) return;
-      track("app_removed", appRef(id, catalog[id]?.slug ?? ""));
+      else if (await uninstall(id).then(() => false, (e) => (captureFailure("remove", e, appRef(id, catalog[id]?.slug ?? "")), e === "cancelled"))) return;
+      track("app_removed", { ...appRef(id, catalog[id]?.slug ?? ""), ...(keepFiles && installs[id] && !installs[id].local ? { kept_files: true } : {}) });
       setInstalls(({ [id]: _, ...rest }) => rest);
       // A synced app is removed from its account too; one that never synced just goes.
       setLibrary((l) =>

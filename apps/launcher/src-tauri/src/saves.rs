@@ -63,6 +63,14 @@ const NOT_SAVES: &[&str] = &[
     // Documents.
     "pdf", "md", "htm", "html", "chm", "rtf", "doc", "docx",
 ];
+/// What recomp builders and downloads leave beside a game: source code they generate, profiling data from compiling it,
+/// and downloads not finished yet. A game keeps none of these as saves. Apart from `NOT_SAVES` because older backups
+/// can hold them: those are left in the backup, not refused.
+const BUILD_FILES: [&str; 8] = ["c", "cc", "cpp", "h", "hpp", "inl", "prof", "part"];
+/// Folders that hold a build, its tools or what an app shows rather than saves: `toolchains`, `build-kits`, and
+/// pictures and docs it reads. A folder still downloading (`v3.0.0.part`) and any shader cache, whatever its name
+/// (`mesa_shader_cache`, `shadercache_pcsx2`), count too. Older backups can hold them, like `BUILD_FILES`.
+const BUILD_DIRS: [&str; 9] = ["build", "build-cache", "build-kits", "toolchains", "assets", "artwork", "covers", "fonts", "docs"];
 /// Pictures: a save can keep one, but a backup that's mostly pictures is more likely screenshots or textures.
 const PICTURES: [&str; 9] = ["png", "jpg", "jpeg", "bmp", "gif", "webp", "tga", "tif", "tiff"];
 /// Folders that never hold saves.
@@ -322,11 +330,20 @@ fn extension(name: &str) -> String {
 }
 
 fn is_save_file(name: &str, size: u64) -> bool {
-    size <= MAX_FILE && !NOT_SAVES.contains(&extension(name).as_str()) && !name.ends_with(".quiver-tmp")
+    size <= MAX_FILE && !NOT_SAVES.contains(&extension(name).as_str()) && !build_file(name) && !name.ends_with(".quiver-tmp")
+}
+
+fn build_file(name: &str) -> bool {
+    BUILD_FILES.contains(&extension(name).as_str())
 }
 
 fn skip_dir(name: &str) -> bool {
-    NOT_SAVE_DIRS.contains(&name.to_ascii_lowercase().as_str())
+    NOT_SAVE_DIRS.contains(&name.to_ascii_lowercase().as_str()) || build_dir(name)
+}
+
+fn build_dir(name: &str) -> bool {
+    let name = name.to_ascii_lowercase();
+    BUILD_DIRS.contains(&name.as_str()) || name.ends_with(".part") || (name.contains("shader") && name.contains("cache"))
 }
 
 /// `*.sav` against a file name, without case.
@@ -882,7 +899,7 @@ fn unpack(zip_file: &Path, manifest: &Manifest, places: &[Place], temp: &Path) -
         let name = parts[parts.len() - 1];
         let place = places.get(info.place).ok_or(DAMAGED)?;
         // A backup made before these were left out may hold one: it stays in the backup.
-        if left_alone(name) {
+        if left_alone(name) || build_file(name) || parts[..parts.len() - 1].iter().any(|p| build_dir(p)) {
             continue;
         }
         let fits = match manifest.places[info.place].kind {
@@ -1792,6 +1809,28 @@ mod tests {
         assert_eq!(manifest.files.iter().map(|f| f.path.as_str()).collect::<Vec<_>>(), ["data.bin", "options.ini", "slot.sav", "thumb.png"]);
     }
 
+    #[test]
+    fn leaves_out_what_builders_and_downloads_leave() {
+        let (_dir, roots, store) = world();
+        let saves = roots.app.join("saves");
+        for name in ["slot.sav", "user/file1.bin", "gen/func_01.cpp", "gen/recomp.h", "gen/main.c", "code.prof", "nx2.zip.part"] {
+            write(&saves.join(name), name);
+        }
+        for folder in ["build", "Toolchains", "v3.0.0.part", "mesa_shader_cache", "shadercache_pcsx2", "assets", "covers", "docs"] {
+            write(&saves.join(folder).join("x.dat"), "not saves");
+        }
+        let made = backup(&store, &["app/saves".into()], &roots, &[], &STAMP).unwrap().unwrap();
+        let manifest = read_manifest(&store.join(&made.name)).unwrap();
+        assert_eq!(manifest.files.iter().map(|f| f.path.as_str()).collect::<Vec<_>>(), ["slot.sav", "user/file1.bin"]);
+        // An older backup that holds them still restores its saves, and leaves those out.
+        let entries = [("0/slot.sav", "two"), ("0/gen/main.c", "x"), ("0/build/x.dat", "x")];
+        let places = vec!["app/saves".to_string()];
+        let name = forged(&store, &manifest_of(&[("app/saves", Kind::Folder)], &[(0, "slot.sav", "two"), (0, "gen/main.c", "x"), (0, "build/x.dat", "x")]), &entries);
+        assert_eq!(restore(&store, &name, &roots, &[], &STAMP, &knowing(&places)).unwrap(), 1);
+        assert_eq!(fs::read_to_string(saves.join("slot.sav")).unwrap(), "two");
+        assert_eq!(fs::read_to_string(saves.join("gen/main.c")).unwrap(), "gen/main.c");
+    }
+
     fn info(path: &str, size: u64) -> FileInfo {
         FileInfo { place: 0, path: path.into(), size, sha256: String::new() }
     }
@@ -1891,6 +1930,10 @@ mod tests {
         write(&roots.app.join("settings.ini"), "volume=3");
         write(&roots.app.join("game.log"), "log");
         write(&roots.app.join("cache/shader.bin"), "cache");
+        write(&roots.app.join("data/toolchains/v3/tools/a.bin"), "a builder's tools");
+        write(&roots.app.join("data/v3.0.0.part/b.bin"), "a download");
+        write(&roots.app.join("mesa-cache/mesa_shader_cache/00/c"), "cache");
+        write(&roots.app.join("gen/func.cpp"), "generated code");
         write(&roots.app.join("runtime/save.dat"), "written beside programs");
         write(&roots.app.join("runtime/tool.exe"), "program");
         write(&dir.path().join("config/Zelda64Recompiled/saves/file1.bin"), "save");

@@ -108,6 +108,11 @@ msgstr "{0, plural, other {새 파일 #개 보관함}}"
 msgid "{0, plural, one {# of them may keep your saves in its folder. They'll go to the trash too.} other {# of them may keep your saves in their folders. They'll go to the trash too.}}"
 msgstr "{0, plural, other {그중 #개는 세이브를 자기 폴더에 보관할 수 있습니다. 세이브도 휴지통으로 이동합니다.}}"
 
+#. placeholder {0}: portable.length
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "{0, plural, one {# of them may keep your saves in its folder. Uninstalling sends them to the trash too.} other {# of them may keep your saves in their folders. Uninstalling sends them to the trash too.}}"
+msgstr "{0, plural, other {이 중 #개 앱은 저장 데이터를 앱 폴더에 둘 수 있습니다. 제거하면 그 데이터도 휴지통으로 갑니다.}}"
+
 #. placeholder {0}: library.apps.length
 #: ../../apps/launcher/src/old-library.tsx
 msgid "{0, plural, one {If you already installed it somewhere else, show Quiver the folder.} other {If you already installed them somewhere else, show Quiver the folder.}}"
@@ -256,6 +261,10 @@ msgstr "{broken, plural, other {#명 실행 안 됨}}"
 msgid "{broken, plural, one {# doesn't run} other {# don't run}}"
 msgstr "{broken, plural, other {#명 실행 안 됨}}"
 
+#: ../../apps/launcher/src/downloads.ts
+msgid "{bySetup, plural, one {Update all leaves out # app that updates with its setup program, which waits for you. Update it on its own.} other {Update all leaves out # apps that update with their setup programs, which wait for you. Update them one at a time.}}"
+msgstr "{bySetup, plural, other {모두 업데이트에서 설치 프로그램으로 업데이트되는 앱 #개는 제외됩니다. 설치 프로그램이 입력을 기다리므로 하나씩 업데이트하세요.}}"
+
 #. A version of a game, by the console it came out on: PlayStation version
 #: ../../apps/launcher/src/game.tsx
 msgid "{console} version"
@@ -352,10 +361,6 @@ msgid "{count, plural, one {Removing # app…} other {Removing # apps…}}"
 msgstr "{count, plural, other {앱 #개 삭제 중…}}"
 
 #: ../../apps/launcher/src/library-ticking.tsx
-msgid "{count, plural, one {Uninstall # app and remove it from your library?} other {Uninstall and remove # apps from your library?}}"
-msgstr "{count, plural, other {앱 #개를 제거하고 라이브러리에서 삭제할까요?}}"
-
-#: ../../apps/launcher/src/library-ticking.tsx
 msgid "{count, plural, one {Uninstall # app?} other {Uninstall # apps?}}"
 msgstr "{count, plural, other {앱 #개를 제거할까요?}}"
 
@@ -433,8 +438,8 @@ msgid "{files, plural, one {# file} other {# files}}"
 msgstr "{files, plural, other {파일 #개}}"
 
 #: ../../apps/launcher/src/library-ticking.tsx
-msgid "{files, plural, one {The files of the one installed go to the trash, and they all leave your library.} other {The files of the # installed go to the trash, and they all leave your library.}}"
-msgstr "{files, plural, other {설치된 #개의 파일은 휴지통으로 이동하고, 모든 앱이 라이브러리에서 삭제됩니다.}}"
+msgid "{files, plural, one {Uninstall and remove sends the files of the one installed to the trash. Keep files leaves them where they are, and Locate existing install can add them back later.} other {Uninstall and remove sends the files of the # installed to the trash. Keep files leaves them where they are, and Locate existing install can add them back later.}}"
+msgstr "{files, plural, other {\"제거 및 삭제\"는 설치된 #개 앱의 파일을 휴지통으로 보내요. \"파일 유지\"는 파일을 그대로 두고, 나중에 \"기존 설치 위치 찾기\"로 다시 추가할 수 있어요.}}"
 
 #: ../../apps/launcher/src/old-library.tsx
 msgid "{filters, plural, one {# tag filter, as a playlist} other {# tag filters, as playlists}}"
@@ -955,6 +960,14 @@ msgstr "+ 새 재생 목록…"
 msgid "+ New tag…"
 msgstr "+ 새 태그…"
 
+#: ../../apps/launcher/src/release-files.tsx
+msgid "<0>*</0> is any text and <1>?</1> one character, over the whole name: <2>*portable*x64*</2>"
+msgstr "<0>*</0>는 아무 텍스트, <1>?</1>는 한 글자이며 이름 전체에 맞춰요: <2>*portable*x64*</2>"
+
+#: ../../apps/launcher/src/release-files.tsx
+msgid "<0>/…/</0> is a regular expression: <1>/^game-(win|linux)/</1>"
+msgstr "<0>/…/</0>는 정규식이에요: <1>/^game-(win|linux)/</1>"
+
 #: ../../apps/launcher/src/setup.tsx
 msgid "<0>Easy setup:</0> for apps that support it, you only provide your ROM or disc image, which Quiver finds in the folders you set up"
 msgstr "<0>간편 설정:</0> 이 기능을 지원하는 앱은 ROM이나 디스크 이미지만 준비하면 Quiver가 설정한 폴더에서 찾아 줍니다"
@@ -986,6 +999,10 @@ msgstr "<0>두 가지 라이브러리 보기:</0> Steam에서 영감을 받은 �
 #: ../../apps/launcher/src/custom-art.tsx
 msgid "A cover's address follows your account. The other pictures, and any from a file, stay on this computer."
 msgstr "커버 주소는 계정을 따라갑니다. 다른 이미지와 파일에서 가져온 이미지는 이 컴퓨터에만 남습니다."
+
+#: ../../apps/launcher/src/app-files.tsx
+msgid "A download that's a setup program stays in the app's folder as it is, and Play starts it, so you install the app yourself."
+msgstr "설치 프로그램인 다운로드는 앱 폴더에 그대로 남고, 플레이를 누르면 실행되어 앱을 직접 설치할 수 있습니다."
 
 #: ../../apps/launcher/src/setup.tsx
 msgid "A few quick questions to get you started. You can change any of these later in Settings."
@@ -1554,6 +1571,11 @@ msgstr "설정과 같이: {name}"
 msgid "Ask a question, share a tip or talk about this app. For how it ran, use Player feedback."
 msgstr "질문하거나 팁을 공유하거나 이 앱에 대해 이야기하세요. 실행이 어땠는지는 플레이어 피드백에 남겨 주세요."
 
+#. Button: have Quiver ask for the player's copy of the game at Play again
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "Ask me again"
+msgstr ""
+
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Ask where to install each app"
 msgstr "앱마다 설치할 위치 묻기"
@@ -1802,6 +1824,7 @@ msgstr "추가할 수 없음: Quiver Launcher 3이 어디서 받은 앱인지 �
 #: ../../apps/launcher/src/own-copy-setup.tsx
 #: ../../apps/launcher/src/own.tsx
 #: ../../apps/launcher/src/recovery.tsx
+#: ../../apps/launcher/src/release-files.tsx
 #: ../../apps/launcher/src/saves-tab.tsx
 #: ../../apps/launcher/src/settings-page.tsx
 #: ../../apps/launcher/src/sync-folder-page.tsx
@@ -2772,6 +2795,10 @@ msgstr "드래그해서 크기를 조절하세요. 두 번 클릭하면 창에 �
 msgid "e.g. --fullscreen"
 msgstr "예: --fullscreen"
 
+#: ../../apps/launcher/src/release-files.tsx
+msgid "e.g. EXIT1, *portable*x64*, !setup"
+msgstr "예: EXIT1, *portable*x64*, !setup"
+
 #: ../../apps/launcher/src/launch-options.tsx
 msgid "e.g. gamemoderun %command% --fullscreen"
 msgstr "예: gamemoderun %command% --fullscreen"
@@ -2926,6 +2953,14 @@ msgstr "파일"
 #: ../../apps/launcher/src/app-files.tsx
 msgid "File name, like config.ini"
 msgstr "파일 이름(예: config.ini)"
+
+#: ../../apps/launcher/src/release-files.tsx
+msgid "Files of {version}"
+msgstr "{version}의 파일"
+
+#: ../../apps/launcher/src/release-files.tsx
+msgid "Filter"
+msgstr "필터"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/library-sidebar.tsx
@@ -3363,6 +3398,10 @@ msgstr "이미 계정이 있어요"
 msgid "I followed the setup on this page and had no problems."
 msgstr "이 페이지의 설정을 따랐고 문제가 없었어요."
 
+#: ../../apps/launcher/src/App.tsx
+msgid "I have {updateVersion}"
+msgstr "{updateVersion}이(가) 이미 있어요"
+
 #: ../../apps/launcher/src/detail.tsx
 msgid "I understand Quiver blocked this release"
 msgstr "Quiver가 이 버전을 차단했다는 것을 이해해요"
@@ -3370,6 +3409,11 @@ msgstr "Quiver가 이 버전을 차단했다는 것을 이해해요"
 #: ../../apps/launcher/src/detail.tsx
 msgid "I understand this release was withdrawn, and I accept the risk"
 msgstr "이 버전이 철회되었다는 것을 이해하고 위험을 감수해요"
+
+#. Button: the player set up their copy of the game themselves
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "I've already set it up, don't ask again"
+msgstr ""
 
 #. Library card image
 #: ../../apps/launcher/src/custom-art.tsx
@@ -3384,6 +3428,10 @@ msgstr "아이콘 주소"
 #: ../../apps/launcher/src/library.tsx
 msgid "Icon on its tab"
 msgstr "탭 아이콘"
+
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "If {name} plays fine with it, choose I've already set it up below, and Quiver won't ask again."
+msgstr ""
 
 #: ../../apps/launcher/src/detail.tsx
 msgid "If you installed it and are happy to accept the risk, you can keep using it; otherwise, remove it and install an available release instead."
@@ -3643,6 +3691,10 @@ msgid "Installed, not played yet"
 msgstr "설치됨, 아직 플레이 안 함"
 
 #: ../../apps/launcher/src/App.tsx
+msgid "Installed, version unknown"
+msgstr "설치됨, 버전 알 수 없음"
+
+#: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/downloads-page.tsx
 #: ../../apps/launcher/src/library-sidebar.tsx
 #: ../../apps/launcher/src/library.tsx
@@ -3793,6 +3845,12 @@ msgstr "모든 시스템의 파일 보관"
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Keep in download cache"
 msgstr "다운로드 캐시에 보관"
+#. Button: takes an app out of the library and leaves its files on the computer
+#. Button: takes an app out of the library and leaves its files on the computer
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "Keep files"
+msgstr "파일 유지"
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Keep Quiver open until it's done."
@@ -3950,6 +4008,10 @@ msgstr "그대로 두기"
 msgid "Leave TV mode"
 msgstr "TV 모드 나가기"
 
+#: ../../apps/launcher/src/release-files.tsx
+msgid "Left out"
+msgstr "제외됨"
+
 #: ../../apps/launcher/src/card-menu.tsx
 #: ../../apps/launcher/src/launch-options.tsx
 msgid "Let Quiver choose"
@@ -4064,6 +4126,10 @@ msgstr "버전 불러오는 중"
 #: ../../apps/launcher/src/game.tsx
 msgid "Loading the game"
 msgstr "게임 불러오는 중"
+
+#: ../../apps/launcher/src/release-files.tsx
+msgid "Loading the newest release…"
+msgstr "최신 버전을 불러오는 중…"
 
 #: ../../apps/launcher/src/cloud-saves-page.tsx
 msgid "Loading your cloud saves…"
@@ -4193,6 +4259,10 @@ msgstr "Quiver가 관리"
 #: ../../apps/launcher/src/library.tsx
 msgid "Manually managed"
 msgstr "직접 관리"
+
+#: ../../apps/launcher/src/release-files.tsx
+msgid "Matches"
+msgstr "일치함"
 
 #: ../../apps/launcher/src/game.tsx
 msgid "Matching games"
@@ -4650,6 +4720,10 @@ msgstr "아직 재생 목록이 없습니다. +로 추가하거나 필터를 재
 msgid "No programs found in its folder."
 msgstr "폴더에서 프로그램을 찾지 못했어요."
 
+#: ../../apps/launcher/src/release-files.tsx
+msgid "No release files to show yet."
+msgstr "아직 표시할 버전 파일이 없어요."
+
 #: ../../apps/launcher/src/detail.tsx
 msgid "No release notes provided."
 msgstr "릴리스 노트가 없어요."
@@ -4715,6 +4789,10 @@ msgstr "Quiver가 찾은 파일 중 {game}처럼 보이는 파일이 없어요."
 msgid "None of them are installed."
 msgstr "설치된 앱이 없습니다."
 
+#: ../../apps/launcher/src/release-files.tsx
+msgid "None of these files match, so this release couldn't be installed."
+msgstr "일치하는 파일이 없어서 이 버전은 설치할 수 없어요."
+
 #: ../../apps/launcher/src/own.tsx
 msgid "None of this release's files are for this computer."
 msgstr "이 버전의 파일 중 이 컴퓨터용 파일이 없어요."
@@ -4723,10 +4801,18 @@ msgstr "이 버전의 파일 중 이 컴퓨터용 파일이 없어요."
 msgid "None of this release's files are for this device."
 msgstr "이 버전의 파일 중 이 기기용 파일이 없어요."
 
+#: ../../apps/launcher/src/store.tsx
+msgid "None of this release's files match your release files filter \"{filter}\". Change it under Release files, on the app's Manage tab."
+msgstr "이 버전의 파일 중 버전 파일 필터 \"{filter}\"와 일치하는 것이 없어요. 앱의 관리 탭에 있는 버전 파일에서 바꿔 주세요."
+
 #. Mouse wheel speed: the system's
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Normal"
 msgstr "보통"
+
+#: ../../apps/launcher/src/release-files.tsx
+msgid "Not a valid pattern: {invalid}"
+msgstr "올바른 패턴이 아니에요: {invalid}"
 
 #. A release file a maintainer didn't tick for the app, in Which download?'s Show all files
 #: ../../apps/launcher/src/App.tsx
@@ -5516,6 +5602,10 @@ msgstr "Quiver가 아직 이 버전을 확인하지 못했어요."
 msgid "Quiver installing or launching it"
 msgstr "Quiver의 설치 또는 실행"
 
+#: ../../apps/launcher/src/release-files.tsx
+msgid "Quiver installs and updates this app only from the release files that match. Useful when one repository ships several apps or builds."
+msgstr "Quiver는 일치하는 버전 파일로만 이 앱을 설치하고 업데이트해요. 한 저장소에서 여러 앱이나 빌드를 배포할 때 유용해요."
+
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Quiver is measuring the apps and the free space on the drive. This can take a moment."
 msgstr "Quiver가 앱 크기와 드라이브의 남은 공간을 확인하고 있어요. 잠시 걸릴 수 있어요."
@@ -5543,6 +5633,10 @@ msgstr "Quiver Launcher 4는 처음부터 새로 만들었어요. Quiver Launche
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Quiver Launcher 4's folder"
 msgstr "Quiver Launcher 4의 앱 폴더"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Quiver Launcher doesn't know which version this is. {updateVersion} is available."
+msgstr "Quiver Launcher가 이 버전을 알 수 없어요. {updateVersion}을(를) 사용할 수 있어요."
 
 #: ../ui/src/index.tsx
 msgid "Quiver Launcher doesn't offer this release by itself"
@@ -5716,6 +5810,7 @@ msgstr "최근 플레이 순(누르면 가나다순)"
 msgid "Recently updated"
 msgstr "최근 업데이트"
 
+#: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/mods.tsx
 msgid "Refresh"
 msgstr "새로 고침"
@@ -5727,6 +5822,11 @@ msgstr "{installedVersion} 다시 설치"
 #: ../../apps/launcher/src/own.tsx
 msgid "Release feed"
 msgstr ""
+
+#. Button: which of a release's files the app installs from
+#: ../../apps/launcher/src/release-files.tsx
+msgid "Release files"
+msgstr "버전 파일"
 
 #. Tab of an app's page
 #. Which of an app's releases it gets: main releases only, or pre-releases too
@@ -5764,8 +5864,13 @@ msgid "Remove “{tag}” from {count}?"
 msgstr "{count}에서 “{tag}” 태그를 제거할까요?"
 
 #: ../../apps/launcher/src/app-files.tsx
+#: ../../apps/launcher/src/App.tsx
 msgid "Remove {name}"
 msgstr "{name} 제거"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Remove {name} from your library?"
+msgstr "라이브러리에서 {name}을(를) 삭제할까요?"
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Remove {system} from {name}"
@@ -5809,6 +5914,8 @@ msgstr "{0}에서 삭제"
 msgid "Remove from library"
 msgstr "라이브러리에서 삭제"
 
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/card-menu.tsx
 #: ../../apps/launcher/src/library-ticking.tsx
 msgid "Remove from library…"
 msgstr "라이브러리에서 삭제…"
@@ -5994,6 +6101,10 @@ msgstr "설치 프로그램 다시 실행"
 msgid "Run setup again"
 msgstr "설정 다시 하기"
 
+#: ../../apps/launcher/src/app-files.tsx
+msgid "Run setup programs for me"
+msgstr "설치 프로그램을 대신 실행"
+
 #: ../../apps/launcher/src/launch-options.tsx
 msgid "Run with"
 msgstr "실행 도구"
@@ -6018,6 +6129,7 @@ msgstr "시스템 설정과 동일"
 #: ../../apps/launcher/src/launch-options.tsx
 #: ../../apps/launcher/src/library.tsx
 #: ../../apps/launcher/src/own.tsx
+#: ../../apps/launcher/src/release-files.tsx
 #: ../../apps/launcher/src/tag-settings.tsx
 msgid "Save"
 msgstr "저장"
@@ -6267,6 +6379,10 @@ msgstr "관리자가 확인할 수 있도록 계정 이름, 이 런처의 버전
 msgid "Sent. A maintainer will take a look."
 msgstr "보냈어요. 관리자가 확인할 거예요."
 
+#: ../../apps/launcher/src/release-files.tsx
+msgid "Separate several with commas; <0>!</0> in front leaves files out: <1>!setup</1>"
+msgstr "여러 개는 쉼표로 구분하고, 앞에 <0>!</0>를 붙이면 파일을 제외해요: <1>!setup</1>"
+
 #: ../../apps/launcher/src/console-folders.tsx
 msgid "Set a folder for another system"
 msgstr "다른 시스템의 폴더 지정"
@@ -6279,6 +6395,11 @@ msgstr "다른 시스템의 폴더 지정…"
 #: ../../apps/launcher/src/App.tsx
 msgid "Set up and play"
 msgstr "설정 후 플레이"
+
+#. The player said they set up their copy of the game themselves
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "Set up by you"
+msgstr ""
 
 #: ../../apps/launcher/src/setup.tsx
 msgid "Set up Quiver Launcher"
@@ -6898,6 +7019,10 @@ msgstr "{version}에서 테스트함"
 msgid "Tested release"
 msgstr "테스트한 버전"
 
+#: ../../apps/launcher/src/release-files.tsx
+msgid "Text matches anywhere in the name: <0>EXIT1</0>"
+msgstr "텍스트는 이름 어디에서든 일치해요: <0>EXIT1</0>"
+
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Thanks for sharing how it ran."
 msgstr "실행 후기를 공유해 주셔서 감사해요."
@@ -7148,6 +7273,10 @@ msgstr "아직 여기에 모드가 없어요."
 msgid "There are no releases yet. Check the upstream project for downloads."
 msgstr "아직 버전이 없어요. 원본 프로젝트에서 다운로드를 확인해 보세요."
 
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "There's already a file where {name} reads it."
+msgstr ""
+
 #: ../../apps/launcher/src/saves-tab.tsx
 msgid "These are my saves"
 msgstr ""
@@ -7204,6 +7333,10 @@ msgstr "이 앱은 이 컴퓨터에 설치되어 있지 않습니다. 사본을 
 #: ../../apps/launcher/src/App.tsx
 msgid "This app may keep your saves in its folder. They'll go to the trash too."
 msgstr "이 앱은 저장 데이터를 앱 폴더에 둘 수 있습니다. 그 데이터도 휴지통으로 갑니다."
+
+#: ../../apps/launcher/src/App.tsx
+msgid "This app may keep your saves in its folder. Uninstalling sends them to the trash too."
+msgstr "이 앱은 저장 데이터를 앱 폴더에 둘 수 있습니다. 제거하면 그 데이터도 휴지통으로 갑니다."
 
 #: ../../apps/launcher/src/app-files.tsx
 msgid "This app may stop finding its saves and settings, because it will look for them in a different place. Nothing is deleted."
@@ -7473,14 +7606,13 @@ msgid "Uninstall {name}?"
 msgstr "{name}을(를) 제거할까요?"
 
 #: ../../apps/launcher/src/App.tsx
-#: ../../apps/launcher/src/card-menu.tsx
 #: ../../apps/launcher/src/library-ticking.tsx
 msgid "Uninstall and remove"
 msgstr "제거 및 삭제"
 
-#: ../../apps/launcher/src/library-ticking.tsx
-msgid "Uninstall and remove from library…"
-msgstr "제거 및 라이브러리에서 삭제…"
+#: ../../apps/launcher/src/App.tsx
+msgid "Uninstall and remove sends its files to the trash. Keep files leaves them where they are, and Locate existing install can add them back later."
+msgstr "\"제거 및 삭제\"는 파일을 휴지통으로 보내요. \"파일 유지\"는 파일을 그대로 두고, 나중에 \"기존 설치 위치 찾기\"로 다시 추가할 수 있어요."
 
 #: ../../apps/launcher/src/library-ticking.tsx
 msgid "Uninstall apps"
@@ -7550,8 +7682,7 @@ msgstr "업데이트"
 msgid "Update all"
 msgstr "모두 업데이트"
 
-#: ../../apps/launcher/src/downloads-page.tsx
-#: ../../apps/launcher/src/library.tsx
+#: ../../apps/launcher/src/downloads.ts
 msgid "Update all ({updateCount})"
 msgstr "모두 업데이트({updateCount})"
 
@@ -7694,6 +7825,10 @@ msgstr "업데이트하는 중…"
 #: ../../apps/launcher/src/telemetry-ui.tsx
 msgid "Usage data"
 msgstr "사용 데이터"
+
+#: ../../apps/launcher/src/release-files.tsx
+msgid "Use all files again"
+msgstr "다시 모든 파일 사용"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Use an https:// image address."
@@ -7963,6 +8098,10 @@ msgstr "무엇이 잘못되거나 빠졌나요?"
 msgid "When {name} asks for it, pick this file: {0}"
 msgstr "{name}이(가) 요청하면 이 파일을 고르세요: {0}"
 
+#: ../../apps/launcher/src/app-files.tsx
+msgid "When a download is a setup program, Quiver runs it once while installing, and Play starts what it installed."
+msgstr "다운로드가 설치 프로그램이면 Quiver가 설치 중에 한 번 실행하고, 플레이는 설치된 프로그램을 시작합니다."
+
 #: ../../apps/launcher/src/own-copy-settings.tsx
 msgid "When an app needs your own copy of a game, like a ROM or a disc image, Quiver looks for it in these folders, and nowhere else."
 msgstr "앱에 ROM이나 디스크 이미지 같은 내 게임 사본이 필요하면 Quiver는 이 폴더에서만 찾습니다."
@@ -8085,6 +8224,10 @@ msgstr "아직 태그를 붙인 앱이 없습니다. 앱 메뉴의 태그에서 
 #: ../../apps/launcher/src/correction.tsx
 msgid "You reported a problem on {sent}. A maintainer will take a look."
 msgstr "{sent}에 문제를 신고했습니다. 관리자가 확인할 예정입니다."
+
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "You set it up yourself, so Quiver doesn't ask for it when you play."
+msgstr ""
 
 #: ../../apps/launcher/src/App.tsx
 msgid "You skipped {updateVersion}. Quiver Launcher offers the next new release."

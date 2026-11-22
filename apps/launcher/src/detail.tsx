@@ -1195,7 +1195,7 @@ export function Versions({
   /** Its dialog over a floating panel that stays open under it (Dialog's `over`). */
   over?: boolean;
 }) {
-  const { client, providers, installs, get, jobs, setUpdates, catalog, config, settings } = useLauncher();
+  const { client, providers, installs, get, jobs, setUpdates, catalog, config, settings, library } = useLauncher();
   // On Linux, an app with a build for each: Windows' runs through Wine, which plays some apps better.
   const builds: Os[] = getting && config.os === "linux" && entry.supportedOS.includes("linux") && entry.supportedOS.includes("windows") ? ["linux", "windows"] : [];
   const [platform, setPlatform] = useState<Os | undefined>(builds[0]);
@@ -1418,7 +1418,7 @@ export function Versions({
   const listed = Array.isArray(versions) ? versions : [];
   const checked = listed.filter((v) => custom || v.state === "verified").map((v) => v.release);
   const stable = custom && checked.some((r) => !r.prerelease) ? checked.filter((r) => !r.prerelease) : checked;
-  const fitting = newest ? releaseFor(stable, config.os, config.arch, { filter: custom ? undefined : (r) => (r.installationOverride ?? entry.launcher).releaseAssetFilter, platform }) : undefined;
+  const fitting = newest ? releaseFor(stable, config.os, config.arch, { filter: custom ? undefined : (r) => (r.installationOverride ?? entry.launcher).releaseAssetFilter, platform, files: library.find((i) => i.id === entry.id)?.overrides?.releaseFiles }) : undefined;
   const newestRelease = fitting ?? listed.find((v) => newest && bare(v.release.version) === bare(newest))?.release;
   const buildName = (os: Os) => (os === "windows" ? t`Windows (Wine)` : (OS_NAMES[os] ?? os));
   const build = platform && buildName(platform);
