@@ -554,6 +554,15 @@ pub fn present(file: &SetupFile, copy: &Path, app: &Path, wine: bool) -> bool {
     }
 }
 
+/// What's already at the copy's place in the app's folders, when the catalog gives one: a copy the player put there
+/// themselves, following the game's own instructions. For a folder, only one with something in it.
+pub fn in_place(file: &SetupFile, app: &Path, wine: bool) -> Option<PathBuf> {
+    let to = target(file, app, wine).ok()??;
+    let meta = fs::metadata(&to).ok()?;
+    let there = if file.folder() { meta.is_dir() && fs::read_dir(&to).ok()?.next().is_some() } else { meta.is_file() && meta.len() > 0 };
+    there.then_some(to)
+}
+
 /// A copy found where players keep them, before it's checked.
 #[derive(Serialize, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
@@ -785,6 +794,33 @@ mod tests {
         place(&file, &dir.join("mine.v64"), &app, false, &none).unwrap();
         assert!(!app.join("baserom.us.z64 (before Quiver 2)").exists());
         assert!(present(&file, &dir.join("mine.v64"), &app, false));
+    }
+
+    #[test]
+    fn finds_a_copy_the_player_put_in_place_themselves() {
+        let dir = temp("in-place");
+        let app = dir.join("app");
+        fs::create_dir_all(&app).unwrap();
+        let file = rom_file(&sha1_of(&rom()));
+        assert_eq!(in_place(&file, &app, false), None);
+        fs::write(app.join("baserom.us.z64"), b"").unwrap();
+        assert_eq!(in_place(&file, &app, false), None, "an empty file isn't a copy");
+        fs::write(app.join("baserom.us.z64"), rom()).unwrap();
+        let found = in_place(&file, &app, false).unwrap();
+        assert_eq!(found, app.join("baserom.us.z64"));
+        // Checked and kept where it is: placing it there is nothing to do.
+        assert!(check(&file, &found, &none).verified);
+        place(&file, &found, &app, false, &none).unwrap();
+        assert!(!app.join("baserom.us.z64 (before Quiver)").exists());
+        // Only passed by flag: nowhere to look.
+        let flag = SetupFile { destination: None, flag: Some("--rom".into()), ..rom_file("") };
+        assert_eq!(in_place(&flag, &app, false), None);
+        // A folder: only one with something in it.
+        let folder = SetupFile { id: "game".into(), label: "Game".into(), kind: Some("folder".into()), destination: Some("game".into()), ..Default::default() };
+        fs::create_dir_all(app.join("game")).unwrap();
+        assert_eq!(in_place(&folder, &app, false), None);
+        fs::write(app.join("game/default.xex"), b"x").unwrap();
+        assert_eq!(in_place(&folder, &app, false), Some(app.join("game")));
     }
 
     #[test]

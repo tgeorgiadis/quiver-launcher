@@ -546,6 +546,8 @@ export const native = {
   /** Puts a checked copy where the app reads it; where it went, or null when the app is told by flag or variable. */
   placeCopy: (folder: string, dir: string | undefined, wine: boolean, file: SetupFile, path: string) =>
     invoke<string | null>("place_copy", { folder, dir, wine, file, path }),
+  /** What's already where the app reads its copy, put there by the player before Quiver knew of it: its path, or null. */
+  copyInPlace: (folder: string, dir: string | undefined, wine: boolean, file: SetupFile) => invoke<string | null>("copy_in_place", { folder, dir, wine, file }),
   copyPresent: (folder: string, dir: string | undefined, wine: boolean, file: SetupFile, path: string) =>
     invoke<boolean>("copy_present", { folder, dir, wine, file, path }),
   onCopyProgress: (handler: (p: CopyProgress) => void) => listen<CopyProgress>("copy-progress", (e) => handler(e.payload)),
