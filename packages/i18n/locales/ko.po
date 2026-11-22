@@ -81,6 +81,11 @@ msgstr "{0, plural, other {설치된 앱 #개가 아직 시스템 폴더에 없�
 msgid "{0, plural, one {# of them may keep your saves in its folder. They'll go to the trash too.} other {# of them may keep your saves in their folders. They'll go to the trash too.}}"
 msgstr "{0, plural, other {그중 #개는 세이브를 자기 폴더에 보관할 수 있습니다. 세이브도 휴지통으로 이동합니다.}}"
 
+#. placeholder {0}: portable.length
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "{0, plural, one {# of them may keep your saves in its folder. Uninstalling sends them to the trash too.} other {# of them may keep your saves in their folders. Uninstalling sends them to the trash too.}}"
+msgstr "{0, plural, other {이 중 #개 앱은 저장 데이터를 앱 폴더에 둘 수 있습니다. 제거하면 그 데이터도 휴지통으로 갑니다.}}"
+
 #. placeholder {0}: library.apps.length
 #: ../../apps/launcher/src/old-library.tsx
 msgid "{0, plural, one {If you already installed it somewhere else, show Quiver the folder.} other {If you already installed them somewhere else, show Quiver the folder.}}"
@@ -311,10 +316,6 @@ msgid "{count, plural, one {Removing # app…} other {Removing # apps…}}"
 msgstr "{count, plural, other {앱 #개 삭제 중…}}"
 
 #: ../../apps/launcher/src/library-ticking.tsx
-msgid "{count, plural, one {Uninstall # app and remove it from your library?} other {Uninstall and remove # apps from your library?}}"
-msgstr "{count, plural, other {앱 #개를 제거하고 라이브러리에서 삭제할까요?}}"
-
-#: ../../apps/launcher/src/library-ticking.tsx
 msgid "{count, plural, one {Uninstall # app?} other {Uninstall # apps?}}"
 msgstr "{count, plural, other {앱 #개를 제거할까요?}}"
 
@@ -391,8 +392,8 @@ msgid "{files, plural, one {# file} other {# files}}"
 msgstr "{files, plural, other {파일 #개}}"
 
 #: ../../apps/launcher/src/library-ticking.tsx
-msgid "{files, plural, one {The files of the one installed go to the trash, and they all leave your library.} other {The files of the # installed go to the trash, and they all leave your library.}}"
-msgstr "{files, plural, other {설치된 #개의 파일은 휴지통으로 이동하고, 모든 앱이 라이브러리에서 삭제됩니다.}}"
+msgid "{files, plural, one {Uninstall and remove sends the files of the one installed to the trash. Keep files leaves them where they are, and Locate existing install can add them back later.} other {Uninstall and remove sends the files of the # installed to the trash. Keep files leaves them where they are, and Locate existing install can add them back later.}}"
+msgstr "{files, plural, other {\"제거 및 삭제\"는 설치된 #개 앱의 파일을 휴지통으로 보내요. \"파일 유지\"는 파일을 그대로 두고, 나중에 \"기존 설치 위치 찾기\"로 다시 추가할 수 있어요.}}"
 
 #: ../../apps/launcher/src/old-library.tsx
 msgid "{filters, plural, one {# tag filter, as a playlist} other {# tag filters, as playlists}}"
@@ -3619,6 +3620,13 @@ msgstr "방금 업데이트됨"
 msgid "Keep {keep}"
 msgstr "{keep} 유지"
 
+#. Button: takes an app out of the library and leaves its files on the computer
+#. Button: takes an app out of the library and leaves its files on the computer
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "Keep files"
+msgstr "파일 유지"
+
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Keep Quiver open until it's done."
 msgstr "끝날 때까지 Quiver를 열어 두세요."
@@ -5518,8 +5526,13 @@ msgid "Remove “{tag}” from {count}?"
 msgstr "{count}에서 “{tag}” 태그를 제거할까요?"
 
 #: ../../apps/launcher/src/app-files.tsx
+#: ../../apps/launcher/src/App.tsx
 msgid "Remove {name}"
 msgstr "{name} 제거"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Remove {name} from your library?"
+msgstr "라이브러리에서 {name}을(를) 삭제할까요?"
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Remove {system} from {name}"
@@ -5559,6 +5572,8 @@ msgstr "{0}에서 삭제"
 msgid "Remove from library"
 msgstr "라이브러리에서 삭제"
 
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/card-menu.tsx
 #: ../../apps/launcher/src/library-ticking.tsx
 msgid "Remove from library…"
 msgstr "라이브러리에서 삭제…"
@@ -6915,6 +6930,10 @@ msgstr "이 앱은 이 컴퓨터에 설치되어 있지 않습니다. 사본을 
 msgid "This app may keep your saves in its folder. They'll go to the trash too."
 msgstr "이 앱은 저장 데이터를 앱 폴더에 둘 수 있습니다. 그 데이터도 휴지통으로 갑니다."
 
+#: ../../apps/launcher/src/App.tsx
+msgid "This app may keep your saves in its folder. Uninstalling sends them to the trash too."
+msgstr "이 앱은 저장 데이터를 앱 폴더에 둘 수 있습니다. 제거하면 그 데이터도 휴지통으로 갑니다."
+
 #: ../../apps/launcher/src/app-files.tsx
 msgid "This app may stop finding its saves and settings, because it will look for them in a different place. Nothing is deleted."
 msgstr "이 앱이 다른 위치를 찾게 되어 저장 데이터와 설정을 찾지 못할 수 있습니다. 삭제되는 것은 없습니다."
@@ -7175,14 +7194,13 @@ msgid "Uninstall {name}?"
 msgstr "{name}을(를) 제거할까요?"
 
 #: ../../apps/launcher/src/App.tsx
-#: ../../apps/launcher/src/card-menu.tsx
 #: ../../apps/launcher/src/library-ticking.tsx
 msgid "Uninstall and remove"
 msgstr "제거 및 삭제"
 
-#: ../../apps/launcher/src/library-ticking.tsx
-msgid "Uninstall and remove from library…"
-msgstr "제거 및 라이브러리에서 삭제…"
+#: ../../apps/launcher/src/App.tsx
+msgid "Uninstall and remove sends its files to the trash. Keep files leaves them where they are, and Locate existing install can add them back later."
+msgstr "\"제거 및 삭제\"는 파일을 휴지통으로 보내요. \"파일 유지\"는 파일을 그대로 두고, 나중에 \"기존 설치 위치 찾기\"로 다시 추가할 수 있어요."
 
 #: ../../apps/launcher/src/library-ticking.tsx
 msgid "Uninstall apps"

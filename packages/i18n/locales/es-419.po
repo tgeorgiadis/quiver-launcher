@@ -81,6 +81,11 @@ msgstr "{0, plural, one {# app instalada aún no está en la carpeta de su siste
 msgid "{0, plural, one {# of them may keep your saves in its folder. They'll go to the trash too.} other {# of them may keep your saves in their folders. They'll go to the trash too.}}"
 msgstr "{0, plural, one {# de ellas puede guardar tus partidas en su carpeta. También irán a la papelera.} other {# de ellas pueden guardar tus partidas en sus carpetas. También irán a la papelera.}}"
 
+#. placeholder {0}: portable.length
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "{0, plural, one {# of them may keep your saves in its folder. Uninstalling sends them to the trash too.} other {# of them may keep your saves in their folders. Uninstalling sends them to the trash too.}}"
+msgstr "{0, plural, one {Puede que # de ellas guarde tus partidas en su carpeta. Al desinstalar, también irán a la papelera.} other {Puede que # de ellas guarden tus partidas en sus carpetas. Al desinstalar, también irán a la papelera.}}"
+
 #. placeholder {0}: library.apps.length
 #: ../../apps/launcher/src/old-library.tsx
 msgid "{0, plural, one {If you already installed it somewhere else, show Quiver the folder.} other {If you already installed them somewhere else, show Quiver the folder.}}"
@@ -311,10 +316,6 @@ msgid "{count, plural, one {Removing # app…} other {Removing # apps…}}"
 msgstr "{count, plural, one {Quitando # app…} other {Quitando # apps…}}"
 
 #: ../../apps/launcher/src/library-ticking.tsx
-msgid "{count, plural, one {Uninstall # app and remove it from your library?} other {Uninstall and remove # apps from your library?}}"
-msgstr "{count, plural, one {¿Desinstalar # app y quitarla de tu biblioteca?} other {¿Desinstalar y quitar # apps de tu biblioteca?}}"
-
-#: ../../apps/launcher/src/library-ticking.tsx
 msgid "{count, plural, one {Uninstall # app?} other {Uninstall # apps?}}"
 msgstr "{count, plural, one {¿Desinstalar # app?} other {¿Desinstalar # apps?}}"
 
@@ -391,8 +392,8 @@ msgid "{files, plural, one {# file} other {# files}}"
 msgstr "{files, plural, one {# archivo} other {# archivos}}"
 
 #: ../../apps/launcher/src/library-ticking.tsx
-msgid "{files, plural, one {The files of the one installed go to the trash, and they all leave your library.} other {The files of the # installed go to the trash, and they all leave your library.}}"
-msgstr "{files, plural, one {Los archivos de la app instalada van a la papelera, y todas salen de tu biblioteca.} other {Los archivos de las # instaladas van a la papelera, y todas salen de tu biblioteca.}}"
+msgid "{files, plural, one {Uninstall and remove sends the files of the one installed to the trash. Keep files leaves them where they are, and Locate existing install can add them back later.} other {Uninstall and remove sends the files of the # installed to the trash. Keep files leaves them where they are, and Locate existing install can add them back later.}}"
+msgstr "{files, plural, one {«Desinstalar y quitar» envía a la papelera los archivos de la que está instalada. «Conservar archivos» los deja donde están, y «Buscar instalación existente» puede volver a agregarlos después.} other {«Desinstalar y quitar» envía a la papelera los archivos de las # instaladas. «Conservar archivos» los deja donde están, y «Buscar instalación existente» puede volver a agregarlos después.}}"
 
 #: ../../apps/launcher/src/old-library.tsx
 msgid "{filters, plural, one {# tag filter, as a playlist} other {# tag filters, as playlists}}"
@@ -3619,6 +3620,13 @@ msgstr "Recién actualizada"
 msgid "Keep {keep}"
 msgstr "Conservar {keep}"
 
+#. Button: takes an app out of the library and leaves its files on the computer
+#. Button: takes an app out of the library and leaves its files on the computer
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "Keep files"
+msgstr "Conservar archivos"
+
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Keep Quiver open until it's done."
 msgstr "Mantén Quiver abierto hasta que termine."
@@ -5518,8 +5526,13 @@ msgid "Remove “{tag}” from {count}?"
 msgstr "¿Quitar «{tag}» de {count}?"
 
 #: ../../apps/launcher/src/app-files.tsx
+#: ../../apps/launcher/src/App.tsx
 msgid "Remove {name}"
 msgstr "Quitar {name}"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Remove {name} from your library?"
+msgstr "¿Quitar {name} de tu biblioteca?"
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Remove {system} from {name}"
@@ -5559,6 +5572,8 @@ msgstr "Quitar de {0}"
 msgid "Remove from library"
 msgstr "Quitar de la biblioteca"
 
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/card-menu.tsx
 #: ../../apps/launcher/src/library-ticking.tsx
 msgid "Remove from library…"
 msgstr "Quitar de la biblioteca…"
@@ -6915,6 +6930,10 @@ msgstr "Esta app no está instalada en esta computadora. Instálala para restaur
 msgid "This app may keep your saves in its folder. They'll go to the trash too."
 msgstr "Puede que esta app guarde tus partidas en su carpeta. También irán a la papelera."
 
+#: ../../apps/launcher/src/App.tsx
+msgid "This app may keep your saves in its folder. Uninstalling sends them to the trash too."
+msgstr "Puede que esta app guarde tus partidas en su carpeta. Al desinstalar, también irán a la papelera."
+
 #: ../../apps/launcher/src/app-files.tsx
 msgid "This app may stop finding its saves and settings, because it will look for them in a different place. Nothing is deleted."
 msgstr "Puede que esta app deje de encontrar sus partidas y ajustes, porque los buscará en otro lugar. No se elimina nada."
@@ -7175,14 +7194,13 @@ msgid "Uninstall {name}?"
 msgstr "¿Desinstalar {name}?"
 
 #: ../../apps/launcher/src/App.tsx
-#: ../../apps/launcher/src/card-menu.tsx
 #: ../../apps/launcher/src/library-ticking.tsx
 msgid "Uninstall and remove"
 msgstr "Desinstalar y quitar"
 
-#: ../../apps/launcher/src/library-ticking.tsx
-msgid "Uninstall and remove from library…"
-msgstr "Desinstalar y quitar de la biblioteca…"
+#: ../../apps/launcher/src/App.tsx
+msgid "Uninstall and remove sends its files to the trash. Keep files leaves them where they are, and Locate existing install can add them back later."
+msgstr "«Desinstalar y quitar» envía sus archivos a la papelera. «Conservar archivos» los deja donde están, y «Buscar instalación existente» puede volver a agregarlos después."
 
 #: ../../apps/launcher/src/library-ticking.tsx
 msgid "Uninstall apps"
