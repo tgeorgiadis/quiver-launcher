@@ -33,6 +33,8 @@ import { folderBeforePlay } from "./sync-folder";
 import { beforePlay, onSent, retries, sendBackup, sendCurrent, type CloudApi, type Conflict, type ConfirmPlaces } from "./cloud-saves";
 import { activate, pick, type Language } from "@quiverlauncher/i18n";
 import { providerFetch } from "./provider-fetch";
+import { cacheOf, cachedReleases, cacheUse, protectedFiles, sameVersion, type CacheSettings } from "./cache";
+import { requestCache } from "./cache-signal";
 
 /** The language the launcher shows in: the one picked in Settings, or else the system's nearest. */
 export const languageOf = (settings: Settings): Language => settings.language ?? pick(navigator.languages);
@@ -1364,6 +1366,8 @@ export const tvModeOn = (settings: Pick<Settings, "tvMode">, config: Pick<Config
 
 /** This computer's preferences; they don't sync. */
 export type Settings = {
+  /** The download cache (cache.ts): what it keeps, where, and how much. Unset, off. */
+  cache?: CacheSettings;
   /** What runs Windows programs on Linux, for every app without a runner of its own; unset, Automatic (a Proton, else Wine). */
   windowsRunner?: WindowsRunner;
   /**
@@ -2246,6 +2250,18 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
    * now, which doesn't ask: one whose file Quiver hasn't verified waits for it instead.
    */
   /** Installs or updates an app, never one that's moving: its folder is on its way somewhere else. */
+  /**
+   * An app's versions as the download cache has them, for installing while quiverlauncher.com can't be reached: the
+   * catalog's verified one first when it's there, else the newest kept. None while the cache is off.
+   */
+  async function keptReleases(entry: Entry): Promise<Release[]> {
+    const cache = config.cacheDir || settings.cache?.dir ? cacheOf(settings.cache, config.cacheDir ?? "") : undefined;
+    if (!cache?.on) return [];
+    const kept = cachedReleases((await native.cacheStatus(cache.dir).catch(() => null))?.entries ?? [], entry.id);
+    const verified = (catalog[entry.id] ?? entry).verified?.version;
+    return verified ? [...kept.filter((r) => sameVersion(r.version, verified)), ...kept.filter((r) => !sameVersion(r.version, verified))] : kept;
+  }
+
   async function installEntry(entry: Entry, chosen?: Release, options: InstallOptions = {}) {
     if (moving.current.has(entry.id)) {
       // An automatic update tries again next time.
@@ -2278,6 +2294,8 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     const keepSetup = !settings.runSetupPrograms && !was?.setup;
     // The player's, read here: further down, `settings` is the catalog's for installing it.
     const groupByConsole = Boolean(settings.groupByConsole);
+    // The download cache, as the player set it: the file from it when it's there, and kept in it as its mode says.
+    const cacheNow = config.cacheDir || settings.cache?.dir ? cacheOf(settings.cache, config.cacheDir ?? "") : undefined;
     const systemFolders = { consoleFolders: settings.consoleFolders, systemFolderNames: settings.systemFolderNames };
     let version = chosen?.version ?? entry.verified?.version;
     let format: string | undefined;
@@ -2307,7 +2325,10 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         ? undefined
         : custom
           ? await releasesOf(custom)
-          : (await client.releases(entry.slug, 100, null, prereleasesFor(entry.id)).catch(() => {
+          : (await client.releases(entry.slug, 100, null, prereleasesFor(entry.id)).catch(async () => {
+              // quiverlauncher.com out of reach (offline): the versions the download cache has, each checked as ever.
+              const kept = await keptReleases(entry);
+              if (kept.length) return { items: kept };
               throw noAnswer();
             })).items;
       const here = listed && releaseHere(entry, listed, Boolean(custom), was, options.platform);
@@ -2509,8 +2530,11 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         version: release.version,
         preferred: executables,
         program: was?.installer ? was.program : undefined,
+        ...(cacheNow && { cache: cacheUse(cacheNow, { id: entry.id, version: release.version, os: asset.os, arch: asset.architecture, slug: entry.slug }, protectedFiles(installs)) }),
         ...(keepSetup && { runSetup: false }),
       });
+      // Installed only, keeping every system's files or source code: those come once it's in, in the background.
+      if (cacheNow?.mode === "installed" && (cacheNow.allPlatforms || cacheNow.sources) && !custom) requestCache([entry.id]);
       // A Windows installer's program, when Quiver can't tell which it is: the player says, as in Quiver Launcher 3.
       const msi = Boolean(done.installer);
       const program = msi ? (done.program ?? (await native.pickProgram(done.location ?? undefined).catch(() => null)) ?? undefined) : undefined;
@@ -3037,7 +3061,11 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       try {
         const release = custom
           ? (await releasesOf(custom)).find(same)
-          : ((await client.releases(entry.slug, 100, null, true)).items.find(same) ??
+          : ((await client.releases(entry.slug, 100, null, true).catch(async (e) => {
+              const kept = await keptReleases(entry);
+              if (kept.length) return { items: kept };
+              throw e;
+            })).items.find(same) ??
             (install.unverified ? (await client.unverifiedReleases(entry.slug).catch(() => [])).filter(same).map(fromSite)[0] : undefined));
         const version = versionLabel(install.version);
         if (!release) throw new Problem(msg`${version} can't be installed again: its release isn't available any more.`);

@@ -2,8 +2,9 @@
 import { invoke as tauriInvoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { currentMonitor, getCurrentWindow } from "@tauri-apps/api/window";
-import type { GitlabLimit, ModSettings, ModSource, Os, SetupFile } from "@quiverlauncher/api";
+import type { GitlabLimit, ModSettings, ModSource, Os, Readme, SetupFile } from "@quiverlauncher/api";
 import { noteFailure } from "./command-failures";
+import type { CacheUse } from "./cache";
 
 /** Tauri's, remembering which command failed; the error is the same one, for those who check what it says. */
 const invoke = <T>(...[command, args, options]: Parameters<typeof tauriInvoke>) =>
@@ -60,6 +61,8 @@ export type Config = {
   os: Os;
   arch: string;
   appsDir: string;
+  /** The download cache's folder unless the player picks another (cache.ts): `cache` in the data folder. Missing from an older build. */
+  cacheDir?: string;
   /** Where anonymous usage data goes (telemetry.ts). */
   usageHost: string;
   version: string;
@@ -112,9 +115,14 @@ export type InstallRequest = {
   githubToken?: string;
   /** The file's browser link, downloaded without the token when GitHub refuses the token (expired or revoked). */
   fallbackUrl?: string;
+  /** The download cache, while it's on (cache.ts): the file comes from it when it's there, and is kept in it as it says. */
+  cache?: CacheUse;
   /** False: a download that's a Windows setup program is kept as a file, not run (`Settings.runSetupPrograms` off). Unset: run. */
   runSetup?: boolean;
 };
+/** A file in the download cache (cache.rs). */
+export type CachedFile = { hash: string; filename: string; path: string; source?: boolean; size: number; apps: { app: string; version: string; os?: string; arch?: string; slug?: string }[]; cachedAt: number; usedAt: number };
+export type CacheStatus = { files: number; bytes: number; entries: CachedFile[] };
 /** What an install did. A Windows installer (MSI) puts its files where its setup chose. */
 export type Installed = {
   dir: string;
@@ -314,6 +322,29 @@ export const native = {
   startEmptyLibrary: () => invoke<void>("start_empty_library"),
   /** Fails with "cancelled" when the player stops it, "missing" when its file is gone (a 404), or "mismatch" when the download isn't the file its checksum names. */
   install: (request: InstallRequest) => invoke<Installed>("install", { request }),
+  /** Downloads a release file into the download cache only (cache.ts). Fails with "cancelled", "missing" or "mismatch" as an install does. */
+  cacheFetch: (request: InstallRequest) => invoke<void>("cache_fetch", { request }),
+  cacheFetchCancel: () => invoke<void>("cache_fetch_cancel"),
+  onCacheProgress: (handler: (p: { id: string; received: number; total?: number | null }) => void) =>
+    listen<{ id: string; received: number; total?: number | null }>("cache-progress", (e) => handler(e.payload)),
+  /** What's in the cache. `names`, apps' ids to their slugs, names the folders of files an older build kept by hash, which move to them. */
+  cacheStatus: (dir: string, names?: Record<string, string>) => invoke<CacheStatus>("cache_status", { dir, names: names ?? null }),
+  cacheHas: (dir: string, checksums: string[]) => invoke<boolean[]>("cache_has", { dir, checksums }),
+  /** Clears what a launcher closed mid-download left in the cache (`.incoming`, half-written files); nothing while a fetch is under way. How many files went. */
+  cacheClean: (dir: string) => invoke<number>("cache_clean", { dir }),
+  /** Rotates the cache down to `limit` bytes (null: no limit), never the files of `protect`. */
+  cacheTrim: (dir: string, limit: number | null, protect: string[]) => invoke<void>("cache_trim", { dir, limit, protect }),
+  /** Removes these files (by hash), or every one Quiver kept there. */
+  cacheRemove: (dir: string, hashes?: string[]) => invoke<void>("cache_remove", { dir, hashes: hashes ?? null }),
+  /** Shows the cache folder settings.json names, else the default one. */
+  cacheOpen: () => invoke<void>("cache_open"),
+  /** Keeps an app's README and the pictures it shows (their resolved addresses), unless it's kept as it is already. Whether it kept it. */
+  cacheReadmeSave: (dir: string, app: string, slug: string, readme: Readme, images: string[]) =>
+    invoke<boolean>("cache_readme_save", { dir, app, slug, readme: { markdown: readme.markdown, rawBase: readme.rawBase, htmlBase: readme.htmlBase, fetchedAt: readme.fetchedAt }, images }),
+  /** The README the cache keeps of an app, its pictures as data: addresses; null when there's none. */
+  cacheReadmeRead: (dir: string, app: string, slug: string) => invoke<(Readme & { keptAt: number; images: Record<string, string> }) | null>("cache_readme_read", { dir, app, slug }),
+  /** Shows an app's folder in the cache; fails while none of its files are kept. */
+  cacheOpenApp: (app: string) => invoke<void>("cache_open_app", { app }),
   /** Starts an app; `id` names it in `onAppClosed` once it closes. `presence` is what Discord shows the player playing while it runs. */
   launch: (id: string | undefined, folder: string, dir: string | undefined, preferred: string[], wine: boolean, program?: string, launch?: LaunchOptions, presence?: DiscordGame) =>
     invoke<void>("launch", { id, folder, dir, preferred, wine, program, launch, presence }),

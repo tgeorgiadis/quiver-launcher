@@ -2,6 +2,7 @@
 mod android;
 mod apps_folder;
 mod browser;
+mod cache;
 mod custom_art;
 mod device;
 mod discord;
@@ -74,6 +75,8 @@ struct Config {
     os: &'static str,
     arch: &'static str,
     apps_dir: String,
+    /// The download cache's folder unless the player picks another: `cache` in the data folder (beside a portable copy).
+    cache_dir: String,
     /// Where anonymous usage data goes: the website, or a stand-in in end-to-end tests.
     usage_host: String,
     /// This build's version, sent with usage data.
@@ -130,6 +133,7 @@ fn config(app: tauri::AppHandle, data: State<Data>) -> Config {
         os: OS,
         arch: ARCH,
         apps_dir: data.apps().to_string_lossy().into(),
+        cache_dir: data.0.join("cache").to_string_lossy().into(),
         usage_host: std::env::var("QUIVER_USAGE_HOST").unwrap_or_else(|_| "https://quiverlauncher.com".into()),
         version: app.package_info().version.to_string(),
         home: std::env::var(if OS == "windows" { "USERPROFILE" } else { "HOME" }).ok().filter(|h| !h.is_empty()),
@@ -250,6 +254,155 @@ async fn install(app: tauri::AppHandle, request: install::InstallRequest) -> Res
     .await;
     app.state::<Installing>().0.lock().unwrap().remove(&id);
     result
+}
+
+/// The download cache's fetches (cache.rs), one at a time: sending true cancels the one under way.
+#[derive(Default)]
+struct CacheFetching(std::sync::Mutex<Option<tokio::sync::watch::Sender<bool>>>);
+
+/// Downloads a release file into the download cache, without installing it. Its progress comes as `cache-progress`.
+#[tauri::command]
+async fn cache_fetch(app: tauri::AppHandle, request: install::InstallRequest) -> Result<(), String> {
+    let (cancel, cancelled) = tokio::sync::watch::channel(false);
+    *app.state::<CacheFetching>().0.lock().unwrap() = Some(cancel);
+    let result = install::fetch_to_cache(request, cancelled, |p| {
+        let _ = app.emit("cache-progress", p);
+    })
+    .await;
+    *app.state::<CacheFetching>().0.lock().unwrap() = None;
+    result
+}
+
+/// Stops the download cache's fetch under way; it fails with "cancelled".
+#[tauri::command]
+fn cache_fetch_cancel(fetching: State<CacheFetching>) {
+    if let Some(cancel) = fetching.0.lock().unwrap().as_ref() {
+        let _ = cancel.send(true);
+    }
+}
+
+/// Clears what a launcher closed mid-download left in the download cache (cache.rs's `clean`): only while no fetch is
+/// under way, so one coming in is never taken from under it. How many files went.
+#[tauri::command]
+async fn cache_clean(app: tauri::AppHandle, dir: String) -> Result<usize, String> {
+    if app.state::<CacheFetching>().0.lock().unwrap().is_some() {
+        return Ok(0);
+    }
+    tauri::async_runtime::spawn_blocking(move || cache::clean(Path::new(&dir))).await.map_err(|e| e.to_string())
+}
+
+/// The most of a README's pictures the download cache keeps: how many, how large each, and how much in all.
+const README_IMAGES: usize = 40;
+const README_IMAGE_BYTES: usize = 10 << 20;
+const README_ALL_BYTES: usize = 50 << 20;
+
+/// Keeps an app's README in the download cache with the pictures it shows (`images`, as the page resolves their
+/// addresses), unless the one kept is this already. Whether it kept it. A picture that doesn't come is left out.
+#[tauri::command]
+async fn cache_readme_save(dir: String, app: String, slug: String, readme: cache::ReadmeCopy, images: Vec<String>) -> Result<bool, String> {
+    let at = PathBuf::from(&dir);
+    if cache::readme_is(&at, &app, &slug, &cache::readme_hash(&readme)) {
+        return Ok(false);
+    }
+    let client = reqwest::Client::builder()
+        .user_agent("QuiverLauncher/4")
+        .timeout(std::time::Duration::from_secs(30))
+        .build()
+        .map_err(|e| e.to_string())?;
+    let (mut kept, mut total) = (Vec::new(), 0usize);
+    let mut seen = std::collections::HashSet::new();
+    for url in images.into_iter().filter(|u| u.starts_with("https://") || u.starts_with("http://")) {
+        if kept.len() >= README_IMAGES || !seen.insert(url.clone()) {
+            continue;
+        }
+        let Ok(response) = client.get(&url).send().await else { continue };
+        if !response.status().is_success() {
+            continue;
+        }
+        let given = response.headers().get(reqwest::header::CONTENT_TYPE).and_then(|v| v.to_str().ok()).unwrap_or("").to_string();
+        // A host that serves a picture as plain text (as some do an .svg): its type by its address.
+        let mime = if given.starts_with("image/") { given } else { readme_image_type(&url).unwrap_or_default().to_string() };
+        if mime.is_empty() {
+            continue;
+        }
+        let Ok(bytes) = response.bytes().await else { continue };
+        if bytes.len() > README_IMAGE_BYTES || total + bytes.len() > README_ALL_BYTES {
+            continue;
+        }
+        total += bytes.len();
+        kept.push(cache::ReadmeImage { url, bytes: bytes.to_vec(), mime });
+    }
+    tauri::async_runtime::spawn_blocking(move || cache::keep_readme(&at, &app, &slug, &readme, &kept))
+        .await
+        .map_err(|e| e.to_string())?
+        .map_err(|e| e.to_string())?;
+    Ok(true)
+}
+
+/// A picture's type by the extension its address ends in, for a host that doesn't say.
+fn readme_image_type(url: &str) -> Option<&'static str> {
+    let path = url.split(['?', '#']).next().unwrap_or(url).to_ascii_lowercase();
+    [(".png", "image/png"), (".jpg", "image/jpeg"), (".jpeg", "image/jpeg"), (".gif", "image/gif"), (".webp", "image/webp"), (".svg", "image/svg+xml"), (".avif", "image/avif")]
+        .into_iter()
+        .find(|(ext, _)| path.ends_with(ext))
+        .map(|(_, mime)| mime)
+}
+
+/// The README the download cache keeps of an app, for its page while the site can't be reached.
+#[tauri::command]
+async fn cache_readme_read(dir: String, app: String, slug: String) -> Result<Option<cache::ReadmeKept>, String> {
+    tauri::async_runtime::spawn_blocking(move || cache::read_readme(Path::new(&dir), &app, &slug)).await.map_err(|e| e.to_string())
+}
+
+/// What's in the download cache. `names`: apps' ids to their slugs, for files an older build kept without one, which
+/// move to their app's folder.
+#[tauri::command]
+async fn cache_status(dir: String, names: Option<std::collections::HashMap<String, String>>) -> Result<cache::Status, String> {
+    tauri::async_runtime::spawn_blocking(move || cache::status(Path::new(&dir), &names.unwrap_or_default())).await.map_err(|e| e.to_string())
+}
+
+/// Which of these files (`sha256:<hex>`) the download cache has.
+#[tauri::command]
+fn cache_has(dir: String, checksums: Vec<String>) -> Vec<bool> {
+    cache::has(Path::new(&dir), &checksums)
+}
+
+/// Rotates the download cache down to `limit` bytes (none for no limit), keeping `protect`'s files.
+#[tauri::command]
+async fn cache_trim(dir: String, limit: Option<u64>, protect: Vec<String>) -> Result<(), String> {
+    tauri::async_runtime::spawn_blocking(move || cache::trim(Path::new(&dir), limit, &protect)).await.map_err(|e| e.to_string())?.map_err(|e| e.to_string())
+}
+
+/// Removes these files from the download cache, or all of them when `hashes` is none.
+#[tauri::command]
+async fn cache_remove(dir: String, hashes: Option<Vec<String>>) -> Result<(), String> {
+    tauri::async_runtime::spawn_blocking(move || cache::remove(Path::new(&dir), hashes.as_deref())).await.map_err(|e| e.to_string())?.map_err(|e| e.to_string())
+}
+
+/// Shows the download cache's folder: the one settings.json names, else `cache` in the data folder. Never another
+/// path, as the page can't name one.
+#[tauri::command]
+fn cache_open(data: State<Data>) -> Result<(), String> {
+    let settings: serde_json::Value = std::fs::read(state_file(&data, "settings")?)
+        .ok()
+        .and_then(|b| serde_json::from_slice(&b).ok())
+        .unwrap_or_default();
+    let dir = settings["cache"]["dir"].as_str().map(str::trim).filter(|d| !d.is_empty()).map(PathBuf::from).unwrap_or_else(|| data.0.join("cache"));
+    std::fs::create_dir_all(&dir).map_err(|_| "Couldn't open the cache folder. Is its drive connected?".to_string())?;
+    reveal(&dir)
+}
+
+/// Shows an app's folder in the download cache: in the cache folder settings.json names (as `cache_open`), where the
+/// index says its files are. Never another path.
+#[tauri::command]
+fn cache_open_app(data: State<Data>, app: String) -> Result<(), String> {
+    let settings: serde_json::Value = std::fs::read(state_file(&data, "settings")?)
+        .ok()
+        .and_then(|b| serde_json::from_slice(&b).ok())
+        .unwrap_or_default();
+    let dir = settings["cache"]["dir"].as_str().map(str::trim).filter(|d| !d.is_empty()).map(PathBuf::from).unwrap_or_else(|| data.0.join("cache"));
+    let folder = cache::app_folder(&dir, &app).ok_or("None of this app's files are in the download cache yet.")?;
+    reveal(&folder)
 }
 
 /// Installs under way, by app id: sending true cancels one.
@@ -2522,6 +2675,7 @@ pub fn run() {
             app.manage(Snapshotted(Default::default()));
             app.manage(gamepad::Pads::default());
             app.manage(Installing::default());
+            app.manage(CacheFetching::default());
             app.manage(Running::default());
             app.manage(Watching::default());
             app.manage(discord::Presence::new());
@@ -2543,6 +2697,17 @@ pub fn run() {
             config,
             pc_specs,
             cancel_install,
+            cache_fetch,
+            cache_fetch_cancel,
+            cache_status,
+            cache_clean,
+            cache_readme_save,
+            cache_readme_read,
+            cache_has,
+            cache_trim,
+            cache_remove,
+            cache_open,
+            cache_open_app,
             read_state,
             write_state,
             state_problems,

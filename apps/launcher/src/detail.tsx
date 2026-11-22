@@ -13,7 +13,8 @@ import type { MessageDescriptor } from "@lingui/core";
 import { ApiError, providerFor, type AiUse, type Asset, type Checking, type Client, type DeveloperProfile, type Detail, type Entry, type HistoryRelease, type Os, type Readme as ReadmeText, type Release, type ReleaseScan, type RepositoryRef, type Withdrawn } from "@quiverlauncher/api";
 import { EasySetupChip, OS_NAMES, ReleaseBadge, alertTitles, badgeState, hasEasySetup, fullDate, platformList, relativeTime, tagLabel } from "@quiverlauncher/ui";
 import { hiddenOnApp, hideOnApp, hideableTags } from "./catalog-tags";
-import { Markdown } from "@quiverlauncher/ui/markdown";
+import { Markdown, readmeImages } from "@quiverlauncher/ui/markdown";
+import { cacheOf, keepsReadme } from "./cache";
 import { i18n } from "@quiverlauncher/i18n";
 import { earlyHereFor, onlyPrereleases, pulledVerified, useLauncher, type Install, type Settings } from "./store";
 import { launchCopies } from "./own-copy";
@@ -271,10 +272,21 @@ function Clipped({ height, opened = false, children }: { height: number; opened?
   );
 }
 
+/** Over a README the download cache kept, shown as quiverlauncher.com can't be reached: that it's a saved copy, and from when. */
+function KeptReadmeNote({ at }: { at: number }) {
+  const when = new Date(at).toLocaleDateString(i18n.locale, { year: "numeric", month: "short", day: "numeric" });
+  return (
+    <p className="readme-kept" role="note">
+      <Trans>quiverlauncher.com can't be reached, so this is the copy saved in your download cache on {when}.</Trans>
+    </p>
+  );
+}
+
 /** The project's README: the site's copy, else straight from its host. Asked for (`asked`), it's shown whole, scrolled to, with the focus to read on from. */
 export function Readme({ entry, source, asked }: { entry: Entry; source: Source | null | undefined; asked?: boolean }) {
-  const { client, providers } = useLauncher();
-  const [readme, setReadme] = useState<ReadmeText | null | undefined>();
+  const { client, providers, settings, config, installs } = useLauncher();
+  // A kept copy, while quiverlauncher.com can't be reached: its pictures, and when it was kept.
+  const [readme, setReadme] = useState<(ReadmeText & { images?: Record<string, string>; keptAt?: number }) | null | undefined>();
   const start = useRef<HTMLSpanElement>(null);
   const arrived = readme !== undefined;
   useEffect(() => {
@@ -286,15 +298,25 @@ export function Readme({ entry, source, asked }: { entry: Entry; source: Source 
   useEffect(() => {
     if (source === undefined || isLocal(entry.id)) return;
     let live = true;
-    const upstream = () => (source ? providers.readme(source) : Promise.resolve(null));
-    (isCustom(entry.id) ? upstream() : client.readme(entry.slug).then((r) => r ?? upstream()))
-      .catch(() => upstream())
-      .then(
-        (r) => live && setReadme(r),
-        () => live && setReadme(null),
-      );
+    const upstream = () => (source ? providers.readme(source) : Promise.resolve(null)).catch(() => null);
+    const cache = cacheOf(settings.cache, config.cacheDir ?? "");
+    void (async () => {
+      // The site's copy, else straight from its host, as ever: always the newest there is, when either answers.
+      const site = isCustom(entry.id) ? undefined : await client.readme(entry.slug).then((r) => ({ r, reached: true }), () => ({ r: null, reached: false }));
+      const online = site?.r ?? (await upstream());
+      if (online) {
+        if (live) setReadme(online);
+        // Kept for the download cache's apps, in place of the copy before when it changed.
+        if (!isCustom(entry.id) && keepsReadme(cache, entry.id, Boolean(installs[entry.id])))
+          void native.cacheReadmeSave(cache.dir, entry.id, entry.slug, online, readmeImages(online.markdown, online)).catch(() => {});
+        return;
+      }
+      // Only when the site couldn't be reached at all (not when it has none): the copy the cache keeps.
+      const kept = site && !site.reached && cache.on ? await native.cacheReadmeRead(cache.dir, entry.id, entry.slug).catch(() => null) : null;
+      if (live) setReadme(kept);
+    })();
     return () => void (live = false);
-  }, [client, providers, entry.id, entry.slug, source]);
+  }, [client, providers, entry.id, entry.slug, source]); // eslint-disable-line react-hooks/exhaustive-deps
   // No README: what the catalog says about it, as on the website.
   if (readme === null && entry.description.trim() && !isLocal(entry.id))
     return (
@@ -323,7 +345,8 @@ export function Readme({ entry, source, asked }: { entry: Entry; source: Source 
       </div>
       <div className="readme-body">
         <Clipped height={320} opened={asked}>
-          <Markdown text={readme.markdown} rawBase={readme.rawBase} htmlBase={readme.htmlBase} alertTitles={alertTitles()} />
+          {readme.keptAt !== undefined && <KeptReadmeNote at={readme.keptAt} />}
+          <Markdown text={readme.markdown} rawBase={readme.rawBase} htmlBase={readme.htmlBase} alertTitles={alertTitles()} images={readme.images} />
         </Clipped>
       </div>
     </section>

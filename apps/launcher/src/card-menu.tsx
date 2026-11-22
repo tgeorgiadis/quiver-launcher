@@ -18,7 +18,9 @@ import { Popover, newKey } from "./library";
 import { manageTags } from "./tag-settings";
 import { foldersOn, providerName, shortcutRequest, shortcutsOn, steamRunsUsNote, useAppDetail, withTag } from "./detail";
 import { bare, versionLabel } from "./versions";
-import { isLocal } from "./custom";
+import { isLocal, isOwn } from "./custom";
+import { cacheOf, isSelected, withSelected } from "./cache";
+import { requestCache } from "./cache-signal";
 import { toggleHidden } from "./browse-hidden";
 import { tagLabel } from "@quiverlauncher/ui";
 import { hiddenOnApp, hideOnApp, hideableTags } from "./catalog-tags";
@@ -402,6 +404,23 @@ function MenuItems({ entry, onOpen, close, escape }: { entry: Entry; onOpen: () 
     manage.push({
       text: install?.wine ? t`Switch to the Linux version` : install ? t`Switch to the Windows version (Wine)` : t`Install the Windows version (Wine)`,
       act: () => void get(latest, undefined, { platform: install?.wine ? "linux" : "windows" }),
+    });
+  // While the download cache keeps Selected titles: this one in it or out, as its Manage tab has it (cache-page.tsx).
+  const cache = cacheOf(settings.cache, config.cacheDir ?? "");
+  if (cache.mode === "selected" && !isOwn(entry.id) && entry.slug) {
+    const kept = isSelected(cache, entry.id);
+    manage.push({
+      text: kept
+        ? t({ message: "Stop keeping in download cache", comment: "Menu item: the download cache no longer keeps this app's newest release" })
+        : t({ message: "Keep in download cache", comment: "Toggle on an app's Manage tab: the download cache keeps this app's newest release" }),
+      act: () => setSettings((s) => ({ ...s, cache: withSelected(s.cache, entry, !kept) })),
+    });
+  }
+  // Installed only: its installed version's file (every system's, when those are kept) into the cache now.
+  if (cache.mode === "installed" && install && !install.local && !isOwn(entry.id) && entry.slug)
+    manage.push({
+      text: t({ message: "Cache now", comment: "Menu item: the download cache keeps this installed app's file now" }),
+      act: () => requestCache([entry.id]),
     });
   manage.push({
     text: hidden ? t`Show in library` : t`Hide from library`,
