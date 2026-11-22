@@ -1758,6 +1758,15 @@ fn copy_present(data: State<'_, Data>, folder: String, dir: Option<String>, wine
     present_app_dir(&data, &folder, dir).is_ok_and(|d| own_copy::present(&file, Path::new(&path), &d, wine))
 }
 
+/// What's already where the app reads its copy (`destination`), put there by the player before Quiver knew of it,
+/// if anything: the path, for the launcher to check and keep as the copy. Null when the copy only goes by flag or
+/// environment variable, or nothing's there.
+#[tauri::command]
+fn copy_in_place(data: State<'_, Data>, folder: String, dir: Option<String>, wine: bool, file: own_copy::SetupFile) -> Option<String> {
+    let app_dir = present_app_dir(&data, &folder, dir).ok()?;
+    own_copy::in_place(&file, &app_dir, wine).map(|p| p.to_string_lossy().into_owned())
+}
+
 /// Asks the player for a folder on this computer, opening in `dir` when it's
 /// one; null if they cancel. `QUIVER_PICK_FOLDER` answers instead in
 /// end-to-end tests.
@@ -2636,6 +2645,7 @@ pub fn run() {
             check_copy,
             place_copy,
             copy_present,
+            copy_in_place,
             android_app_gone,
             file_kinds,
             missed_programs,

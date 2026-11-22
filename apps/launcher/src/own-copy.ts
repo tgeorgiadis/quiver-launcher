@@ -35,7 +35,7 @@ export function launchCopies(entry: Pick<Entry, "launcher"> | undefined, install
   for (const file of entry?.launcher?.setupFiles ?? []) {
     const copy = install?.copies?.[file.id];
     const positional = file.positional === true && !file.flag;
-    if (!copy || (!file.flag && !positional && !file.env)) continue;
+    if (!copy || copy.yours || (!file.flag && !positional && !file.env)) continue;
     out.push({
       ...(file.flag ? { flag: file.flag } : {}),
       ...(positional ? { positional: true } : {}),

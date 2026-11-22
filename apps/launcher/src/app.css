@@ -1180,6 +1180,11 @@ html[data-navigating] .shelf-row { scroll-snap-type: none; }
 .own-copy-looking .spinning { flex: none; animation: spin 1s linear infinite; }
 @media (prefers-reduced-motion: reduce) { .own-copy-looking .spinning { animation: none; } }
 .own-copy-prompt .own-copy-add-folder { display: flex; align-self: flex-start; justify-self: start; margin-right: auto !important; align-items: center; gap: 6px; width: auto; min-height: 0; margin: 0 0 12px; padding: 0; border: 0; background: none; color: var(--accent); font-size: 13px; text-decoration: underline; }
+/* Under its buttons: the player set the game up themselves; and, when they have, asking again. */
+.own-copy-prompt .own-copy-already, .own-copy-prompt .own-copy-yours .link-button { display: inline-flex; align-items: center; gap: 6px; width: auto; min-height: 0; padding: 0; border: 0; background: none; color: var(--accent); font-size: 13px; text-decoration: underline; }
+.own-copy-prompt .own-copy-already { margin-top: 14px; }
+.own-copy-prompt .own-copy-already:hover, .own-copy-prompt .own-copy-yours .link-button:hover { color: var(--strong); }
+.own-copy-yours { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 13px; }
 /* Its buttons' labels on one line each: they wrap as whole buttons onto a second row instead. */
 .own-copy-prompt .row > button { flex: 1 1 auto; white-space: nowrap; }
 /* Settings → Game copies: each console with the folders its copies are looked for in first. */

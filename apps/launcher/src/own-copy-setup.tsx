@@ -30,7 +30,7 @@ export function OwnCopyChips({ entry, install }: { entry: Entry; install: Instal
     let current = true;
     const checks = files.map(async (f) => {
       const copy = install.copies?.[f.id];
-      if (!copy) return null;
+      if (!copy || copy.yours) return null;
       const there = await native.copyPresent(install.folder, install.dir, Boolean(install.wine), f, copy.path).catch(() => true);
       return there ? null : f.id;
     });
@@ -71,6 +71,7 @@ export function OwnCopyChips({ entry, install }: { entry: Entry; install: Instal
 
 /** A chip's short state, after the copy's name. */
 function chipState(file: SetupFile, copy: OwnCopy | undefined) {
+  if (copy?.yours) return t({ message: "Set up by you", comment: "The player said they set up their copy of the game themselves" });
   if (copy) return copy.dump ?? (copy.verified ? t`Good copy` : t`Ready`);
   if (!delivered(file)) return t`Check yours`;
   return t`Optional`;
@@ -78,6 +79,7 @@ function chipState(file: SetupFile, copy: OwnCopy | undefined) {
 
 function copyState(file: SetupFile, copy: OwnCopy | undefined, missing: boolean) {
   if (missing) return t`It isn't where the game reads it any more. Set it up again.`;
+  if (copy?.yours) return t`You set it up yourself, so Quiver doesn't ask for it when you play.`;
   if (copy) {
     const dump = copy.dump;
     if (copy.verified) return dump ? t`Ready: a good copy (${dump})` : t`Ready: a good copy`;
@@ -107,7 +109,7 @@ type Phase =
   | { kind: "choose"; found: { path: string; size: number; mine?: boolean }[] }
   | { kind: "checking"; path: string }
   | { kind: "placing"; path: string }
-  | { kind: "problem"; path: string; checked: CheckedCopy | null; text: string }
+  | { kind: "problem"; path: string; checked: CheckedCopy | null; text: string; inPlace?: boolean }
   | { kind: "done"; copy: OwnCopy };
 
 /** The dialog Play and the panel open: one copy at a time, then Ready to play. */
@@ -151,15 +153,26 @@ export function OwnCopyPrompt() {
   }, [open]);
   // Only where the player keeps this game's console's copies (Settings → Game copies): nowhere they didn't say.
   const folders = copyFoldersFor(settings.copyFolders, entry?.consoles);
-  // Looks for copies as each one is asked for, and again when the player adds a folder.
+  // Looks for copies as each one is asked for, and again when the player adds a folder. First, one the player already
+  // put where the game reads it, following the game's own instructions: checked and kept there, so it isn't asked for
+  // again.
+  const useInPlace = useRef<(path: string) => void>(() => {});
   useEffect(() => {
-    if (!open || !file || done) return;
+    if (!open || !file || !install || done) return;
     const turn = ++asked.current;
-    if (!folders.length) return setPhase({ kind: "choose", found: [] });
+    const look = () => {
+      if (!folders.length) return setPhase({ kind: "choose", found: [] });
+      setPhase({ kind: "looking" });
+      native.findCopies(file, folders).then(
+        (found) => turn === asked.current && setPhase({ kind: "choose", found }),
+        () => turn === asked.current && setPhase({ kind: "choose", found: [] }),
+      );
+    };
+    if (!file.destination || install.copies?.[file.id]) return look();
     setPhase({ kind: "looking" });
-    native.findCopies(file, folders).then(
-      (found) => turn === asked.current && setPhase({ kind: "choose", found }),
-      () => turn === asked.current && setPhase({ kind: "choose", found: [] }),
+    native.copyInPlace(install.folder, install.dir, Boolean(install.wine), file).then(
+      (path) => turn === asked.current && (path ? useInPlace.current(path) : look()),
+      () => turn === asked.current && look(),
     );
   }, [open, file?.id, asking?.id, folders.join("\n")]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -168,7 +181,7 @@ export function OwnCopyPrompt() {
   const close = () => setUpCopy(null);
   const folder = file.kind === "folder";
 
-  const use = async (path: string) => {
+  const use = async (path: string, inPlace = false) => {
     const turn = asked.current;
     setProgress(null);
     setPhase({ kind: "checking", path });
@@ -176,10 +189,13 @@ export function OwnCopyPrompt() {
     try {
       checked = await native.checkCopy(file, path);
     } catch (e) {
-      return turn === asked.current && setPhase({ kind: "problem", path, checked: null, text: String(e) });
+      return turn === asked.current && setPhase({ kind: "problem", path, checked: null, text: String(e), inPlace });
     }
     if (turn !== asked.current) return;
-    if (!checked.ok) return setPhase({ kind: "problem", path, checked, text: checked.problem ?? t`That isn't a copy this game takes.` });
+    if (!checked.ok) {
+      const why = checked.problem ?? t`That isn't a copy this game takes.`;
+      return setPhase({ kind: "problem", path, checked, text: inPlace ? `${t`There's already a file where ${name} reads it.`} ${why}` : why, inPlace });
+    }
     setProgress(null);
     setPhase({ kind: "placing", path });
     try {
@@ -197,6 +213,18 @@ export function OwnCopyPrompt() {
       if (turn === asked.current) setPhase({ kind: "problem", path, checked, text: String(e) });
     }
   };
+  useInPlace.current = (path) => void use(path, true);
+  const copy = install.copies?.[file.id];
+  // The player says the game has its copy already, set up their own way: Quiver stops asking for it at Play, and
+  // its chip says so, where they can have it asked for again.
+  const setUpAlready = () => {
+    setCopy(entry.id, file.id, { path: "", yours: true, at: Date.now() });
+    // The next one the game needs, if there is one.
+    if (!asking.fileId && queue.length > 1) return;
+    if (asking.play) setLaunching(true);
+    else close();
+  };
+  const askAgain = () => (setCopy(entry.id, file.id, undefined), close());
   const choose = async () => {
     const path = await native.pickCopy(file).catch(() => null);
     if (path) void use(path);
@@ -340,7 +368,16 @@ export function OwnCopyPrompt() {
                 </p>
                 <p className="muted small own-copy-path">{phase.path}</p>
                 {phase.checked?.sha1 && <p className="muted small own-copy-path">SHA-1 {phase.checked.sha1}</p>}
+                {phase.inPlace && <p className="muted small">{t`If ${name} plays fine with it, choose I've already set it up below, and Quiver won't ask again.`}</p>}
               </div>
+            )}
+            {copy?.yours && (
+              <p className="muted own-copy-yours">
+                <CircleCheck size={14} aria-hidden="true" /> {t`You set it up yourself, so Quiver doesn't ask for it when you play.`}{" "}
+                <button className="link-button" disabled={busy} onClick={askAgain}>
+                  {t({ message: "Ask me again", comment: "Button: have Quiver ask for the player's copy of the game at Play again" })}
+                </button>
+              </p>
             )}
             <div className="row">
               {/* Made anew as the dialog moves on, so autoFocus takes again: a found copy takes focus in its place. */}
@@ -354,6 +391,12 @@ export function OwnCopyPrompt() {
                 {t`Cancel`}
               </button>
             </div>
+            {/* Set up the game's own way already (its readme's steps, another version that runs): no more asking at Play. */}
+            {!copy?.yours && !busy && (
+              <button className="link-button own-copy-already" onClick={setUpAlready}>
+                <CircleCheck size={14} aria-hidden="true" /> {t({ message: "I've already set it up, don't ask again", comment: "Button: the player set up their copy of the game themselves" })}
+              </button>
+            )}
             {!asking.fileId && placedCount + queue.length > 1 && <p className="muted small">{t`${placedCount + 1} of ${placedCount + queue.length}`}</p>}
           </>
         )}

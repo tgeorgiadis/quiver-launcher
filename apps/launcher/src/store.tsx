@@ -152,10 +152,15 @@ export type Install = {
   /** The player's own copies of its game, by the catalog's setup file id (own-copy.ts). Kept through updates. */
   copies?: Record<string, OwnCopy>;
 };
-/** The player's copy of an app's game, checked and put where the app reads it. */
+/**
+ * The player's copy of an app's game, checked and put where the app reads it; or, `yours`, one the player says they
+ * set up themselves, which Quiver doesn't ask for at Play.
+ */
 export type OwnCopy = {
-  /** Where the player keeps it. */
+  /** Where the player keeps it; empty when it's `yours`. */
   path: string;
+  /** The player said they set it up themselves: Quiver didn't check it or put it anywhere, and passes the game nothing. */
+  yours?: true;
   /** Where Quiver put it for the app, when the catalog says where. */
   placed?: string;
   /** The dump it matched ("US 1.0"), when it matched one. */

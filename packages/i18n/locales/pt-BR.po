@@ -1478,6 +1478,11 @@ msgstr "Como nas Configurações: {name}"
 msgid "Ask a question, share a tip or talk about this app. For how it ran, use Player feedback."
 msgstr "Faça uma pergunta, compartilhe uma dica ou fale sobre este app. Para contar como ele rodou, use o feedback dos jogadores."
 
+#. Button: have Quiver ask for the player's copy of the game at Play again
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "Ask me again"
+msgstr ""
+
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Ask where to install each app"
 msgstr "Perguntar onde instalar cada app"
@@ -3188,6 +3193,11 @@ msgstr "Entendo que o Quiver bloqueou esta versão"
 msgid "I understand this release was withdrawn, and I accept the risk"
 msgstr "Entendo que esta versão foi retirada e aceito o risco"
 
+#. Button: the player set up their copy of the game themselves
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "I've already set it up, don't ask again"
+msgstr ""
+
 #. Library card image
 #: ../../apps/launcher/src/custom-art.tsx
 #: ../../apps/launcher/src/view.ts
@@ -3201,6 +3211,10 @@ msgstr "Endereço do ícone"
 #: ../../apps/launcher/src/library.tsx
 msgid "Icon on its tab"
 msgstr "Ícone na aba"
+
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "If {name} plays fine with it, choose I've already set it up below, and Quiver won't ask again."
+msgstr ""
 
 #: ../../apps/launcher/src/detail.tsx
 msgid "If you installed it and are happy to accept the risk, you can keep using it; otherwise, remove it and install an available release instead."
@@ -6000,6 +6014,11 @@ msgstr "Escolher uma pasta para outro sistema…"
 msgid "Set up and play"
 msgstr "Configurar e jogar"
 
+#. The player said they set up their copy of the game themselves
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "Set up by you"
+msgstr ""
+
 #: ../../apps/launcher/src/setup.tsx
 msgid "Set up Quiver Launcher"
 msgstr "Configurar o Quiver Launcher"
@@ -6826,6 +6845,10 @@ msgstr "Ainda não há mods aqui."
 #: ../../apps/launcher/src/detail.tsx
 msgid "There are no releases yet. Check the upstream project for downloads."
 msgstr "Ainda não há versões. Confira o projeto original para downloads."
+
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "There's already a file where {name} reads it."
+msgstr ""
 
 #: ../../apps/launcher/src/saves-tab.tsx
 msgid "These are my saves"
@@ -7738,6 +7761,10 @@ msgstr "Você ainda não adicionou tags a nenhum app. Adicione tags pelo menu de
 #: ../../apps/launcher/src/correction.tsx
 msgid "You reported a problem on {sent}. A maintainer will take a look."
 msgstr "Você relatou um problema em {sent}. Um mantenedor vai analisar."
+
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "You set it up yourself, so Quiver doesn't ask for it when you play."
+msgstr ""
 
 #: ../../apps/launcher/src/App.tsx
 msgid "You skipped {updateVersion}. Quiver Launcher offers the next new release."
