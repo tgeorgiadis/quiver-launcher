@@ -1,7 +1,7 @@
 import type { Asset, Os } from "@quiverlauncher/api";
 
 /** Checksums, signatures, symbols and source archives: never the app itself. */
-const AUXILIARY =
+export const AUXILIARY =
   /\.(json|sha\d*|md5|sig|asc|minisig|pdb|txt)$|(^|[._-])(checksums?|sha\d*sums?|sources?|src|debug|symbols)([._-]|$)/i;
 /** What the launcher can install, best first. */
 const FORMATS = [
@@ -90,17 +90,19 @@ export function otherSystems(assets: Asset[], os: Os, arch: string): Os[] {
  * The newest of these releases (newest first) that this computer can install, as the catalog's verified release may
  * only have another system's build. With `platform`, it keeps to that system's build: an update doesn't move a player
  * between a native build and Windows' through Wine. Only where none has a native build does one here take Windows',
- * as an app that came over from Quiver Launcher 3 may be running that without saying so.
+ * as an app that came over from Quiver Launcher 3 may be running that without saying so. `files` is the player's own
+ * release files filter.
  */
 export function releaseFor<R extends { assets: Asset[] }>(
   releases: R[],
   os: Os,
   arch: string,
-  { filter, kind, platform }: { filter?: (release: R) => string | undefined; kind?: "msi" | "files"; platform?: Os } = {},
+  { filter, kind, platform, files }: { filter?: (release: R) => string | undefined; kind?: "msi" | "files"; platform?: Os; files?: string } = {},
 ): R | undefined {
-  const runs = (r: R) => bestAssets(r.assets, os, arch, filter?.(r), kind).length > 0;
+  // The player's own release files filter (`wantedFiles`) first: a release without a file it keeps has none here.
+  const runs = (r: R) => bestAssets(wantedFiles(r.assets, files), os, arch, filter?.(r), kind).length > 0;
   if (!platform) return releases.find(runs);
-  const own = releases.find((r) => hasBuildFor(r.assets, os, arch, platform, filter?.(r), kind));
+  const own = releases.find((r) => hasBuildFor(wantedFiles(r.assets, files), os, arch, platform, filter?.(r), kind));
   return own ?? (platform === os ? releases.find(runs) : undefined);
 }
 
@@ -180,3 +182,55 @@ export function assetFilterFor(chosen: string, files: string[]): string {
       .find((p) => !others.some((o) => o.includes(p))) ?? name
   );
 }
+
+/** One pattern of a player's release files filter: a file it fits, and whether it leaves files out (`!`). */
+type FilePattern = { out: boolean; fits: (name: string) => boolean };
+
+/**
+ * A player's release files filter, as Quiver Launcher 3's release asset filter read it and more: patterns separated by
+ * commas or new lines. Plain text is found anywhere in a file's name; with `*` (any text) or `?` (one character) it must
+ * fit the whole name, so `*portable*x64*` fits `Game_portable_1.0_x64.zip`; `/…/` is a regular expression. One that
+ * starts with `!` leaves the files it fits out. Never minds capitals. `bad` holds the patterns that aren't valid.
+ */
+export function parseFileFilter(filter: string | undefined): { patterns: FilePattern[]; bad: string[] } {
+  const patterns: FilePattern[] = [];
+  const bad: string[] = [];
+  for (const part of (filter ?? "").split(/[,\n]/)) {
+    const text = part.trim();
+    const out = text.startsWith("!");
+    const body = (out ? text.slice(1) : text).trim();
+    if (!body) {
+      if (out) bad.push(text);
+      continue;
+    }
+    const regex = /^\/(.+)\/([a-z]*)$/i.exec(body);
+    if (regex) {
+      try {
+        const re = new RegExp(regex[1], regex[2].replace(/[gyi]/gi, "") + "i");
+        patterns.push({ out, fits: (name) => re.test(name) });
+      } catch {
+        bad.push(text);
+      }
+      continue;
+    }
+    if (/[*?]/.test(body)) {
+      const re = new RegExp(`^${body.replace(/[.+^${}()|[\]\\/]/g, "\\$&").replace(/\*/g, ".*").replace(/\?/g, ".")}$`, "is");
+      patterns.push({ out, fits: (name) => re.test(name) });
+      continue;
+    }
+    const lower = body.toLowerCase();
+    patterns.push({ out, fits: (name) => name.toLowerCase().includes(lower) });
+  }
+  return { patterns, bad };
+}
+
+/** Whether a release file passes a player's release files filter (`parseFileFilter`): any file, without one. */
+export function fileWanted(name: string, filter: string | undefined): boolean {
+  const { patterns } = parseFileFilter(filter);
+  const wanted = patterns.filter((p) => !p.out);
+  return (!wanted.length || wanted.some((p) => p.fits(name))) && !patterns.some((p) => p.out && p.fits(name));
+}
+
+/** The release files a player's release files filter keeps: all of them, without one. */
+export const wantedFiles = <A extends Pick<Asset, "filename">>(assets: A[], filter: string | undefined): A[] =>
+  filter?.trim() ? assets.filter((a) => fileWanted(a.filename, filter)) : assets;

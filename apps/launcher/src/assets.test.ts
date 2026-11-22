@@ -1,6 +1,6 @@
 import { describe, expect, it, test } from "vitest";
 import type { Asset, Os } from "@quiverlauncher/api";
-import { assetFilterFor, bestAssets, hasBuildFor, installable, installFormat, otherSystems, pickedBefore, releaseFor, runsHere } from "./assets";
+import { assetFilterFor, bestAssets, fileWanted, hasBuildFor, installable, installFormat, otherSystems, parseFileFilter, pickedBefore, releaseFor, runsHere, wantedFiles } from "./assets";
 
 const asset = (filename: string, os: Asset["os"], architecture: Asset["architecture"] = "x64"): Asset => ({
   id: filename, url: `https://example.com/${filename}`, filename, os, architecture, format: "",
@@ -247,4 +247,53 @@ test("Android takes an APK an app ships zipped, as Ghostship does", () => {
   expect(bestAssets([...files, asset("Ghostship.apk", "android", "unknown")], "android", "arm64").map((a) => a.filename)).toEqual(["Ghostship.apk"]);
   // A release with no Android build: every archive is offered for the player to pick.
   expect(installable(files.slice(1), "android")).toHaveLength(3);
+});
+
+describe("the player's release files filter", () => {
+  const names = ["EXIT1-portable-1.0-x64.zip", "EXIT2-portable-1.0-x64.zip", "EXIT1-setup-1.0-x64.exe", "EXIT1-debug-1.0-x64.zip"];
+  const kept = (filter: string) => names.filter((n) => fileWanted(n, filter));
+
+  test("plain text matches anywhere in the name, whatever the capitals, as Quiver Launcher 3's did", () => {
+    expect(kept("exit1")).toEqual([names[0], names[2], names[3]]);
+    expect(kept("")).toEqual(names);
+    expect(kept("  ")).toEqual(names);
+  });
+
+  test("* and ? match the whole name", () => {
+    expect(kept("*portable*x64*")).toEqual([names[0], names[1]]);
+    expect(kept("EXIT?-setup*")).toEqual([names[2]]);
+    // Over the whole name: without a * at the end, a pattern must end where the name does.
+    expect(kept("EXIT1*portable")).toEqual([]);
+    // Dots and other regular expression characters are themselves.
+    expect(fileWanted("Game.v1.zip", "Game.v1.*")).toBe(true);
+    expect(fileWanted("GameXv1.zip", "Game.v1.*")).toBe(false);
+  });
+
+  test("several patterns, any of which keeps a file, and ! leaves files out", () => {
+    expect(kept("EXIT2, setup")).toEqual([names[1], names[2]]);
+    expect(kept("EXIT1, !debug")).toEqual([names[0], names[2]]);
+    expect(kept("!debug")).toEqual([names[0], names[1], names[2]]);
+    expect(kept("EXIT1\n!*.exe")).toEqual([names[0], names[3]]);
+  });
+
+  test("/…/ is a regular expression, and invalid ones are said", () => {
+    expect(kept("/^exit1-(portable|setup)/")).toEqual([names[0], names[2]]);
+    expect(kept("!/debug|setup/")).toEqual([names[0], names[1]]);
+    expect(parseFileFilter("/(unclosed/, ok, !").bad).toEqual(["/(unclosed/", "!"]);
+    expect(parseFileFilter("EXIT1, *x64*, /a+/").bad).toEqual([]);
+  });
+
+  test("it narrows what installs, before the catalog's own filter and the platform", () => {
+    const files = [asset("EXIT1-win.zip", "windows"), asset("EXIT2-win.zip", "windows"), asset("EXIT1-linux.tar.gz", "linux")];
+    expect(bestAssets(wantedFiles(files, "EXIT2"), "windows", "x64").map((a) => a.filename)).toEqual(["EXIT2-win.zip"]);
+    expect(wantedFiles(files, undefined)).toBe(files);
+    // A release with no file the filter keeps has nothing here: an update skips it for an older one that has.
+    const releases = [
+      { version: "2", assets: [asset("EXIT1-win-2.zip", "windows")] },
+      { version: "1", assets: [asset("EXIT1-win-1.zip", "windows"), asset("EXIT2-win-1.zip", "windows")] },
+    ];
+    expect(releaseFor(releases, "windows", "x64", { files: "EXIT2" })?.version).toBe("1");
+    expect(releaseFor(releases, "windows", "x64", { files: "EXIT2", platform: "windows" })?.version).toBe("1");
+    expect(releaseFor(releases, "windows", "x64")?.version).toBe("2");
+  });
 });

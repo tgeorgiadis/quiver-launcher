@@ -2650,3 +2650,14 @@ main:has(.tick-bar) { scroll-padding-bottom: 96px; }
 .apps-folder-info { grid-template-columns: minmax(0, 1fr); }
 .apps-folder-name, .apps-folder-path > span:last-child { min-width: 0; }
 .apps-folder-path > span:last-child { flex: none; }
+/* An app's release files filter (release-files.tsx): its patterns, and the newest release's files it keeps. */
+.release-files-current { margin-left: auto; max-width: 45%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--mono, ui-monospace, monospace); font-size: 12px; color: var(--text-3); }
+.release-files input { font-family: var(--mono, ui-monospace, monospace); }
+.release-files-help { margin: -4px 0 0; padding-left: 18px; display: grid; gap: 3px; }
+.release-files code { font-size: 12px; padding: 0 4px; border-radius: 4px; background: color-mix(in srgb, var(--line) 60%, transparent); }
+.release-files-preview ul { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 4px; max-height: 220px; overflow: auto; }
+.release-files-preview li { display: flex; align-items: center; gap: 6px; font-size: 12.5px; overflow-wrap: anywhere; }
+.release-files-preview li.kept svg { color: var(--green); flex: none; }
+.release-files-preview li.left-out { color: var(--text-3); text-decoration: line-through; }
+.release-files-preview li.left-out svg { flex: none; }
+.release-files-preview .field-label { margin: 0; }
