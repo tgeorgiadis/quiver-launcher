@@ -5287,6 +5287,10 @@ msgstr "遊玩"
 msgid "Play {name}"
 msgstr "遊玩 {name}"
 
+#: ../../apps/launcher/src/store.tsx
+msgid "Play {name} from Quiver once, to choose the program its setup installed."
+msgstr "請先在 Quiver 中執行一次 {name}，選擇它的安裝程式安裝的程式。"
+
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Play a music file of your own while Quiver is open. It fades out while you play."
 msgstr "Quiver 開啟時播放你自己的音樂檔案。開始遊玩時，音樂會漸弱。"
@@ -7072,6 +7076,10 @@ msgstr "圖片載入失敗。"
 #: ../../apps/launcher/src/library.tsx
 msgid "That playlist isn't shared any more, or the link is wrong."
 msgstr "該播放清單已停止共享，或連結有誤。"
+
+#: ../../apps/launcher/src/store.tsx
+msgid "That shortcut's app isn't installed any more."
+msgstr "這個快捷方式對應的應用程式已不再安裝。"
 
 #: ../../apps/launcher/src/account.tsx
 msgid "That sign-in took too long. Try again."

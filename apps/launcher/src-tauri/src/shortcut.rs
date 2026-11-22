@@ -1,5 +1,6 @@
 //! Desktop shortcuts and Steam shortcuts for an installed app. Both start the
-//! game directly, as Quiver Launcher 3 did, so they work without Quiver.
+//! game through Quiver (shortcut_play.rs), so its saves sync before it starts
+//! and are backed up after.
 use serde::Deserialize;
 use std::path::{Path, PathBuf};
 
@@ -58,6 +59,8 @@ pub struct Art {
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ShortcutRequest {
+    /// The app, which the shortcut names to Quiver (shortcut_play.rs).
+    pub id: String,
     pub name: String,
     pub folder: String,
     pub dir: Option<String>,

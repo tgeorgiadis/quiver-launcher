@@ -10,7 +10,7 @@ import { msg, plural, t } from "@lingui/core/macro";
 import { ApiError, createClient, createGithub, createGitlab, createProviders, githubAsset, githubProvider, githubRepository, parseRepository, toRef, type Asset, type Client, type Console, type Entry, type Github, type Gitlab, type Os, type HistoryRelease, type Release, type ReleaseScan, type ReleaseStatus, type UnverifiedRelease, type Verified, type Withdrawn, type Providers, type RepositoryRef } from "@quiverlauncher/api";
 import type { HiddenApp } from "./browse-hidden";
 import { hideOnApp, shownTags, type HiddenTags } from "./catalog-tags";
-import { native, type Config, type Installed, type SaveBackup, type LaunchOptions, type MovingApp, type OldApp, type OldFilter, type Progress, type StateProblem, type V3Library, type WindowsRunner } from "./native";
+import { native, type Config, type Installed, type SaveBackup, type ShortcutPlay, type LaunchOptions, type MovingApp, type OldApp, type OldFilter, type Progress, type StateProblem, type V3Library, type WindowsRunner } from "./native";
 import { Recovery } from "./recovery";
 import { assetFilterFor, bestAssets, installable, installFormat, isMsi, pickedBefore, releaseFor, wantedFiles } from "./assets";
 import { cameAfter, fromSite, scanAsks, installedFile, insteadOf, newestUnblocked, sameChecksum, unverifiedFile, versionLabel, withdrawnAsBlocked } from "./versions";
@@ -290,8 +290,9 @@ type Launcher = {
   choosingProgram: string | null;
   chooseProgram: (id: string | null) => void;
   /** The app whose page asks for the player's own copy of its game (own-copy-setup.tsx): `play` once it's set up, from Play. */
-  settingUpCopy: { id: string; fileId?: string; play?: boolean } | null;
-  setUpCopy: (asking: { id: string; fileId?: string; play?: boolean } | null) => void;
+  /** `shortcut`: a desktop or Steam shortcut is waiting to start the game once it's set up (shortcut_play.rs). */
+  settingUpCopy: { id: string; fileId?: string; play?: boolean; shortcut?: ShortcutPlay } | null;
+  setUpCopy: (asking: { id: string; fileId?: string; play?: boolean; shortcut?: ShortcutPlay } | null) => void;
   /** The Quiver Launcher 3 library the launcher found by itself, until a library is brought over; undefined while it looks. */
   oldLibrary: V3Library | null | undefined;
   /**
@@ -320,8 +321,12 @@ type Launcher = {
    */
   get: (entry: Entry, release?: Release, options?: GetOptions) => Promise<void>;
   /** Starts an app: `executable`, else its one program the player picked, else asks which of them, else the launcher's own choice. */
-  /** Starts an installed app. Without the player's copy of its game that it needs, asks for it first, unless `withoutCopy`. */
-  play: (id: string, executable?: string, withoutCopy?: boolean) => Promise<void>;
+  /**
+   * Starts an installed app. Without the player's copy of its game that it needs, asks for it first, unless `withoutCopy`.
+   * `shortcut`: for a desktop or Steam shortcut, which starts the game itself once its saves are in line
+   * (shortcut_play.rs); what Play would ask the player about first, the shortcut says to do in Quiver instead.
+   */
+  play: (id: string, executable?: string, withoutCopy?: boolean, shortcut?: ShortcutPlay) => Promise<void>;
   /** Runs a Windows installer's setup again, for the version installed. */
   reinstall: (id: string) => Promise<void>;
   /** Stops a download; whatever was installed before stays as it was. */
@@ -1802,11 +1807,11 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
   const syncFolder = savesOn(config.os) ? settings.syncFolder : undefined;
   /** Said once each time the launcher runs: a folder on a drive that's unplugged fails for every backup. */
   const folderFailed = useRef(false);
-  /** Keeps a backup that was just made in the sync folder too; never waited for. */
+  /** Keeps a backup that was just made in the sync folder too. Never waited for by Play; resolves once it's there, or failed. */
   const sendToFolder = (id: string, install: Install, made: SaveBackup) => {
     const folder = forUsage.current.settings.syncFolder;
-    if (!folder || !savesOn(config.os)) return;
-    native.savesFolderPut(savesOf(id, install, forUsage.current.catalog[id]), folder, made.name).then(
+    if (!folder || !savesOn(config.os)) return Promise.resolve();
+    return native.savesFolderPut(savesOf(id, install, forUsage.current.catalog[id]), folder, made.name).then(
       () => ((folderFailed.current = false), savesChanged(id)),
       (e) => {
         if (folderFailed.current) return;
@@ -1815,16 +1820,17 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       },
     );
   };
-  /** Sends a backup that was just made to the sync folder and to the account; never waited for. */
-  const sendToCloud = (id: string, install: Install, made: SaveBackup | null | undefined) => {
-    if (made) sendToFolder(id, install, made);
+  /** Sends a backup that was just made to the sync folder and to the account. Never waited for by Play; resolves once both are done. */
+  const sendToCloud = (id: string, install: Install, made: SaveBackup | null | undefined): Promise<unknown> => {
+    const folder = made ? sendToFolder(id, install, made) : Promise.resolve();
     const api = made && cloudNow.current(id);
-    if (!api || !made) return;
-    void native
+    if (!api || !made) return folder;
+    const cloud = native
       .savesCloud(savesOf(id, install, forUsage.current.catalog[id]))
       .then((state) => (state.off ? null : sendBackup(savesOf(id, install, forUsage.current.catalog[id]), id, made, { api, native })))
       .then(() => savesChanged(id))
       .catch(() => {});
+    return Promise.all([folder, cloud]);
   };
   // How each send to the account went (cloud-saves.ts). One that didn't get there is tried again after 1, 5, 15 and 60
   // minutes. One the account had no room for is said once, with ways to make room, and sent when there is some.
@@ -1871,21 +1877,25 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       .catch(() => {});
   };
   useEffect(() => {
-    const closed = native.onAppClosed(({ id, seconds }) => {
+    const closed = native.onAppClosed(({ id, seconds, via, ended }) => {
       const { catalog, installs } = forUsage.current;
-      track("app_closed", { ...playedRef(appRef(id, catalog[id]?.slug ?? ""), installs[id]?.version ?? ""), seconds });
+      track("app_closed", { ...playedRef(appRef(id, catalog[id]?.slug ?? ""), installs[id]?.version ?? ""), seconds, via: via ?? "play", ...(ended ? { ended } : {}) });
       // Its saves, backed up if the session changed them.
       const install = installs[id];
-      if (install && savesOn(config.os))
-        void native.savesPlayed(savesOf(id, install, catalog[id])).then(
-          (made) => {
-            if (made) savesChanged(id);
-            sendToCloud(id, install, made);
-            tellCatalog(id, install, true);
-          },
-          // Refused as too big to be saves, say: the catalog hears of that too.
-          () => tellCatalog(id, install, false),
-        );
+      const sent =
+        install && savesOn(config.os)
+          ? native.savesPlayed(savesOf(id, install, catalog[id])).then(
+              (made) => {
+                if (made) savesChanged(id);
+                tellCatalog(id, install, true);
+                return sendToCloud(id, install, made);
+              },
+              // Refused as too big to be saves, say: the catalog hears of that too.
+              () => tellCatalog(id, install, false),
+            )
+          : Promise.resolve();
+      // A Quiver a shortcut started quits once they're sent (shortcut_play.rs).
+      if (via) void sent.finally(() => native.shortcutDone().catch(() => {}));
     });
     // Once the catalog and the account have had time to come in, so its counts are of the library as it is.
     const counted = setTimeout(() => {
@@ -2991,26 +3001,55 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       add(entry);
       await installEntry(entry, release, { pin: options?.pin, unverified: options?.unverified || Boolean(options?.blocked), blocked: options?.blocked, asset: options?.asset, platform: options?.platform, to: options?.to, early: options?.early });
     },
-    async play(id, executable, withoutCopy) {
+    async play(id, executable, withoutCopy, shortcut) {
+      /**
+       * A shortcut's app doesn't start: with what to say, which a Quiver the shortcut started shows its window for
+       * first, so it stays open with it rather than quitting with nothing left to do.
+       */
+      const refuse = (why?: string) => {
+        if (why) setNotice(why, { stays: Boolean(shortcut) });
+        if (!shortcut) return;
+        const shown = why && shortcut.hidden ? native.shortcutWindow(true).catch(() => {}) : Promise.resolve();
+        void shown.then(() => native.shortcutRefuse(shortcut.request, why ?? "")).catch(() => {});
+      };
       const install = installs[id];
-      if (!install) return;
-      if (appMoves[id]) return setNotice(t`Wait for it to finish moving, then play it.`);
+      if (!install) return refuse(shortcut ? t`That shortcut's app isn't installed any more.` : undefined);
+      const name = catalog[id]?.projectName ?? install.folder;
+      if (appMoves[id]) return refuse(t`Wait for it to finish moving, then play it.`);
       // The game needs the player's own copy, which Quiver gets to it: asked for first.
-      if (!withoutCopy && copiesNeeded(catalog[id], install, config.os).length) return setUpCopy({ id, play: true });
-      // The programs the player picked for Play: one starts; more, and they choose.
+      // From a shortcut too, which waits meanwhile: a Quiver it started shows its window for the question, and
+      // whatever the player chooses that plays (the copy, Play without it, already set up) starts it through the shortcut.
+      if (!withoutCopy && copiesNeeded(catalog[id], install, config.os).length) {
+        if (shortcut?.hidden) await native.shortcutWindow(true).catch(() => {});
+        return setUpCopy({ id, play: true, ...(shortcut ? { shortcut } : {}) });
+      }
+      // The programs the player picked for Play: one starts; more, and they choose (a shortcut starts the first).
       const programs = install.launch?.programs ?? [];
-      if (!executable && programs.length > 1) return chooseProgram(id);
+      if (!executable && programs.length > 1 && !shortcut) return chooseProgram(id);
       const chosen = executable ?? programs[0];
       const launch = { ...install.launch, ...(chosen ? { executable: chosen } : {}), windowsRunner: settings.windowsRunner, copies: launchCopies(catalog[id], install) };
       let program = install.program;
       // A Windows installer's program the player didn't choose after its setup: they choose it now.
       if (install.installer && !program) {
+        if (shortcut) return refuse(t`Play ${name} from Quiver once, to choose the program its setup installed.`);
         program = (await native.pickProgram().catch(() => null)) ?? undefined;
         if (!program) return;
       }
       setInstalls((i) => ({ ...i, [id]: { ...i[id], lastPlayed: Date.now(), ...(program ? { program } : {}) } }));
       const ref = appRef(id, catalog[id]?.slug ?? allItems.find((i) => i.id === id)?.slug ?? "");
-      const played = { ...playedRef(ref, install.version), wine: Boolean(install.wine) };
+      const played = { ...playedRef(ref, install.version), wine: Boolean(install.wine), via: shortcut ? (shortcut.hidden ? "shortcut_hidden" : "shortcut") : "play" };
+      const asking = (conflict: Conflict) => new Promise<"cloud" | "here" | null>((resolve) => setSavesConflict({ ...conflict, answer: (keep) => (setSavesConflict(null), resolve(keep)) }));
+      // A Quiver a shortcut started has no window: it shows one for the question, and hides it again once answered.
+      const ask = !shortcut?.hidden
+        ? asking
+        : async (conflict: Conflict) => {
+            await native.shortcutWindow(true).catch(() => {});
+            try {
+              return await asking(conflict);
+            } finally {
+              void native.shortcutWindow(false).catch(() => {});
+            }
+          };
       // On the player's Discord profile while it runs: its square icon, else its box art.
       const entry = catalog[id];
       const presence = entry?.projectName ? { name: entry.projectName, image: entry.artwork || entry.libraryArt?.capsule || entry.libraryArt?.header || undefined } : undefined;
@@ -3022,9 +3061,9 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
           api: cloud,
           native,
           changed: savesChanged,
-          ask: (conflict) => new Promise((resolve) => setSavesConflict({ ...conflict, answer: (keep) => (setSavesConflict(null), resolve(keep)) })),
+          ask,
         }).catch(() => ({ go: true }) as Awaited<ReturnType<typeof beforePlay>>);
-        if (!synced.go) return;
+        if (!synced.go) return refuse();
         const device = synced.fetched?.device;
         if (device) setNotice(t`Your saves from ${device} were put in place. The saves that were here are backed up.`);
         else if (synced.problem !== undefined) setNotice(synced.problem || t`Couldn't get your cloud saves. The app starts with the saves on this computer.`, { stays: true });
@@ -3035,9 +3074,9 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         const synced = await folderBeforePlay(savesOf(id, { ...install, program }, entry), named, syncFolder, {
           native,
           changed: savesChanged,
-          ask: (conflict) => new Promise((resolve) => setSavesConflict({ ...conflict, answer: (keep) => (setSavesConflict(null), resolve(keep)) })),
+          ask,
         }).catch(() => ({ go: true }) as Awaited<ReturnType<typeof folderBeforePlay>>);
-        if (!synced.go) return;
+        if (!synced.go) return refuse();
         const device = synced.fetched?.device;
         if (device) setNotice(t`Your saves from ${device} were put in place from your sync folder. The saves that were here are backed up.`);
         else if (synced.problem !== undefined) setNotice(synced.problem || t`Couldn't get the saves in your sync folder. The app starts with the saves on this computer.`, { stays: true });
@@ -3046,7 +3085,13 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       if (savesOn(config.os)) await native.savesWatch(savesOf(id, { ...install, program }, catalog[id])).catch(() => {});
       // The catalog's programs as they are now: a fix to them reaches this app without an update.
       const patterns = program || launch?.executable ? install.executables : startPatterns(install, entry, config.os);
-      await native.launch(id, install.folder, install.dir, patterns, Boolean(install.wine), program, launch, presence).then(
+      // From a shortcut, the shortcut starts it, so Steam ties its overlay, controls and Stop to the game; a window a
+      // shortcut's Quiver showed for a question goes, so the game is in front.
+      if (shortcut?.hidden) await native.shortcutWindow(false).catch(() => {});
+      const started = shortcut
+        ? native.shortcutStart(shortcut.request, id, install.folder, install.dir, patterns, Boolean(install.wine), program, launch, presence)
+        : native.launch(id, install.folder, install.dir, patterns, Boolean(install.wine), program, launch, presence);
+      await started.then(
         () => {
           musicForGame();
           track("app_launched", played);
@@ -3059,6 +3104,8 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
           // Windows asked for administrator rights and the player said no.
           if (e === "cancelled") return;
           fail(id, e);
+          // What went wrong is on its card, in a window a shortcut's Quiver shows for it.
+          if (shortcut?.hidden) void native.shortcutWindow(true).catch(() => {});
           track("app_launch_failed", { ...played, reason: reasonOf(e), error: failureKind(e) });
           // No program found: what is there says why, since it's different apps on every system.
           const kinds = e === NO_PROGRAM ? await native.fileKinds(install.folder, install.dir).catch(() => null) : null;
@@ -3385,6 +3432,39 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
   };
   const now = useRef(value);
   now.current = value;
+  // Desktop and Steam shortcuts start their app through Quiver (shortcut_play.rs): Play's steps, then the shortcut
+  // starts the game itself. Those that asked before this page was ready are answered now.
+  // Not before the account has loaded: until then cloud saves are off, and the game would start without the account's.
+  useEffect(() => {
+    if (!account.ready) return;
+    const answer = (asked: ShortcutPlay) => void now.current.play(asked.app, undefined, false, asked);
+    const listening = native.onShortcutPlay(answer);
+    void native.shortcutRequests().then((waiting) => waiting.forEach(answer), () => {});
+    return () => void listening.then((stop) => stop());
+  }, [account.ready]);
+  // A Quiver started to send an app's saves after Steam's Exit Game stopped it: backs them up, now the game has
+  // closed, sends them, counts the session if no one did, and quits.
+  const uploading = useRef(false);
+  const upload = config.shortcut?.upload;
+  useEffect(() => {
+    if (!upload || uploading.current || !account.ready) return;
+    uploading.current = true;
+    const [id, seconds] = upload;
+    const install = installs[id];
+    if (seconds !== null) track("app_closed", { ...playedRef(appRef(id, catalog[id]?.slug ?? ""), install?.version ?? ""), seconds, via: "shortcut_hidden", ended: "handed_off" });
+    const send = async () => {
+      if (!install || !savesOn(config.os)) return;
+      const of = savesOf(id, install, catalog[id]);
+      const made = await native.savesPlayed(of).catch(() => null);
+      if (made) savesChanged(id);
+      // Backed up already (the game closed before Steam stopped it): the newest backup, which the account may not have.
+      const newest = made ?? (await native.savesInfo(of).catch(() => null))?.backups[0];
+      await sendToCloud(id, install, newest);
+    };
+    void send()
+      .catch(() => {})
+      .finally(() => native.shortcutDone().catch(() => {}));
+  }, [account.ready]); // eslint-disable-line react-hooks/exhaustive-deps
   return (
     <LauncherNow.Provider value={now}>
       <LauncherContext.Provider value={value}>{children}</LauncherContext.Provider>

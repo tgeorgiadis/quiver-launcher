@@ -29,3 +29,14 @@ command=$1; shift
 # and aborts), and libxkbcommon-x11, which winit loads.
 ${TAURI_CEF_CLI:-cargo tauri} "$command" --features cef --ignore-version-mismatches --config $tauri/tauri.cef.conf.json "$@" \
   -- --config "$PWD/$tauri/.cargo/cef.toml"
+# The AppImage's runtime (uruntime) keeps its mount for a while after Quiver closes, in case it's started again,
+# looking every REUSE_CHECK_DELAY (5s) to see if it's still used. Started from a Steam shortcut (shortcut_play.rs),
+# that kept Steam showing the game as running, on a black screen, for up to 25s after it closed: so it lets go as
+# soon as Quiver does. The setting lives in the AppImage, read before anything in it starts.
+if [ "$command" = build ]; then
+  for image in $tauri/target/*/bundle/appimage/*.AppImage; do
+    if [ -f "$image" ] && [ "$image" -nt $tauri/Cargo.lock.wry ]; then
+      "$image" --appimage-addenvs 'REUSE_CHECK_DELAY=0'
+    fi
+  done
+fi

@@ -106,6 +106,7 @@ export function standInForRust({ api, state = {}, config: more = {}, maximized =
     },
     // An app's saves (saves-tab.tsx): none known and no backups; making and restoring them is the real app's to show.
     saves_info: () => ({ places: [], from: "none", backups: [] }),
+    shortcut_requests: () => [],
     saves_choose: () => ({ places: [], from: "none", backups: [] }),
     saves_to_report: () => ({ os: "linux", places: [] }),
     saves_restore_plan: () => [],

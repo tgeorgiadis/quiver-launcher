@@ -5287,6 +5287,10 @@ msgstr "플레이"
 msgid "Play {name}"
 msgstr "{name} 플레이"
 
+#: ../../apps/launcher/src/store.tsx
+msgid "Play {name} from Quiver once, to choose the program its setup installed."
+msgstr "Quiver에서 {name}을(를) 한 번 실행해서 설치 프로그램이 설치한 프로그램을 골라 주세요."
+
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Play a music file of your own while Quiver is open. It fades out while you play."
 msgstr "Quiver가 열려 있는 동안 내 음악 파일을 재생합니다. 게임 중에는 소리가 줄어듭니다."
@@ -7072,6 +7076,10 @@ msgstr "이미지를 불러오지 못했습니다."
 #: ../../apps/launcher/src/library.tsx
 msgid "That playlist isn't shared any more, or the link is wrong."
 msgstr "더 이상 공유되지 않는 재생 목록이거나 링크가 잘못됐어요."
+
+#: ../../apps/launcher/src/store.tsx
+msgid "That shortcut's app isn't installed any more."
+msgstr "이 바로 가기의 앱은 더 이상 설치되어 있지 않아요."
 
 #: ../../apps/launcher/src/account.tsx
 msgid "That sign-in took too long. Try again."

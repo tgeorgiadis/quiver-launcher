@@ -28,6 +28,7 @@ mod secrets;
 mod session;
 mod setup;
 mod shortcut;
+mod shortcut_play;
 mod snapshots;
 mod specs;
 mod steam;
@@ -100,6 +101,8 @@ struct Config {
     steam_deck: bool,
     /// How this copy was installed, sent with usage data (update.rs).
     package: &'static str,
+    /// Started by a shortcut, with no window (shortcut_play.rs): what for.
+    shortcut: shortcut_play::Started,
 }
 
 /// Steam is running Quiver as one of its games, so it would overwrite a new shortcut as it closes.
@@ -145,6 +148,7 @@ fn config(app: tauri::AppHandle, data: State<Data>) -> Config {
         os_version: device::os_version(),
         steam_deck: device::steam_deck(|name| std::env::var(name).ok(), device::board_vendor()),
         package: update::package(),
+        shortcut: shortcut_play::started(&std::env::args().collect::<Vec<_>>()),
     }
 }
 
@@ -1261,8 +1265,11 @@ async fn shortcut_icon(data: &Data, request: &shortcut::ShortcutRequest) -> Opti
 #[tauri::command]
 async fn create_shortcut(app: tauri::AppHandle, request: shortcut::ShortcutRequest) -> Result<String, String> {
     let data = app.state::<Data>();
-    let target = target(&data, &request.folder, request.dir.clone(), &request.preferred, request.wine, request.program.clone(), &request.launch)?;
-    let icon = shortcut_icon(&data, &request).await;
+    // Whether it can start now, said here rather than when the shortcut is used.
+    let game = target(&data, &request.folder, request.dir.clone(), &request.preferred, request.wine, request.program.clone(), &request.launch)?;
+    // Through Quiver, so its saves sync first and are backed up after (shortcut_play.rs).
+    let target = shortcut_play::shortcut_target(&request.id);
+    let icon = shortcut_icon(&data, &request).await.or_else(|| cfg!(windows).then(|| game.exe.clone()));
     let path = shortcut::desktop(&target, &request.name, icon.as_deref())?;
     Ok(format!("{} is on your desktop.", path.file_name().unwrap_or_default().to_string_lossy()))
 }
@@ -1271,9 +1278,12 @@ async fn create_shortcut(app: tauri::AppHandle, request: shortcut::ShortcutReque
 #[tauri::command]
 async fn add_to_steam(app: tauri::AppHandle, request: shortcut::ShortcutRequest) -> Result<String, String> {
     let data = app.state::<Data>();
-    let target = target(&data, &request.folder, request.dir.clone(), &request.preferred, request.wine, request.program.clone(), &request.launch)?;
+    // Whether it can start now, said here rather than when Steam starts it.
+    let game = target(&data, &request.folder, request.dir.clone(), &request.preferred, request.wine, request.program.clone(), &request.launch)?;
+    // Through Quiver, so its saves sync first and are backed up after (shortcut_play.rs).
+    let target = shortcut_play::shortcut_target(&request.id);
     steam::account()?;
-    let icon = shortcut_icon(&data, &request).await;
+    let icon = shortcut_icon(&data, &request).await.or_else(|| cfg!(windows).then(|| game.exe.clone()));
     let folder = install::plain_name(&request.folder)?;
     let mut art: Vec<(String, PathBuf)> = Vec::new();
     let pictures = [("", &request.art.header), ("p", &request.art.capsule), ("_hero", &request.art.hero), ("_logo", &request.art.logo), ("_icon", &request.art.icon)];
@@ -1286,16 +1296,12 @@ async fn add_to_steam(app: tauri::AppHandle, request: shortcut::ShortcutRequest)
             }
         }
     }
-    // On Linux a `.desktop` names the app's own program, so Steam stores it as
-    // the shortcut's program and starts it in the game's folder (a game that
-    // needs environment variables is named through a script instead). A Windows
-    // game Steam itself runs with Proton is named the same way, so Steam keeps
-    // its Proton and the player's launch options.
+    // On Linux a `.desktop` names Quiver and its arguments, so Steam stores
+    // Quiver as the shortcut's program and the arguments as its launch
+    // options. Quiver runs a Windows game with Proton itself, as Play does.
     #[cfg(target_os = "linux")]
     {
-        if target.steam_proton {
-            return add_proton(&data, &request.name, folder, &target, icon.as_deref(), art);
-        }
+        let _ = game;
         return add_native(&data, &request.name, folder, &target, icon.as_deref(), art);
     }
     #[cfg(not(target_os = "linux"))]
@@ -1314,42 +1320,6 @@ async fn add_to_steam(app: tauri::AppHandle, request: shortcut::ShortcutRequest)
         queue_steam(&data, folder, &shortcut)?;
         Ok(format!("{} will be added to Steam when Steam closes.{proton} Restart Steam to see it.", request.name))
     }
-}
-
-/// Adds a Windows game Steam runs with its own Proton: a `.desktop` naming the
-/// game, so Steam stores the game as the program and applies a compat tool. It
-/// is added at once through the running Steam, or written directly once Steam
-/// closes. Linux only.
-#[cfg(target_os = "linux")]
-fn add_proton(data: &Data, name: &str, folder: &str, target: &shortcut::Target, icon: Option<&Path>, art: Vec<(String, PathBuf)>) -> Result<String, String> {
-    let launcher = steam::Launcher::write_proton(&data.0, folder, name, target, icon)?;
-    let mut shortcut = steam::Shortcut::new(name, target, icon);
-    shortcut.shortcut_path = launcher.desktop().to_string_lossy().into_owned();
-    shortcut.art = art;
-    // Steam reads the grid folder as it loads, so artwork added now shows after a restart; the shortcut itself is already there.
-    let art_note = if shortcut.art.is_empty() { "" } else { " Artwork will appear after restarting Steam." };
-    if !steam::running() {
-        steam::apply(&shortcut)?;
-        return Ok(format!("{name} is in Steam. It's set to run with Proton. Start Steam to see it."));
-    }
-    // Steam is running: it adds the shortcut itself, at once, and its own write is what lasts.
-    let ids = match steam::existing_id(&launcher) {
-        Some(id) => vec![id],
-        None => match steam::add_now(launcher.desktop()) {
-            Ok(()) => steam_ids(&launcher, name),
-            // Steam wouldn't take it now: a waiting copy adds it once Steam closes.
-            Err(_) => {
-                queue_steam(data, folder, &shortcut)?;
-                return Ok(format!("{name} will be added to Steam when Steam closes. Restart Steam to see it."));
-            }
-        },
-    };
-    if let Ok((user, _)) = steam::account() {
-        for id in ids {
-            let _ = steam::place_art(&user, id, &shortcut.art);
-        }
-    }
-    Ok(format!("{name} is in Steam. It's set to run with Proton.{art_note}"))
 }
 
 /// Adds a native Linux shortcut: a `.desktop` naming the game's own program, so
@@ -2294,7 +2264,8 @@ fn append_log(path: &Path, line: &str) {
     use std::io::Write;
     let stamp = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0);
     if let Ok(mut file) = std::fs::OpenOptions::new().create(true).append(true).open(path) {
-        let _ = writeln!(file, "{stamp} {line}");
+        // In one write, so lines from Quiver and a shortcut's helper at once don't run into each other.
+        let _ = file.write_all(format!("{stamp} {line}\n").as_bytes());
     }
 }
 
@@ -2556,6 +2527,21 @@ pub fn run() {
             return steam::wait_and_apply(Path::new(file));
         }
     }
+    // A data folder a shortcut was given, for the Quiver it was made by (shortcut_play.rs): as QUIVER_DATA, which the
+    // Quivers it starts get too.
+    if let Some(data) = shortcut_play::data_arg(&args) {
+        std::env::set_var("QUIVER_DATA", data);
+    }
+    // The middleman a shortcut starts its Quiver through on Windows (shortcut_play.rs).
+    #[cfg(desktop)]
+    if args.iter().any(|a| a == shortcut_play::HOP) {
+        std::process::exit(shortcut_play::hop());
+    }
+    // A shortcut starting a game through Quiver: no window, and none of the launcher (shortcut_play.rs).
+    #[cfg(desktop)]
+    if args.iter().any(|a| a == shortcut_play::LAUNCH) {
+        std::process::exit(shortcut_play::helper(&args));
+    }
     let builder = tauri::Builder::default();
     // Chromium without its sandbox, as WebKitGTK ran here: with it, CEF aborts at start where unprivileged user
     // namespaces are restricted (Ubuntu 24.04 on) unless a setuid chrome-sandbox is installed, which only a deb
@@ -2581,7 +2567,9 @@ pub fn run() {
     #[cfg(windows)]
     let builder = if std::env::var_os("QUIVER_DATA").is_none() && portable_data().is_none() {
         builder.plugin(tauri_plugin_single_instance::init(|app, args, _| {
-            if !args.iter().any(|a| a == tray::ARG) {
+            // One a shortcut started with no window finds this one answering already.
+            let unseen = [tray::ARG, shortcut_play::HOST, shortcut_play::UPLOAD];
+            if !args.iter().any(|a| unseen.contains(&a.as_str())) {
                 tray::open_window(app);
             }
         }))
@@ -2635,9 +2623,11 @@ pub fn run() {
             let unseen = std::env::args().any(|a| a == tray::ARG);
             #[cfg(not(windows))]
             let unseen = false;
+            // Started by a shortcut: no window, unless there's a question to ask (shortcut_play.rs).
+            let for_shortcut = shortcut_play::started(&std::env::args().collect::<Vec<_>>()).host;
             #[cfg(windows)]
             app.manage(tray::Tray::new(settings["closeToTray"] == true, unseen));
-            let maximize = main_window(app, &dir, theme_of(settings["theme"].as_str()), title_bar, !unseen)?;
+            let maximize = main_window(app, &dir, theme_of(settings["theme"].as_str()), title_bar, !unseen && !for_shortcut)?;
             #[cfg(not(windows))]
             let _ = maximize;
             // Paint behind the page in the theme it will draw in.
@@ -2654,7 +2644,7 @@ pub fn run() {
             if let Err(e) = tray::refresh(app.handle()) {
                 append_log(&dir.join("quiver.log"), &format!("Couldn't show the tray icon: {e}"));
             }
-            if full && !unseen {
+            if full && !unseen && !for_shortcut {
                 if let Some(window) = app.get_webview_window("main") {
                     let _ = fullscreen(&window, true, title_bar);
                 }
@@ -2671,6 +2661,9 @@ pub fn run() {
                 append_log(&dir.join("quiver.log"), &line);
             }
             delete_moved(None, &dir, old);
+            app.manage(shortcut_play::Host::default());
+            #[cfg(desktop)]
+            shortcut_play::listen(app.handle(), &dir, for_shortcut);
             app.manage(Data(dir, std::sync::Mutex::new(apps)));
             app.manage(Snapshotted(Default::default()));
             app.manage(gamepad::Pads::default());
@@ -2748,6 +2741,11 @@ pub fn run() {
             set_window_position,
             create_shortcut,
             add_to_steam,
+            shortcut_play::shortcut_requests,
+            shortcut_play::shortcut_start,
+            shortcut_play::shortcut_refuse,
+            shortcut_play::shortcut_done,
+            shortcut_play::shortcut_window,
             open_url,
             to_background,
             set_tray,
@@ -2827,6 +2825,9 @@ pub fn run() {
             #[cfg(target_os = "linux")]
             if let tauri::RunEvent::Exit = _event {
                 keyboard::kwin::unload_now();
+            }
+            if let tauri::RunEvent::Exit = _event {
+                shortcut_play::stop_listening(_app);
             }
             // Back from an app started from Quiver: that's its play time.
             #[cfg(target_os = "android")]
