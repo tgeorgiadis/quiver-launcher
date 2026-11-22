@@ -3434,12 +3434,14 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
   now.current = value;
   // Desktop and Steam shortcuts start their app through Quiver (shortcut_play.rs): Play's steps, then the shortcut
   // starts the game itself. Those that asked before this page was ready are answered now.
+  // Not before the account has loaded: until then cloud saves are off, and the game would start without the account's.
   useEffect(() => {
+    if (!account.ready) return;
     const answer = (asked: ShortcutPlay) => void now.current.play(asked.app, undefined, false, asked);
     const listening = native.onShortcutPlay(answer);
     void native.shortcutRequests().then((waiting) => waiting.forEach(answer), () => {});
     return () => void listening.then((stop) => stop());
-  }, []);
+  }, [account.ready]);
   // A Quiver started to send an app's saves after Steam's Exit Game stopped it: backs them up, now the game has
   // closed, sends them, counts the session if no one did, and quits.
   const uploading = useRef(false);
