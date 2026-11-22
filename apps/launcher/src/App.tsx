@@ -1447,7 +1447,7 @@ function AppPage({
             }}
           >
             <Trash2 size={16} aria-hidden="true" />
-            {install && !install.local ? t`Uninstall and remove` : t`Remove from library`}
+            {install && !install.local ? t`Remove from library…` : t`Remove from library`}
           </button>
           {install?.local && (
             <p className="muted small">
@@ -2463,7 +2463,11 @@ function ProgramPrompt() {
   );
 }
 
-/** Deleting an app's files takes a yes. Cancel comes first, where a controller starts, and B or Escape is Cancel too. */
+/**
+ * Deleting an app's files takes a yes. Cancel comes first, where a controller starts, and B or Escape is Cancel too.
+ * Taking an installed app out of the library asks the same way, with Keep files beside it, for files the player still
+ * wants: it leaves the library and its folder stays where it is.
+ */
 function UninstallPrompt() {
   const { confirming, confirmUninstall, uninstall, remove, library, installs } = useLauncher();
   const [portable, setPortable] = useState(false);
@@ -2484,24 +2488,37 @@ function UninstallPrompt() {
   const name = entry.projectName;
   // Out of the library too: said only when it's in there.
   const leaves = confirming.remove && library.some((i) => i.id === entry.id);
+  // Files to keep: an install of Quiver's (a local app's are the player's and always stay).
+  const keepable = leaves && going && !going.local;
   const close = () => confirmUninstall(null);
+  const go = (keepFiles: boolean) => {
+    close();
+    void (confirming.remove ? remove(entry.id, keepFiles) : uninstall(entry.id));
+    then?.();
+  };
   const executable = going?.launch?.executable && outsideFolder(going.launch.executable, going.program) ? going.launch.executable : undefined;
   return (
-    <Dialog label={t`Uninstall ${name}`} onClose={close}>
+    <Dialog label={keepable ? t`Remove ${name}` : t`Uninstall ${name}`} onClose={close}>
       <div className="detail-body uninstall-prompt">
         <h2>
-          <Trash2 size={18} /> {leaves ? t`Uninstall ${name} and remove it from your library?` : t`Uninstall ${name}?`}
+          <Trash2 size={18} /> {keepable ? t`Remove ${name} from your library?` : leaves ? t`Uninstall ${name} and remove it from your library?` : t`Uninstall ${name}?`}
         </h2>
         <p>
-          {leaves
-            ? t`Its files go to the trash, and it leaves your library.`
-            : confirming.remove
-              ? t`Its files go to the trash.`
-              : t`Its files go to the trash. ${name} stays in your library, so you can get it again.`}
+          {keepable
+            ? t`Uninstall and remove sends its files to the trash. Keep files leaves them where they are, and Locate existing install can add them back later.`
+            : leaves
+              ? t`Its files go to the trash, and it leaves your library.`
+              : confirming.remove
+                ? t`Its files go to the trash.`
+                : t`Its files go to the trash. ${name} stays in your library, so you can get it again.`}
         </p>
         {portable && (
           <p>
-            <Trans>This app may keep your saves in its folder. They&apos;ll go to the trash too.</Trans>
+            {keepable ? (
+              <Trans>This app may keep your saves in its folder. Uninstalling sends them to the trash too.</Trans>
+            ) : (
+              <Trans>This app may keep your saves in its folder. They&apos;ll go to the trash too.</Trans>
+            )}
           </p>
         )}
         {/* What it starts is somewhere else (Launch options): only its folder goes, so the player knows that stays. */}
@@ -2517,14 +2534,12 @@ function UninstallPrompt() {
           <button className="primary" autoFocus onClick={close}>
             <Trans>Cancel</Trans>
           </button>
-          <button
-            className="danger"
-            onClick={() => {
-              close();
-              void (confirming.remove ? remove(entry.id) : uninstall(entry.id));
-              then?.();
-            }}
-          >
+          {keepable && (
+            <button onClick={() => go(true)}>
+              <Trans comment="Button: takes an app out of the library and leaves its files on the computer">Keep files</Trans>
+            </button>
+          )}
+          <button className="danger" onClick={() => go(false)}>
             {leaves ? t`Uninstall and remove` : t`Uninstall`}
           </button>
         </div>

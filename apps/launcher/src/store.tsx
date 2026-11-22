@@ -195,6 +195,7 @@ export type Choice = {
   resolve: (asset: Asset | null) => void;
 };
 /** Deleting an app's files, waiting on the player's yes: `remove` takes it out of the library too, and `then` runs after. */
+/** `remove`: it leaves the library too, and the player can keep its files instead of uninstalling it. */
 export type Confirming = { entry: Entry; remove?: boolean; then?: () => void };
 /**
  * What Quiver hasn't verified, waiting on the player's yes before it installs (`resolve(true)`): the newest release of
@@ -318,8 +319,8 @@ type Launcher = {
   reinstall: (id: string) => Promise<void>;
   /** Stops a download; whatever was installed before stays as it was. */
   cancel: (id: string) => void;
-  /** Uninstalls the app and takes it out of the library. */
-  remove: (id: string) => Promise<void>;
+  /** Uninstalls the app and takes it out of the library; with `keepFiles`, only takes it out, its files left where they are. */
+  remove: (id: string, keepFiles?: boolean) => Promise<void>;
   /** Deletes the app's files (to the trash), keeping it in the library to get again. */
   uninstall: (id: string) => Promise<void>;
   /** A repository from any supported host: the catalog's app when it lists it, else what adding it would install. */
@@ -2999,10 +3000,16 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         captureFailure("reinstall", e, appRef(id, entry.slug));
       }
     },
-    async remove(id) {
+    async remove(id, keepFiles) {
+      if (keepFiles) {
+        // Its folder is on its way somewhere else: it stays, as it would for an uninstall.
+        if (moving.current.has(id)) return void setNotice(t`Wait for it to finish moving, then try again.`);
+        // Only out of the library: its folder stays as it is, for Locate existing install to find again.
+        chosenFolder.current.delete(id);
+      }
       // Saying no when Windows asks to uninstall it keeps it, in the library too.
-      if (await uninstall(id).then(() => false, (e) => (captureFailure("remove", e, appRef(id, catalog[id]?.slug ?? "")), e === "cancelled"))) return;
-      track("app_removed", appRef(id, catalog[id]?.slug ?? ""));
+      else if (await uninstall(id).then(() => false, (e) => (captureFailure("remove", e, appRef(id, catalog[id]?.slug ?? "")), e === "cancelled"))) return;
+      track("app_removed", { ...appRef(id, catalog[id]?.slug ?? ""), ...(keepFiles && installs[id] && !installs[id].local ? { kept_files: true } : {}) });
       setInstalls(({ [id]: _, ...rest }) => rest);
       // A synced app is removed from its account too; one that never synced just goes.
       setLibrary((l) =>

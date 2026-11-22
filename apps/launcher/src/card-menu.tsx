@@ -410,7 +410,8 @@ function MenuItems({ entry, onOpen, close, escape }: { entry: Entry; onOpen: () 
   // After a line: both ask before deleting the files; taking an app out of the library alone doesn't.
   const leave: Item[] = [];
   if (install && !install.local && !busy) leave.push({ text: t`Uninstall`, act: () => confirmUninstall({ entry }), kind: "danger" });
-  if (install && !install.local) leave.push({ text: t`Uninstall and remove`, act: () => confirmUninstall({ entry, remove: true }), kind: "danger" });
+  // Asks whether its files go too, or stay where they are.
+  if (install && !install.local) leave.push({ text: t`Remove from library…`, act: () => confirmUninstall({ entry, remove: true }), kind: "danger" });
   else leave.push({ text: t`Remove from library`, act: () => void remove(entry.id), kind: "danger" });
 
   const picked = install?.launch?.programs ?? [];

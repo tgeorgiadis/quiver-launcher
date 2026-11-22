@@ -81,6 +81,11 @@ msgstr "{0, plural, other {# 个已安装的应用尚未放入其系统文件夹
 msgid "{0, plural, one {# of them may keep your saves in its folder. They'll go to the trash too.} other {# of them may keep your saves in their folders. They'll go to the trash too.}}"
 msgstr "{0, plural, other {其中 # 个可能把存档保存在自己的文件夹里，存档也会一并移到回收站。}}"
 
+#. placeholder {0}: portable.length
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "{0, plural, one {# of them may keep your saves in its folder. Uninstalling sends them to the trash too.} other {# of them may keep your saves in their folders. Uninstalling sends them to the trash too.}}"
+msgstr "{0, plural, other {其中 # 个应用可能把你的存档放在它们的文件夹里。卸载时存档也会一起移到回收站。}}"
+
 #. placeholder {0}: library.apps.length
 #: ../../apps/launcher/src/old-library.tsx
 msgid "{0, plural, one {If you already installed it somewhere else, show Quiver the folder.} other {If you already installed them somewhere else, show Quiver the folder.}}"
@@ -311,10 +316,6 @@ msgid "{count, plural, one {Removing # app…} other {Removing # apps…}}"
 msgstr "{count, plural, other {正在移除 # 个应用…}}"
 
 #: ../../apps/launcher/src/library-ticking.tsx
-msgid "{count, plural, one {Uninstall # app and remove it from your library?} other {Uninstall and remove # apps from your library?}}"
-msgstr "{count, plural, other {卸载 # 个应用并从游戏库中移除？}}"
-
-#: ../../apps/launcher/src/library-ticking.tsx
 msgid "{count, plural, one {Uninstall # app?} other {Uninstall # apps?}}"
 msgstr "{count, plural, other {卸载 # 个应用？}}"
 
@@ -391,8 +392,8 @@ msgid "{files, plural, one {# file} other {# files}}"
 msgstr "{files, plural, one {# 个文件} other {# 个文件}}"
 
 #: ../../apps/launcher/src/library-ticking.tsx
-msgid "{files, plural, one {The files of the one installed go to the trash, and they all leave your library.} other {The files of the # installed go to the trash, and they all leave your library.}}"
-msgstr "{files, plural, other {已安装的 # 个应用的文件会移到回收站，所有应用都会从游戏库中移除。}}"
+msgid "{files, plural, one {Uninstall and remove sends the files of the one installed to the trash. Keep files leaves them where they are, and Locate existing install can add them back later.} other {Uninstall and remove sends the files of the # installed to the trash. Keep files leaves them where they are, and Locate existing install can add them back later.}}"
+msgstr "{files, plural, other {“卸载并移除”会把已安装的 # 个应用的文件移到回收站。“保留文件”会让文件留在原处，之后可以用“定位现有安装”重新添加。}}"
 
 #: ../../apps/launcher/src/old-library.tsx
 msgid "{filters, plural, one {# tag filter, as a playlist} other {# tag filters, as playlists}}"
@@ -3615,6 +3616,13 @@ msgstr "刚刚更新"
 msgid "Keep {keep}"
 msgstr "保留 {keep}"
 
+#. Button: takes an app out of the library and leaves its files on the computer
+#. Button: takes an app out of the library and leaves its files on the computer
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/library-ticking.tsx
+msgid "Keep files"
+msgstr "保留文件"
+
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Keep Quiver open until it's done."
 msgstr "保持 Quiver 打开，直到操作完成。"
@@ -5514,8 +5522,13 @@ msgid "Remove “{tag}” from {count}?"
 msgstr "要从 {count} 中移除“{tag}”吗？"
 
 #: ../../apps/launcher/src/app-files.tsx
+#: ../../apps/launcher/src/App.tsx
 msgid "Remove {name}"
 msgstr "移除 {name}"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Remove {name} from your library?"
+msgstr "从你的游戏库中移除 {name}？"
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Remove {system} from {name}"
@@ -5555,6 +5568,8 @@ msgstr "从 {0} 中移除"
 msgid "Remove from library"
 msgstr "从游戏库中移除"
 
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/card-menu.tsx
 #: ../../apps/launcher/src/library-ticking.tsx
 msgid "Remove from library…"
 msgstr "从游戏库中移除…"
@@ -6907,6 +6922,10 @@ msgstr "此应用未安装在这台电脑上。安装后即可恢复副本。"
 msgid "This app may keep your saves in its folder. They'll go to the trash too."
 msgstr "这个应用可能把你的存档放在它的文件夹里。存档也会一起移到回收站。"
 
+#: ../../apps/launcher/src/App.tsx
+msgid "This app may keep your saves in its folder. Uninstalling sends them to the trash too."
+msgstr "这个应用可能把你的存档放在它的文件夹里。卸载时存档也会一起移到回收站。"
+
 #: ../../apps/launcher/src/app-files.tsx
 msgid "This app may stop finding its saves and settings, because it will look for them in a different place. Nothing is deleted."
 msgstr "此应用可能会无法找到存档和设置，因为它会在其他位置查找。不会删除任何内容。"
@@ -7167,14 +7186,13 @@ msgid "Uninstall {name}?"
 msgstr "要卸载 {name} 吗？"
 
 #: ../../apps/launcher/src/App.tsx
-#: ../../apps/launcher/src/card-menu.tsx
 #: ../../apps/launcher/src/library-ticking.tsx
 msgid "Uninstall and remove"
 msgstr "卸载并移除"
 
-#: ../../apps/launcher/src/library-ticking.tsx
-msgid "Uninstall and remove from library…"
-msgstr "卸载并从游戏库中移除…"
+#: ../../apps/launcher/src/App.tsx
+msgid "Uninstall and remove sends its files to the trash. Keep files leaves them where they are, and Locate existing install can add them back later."
+msgstr "“卸载并移除”会把它的文件移到回收站。“保留文件”会让文件留在原处，之后可以用“定位现有安装”重新添加。"
 
 #: ../../apps/launcher/src/library-ticking.tsx
 msgid "Uninstall apps"

@@ -408,7 +408,7 @@ function TickedItems({ ids, part, playlist, close, onDone, onUninstall }: { ids:
           )}
           <hr />
           {installed.length > 0 && item(plural(installed.length, { one: "Uninstall # app…", other: "Uninstall # apps…" }), () => onUninstall("uninstall"), "danger")}
-          {item(installed.length ? t`Uninstall and remove from library…` : t`Remove from library…`, () => onUninstall("remove"), "danger")}
+          {item(t`Remove from library…`, () => onUninstall("remove"), "danger")}
           {/* Nothing to install, update or uninstall: why the rest isn't here. */}
           {installed.length === 0 && gettable.length === 0 && notInstalled > 0 && part === "more" && (
             <p className="game-menu-note">
@@ -423,7 +423,8 @@ function TickedItems({ ids, part, playlist, close, onDone, onUninstall }: { ids:
 
 /**
  * Uninstalling the selected apps takes a yes, as one does; `remove`, they leave the library too (those not installed,
- * or the player's own files, only that). Says which, and that saves kept in their folders go with them.
+ * or the player's own files, only that), or with Keep files they only leave it, every folder left where it is. Says
+ * which, and that saves kept in their folders go with them.
  */
 function UninstallTicked({ ids, remove, onClose, onDone }: { ids: string[]; remove: boolean; onClose: () => void; onDone: () => void }) {
   const { installs, catalog, library, uninstall, remove: removeApp, setNotice } = useLauncher();
@@ -445,13 +446,13 @@ function UninstallTicked({ ids, remove, onClose, onDone }: { ids: string[]; remo
   const more = names.length - 8;
   const count = going.length;
   const files = installed.length;
-  const go = async () => {
+  const go = async (keepFiles = false) => {
     onClose();
     onDone();
-    track("library_bulk_edit", { action: remove ? "remove" : "uninstall", apps: count });
+    track("library_bulk_edit", { action: remove ? (keepFiles ? "remove_keep_files" : "remove") : "uninstall", apps: count });
     setNotice(remove ? plural(count, { one: "Removing # app…", other: "Removing # apps…" }) : plural(count, { one: "Uninstalling # app…", other: "Uninstalling # apps…" }));
     // One after another: each moves its own folder to the trash.
-    for (const id of going) await (remove ? removeApp(id) : uninstall(id)).catch(() => {});
+    for (const id of going) await (remove ? removeApp(id, keepFiles) : uninstall(id)).catch(() => {});
   };
   return (
     <Dialog label={remove ? t`Remove apps` : t`Uninstall apps`} onClose={onClose}>
@@ -459,28 +460,36 @@ function UninstallTicked({ ids, remove, onClose, onDone }: { ids: string[]; remo
         <h2>
           <Trash2 size={18} />{" "}
           {remove
-            ? files
-              ? plural(count, { one: "Uninstall # app and remove it from your library?", other: "Uninstall and remove # apps from your library?" })
-              : plural(count, { one: "Remove # app from your library?", other: "Remove # apps from your library?" })
+            ? plural(count, { one: "Remove # app from your library?", other: "Remove # apps from your library?" })
             : plural(count, { one: "Uninstall # app?", other: "Uninstall # apps?" })}
         </h2>
         <p className="muted">{more > 0 ? t`${listed} and ${more} more` : listed}</p>
         <p>
           {remove
             ? files
-              ? plural(files, { one: "The files of the one installed go to the trash, and they all leave your library.", other: "The files of the # installed go to the trash, and they all leave your library." })
+              ? plural(files, {
+                  one: "Uninstall and remove sends the files of the one installed to the trash. Keep files leaves them where they are, and Locate existing install can add them back later.",
+                  other: "Uninstall and remove sends the files of the # installed to the trash. Keep files leaves them where they are, and Locate existing install can add them back later.",
+                })
               : t`They leave your library. Nothing is deleted.`
             : t`Their files go to the trash. They stay in your library, so you can get them again.`}
         </p>
         {portable.length > 0 && (
           <p>
-            {plural(portable.length, { one: "# of them may keep your saves in its folder. They'll go to the trash too.", other: "# of them may keep your saves in their folders. They'll go to the trash too." })}
+            {remove
+              ? plural(portable.length, { one: "# of them may keep your saves in its folder. Uninstalling sends them to the trash too.", other: "# of them may keep your saves in their folders. Uninstalling sends them to the trash too." })
+              : plural(portable.length, { one: "# of them may keep your saves in its folder. They'll go to the trash too.", other: "# of them may keep your saves in their folders. They'll go to the trash too." })}
           </p>
         )}
         <div className="row">
           <button className="primary" autoFocus onClick={onClose}>
             <Trans>Cancel</Trans>
           </button>
+          {remove && files > 0 && (
+            <button onClick={() => void go(true)}>
+              <Trans comment="Button: takes an app out of the library and leaves its files on the computer">Keep files</Trans>
+            </button>
+          )}
           <button className="danger" onClick={() => void go()}>
             {remove ? (files ? t`Uninstall and remove` : t({ message: "Remove", comment: "Button: takes the selected apps out of the library" })) : t`Uninstall`}
           </button>
