@@ -6,7 +6,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { t } from "@lingui/core/macro";
 import { native, type PadLabels } from "./native";
-import { useLauncher } from "./store";
+import { tvModeOn, useLauncher } from "./store";
 import { DEFAULT_PAD, buttonsNow, confirmButton, haloMoved, label, pageArea, quickButton, takesText, withDefaults, type Action, type Bindings } from "./spatial";
 import { boxZoom } from "./zoom";
 
@@ -85,10 +85,11 @@ function desktopHints(labels: PadLabels, { buttons, typing }: Now) {
 type Now = { buttons: [Action, string][]; typing: boolean };
 
 export function PadHints() {
-  const { settings } = useLauncher();
+  const { settings, config } = useLauncher();
   const pads = usePads();
   const labels = usePadLabels();
-  const shown = pads.length > 0 && !settings.padOff && !settings.padHintsOff;
+  // Not under TV mode, which has its own: looking again at every change TV mode made, it searched the whole page each step.
+  const shown = pads.length > 0 && !settings.padOff && !settings.padHintsOff && !tvModeOn(settings, config);
   // The button a press of the controller's presses from the focus shows which: the Play or Get that Confirm presses on a
   // library card, where it has a word beside it (not an icon card's round Play, with no room); else the Get (or Play)
   // that Quick action presses (a catalog card's, or the page's), as A opens such a card. Not in Steam's desktop layout,

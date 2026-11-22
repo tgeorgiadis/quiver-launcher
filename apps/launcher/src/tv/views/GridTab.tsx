@@ -98,8 +98,11 @@ export function GridTab({ tabId, apps, memory, onFocus, onGlobal, back, onDetail
   useEffect(() => onFocus(app ?? null), [app, onFocus]);
 
   // Keep the focused row a row away from the top and bottom where there's room for it.
+  // Where it's scrolled to, to the row: the grid draws again as a row comes or goes, not with every frame of a glide.
   const [scrollTop, setScrollTop] = useState(0);
   const row = Math.floor(index / m.columns);
+  const rows = Math.ceil(apps.length / m.columns);
+  const contentHeight = m.padY * 2 + rows * m.rowH;
   useLayoutEffect(() => {
     const el = scroller.current;
     if (!el || !height) return;
@@ -112,12 +115,13 @@ export function GridTab({ tabId, apps, memory, onFocus, onGlobal, back, onDetail
     else if (target > maxTop) target = maxTop;
     else if (target < minTop) target = minTop;
     target = Math.max(0, target);
-    glideTo(el, target, settings.reduceMotion);
-  }, [row, height, m.rowH, m.tileH, m.padY, settings.reduceMotion]);
+    // As far as it scrolls, from the grid's own height: asking the list (scrollHeight) laid out the page again first.
+    glideTo(el, target, settings.reduceMotion, Math.max(0, contentHeight - height));
+  }, [row, height, m.rowH, m.tileH, m.padY, contentHeight, settings.reduceMotion]);
 
-  const rows = Math.ceil(apps.length / m.columns);
+  // scrollTop is to the row below where it is: a row's more drawn at the bottom for it.
   const firstRow = Math.max(0, Math.floor(scrollTop / m.rowH) - 2);
-  const lastRow = Math.min(rows - 1, Math.ceil((scrollTop + height) / m.rowH) + 2);
+  const lastRow = Math.min(rows - 1, Math.ceil((scrollTop + m.rowH + height) / m.rowH) + 2);
 
   useInputHandler({
     onAction(action) {
@@ -182,7 +186,7 @@ export function GridTab({ tabId, apps, memory, onFocus, onGlobal, back, onDetail
     <div
       className="tv-grid-scroll"
       ref={scroller}
-      onScroll={(e) => setScrollTop(e.currentTarget.scrollTop)}
+      onScroll={(e) => setScrollTop(Math.floor(e.currentTarget.scrollTop / m.rowH) * m.rowH)}
       // The mouse: pointing at a tile focuses it, a click does what A does, a right click opens its details.
       onMouseMove={(e) => {
         const i = tileIndex(e.target);
@@ -205,7 +209,7 @@ export function GridTab({ tabId, apps, memory, onFocus, onGlobal, back, onDetail
       }}
     >
       {apps.length ? (
-        <div className="tv-grid" style={{ height: m.padY * 2 + rows * m.rowH }}>
+        <div className="tv-grid" style={{ height: contentHeight }}>
           {width > 0 && tiles}
         </div>
       ) : (

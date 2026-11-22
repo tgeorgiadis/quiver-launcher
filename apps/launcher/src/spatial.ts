@@ -151,7 +151,21 @@ export function setBindings(next: { keys?: Bindings; pad?: Bindings; padOff?: bo
 /** TV mode (tv/TvHost.tsx) takes the keys, the mouse's side buttons and the controllers while it shows. */
 let suspended = false;
 export function suspendSpatialNavigation(on: boolean) {
+  if (suspended === on) return;
   suspended = on;
+  // Nor its focus box meanwhile: following TV mode's every scroll and change, it measured the desktop under it (out of
+  // sight, tv.css) each frame. Placed again as it comes back.
+  if (on && halo) {
+    cancelAnimationFrame(haloFrame);
+    haloFrame = 0;
+    halo.hidden = true;
+    document.documentElement.toggleAttribute("data-halo", false);
+    [haloWas, haloDrawn, haloGlide] = [null, null, null];
+  } else if (!on) {
+    queueHalo();
+    // The focus put back if it went while suspended (startSpatialNavigation's observer waited meanwhile).
+    window.setTimeout(refocus, 50);
+  }
 }
 
 let capture: { kind: "keys" | "pad"; resolve: (binding: string | null) => void } | null = null;
@@ -945,7 +959,7 @@ function placeHalo() {
   if (haloGlide) queueHalo();
 }
 const glideBox = (a: HaloBox, b: HaloBox, t: number) => ({ x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t, w: a.w + (b.w - a.w) * t, h: a.h + (b.h - a.h) * t });
-const queueHalo = () => void (haloFrame ||= requestAnimationFrame(placeHalo));
+const queueHalo = () => void (suspended || (haloFrame ||= requestAnimationFrame(placeHalo)));
 /** What has the focus moved with no scroll or transition to say so (a panel placed again under its button): the box with it. */
 export const haloMoved = queueHalo;
 /**
@@ -981,7 +995,7 @@ function startHalo() {
   window.addEventListener("scroll", queueHalo, { capture: true, passive: true });
   window.addEventListener("resize", queueHalo);
   document.addEventListener("transitionrun", (e) => {
-    if (!moves(e)) return;
+    if (suspended || !moves(e)) return;
     const was = moving.size;
     moving.set(transitionKey(e), performance.now());
     if (was === 0) requestAnimationFrame(follow);
@@ -1328,6 +1342,9 @@ export function startSpatialNavigation() {
   document.addEventListener("focusin", noteFocus, true);
   let pending = 0;
   new MutationObserver(() => {
+    // Not while TV mode has the controls: its every step changes the page, and looking for a focus to put back
+    // restyled the whole of it, the desktop under it too.
+    if (suspended) return;
     pending ||= window.setTimeout(() => ((pending = 0), refocus()), 50);
   }).observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ["hidden", "disabled", "class", "style"] });
 

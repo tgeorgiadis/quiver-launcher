@@ -13,6 +13,14 @@
 .tv-desktop {
   display: contents;
 }
+/*
+ * Under TV mode the desktop stays mounted (TvHost.tsx) but out of sight: skipped for style, layout and paint, which
+ * it took for every frame TV mode drew, while keeping its state (scroll positions included) for when TV mode closes.
+ * An engine without content-visibility draws it under TV mode as before.
+ */
+.tv-desktop[inert] > * {
+  content-visibility: hidden;
+}
 
 .tv-root {
   --tv-accent: #38bdf8;

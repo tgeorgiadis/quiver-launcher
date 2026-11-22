@@ -6,7 +6,7 @@ import { Plural, Trans } from "@lingui/react/macro";
 import { i18n } from "@quiverlauncher/i18n";
 import type { MessageDescriptor } from "@lingui/core";
 import { Artwork, EntryCard, OS_NAMES, PlatformIcons, ReleaseBadge, SourcedImage, heroSources } from "@quiverlauncher/ui";
-import { PORTABLE_FILE, availableOn, canGet, catalogOs, declinedUpdate, earlyGetOffer, earlyOffer, filesAddable, folderNameOf, hasUpdate, locatable, movable, noProgram, pulledVerified, renamable, rootOf, samePath, skipped, stillWaiting, updateFor, updatesByItself, updatesOf, useLauncher, type AppMove, type Choice } from "./store";
+import { PORTABLE_FILE, availableOn, canGet, catalogOs, declinedUpdate, earlyGetOffer, earlyOffer, filesAddable, folderNameOf, hasUpdate, locatable, movable, noProgram, pulledVerified, renamable, rootOf, samePath, skipped, stillWaiting, tvModeOn, updateFor, updatesByItself, updatesOf, useLauncher, type AppMove, type Choice } from "./store";
 import { TabPrompt } from "./pad-hints";
 import { Dialog, FilterPill, LibraryPage, MultiPill, Popover, consoleOptions, filterLabel, pickedLabel, projectTypeOptions, withOverrides, type MultiOption } from "./library";
 import { BrowseCardOptions, useBrowseCards, useLibraryView, useSidebarFits } from "./library-view";
@@ -406,7 +406,11 @@ export function App() {
  */
 function BackToTop() {
   const [shown, setShown] = useState(false);
+  const { settings, config } = useLauncher();
+  // Not under TV mode: its every scroll measured the desktop's page, out of sight under it (tv.css).
+  const tv = tvModeOn(settings, config);
   useEffect(() => {
+    if (tv) return;
     const check = () => {
       const page = pageArea();
       setShown(page.scrollTop > page.clientHeight);
@@ -419,7 +423,7 @@ function BackToTop() {
       window.removeEventListener("scroll", check, { capture: true });
       window.removeEventListener("resize", check);
     };
-  }, []);
+  }, [tv]);
   if (!shown) return null;
   return (
     // A click doesn't take the focus, so it goes up from wherever it was.

@@ -16,8 +16,12 @@ const glides = new WeakMap<HTMLElement, Glide>();
 /** Where the list is heading, or where it is when it's still. */
 export const glideTarget = (el: HTMLElement) => glides.get(el)?.top ?? el.scrollTop;
 
-export function glideTo(el: HTMLElement, top: number, instant = false) {
-  top = Math.max(0, Math.min(top, el.scrollHeight - el.clientHeight));
+/**
+ * `max`, how far it scrolls, where the caller knows it: scrollHeight asked right after the page changed (a held
+ * direction's new row of tiles) laid it out there and then, ahead of the frame's own layout.
+ */
+export function glideTo(el: HTMLElement, top: number, instant = false, max?: number) {
+  top = Math.max(0, Math.min(top, max ?? el.scrollHeight - el.clientHeight));
   const running = glides.get(el);
   if (instant) {
     if (running) cancelAnimationFrame(running.frame);
