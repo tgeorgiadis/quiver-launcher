@@ -1091,10 +1091,37 @@ fn preferred_in<'a>(dir: &Path, files: &'a [PathBuf], preferred: &[String]) -> O
     let name = |p: &PathBuf| p.file_name().map(|n| n.to_string_lossy().to_lowercase()).unwrap_or_default();
     preferred.iter().find_map(|pattern| {
         let pattern = pattern.replace('\\', "/").to_lowercase();
-        let glob = glob::Pattern::new(&pattern).ok()?;
         let folder = pattern.contains('/');
-        files.iter().find(|p| glob.matches(&if folder { relative(p) } else { name(p) }))
+        // As written first, then as a single program's name is now that it goes in without its version.
+        std::iter::once(pattern.clone()).chain(without_wildcard(&pattern)).find_map(|pattern| {
+            let glob = glob::Pattern::new(&pattern).ok()?;
+            files.iter().find(|p| glob.matches(&if folder { relative(p) } else { name(p) }))
+        })
     })
+}
+
+/// A pattern with each of its `*` taken out, together with the separator before it (or after it, at the start of a
+/// name): `Game-*-x86_64.AppImage` is also `Game-x86_64.AppImage`. A single program goes in without its release's
+/// version (`without_version`), so the catalog's patterns written for the versioned names still find it. A `*` with no
+/// separator beside it (`*.exe`, `Game*.exe`) stands for more than a version and is left as it is.
+fn without_wildcard(pattern: &str) -> Vec<String> {
+    let separator = |c: u8| b"-_. ".contains(&c);
+    let b = pattern.as_bytes();
+    let start = pattern.rfind('/').map_or(0, |i| i + 1);
+    b.iter()
+        .enumerate()
+        .filter(|&(_, &c)| c == b'*')
+        .filter_map(|(i, _)| {
+            if i > start && separator(b[i - 1]) {
+                Some(format!("{}{}", &pattern[..i - 1], &pattern[i + 1..]))
+            } else if i == start && b.get(i + 1).is_some_and(|&c| c != b'.' && separator(c)) {
+                Some(format!("{}{}", &pattern[..i], &pattern[i + 2..]))
+            } else {
+                None
+            }
+        })
+        .filter(|rest| rest.len() > start && !rest[start..].starts_with('.'))
+        .collect()
 }
 
 /// Programs reported to the catalog at most, when none is its preferred one.
@@ -1688,6 +1715,8 @@ mod tests {
                 program: None,
                 github_token: None,
                 fallback_url: None,
+                cache: None,
+                run_setup: true,
             };
             let (_cancel, cancelled) = tokio::sync::watch::channel(false);
             tauri::async_runtime::block_on(install(apps.path(), req, cancelled, |_| {})).unwrap()
@@ -1893,6 +1922,32 @@ mod tests {
         // A pattern with a folder is matched against the path.
         assert_eq!(find_executable(dir.path(), &["BIN/game-*.exe".into()], "windows"), Some(dir.path().join("bin/Game-1.2.exe")));
         assert_eq!(missed(&["tool.exe"]), None);
+    }
+
+    #[test]
+    fn the_catalogs_pattern_for_versioned_names_finds_a_program_without_its_version() {
+        for (pattern, stable) in [
+            ("SplosionMan-x86_64-*.AppImage", Some("SplosionMan-x86_64.AppImage")),
+            ("Game-*-x86_64.AppImage", Some("Game-x86_64.AppImage")),
+            ("*-Game.exe", Some("Game.exe")),
+            ("bin/Game_*.exe", Some("bin/Game.exe")),
+            // A `*` with no separator beside it, or one that leaves no name, stands for more than a version.
+            ("Game*.exe", None),
+            ("*.exe", None),
+            ("Game.exe", None),
+        ] {
+            assert_eq!(without_wildcard(pattern).first().map(String::as_str), stable, "{pattern}");
+        }
+        let dir = tempfile::tempdir().unwrap();
+        let program = without_version("SplosionMan-x86_64-2.3.5.AppImage", "v2.3.5").unwrap();
+        fs::write(dir.path().join(&program), "").unwrap();
+        fs::write(dir.path().join("other-x86_64.AppImage"), "").unwrap();
+        let preferred = ["SplosionMan-x86_64-*.AppImage".to_string()];
+        assert_eq!(find_executable(dir.path(), &preferred, "linux"), Some(dir.path().join(&program)));
+        assert_eq!(preferred_missed(dir.path(), &preferred, "linux"), None, "not reported to the catalog as missing");
+        // A copy an older launcher left under its versioned name still matches the pattern as written, first.
+        fs::write(dir.path().join("SplosionMan-x86_64-2.3.4.AppImage"), "").unwrap();
+        assert_eq!(find_executable(dir.path(), &preferred, "linux"), Some(dir.path().join("SplosionMan-x86_64-2.3.4.AppImage")));
     }
 
     #[test]
