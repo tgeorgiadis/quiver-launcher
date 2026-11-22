@@ -206,6 +206,8 @@ fn run_line(program: &Path, dir: &Path) -> String {
 pub fn listen(app: &AppHandle, data: &Path, quits: bool) {
     let host = app.state::<Host>();
     host.quits.store(quits, Ordering::SeqCst);
+    // No window on screen: the controllers are the game's, not this Quiver's hidden library's.
+    crate::gamepad::unseen(quits);
     let Ok(listener) = TcpListener::bind(("127.0.0.1", 0)) else { return };
     let Ok(port) = listener.local_addr().map(|a| a.port()) else { return };
     let token = token();
@@ -426,6 +428,7 @@ pub fn shortcut_done(app: AppHandle) {
 #[tauri::command]
 pub fn shortcut_window(app: AppHandle, show: bool) {
     let Some(window) = app.get_webview_window("main") else { return };
+    crate::gamepad::unseen(!show);
     if show {
         let _ = window.show();
         let _ = window.unminimize();
