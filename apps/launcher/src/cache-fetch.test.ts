@@ -2,7 +2,7 @@ import { describe, expect, test, vi } from "vitest";
 import type { Asset, Entry, Release } from "@quiverlauncher/api";
 import { cacheOf } from "./cache";
 import { runCacheFetch, type FetchDeps } from "./cache-fetch";
-import type { InstallRequest } from "./native";
+import type { CachedFile, InstallRequest } from "./native";
 
 const sum = (c: string) => `sha256:${c.repeat(64)}`;
 const file = (name: string, checksum: string, size = 10): Asset => ({ id: name, url: `https://example.com/${name}`, filename: name, os: "windows", architecture: "x64", format: "zip", size, checksum });
@@ -10,8 +10,9 @@ const rel = (version: string, assets: Asset[]): Release => ({ id: version, versi
 const app = (id: string) => ({ id, slug: id, projectName: id.toUpperCase(), launcher: {} }) as unknown as Entry;
 
 /** A catalog of apps, two to a page, and their releases; a cache that has `held`. */
-function deps(apps: Entry[], releases: Record<string, Release[]>, held: string[] = [], bytes = 0) {
+function deps(apps: Entry[], releases: Record<string, Release[]>, held: string[] = [], bytes = 0, entries: CachedFile[] = []) {
   const fetched: InstallRequest[] = [];
+  const removed: string[][] = [];
   const d: FetchDeps = {
     client: {
       apps: vi.fn(async ({ cursor }: { cursor?: string | null }) => {
@@ -29,14 +30,15 @@ function deps(apps: Entry[], releases: Record<string, Release[]>, held: string[]
     } as unknown as FetchDeps["client"],
     native: {
       cacheHas: async (_dir, checksums) => checksums.map((c) => held.includes(c)),
-      cacheStatus: async () => ({ files: held.length, bytes, entries: [] }),
+      cacheStatus: async () => ({ files: held.length, bytes, entries }),
       cacheFetch: async (r) => void fetched.push(r),
+      cacheRemove: async (_dir, hashes) => void removed.push(hashes ?? []),
     },
     entryOf: async ({ id }) => apps.find((a) => a.id === id),
     here: { os: "windows", arch: "x64" },
     protect: () => ["sha256:installed"],
   };
-  return { d, fetched };
+  return { d, fetched, removed };
 }
 
 describe("a run of the cache's fetches", () => {
@@ -67,6 +69,42 @@ describe("a run of the cache's fetches", () => {
     await runCacheFetch(cacheOf({ mode: "selected", apps: [{ id: "c", slug: "c" }, { id: "gone", slug: "gone" }] }, "/cache"), d, () => {}, () => false);
     expect(fetched.map((r) => r.filename)).toEqual(["c9.zip"]);
     expect(d.client.apps).not.toHaveBeenCalled();
+  });
+
+  test("Every latest and Selected titles: a newer version takes the place of the app's older ones, even in a full cache", async () => {
+    const kept = (hash: string, app: string, version: string, size: number): CachedFile => ({ hash, filename: `${app}${version}.zip`, path: "", size, apps: [{ app, version }], cachedAt: 0, usedAt: 0 });
+    const hex = (c: string) => c.repeat(64);
+    // Full: a's version 1 and b's version 5, the newest, and a file of a's that b shares.
+    const entries = [kept(hex("2"), "a", "1", 10), kept(hex("3"), "b", "5", 10), { ...kept(hex("7"), "a", "0", 10), apps: [{ app: "a", version: "0" }, { app: "b", version: "4" }] }];
+    const full = 30;
+    for (const mode of ["latest", "selected"] as const) {
+      const { d, fetched, removed } = deps(catalog, releases, [sum("3")], full, entries);
+      const cache = cacheOf({ mode, limitGb: full / 1024 ** 3, apps: [{ id: "a", slug: "a" }] }, "/cache");
+      const done = await runCacheFetch(cache, d, () => {}, () => false);
+      expect(fetched[0].filename).toBe("a2.zip");
+      // Room for it while the old one is still there, so nothing else is rotated out meanwhile.
+      expect(fetched[0].cache?.limit).toBe(full + 10);
+      // Then the old one goes; never the file b shares.
+      expect(removed[0]).toEqual([hex("2")]);
+      expect(done.fetched).toBeGreaterThan(0);
+    }
+  });
+
+  test("Every latest never replaces the file of a version installed now", async () => {
+    const entries: CachedFile[] = [{ hash: "2".repeat(64), filename: "a1.zip", path: "", size: 10, apps: [{ app: "a", version: "1" }], cachedAt: 0, usedAt: 0 }];
+    const { d, fetched, removed } = deps([app("a")], releases, [], 10, entries);
+    d.protect = () => [sum("2")];
+    const done = await runCacheFetch(cacheOf({ mode: "latest", limitGb: 10 / 1024 ** 3 }, "/cache"), d, () => {}, () => false);
+    expect(fetched).toEqual([]);
+    expect(removed).toEqual([]);
+    expect(done.noRoom).toBe(1);
+  });
+
+  test("Hoarder keeps every version", async () => {
+    const entries: CachedFile[] = [{ hash: "2".repeat(64), filename: "a1.zip", path: "", size: 10, apps: [{ app: "a", version: "1" }], cachedAt: 0, usedAt: 0 }];
+    const { d, removed } = deps([app("a")], releases, [sum("2")], 10, entries);
+    await runCacheFetch(cacheOf({ mode: "hoarder" }, "/cache"), d, () => {}, () => false);
+    expect(removed).toEqual([]);
   });
 
   test("leaves out what wouldn't fit in the limit, rather than pushing out what's kept", async () => {

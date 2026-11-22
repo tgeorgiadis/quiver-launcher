@@ -230,5 +230,17 @@ export function keepsReadme(cache: Pick<Cache, "mode" | "apps" | "on">, app: str
   return cache.mode === "installed" ? installed : isSelected(cache, app);
 }
 
+/** The modes that keep each app's newest release alone, its older versions going once a newer one is in. */
+export const replaces = (cache: Pick<Cache, "mode">) => cache.mode === "latest" || cache.mode === "selected";
+
+/**
+ * The builds a newer version of an app replaces: those kept for this app's other versions alone. Never one another app
+ * or version shares, nor its source code (kept by its own), nor a file of a version installed now (`protect`).
+ */
+export function replacedBy<F extends Pick<CachedFile, "hash" | "size" | "apps" | "source">>(files: readonly F[], app: string, version: string, protect: readonly string[]): F[] {
+  const safe = new Set(protect.map((c) => c.replace(/^sha256:/i, "").toLowerCase()));
+  return files.filter((f) => !f.source && !safe.has(f.hash) && f.apps.length > 0 && f.apps.every((o) => o.app === app && !sameVersion(o.version, version)));
+}
+
 /** Whether a file fits in the room left, so a fetch never pushes out what's kept to make room for more. */
 export const fits = (asset: Pick<Asset, "size">, used: number, limit?: number) => limit === undefined || used + (asset.size ?? 0) <= limit;

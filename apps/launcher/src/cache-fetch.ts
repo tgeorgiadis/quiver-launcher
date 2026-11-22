@@ -8,7 +8,7 @@
 import { useEffect, useRef, useSyncExternalStore } from "react";
 import { cacheAsk, requestCache, subscribeCacheAsk } from "./cache-signal";
 import type { Client, Entry, Os, Release } from "@quiverlauncher/api";
-import { cacheNames, cacheOf, cacheTargets, sourceArchive, fetches, fits, installedTargets, protectedFiles, sameVersion, type Cache, type CacheTarget, type CacheUse } from "./cache";
+import { cacheNames, cacheOf, cacheTargets, sourceArchive, fetches, fits, replacedBy, replaces, installedTargets, protectedFiles, sameVersion, type Cache, type CacheTarget, type CacheUse } from "./cache";
 import { native, type CacheStatus, type InstallRequest } from "./native";
 import { catalogOs, useLauncher } from "./store";
 import { readmeImages } from "@quiverlauncher/ui/markdown";
@@ -58,7 +58,12 @@ const whyOf = (e: unknown): CacheFile["why"] => (e === "blocked" || e === "misma
 
 export type FetchDeps = {
   client: Pick<Client, "apps" | "releases" | "app">;
-  native: { cacheHas: (dir: string, checksums: string[]) => Promise<boolean[]>; cacheStatus: (dir: string) => Promise<CacheStatus>; cacheFetch: (request: InstallRequest) => Promise<void> };
+  native: {
+    cacheHas: (dir: string, checksums: string[]) => Promise<boolean[]>;
+    cacheStatus: (dir: string) => Promise<CacheStatus>;
+    cacheFetch: (request: InstallRequest) => Promise<void>;
+    cacheRemove: (dir: string, hashes?: string[]) => Promise<void>;
+  };
   /** Selected titles: an app's entry, as the launcher knows it or the catalog has it; none when it's gone. */
   entryOf: (app: { id: string; slug: string }) => Promise<Entry | undefined>;
   here: { os: Os; arch: string };
@@ -119,7 +124,7 @@ async function releasesOf(cache: Cache, deps: FetchDeps, slug: string): Promise<
 }
 
 /** A target as a request to the cache alone (cache.rs's fetch_to_cache). */
-export function fetchRequest(target: CacheTarget, cache: Cache, protect: string[]): InstallRequest {
+export function fetchRequest(target: CacheTarget, cache: Cache, protect: string[], room = 0): InstallRequest {
   const use: CacheUse = {
     dir: cache.dir,
     keep: true,
@@ -129,7 +134,9 @@ export function fetchRequest(target: CacheTarget, cache: Cache, protect: string[
     slug: target.slug,
     // Installed only keeps an app's installed version alone.
     ...(cache.mode === "installed" && { onlyThis: true }),
-    ...(cache.limit !== undefined && { limit: cache.limit }),
+    // `room`: what the app's older versions it replaces take, which go once it's in, so nothing else is rotated out
+    // to make room for it meanwhile.
+    ...(cache.limit !== undefined && { limit: cache.limit + room }),
     protect,
   };
   return { id: target.app, url: target.asset.url, filename: target.asset.filename, checksum: target.asset.checksum, folder: target.slug, filesToAdd: [], version: target.version, cache: use };
@@ -153,6 +160,8 @@ export async function runCacheFetch(cache: Cache, deps: FetchDeps, report: (s: F
   show();
   const status = await deps.native.cacheStatus(cache.dir);
   let used = status.bytes;
+  // What's kept now, as the run changes it: Every latest and Selected titles replace an app's older versions.
+  let kept = status.entries;
   // The apps' versions whose source code is kept already.
   const sources = new Set(status.entries.filter((f) => f.source).flatMap((f) => f.apps.map((o) => `${o.app}@${o.version}`)));
   const installed = new Map((deps.installed?.() ?? []).map((i) => [i.id, i]));
@@ -204,7 +213,10 @@ export async function runCacheFetch(cache: Cache, deps: FetchDeps, report: (s: F
     for (const [i, target] of targets.entries()) {
       if (stopped()) break;
       if (held[i]) continue;
-      if (!fits(target.asset, used, cache.limit)) {
+      // Every latest and Selected titles keep an app's newest release alone: its older versions make room for it.
+      const old = replaces(cache) ? replacedBy(kept, target.app, target.version, deps.protect()) : [];
+      const room = old.reduce((n, f) => n + f.size, 0);
+      if (!fits(target.asset, used - room, cache.limit)) {
         state.noRoom++;
         continue;
       }
@@ -213,9 +225,16 @@ export async function runCacheFetch(cache: Cache, deps: FetchDeps, report: (s: F
       note(file);
       show();
       try {
-        await deps.native.cacheFetch(fetchRequest(target, cache, deps.protect()));
+        await deps.native.cacheFetch(fetchRequest(target, cache, deps.protect(), room));
         state.fetched++;
         used += target.asset.size ?? 0;
+        if (old.length) {
+          const gone = new Set(old.map((f) => f.hash));
+          await deps.native.cacheRemove(cache.dir, [...gone]).then(
+            () => ((used -= room), (kept = kept.filter((f) => !gone.has(f.hash)))),
+            () => {},
+          );
+        }
         note({ ...file, state: "kept", received: file.total ?? undefined, at: Date.now() });
       } catch (e) {
         if (e === "cancelled") {
