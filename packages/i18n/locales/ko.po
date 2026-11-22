@@ -224,6 +224,10 @@ msgstr "{broken, plural, other {#명 실행 안 됨}}"
 msgid "{broken, plural, one {# doesn't run} other {# don't run}}"
 msgstr "{broken, plural, other {#명 실행 안 됨}}"
 
+#: ../../apps/launcher/src/downloads.ts
+msgid "{bySetup, plural, one {Update all leaves out # app that updates with its setup program, which waits for you. Update it on its own.} other {Update all leaves out # apps that update with their setup programs, which wait for you. Update them one at a time.}}"
+msgstr "{bySetup, plural, other {모두 업데이트에서 설치 프로그램으로 업데이트되는 앱 #개는 제외됩니다. 설치 프로그램이 입력을 기다리므로 하나씩 업데이트하세요.}}"
+
 #. A version of a game, by the console it came out on: PlayStation version
 #: ../../apps/launcher/src/game.tsx
 msgid "{console} version"
@@ -7331,8 +7335,7 @@ msgstr "업데이트"
 msgid "Update all"
 msgstr "모두 업데이트"
 
-#: ../../apps/launcher/src/downloads-page.tsx
-#: ../../apps/launcher/src/library.tsx
+#: ../../apps/launcher/src/downloads.ts
 msgid "Update all ({updateCount})"
 msgstr "모두 업데이트({updateCount})"
 

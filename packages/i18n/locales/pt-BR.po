@@ -224,6 +224,10 @@ msgstr "{broken, plural, one {# não roda} other {# não rodam}}"
 msgid "{broken, plural, one {# doesn't run} other {# don't run}}"
 msgstr "{broken, plural, one {# não roda} other {# não rodam}}"
 
+#: ../../apps/launcher/src/downloads.ts
+msgid "{bySetup, plural, one {Update all leaves out # app that updates with its setup program, which waits for you. Update it on its own.} other {Update all leaves out # apps that update with their setup programs, which wait for you. Update them one at a time.}}"
+msgstr "{bySetup, plural, one {Atualizar tudo deixa de fora # app que atualiza com seu programa de instalação, que espera por você. Atualize-o sozinho.} other {Atualizar tudo deixa de fora # apps que atualizam com seus programas de instalação, que esperam por você. Atualize-os um de cada vez.}}"
+
 #. A version of a game, by the console it came out on: PlayStation version
 #: ../../apps/launcher/src/game.tsx
 msgid "{console} version"
@@ -7331,8 +7335,7 @@ msgstr "Atualizar"
 msgid "Update all"
 msgstr "Atualizar tudo"
 
-#: ../../apps/launcher/src/downloads-page.tsx
-#: ../../apps/launcher/src/library.tsx
+#: ../../apps/launcher/src/downloads.ts
 msgid "Update all ({updateCount})"
 msgstr "Atualizar tudo ({updateCount})"
 

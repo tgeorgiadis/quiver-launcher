@@ -224,6 +224,10 @@ msgstr "{broken, plural, one {# не запускается} few {# не зап�
 msgid "{broken, plural, one {# doesn't run} other {# don't run}}"
 msgstr "{broken, plural, one {# не запускается} few {# не запускаются} many {# не запускаются} other {# не запускаются}}"
 
+#: ../../apps/launcher/src/downloads.ts
+msgid "{bySetup, plural, one {Update all leaves out # app that updates with its setup program, which waits for you. Update it on its own.} other {Update all leaves out # apps that update with their setup programs, which wait for you. Update them one at a time.}}"
+msgstr "{bySetup, plural, one {«Обновить все» пропускает # приложение, которое обновляется своим установщиком: он ждёт вас. Обновите его отдельно.} few {«Обновить все» пропускает # приложения, которые обновляются своими установщиками: они ждут вас. Обновляйте их по одному.} many {«Обновить все» пропускает # приложений, которые обновляются своими установщиками: они ждут вас. Обновляйте их по одному.} other {«Обновить все» пропускает # приложения, которые обновляются своими установщиками: они ждут вас. Обновляйте их по одному.}}"
+
 #. A version of a game, by the console it came out on: PlayStation version
 #: ../../apps/launcher/src/game.tsx
 msgid "{console} version"
@@ -7331,8 +7335,7 @@ msgstr "Обновить"
 msgid "Update all"
 msgstr "Обновить все"
 
-#: ../../apps/launcher/src/downloads-page.tsx
-#: ../../apps/launcher/src/library.tsx
+#: ../../apps/launcher/src/downloads.ts
 msgid "Update all ({updateCount})"
 msgstr "Обновить все ({updateCount})"
 
