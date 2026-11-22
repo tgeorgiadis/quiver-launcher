@@ -85,6 +85,15 @@ pub struct Installed {
     pub restart: bool,
     /// A setup program installed it, in the app's folder or outside it.
     pub setup: bool,
+    /// Earlier releases' programs this release's took the place of (`replaced_programs`).
+    pub replaced: Option<Replaced>,
+}
+
+/// The programs an update took away, and the one in their place: names in the app's folder.
+#[derive(Serialize, Debug, PartialEq)]
+pub struct Replaced {
+    pub from: Vec<String>,
+    pub to: String,
 }
 
 #[derive(Serialize, Clone)]
@@ -228,6 +237,7 @@ pub async fn install(
                 location: path(setup.location),
                 restart: setup.restart,
                 setup: false,
+                replaced: None,
             });
         }
         // Android asks the player to confirm installing an APK.
@@ -235,6 +245,8 @@ pub async fn install(
         progress(Progress { id: req.id.clone(), phase: "installing", received: 0, total: None, setup });
         let files = req.files_to_add.clone();
         let version = req.version.clone();
+        // A download that's a single program, kept as it is rather than unpacked.
+        let single = (!is_archive(&filename)).then(|| filename.clone());
         let out = staging.join("out");
         let dir = target.clone();
         let unpacked = out.clone();
@@ -274,24 +286,45 @@ pub async fn install(
                     location: (!setup.here).then(|| path(setup.location)),
                     restart: false,
                     setup: true,
+                    replaced: None,
                 });
             }
         }
-        tokio::task::spawn_blocking(move || -> Result<(), String> {
+        let replaced = tokio::task::spawn_blocking(move || -> Result<Option<Replaced>, String> {
             // On Android an archive is only an app with an APK in it: one without (another system's build the player
             // picked) fails before it's put in the folder.
             #[cfg(target_os = "android")]
             if crate::android::apk_in(&out).is_none() {
                 return Err("This download has no Android app (APK) in it. Pick another of the release's files.".into());
             }
+            // A single program goes in without its release's version in its name, so the next update replaces it in
+            // place and a shortcut to it keeps working.
+            let single = single.map(|name| match without_version(&name, &version) {
+                Some(stable) if fs::rename(out.join(&name), out.join(&stable)).is_ok() => stable,
+                _ => name,
+            });
             // This release's Flatpak bundle, where it lands: not one an earlier build left in the folder.
             let bundle = crate::flatpak::bundle_in(&out).and_then(|b| b.strip_prefix(&out).ok().map(|rel| dir.join(rel)));
             // Marked as Quiver's before anything goes in, so an install cut short can still be retried or removed.
             fs::create_dir_all(&dir).map_err(text)?;
+            let previous = fs::read_to_string(dir.join(VERSION_FILE)).unwrap_or_default();
             if !dir.join(VERSION_FILE).exists() {
                 fs::write(dir.join(VERSION_FILE), "").map_err(text)?;
             }
             merge(&out, &dir).map_err(text)?;
+            // Earlier releases' copies of the program, which this one's is in place of now: Play would find one of
+            // them first, and every version would stay. Taken away only once this one is in.
+            let replaced = single.and_then(|to| {
+                let from: Vec<String> = replaced_programs(&dir, previous.trim(), &to)
+                    .into_iter()
+                    .filter(|name| {
+                        let path = dir.join(name);
+                        writable(&path);
+                        fs::remove_file(&path).is_ok()
+                    })
+                    .collect();
+                (!from.is_empty()).then_some(Replaced { from, to })
+            });
             // A Flatpak bundle is installed for the player; Play then runs it with flatpak. A build that isn't one (the
             // Windows build in place of a Flatpak, say) is what Play runs instead.
             if cfg!(target_os = "linux") {
@@ -314,7 +347,8 @@ pub async fn install(
                 fs::write(dir.join(crate::android::FILE), installed?.package_name).map_err(text)?;
             }
             set_files(&dir, &files, &[])?;
-            fs::write(dir.join(VERSION_FILE), &version).map_err(text)
+            fs::write(dir.join(VERSION_FILE), &version).map_err(text)?;
+            Ok(replaced)
         })
         .await
         .map_err(text)??;
@@ -327,6 +361,7 @@ pub async fn install(
             location: None,
             restart: false,
             setup: false,
+            replaced,
         })
     }
     .await;
@@ -861,6 +896,96 @@ fn drop_records(out: &Path) {
     for name in records() {
         let _ = fs::remove_file(out.join(name));
     }
+}
+
+/// Whether `extract` unpacks a file of this name, rather than keeping it as it is: a single program.
+fn is_archive(name: &str) -> bool {
+    let lower = name.to_lowercase();
+    tarball(&lower).is_some() || [".zip", ".7z", ".rar"].iter().any(|end| lower.ends_with(end))
+}
+
+/// Where in a name `start..end` stands as a word of its own: a separator or the name's edge on either side, and not
+/// the start of a longer number ("1.2" in "1.2.1" or "1.20").
+fn alone(name: &[u8], start: usize, end: usize) -> bool {
+    let separator = |i: usize| name.get(i).is_some_and(|c| b"-_. ".contains(c));
+    (start == 0 || separator(start - 1)) && (end == name.len() || (separator(end) && !(name[end] == b'.' && name.get(end + 1).is_some_and(u8::is_ascii_digit))))
+}
+
+/// `name` without its word at `start..end` and the separator before it (after it, at the start of the name); None
+/// when that leaves no name of its own (".exe").
+fn without_word(name: &str, start: usize, end: usize) -> Option<String> {
+    let rest = if start > 0 {
+        format!("{}{}", &name[..start - 1], &name[end..])
+    } else if end < name.len() && name.as_bytes()[end] != b'.' {
+        name[end + 1..].to_string()
+    } else {
+        return None;
+    };
+    (!rest.starts_with('.') && added_file_name(&rest).is_ok_and(|n| n == rest)).then_some(rest)
+}
+
+/// A program's name without its release's version, so each update replaces the one before in place:
+/// `game-0.4.8-linux.AppImage` for `v0.4.8` is `game-linux.AppImage`. Only the version being installed, with its "v"
+/// or without, standing as a word of its own; nothing guessed. None when the name doesn't have it, or would be left
+/// with no name of its own.
+pub(crate) fn without_version(name: &str, version: &str) -> Option<String> {
+    let version = version.trim();
+    let bare = version.strip_prefix(['v', 'V']).unwrap_or(version).to_ascii_lowercase();
+    if bare.is_empty() {
+        return None;
+    }
+    // Lowercased letter for letter, so it lines up with `name` byte for byte.
+    let lower = name.to_ascii_lowercase();
+    let b = lower.as_bytes();
+    let (at, _) = lower.match_indices(&bare).find(|&(at, _)| {
+        let start = if at > 0 && b[at - 1] == b'v' { at - 1 } else { at };
+        alone(b, start, at + bare.len()) || alone(b, at, at + bare.len())
+    })?;
+    let start = if at > 0 && b[at - 1] == b'v' && alone(b, at - 1, at + bare.len()) { at - 1 } else { at };
+    without_word(name, start, at + bare.len())
+}
+
+/// The words of a name that are versions, as `start..end`: "v" and a number ("v2", "v0.9.21"), or numbers with dots
+/// between ("0.4.8"). A lone number isn't one: "game-64.exe" is another program than "game.exe".
+fn versions_in(name: &str) -> Vec<(usize, usize)> {
+    let b = name.as_bytes();
+    let mut found = Vec::new();
+    let mut i = 0;
+    while i < b.len() {
+        let v = matches!(b[i], b'v' | b'V');
+        let digits = if v { i + 1 } else { i };
+        if !b.get(digits).is_some_and(u8::is_ascii_digit) || (i > 0 && b[i - 1].is_ascii_alphanumeric()) {
+            i += 1;
+            continue;
+        }
+        let mut end = digits;
+        let mut dots = 0;
+        while end < b.len() && (b[end].is_ascii_digit() || (b[end] == b'.' && b.get(end + 1).is_some_and(u8::is_ascii_digit))) {
+            dots += usize::from(b[end] == b'.');
+            end += 1;
+        }
+        if (v || dots > 0) && alone(b, i, end) {
+            found.push((i, end));
+        }
+        i = end.max(i + 1);
+    }
+    found
+}
+
+/// The programs earlier releases put in the app's folder that `program`, this release's, takes the place of: a file
+/// whose name, with `previous` (the version installed before) or another version in it taken out, is `program`'s.
+fn replaced_programs(dir: &Path, previous: &str, program: &str) -> Vec<String> {
+    let is_program = |rest: Option<String>| rest.is_some_and(|rest| rest.eq_ignore_ascii_case(program));
+    let Ok(entries) = fs::read_dir(dir) else { return Vec::new() };
+    let mut found: Vec<String> = entries
+        .flatten()
+        .filter(|entry| entry.file_type().is_ok_and(|t| t.is_file()))
+        .map(|entry| entry.file_name().to_string_lossy().into_owned())
+        .filter(|name| !name.eq_ignore_ascii_case(program))
+        .filter(|name| is_program(without_version(name, previous)) || versions_in(name).into_iter().any(|(start, end)| is_program(without_word(name, start, end))))
+        .collect();
+    found.sort();
+    found
 }
 
 /// Moves `from` into `to`, replacing files but keeping anything else in `to`
@@ -1484,6 +1609,104 @@ mod tests {
         // And uninstalling still removes them all.
         read_only(&to.join("Game.exe"));
         fs::remove_dir_all(&to).unwrap();
+    }
+
+    #[test]
+    fn a_single_program_goes_in_without_its_releases_version() {
+        for (name, version, stable) in [
+            ("gen1recomp-0.4.8-linux-x86_64.AppImage", "v0.4.8", Some("gen1recomp-linux-x86_64.AppImage")),
+            ("project-reclaimer-client-v0.9.21.exe", "v0.9.21", Some("project-reclaimer-client.exe")),
+            ("project-reclaimer-client-v0.9.21.exe", "0.9.21", Some("project-reclaimer-client.exe")),
+            ("Game_V2.exe", "v2", Some("Game.exe")),
+            ("Game 1.2", "1.2", Some("Game")),
+            ("1.2-Game.exe", "v1.2", Some("Game.exe")),
+            ("v1.2-Game.exe", "v1.2", Some("Game.exe")),
+            // Not there, or not as a word of its own.
+            ("Game.exe", "v1.2", None),
+            ("Game-1.2.1.exe", "v1.2", None),
+            ("Game-1.20.exe", "v1.2", None),
+            ("Game-x1.2.exe", "v1.2", None),
+            ("Gamedev1.2.exe", "v1.2", None),
+            // Nothing left but the extension.
+            ("v1.2.exe", "v1.2", None),
+            ("1.2", "1.2", None),
+            ("Game-1.2.exe", "", None),
+        ] {
+            assert_eq!(without_version(name, version).as_deref(), stable, "{name} at {version}");
+        }
+    }
+
+    #[test]
+    fn an_update_takes_away_only_earlier_releases_copies_of_its_program() {
+        let dir = tempfile::tempdir().unwrap();
+        let program = "gen1recomp-linux-x86_64.AppImage";
+        let old = ["gen1recomp-0.4.6-linux-x86_64.AppImage", "gen1recomp-0.4.7-linux-x86_64.AppImage", "gen1recomp-v0.5-linux-x86_64.AppImage", "0.4.5-gen1recomp-linux-x86_64.AppImage"];
+        let others = [
+            program,
+            // Another program, a number that isn't a version, the player's own files, another system's build.
+            "gen1recomp-64-linux-x86_64.AppImage",
+            "gen1recomp-0.4.7-linux-x86_64.AppImage.bak",
+            "gen1recomp-0.4.7-windows-x86_64.exe",
+            "saves-0.4.7.zip",
+        ];
+        for name in old.iter().chain(&others) {
+            fs::write(dir.path().join(name), "").unwrap();
+        }
+        fs::create_dir(dir.path().join("gen1recomp-0.4.7-linux-x86_64")).unwrap();
+        let mut old = old.map(String::from).to_vec();
+        old.sort();
+        assert_eq!(replaced_programs(dir.path(), "v0.4.7", program), old);
+        // A previous version that isn't shaped like one is still known by the release it was.
+        fs::write(dir.path().join("gen1recomp-nightly-linux-x86_64.AppImage"), "").unwrap();
+        assert!(replaced_programs(dir.path(), "nightly", program).contains(&"gen1recomp-nightly-linux-x86_64.AppImage".to_string()));
+        assert!(!replaced_programs(dir.path(), "", program).contains(&"gen1recomp-nightly-linux-x86_64.AppImage".to_string()));
+    }
+
+    #[test]
+    fn updating_a_single_program_replaces_it_in_place() {
+        let apps = tempfile::tempdir().unwrap();
+        let dir = apps.path().join("gen1recomp");
+        fs::create_dir_all(&dir).unwrap();
+        // Installed before Quiver dropped the version: two releases' programs, and the player's saves beside them.
+        for name in ["gen1recomp-0.4.6-linux-x86_64.AppImage", "gen1recomp-0.4.7-linux-x86_64.AppImage", "saves.dat"] {
+            fs::write(dir.join(name), "old").unwrap();
+        }
+        fs::write(dir.join(VERSION_FILE), "v0.4.7").unwrap();
+        let update = |version: &str, filename: &str| {
+            let (port, _) = serve(|_| "HTTP/1.1 200 OK\r\nContent-Length: 3\r\nConnection: close\r\n\r\nnew".into());
+            let req = InstallRequest {
+                id: "github:bryanthaboi/gen1recomp".into(),
+                url: format!("http://127.0.0.1:{port}/file"),
+                filename: filename.into(),
+                checksum: None,
+                folder: "gen1recomp".into(),
+                dir: Some(dir.to_string_lossy().into()),
+                into: None,
+                files_to_add: vec![],
+                version: version.into(),
+                preferred: vec![],
+                program: None,
+                github_token: None,
+                fallback_url: None,
+            };
+            let (_cancel, cancelled) = tokio::sync::watch::channel(false);
+            tauri::async_runtime::block_on(install(apps.path(), req, cancelled, |_| {})).unwrap()
+        };
+        let installed = update("v0.4.8", "gen1recomp-0.4.8-linux-x86_64.AppImage");
+        let program = "gen1recomp-linux-x86_64.AppImage";
+        assert_eq!(
+            installed.replaced,
+            Some(Replaced { from: vec!["gen1recomp-0.4.6-linux-x86_64.AppImage".into(), "gen1recomp-0.4.7-linux-x86_64.AppImage".into()], to: program.into() })
+        );
+        let mut left: Vec<String> = fs::read_dir(&dir).unwrap().map(|e| e.unwrap().file_name().to_string_lossy().into_owned()).collect();
+        left.sort();
+        assert_eq!(left, [VERSION_FILE, program, "saves.dat"]);
+        assert_eq!(fs::read_to_string(dir.join(program)).unwrap(), "new");
+        assert_eq!(find_executable(&dir, &[], "linux").unwrap(), dir.join(program));
+        // The next one goes over it, under the same name: nothing to take away.
+        assert_eq!(update("v0.4.9", "gen1recomp-0.4.9-linux-x86_64.AppImage").replaced, None);
+        assert_eq!(fs::read_to_string(dir.join(VERSION_FILE)).unwrap(), "v0.4.9");
+        assert!(dir.join(program).is_file() && dir.join("saves.dat").is_file());
     }
 
     #[test]
