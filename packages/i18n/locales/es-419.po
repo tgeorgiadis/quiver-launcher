@@ -3839,18 +3839,19 @@ msgstr "Conservar {keep}"
 msgid "Keep every system's files"
 msgstr "Guardar los archivos de todos los sistemas"
 
-#. Toggle on an app's Manage tab: the download cache keeps this app's newest release
-#. Toggle on an app's Manage tab: the download cache keeps this app's newest release
-#: ../../apps/launcher/src/cache-page.tsx
-#: ../../apps/launcher/src/card-menu.tsx
-msgid "Keep in download cache"
-msgstr "Guardar en la caché de descargas"
 #. Button: takes an app out of the library and leaves its files on the computer
 #. Button: takes an app out of the library and leaves its files on the computer
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/library-ticking.tsx
 msgid "Keep files"
 msgstr "Conservar archivos"
+
+#. Toggle on an app's Manage tab: the download cache keeps this app's newest release
+#. Toggle on an app's Manage tab: the download cache keeps this app's newest release
+#: ../../apps/launcher/src/cache-page.tsx
+#: ../../apps/launcher/src/card-menu.tsx
+msgid "Keep in download cache"
+msgstr "Guardar en la caché de descargas"
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Keep Quiver open until it's done."
