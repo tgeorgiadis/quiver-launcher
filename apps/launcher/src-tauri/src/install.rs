@@ -448,8 +448,14 @@ pub async fn fetch_to_cache(req: InstallRequest, mut cancel: tokio::sync::watch:
     let file = incoming.join(&filename);
     let result = async {
         let stop = std::pin::pin!(cancel.wait_for(|c| *c));
-        let hash = match futures_util::future::select(std::pin::pin!(download(&req, &file, &progress)), stop).await {
-            futures_util::future::Either::Left((Err(_), _)) if !file.exists() => return Err(BLOCKED.to_string()),
+        // Blocked only when the file was there and went as it came: a host's 404, a refusal or no connection fail
+        // before anything is written, and say so as they would for an install.
+        let fetch = async {
+            let response = respond(&req).await?;
+            let written = tokio::fs::File::create(&file).await.map_err(text)?;
+            stream_to(&req, response, written, &progress).await.map_err(|e| if file.exists() { e } else { BLOCKED.to_string() })
+        };
+        let hash = match futures_util::future::select(std::pin::pin!(fetch), stop).await {
             futures_util::future::Either::Left((hash, _)) => hash?,
             futures_util::future::Either::Right(_) => return Err(CANCELLED.to_string()),
         };
@@ -485,6 +491,14 @@ fn incoming_dir(cache: &Path, app: &str, version: &str) -> PathBuf {
 
 /// Streams the file to disk, hashing as it goes; returns its SHA-256.
 async fn download(req: &InstallRequest, to: &Path, progress: &impl Fn(Progress)) -> Result<String, String> {
+    let response = respond(req).await?;
+    let file = tokio::fs::File::create(to).await.map_err(text)?;
+    stream_to(req, response, file, progress).await
+}
+
+/// The host's answer for the file, ready to stream: fails with `MISSING` for a 404, or says why the host or the
+/// connection refused it. Nothing is written yet.
+async fn respond(req: &InstallRequest) -> Result<reqwest::Response, String> {
     let client = reqwest::Client::builder().user_agent("QuiverLauncher/4").build().map_err(text)?;
     let failed = |_| "The download failed. Check your connection and try again.".to_string();
     let token = req.github_token.as_deref().map(str::trim).filter(|t| !t.is_empty());
@@ -507,8 +521,12 @@ async fn download(req: &InstallRequest, to: &Path, progress: &impl Fn(Progress))
     if !status.is_success() {
         return Err(refused(status, response.url()));
     }
+    Ok(response)
+}
+
+/// Writes the host's answer into `file`, hashing as it goes; returns its SHA-256.
+async fn stream_to(req: &InstallRequest, response: reqwest::Response, mut file: tokio::fs::File, progress: &impl Fn(Progress)) -> Result<String, String> {
     let total = response.content_length();
-    let mut file = tokio::fs::File::create(to).await.map_err(text)?;
     let mut hasher = Sha256::new();
     let (mut received, mut reported) = (0u64, 0u64);
     let mut stream = response.bytes_stream();
@@ -1219,6 +1237,44 @@ mod tests {
         // Never out of the cache's folder, nor a name Windows refuses.
         assert_eq!(incoming_dir(cache, "../..", "v1/../../x"), cache.join(".incoming").join("_").join("v1_.._.._x"));
         assert_eq!(incoming_dir(cache, "", "CON"), cache.join(".incoming").join("app").join("version"));
+    }
+
+    #[test]
+    fn a_cache_fetch_that_fails_before_its_file_comes_says_why_not_that_it_was_blocked() {
+        let tmp = tempfile::tempdir().unwrap();
+        let cache = tmp.path().join("cache");
+        let request = |url: String| InstallRequest {
+            id: "gone".into(),
+            url,
+            filename: "Gone-Windows.zip".into(),
+            checksum: Some(format!("sha256:{}", "ab".repeat(32))),
+            folder: "gone-app".into(),
+            dir: None,
+            into: None,
+            files_to_add: vec![],
+            version: "1.0".into(),
+            preferred: vec![],
+            program: None,
+            github_token: None,
+            fallback_url: None,
+            cache: Some(crate::cache::CacheUse { dir: cache.to_string_lossy().into(), keep: true, app: "gone".into(), version: "1.0".into(), ..Default::default() }),
+            run_setup: true,
+        };
+        let fetch = |req| {
+            let (_cancel, cancelled) = tokio::sync::watch::channel(false);
+            tauri::async_runtime::block_on(fetch_to_cache(req, cancelled, |_| {}))
+        };
+        // Gone from its host.
+        let (port, _) = serve(|_| "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\nConnection: close\r\n\r\n".into());
+        assert_eq!(fetch(request(format!("http://127.0.0.1:{port}/Gone-Windows.zip"))), Err(MISSING.to_string()));
+        // Refused.
+        let (port, _) = serve(|_| "HTTP/1.1 403 Forbidden\r\nContent-Length: 0\r\nConnection: close\r\n\r\n".into());
+        let refused = fetch(request(format!("http://127.0.0.1:{port}/Gone-Windows.zip")));
+        assert!(refused.as_ref().is_err_and(|e| e != BLOCKED), "{refused:?}");
+        // No connection.
+        let offline = fetch(request("http://127.0.0.1:1/Gone-Windows.zip".into()));
+        assert!(offline.as_ref().is_err_and(|e| e != BLOCKED), "{offline:?}");
+        assert!(!cache.join(".incoming").join("gone-app").exists());
     }
 
     #[test]
