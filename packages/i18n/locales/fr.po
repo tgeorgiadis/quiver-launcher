@@ -888,6 +888,14 @@ msgstr "+ Nouvelle playlist…"
 msgid "+ New tag…"
 msgstr "+ Nouveau tag…"
 
+#: ../../apps/launcher/src/release-files.tsx
+msgid "<0>*</0> is any text and <1>?</1> one character, over the whole name: <2>*portable*x64*</2>"
+msgstr "<0>*</0> remplace n'importe quel texte et <1>?</1> un caractère, sur le nom entier : <2>*portable*x64*</2>"
+
+#: ../../apps/launcher/src/release-files.tsx
+msgid "<0>/…/</0> is a regular expression: <1>/^game-(win|linux)/</1>"
+msgstr "<0>/…/</0> est une expression régulière : <1>/^game-(win|linux)/</1>"
+
 #: ../../apps/launcher/src/setup.tsx
 msgid "<0>Easy setup:</0> for apps that support it, you only provide your ROM or disc image, which Quiver finds in the folders you set up"
 msgstr "<0>Configuration facile :</0> pour les applications qui la prennent en charge, vous fournissez seulement votre ROM ou image disque, que Quiver trouve dans les dossiers que vous avez configurés"
@@ -1725,6 +1733,7 @@ msgstr "Impossible à ajouter : Quiver Launcher 3 ne sait pas d'où elle vient"
 #: ../../apps/launcher/src/own-copy-setup.tsx
 #: ../../apps/launcher/src/own.tsx
 #: ../../apps/launcher/src/recovery.tsx
+#: ../../apps/launcher/src/release-files.tsx
 #: ../../apps/launcher/src/saves-tab.tsx
 #: ../../apps/launcher/src/settings-page.tsx
 #: ../../apps/launcher/src/sync-folder-page.tsx
@@ -2617,6 +2626,10 @@ msgstr "Faites glisser pour redimensionner. Double-cliquez pour ajuster à la fe
 msgid "e.g. --fullscreen"
 msgstr "ex. : --fullscreen"
 
+#: ../../apps/launcher/src/release-files.tsx
+msgid "e.g. EXIT1, *portable*x64*, !setup"
+msgstr "ex. EXIT1, *portable*x64*, !setup"
+
 #: ../../apps/launcher/src/launch-options.tsx
 msgid "e.g. gamemoderun %command% --fullscreen"
 msgstr "ex. : gamemoderun %command% --fullscreen"
@@ -2762,6 +2775,14 @@ msgstr "Fichier"
 #: ../../apps/launcher/src/app-files.tsx
 msgid "File name, like config.ini"
 msgstr "Nom du fichier, comme config.ini"
+
+#: ../../apps/launcher/src/release-files.tsx
+msgid "Files of {version}"
+msgstr "Fichiers de {version}"
+
+#: ../../apps/launcher/src/release-files.tsx
+msgid "Filter"
+msgstr "Filtre"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/library-sidebar.tsx
@@ -3753,6 +3774,10 @@ msgstr "Les laisser"
 msgid "Leave TV mode"
 msgstr "Quitter le mode TV"
 
+#: ../../apps/launcher/src/release-files.tsx
+msgid "Left out"
+msgstr "Exclu"
+
 #: ../../apps/launcher/src/card-menu.tsx
 #: ../../apps/launcher/src/launch-options.tsx
 msgid "Let Quiver choose"
@@ -3867,6 +3892,10 @@ msgstr "Chargement des versions"
 #: ../../apps/launcher/src/game.tsx
 msgid "Loading the game"
 msgstr "Chargement du jeu"
+
+#: ../../apps/launcher/src/release-files.tsx
+msgid "Loading the newest release…"
+msgstr "Chargement de la version la plus récente…"
 
 #: ../../apps/launcher/src/cloud-saves-page.tsx
 msgid "Loading your cloud saves…"
@@ -3987,6 +4016,10 @@ msgstr "Géré par Quiver"
 #: ../../apps/launcher/src/library.tsx
 msgid "Manually managed"
 msgstr "Géré manuellement"
+
+#: ../../apps/launcher/src/release-files.tsx
+msgid "Matches"
+msgstr "Correspond"
 
 #: ../../apps/launcher/src/game.tsx
 msgid "Matching games"
@@ -4440,6 +4473,10 @@ msgstr "Aucune playlist pour l'instant. Ajoutez-en une avec +, ou enregistrez vo
 msgid "No programs found in its folder."
 msgstr "Aucun programme trouvé dans son dossier."
 
+#: ../../apps/launcher/src/release-files.tsx
+msgid "No release files to show yet."
+msgstr "Aucun fichier de version à afficher pour l'instant."
+
 #: ../../apps/launcher/src/detail.tsx
 msgid "No release notes provided."
 msgstr "Aucune note de version fournie."
@@ -4501,6 +4538,10 @@ msgstr "Aucun des fichiers trouvés par Quiver ne ressemble à {game}."
 msgid "None of them are installed."
 msgstr "Aucune n'est installée."
 
+#: ../../apps/launcher/src/release-files.tsx
+msgid "None of these files match, so this release couldn't be installed."
+msgstr "Aucun de ces fichiers ne correspond : cette version ne pourrait pas être installée."
+
 #: ../../apps/launcher/src/own.tsx
 msgid "None of this release's files are for this computer."
 msgstr "Aucun fichier de cette version n'est prévu pour cet ordinateur."
@@ -4509,10 +4550,18 @@ msgstr "Aucun fichier de cette version n'est prévu pour cet ordinateur."
 msgid "None of this release's files are for this device."
 msgstr "Aucun fichier de cette version n'est prévu pour cet appareil."
 
+#: ../../apps/launcher/src/store.tsx
+msgid "None of this release's files match your release files filter \"{filter}\". Change it under Release files, on the app's Manage tab."
+msgstr "Aucun fichier de cette version ne correspond à votre filtre de fichiers de version \"{filter}\". Modifiez-le sous Fichiers de version, dans l'onglet Gérer de l'app."
+
 #. Mouse wheel speed: the system's
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Normal"
 msgstr "Normale"
+
+#: ../../apps/launcher/src/release-files.tsx
+msgid "Not a valid pattern: {invalid}"
+msgstr "Motif non valide : {invalid}"
 
 #. A release file a maintainer didn't tick for the app, in Which download?'s Show all files
 #: ../../apps/launcher/src/App.tsx
@@ -5277,6 +5326,10 @@ msgstr "Quiver n'a pas encore vu cette version."
 msgid "Quiver installing or launching it"
 msgstr "Quiver à l’installation ou au lancement"
 
+#: ../../apps/launcher/src/release-files.tsx
+msgid "Quiver installs and updates this app only from the release files that match. Useful when one repository ships several apps or builds."
+msgstr "Quiver installe et met à jour cette app uniquement à partir des fichiers de version qui correspondent. Pratique quand un dépôt publie plusieurs apps ou builds."
+
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Quiver is measuring the apps and the free space on the drive. This can take a moment."
 msgstr "Quiver mesure les apps et l’espace libre sur le disque. Cela peut prendre un moment."
@@ -5489,6 +5542,11 @@ msgstr "Réinstaller {installedVersion}"
 #: ../../apps/launcher/src/own.tsx
 msgid "Release feed"
 msgstr ""
+
+#. Button: which of a release's files the app installs from
+#: ../../apps/launcher/src/release-files.tsx
+msgid "Release files"
+msgstr "Fichiers de version"
 
 #. Tab of an app's page
 #. Which of an app's releases it gets: main releases only, or pre-releases too
@@ -5782,6 +5840,7 @@ msgstr "Comme le système"
 #: ../../apps/launcher/src/launch-options.tsx
 #: ../../apps/launcher/src/library.tsx
 #: ../../apps/launcher/src/own.tsx
+#: ../../apps/launcher/src/release-files.tsx
 #: ../../apps/launcher/src/tag-settings.tsx
 msgid "Save"
 msgstr "Enregistrer"
@@ -6023,6 +6082,10 @@ msgstr "Envoyé avec le nom de ton compte, la version de ce launcher et ton syst
 #: ../../apps/launcher/src/App.tsx
 msgid "Sent. A maintainer will take a look."
 msgstr "Envoyé. Un mainteneur va y jeter un œil."
+
+#: ../../apps/launcher/src/release-files.tsx
+msgid "Separate several with commas; <0>!</0> in front leaves files out: <1>!setup</1>"
+msgstr "Séparez-en plusieurs par des virgules ; <0>!</0> devant exclut des fichiers : <1>!setup</1>"
 
 #: ../../apps/launcher/src/console-folders.tsx
 msgid "Set a folder for another system"
@@ -6630,6 +6693,10 @@ msgstr "testé sur {version}"
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Tested release"
 msgstr "Version testée"
+
+#: ../../apps/launcher/src/release-files.tsx
+msgid "Text matches anywhere in the name: <0>EXIT1</0>"
+msgstr "Le texte correspond n'importe où dans le nom : <0>EXIT1</0>"
 
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Thanks for sharing how it ran."
@@ -7408,6 +7475,10 @@ msgstr "Mise à jour…"
 #: ../../apps/launcher/src/telemetry-ui.tsx
 msgid "Usage data"
 msgstr "Données d'utilisation"
+
+#: ../../apps/launcher/src/release-files.tsx
+msgid "Use all files again"
+msgstr "Utiliser à nouveau tous les fichiers"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Use an https:// image address."

@@ -56,6 +56,7 @@ import { OwnCopyChips, OwnCopyPrompt } from "./own-copy-setup";
 import { copiesNeeded } from "./own-copy";
 import { GameCopiesNotice } from "./own-copy-settings";
 import { AppUpdatesNotice } from "./app-updates";
+import { ReleaseFiles } from "./release-files";
 
 type Tab = "library" | "browse";
 /** A page over the library or catalog: an app's, an original game's, Downloads or Settings. */
@@ -1425,6 +1426,7 @@ function AppPage({
         )}
         {item && <UpdatesChoice id={item.id} />}
         {item && <PrereleasesChoice id={item.id} />}
+        {item && !isLocal(item.id) && <ReleaseFiles entry={entry} source={source} />}
       </div>
       {item && (
         <div className="panel-group">

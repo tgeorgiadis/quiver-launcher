@@ -12,7 +12,7 @@ import type { HiddenApp } from "./browse-hidden";
 import { hideOnApp, shownTags, type HiddenTags } from "./catalog-tags";
 import { native, type Config, type SaveBackup, type LaunchOptions, type MovingApp, type OldApp, type OldFilter, type Progress, type StateProblem, type V3Library, type WindowsRunner } from "./native";
 import { Recovery } from "./recovery";
-import { assetFilterFor, bestAssets, installable, installFormat, isMsi, pickedBefore, releaseFor } from "./assets";
+import { assetFilterFor, bestAssets, installable, installFormat, isMsi, pickedBefore, releaseFor, wantedFiles } from "./assets";
 import { cameAfter, fromSite, scanAsks, installedFile, insteadOf, newestUnblocked, sameChecksum, unverifiedFile, versionLabel, withdrawnAsBlocked } from "./versions";
 import { captureError, captureFailure, failureKind, Problem, reasonOf, reportStartupFailure, setTelemetryAppsDir, setTelemetryAppsFolders, telemetryChoice, track, type TelemetryContext } from "./telemetry";
 import { appsDueToday, appsOnComputer, librarySummary } from "./usage-summary";
@@ -59,6 +59,11 @@ export type LibraryItem = {
     pictures?: Pictures;
     tags?: string[];
     consoles?: string[];
+    /**
+     * Which release files Quiver installs it from, as Quiver Launcher 3's release asset filter: the player's own
+     * patterns (`parseFileFilter` in assets.ts), over the catalog's. This device only.
+     */
+    releaseFiles?: string;
   };
   /** Changed here and not yet saved to the account. */
   pending?: { added?: boolean; name?: boolean; cover?: boolean; tags?: boolean; consoles?: boolean; removed?: boolean };
@@ -365,6 +370,8 @@ type Launcher = {
   setCopy: (id: string, fileId: string, copy: OwnCopy | undefined) => void;
   /** Sets the player's own name and artwork; undefined shows the catalog's. */
   customize: (id: string, overrides: { name?: string; cover?: string; pictures?: Pictures }) => void;
+  /** Sets which release files an app installs from (`LibraryItem.overrides.releaseFiles`); empty takes them all again. */
+  setReleaseFiles: (id: string, filter: string) => void;
   /** The player's own tags on an app; hand-picked collections are tags. */
   setTags: (id: string, tags: string[]) => void;
   /** Renames one of the player's tags on every app that has it; with no new name, takes it off them all. */
@@ -1661,6 +1668,8 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     return () => void off.then((stop) => stop());
   }, [setNotice]);
   const library = useMemo(() => allItems.filter((i) => !i.removed), [allItems]);
+  /** The player's release files filter for an app, if they set one. */
+  const releaseFilesOf = (id: string) => library.find((i) => i.id === id)?.overrides?.releaseFiles;
   // The consoles the player chose for an app, by id: where grouping by console puts it, as the library shows it.
   const ownConsoles = useMemo(() => Object.fromEntries(library.flatMap((i) => (i.overrides?.consoles ? [[i.id, i.overrides.consoles]] : []))), [library]);
   // The catalog comes from the site's REST API, which Cloudflare caches for every player; only the account uses Convex.
@@ -2041,6 +2050,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       filter: custom ? undefined : (r) => (r.installationOverride ?? entry.launcher).releaseAssetFilter,
       kind: was ? (was.installer === "msi" ? "msi" : "files") : undefined,
       platform: platform ?? (was ? (was.wine ? "windows" : config.os) : undefined),
+      files: releaseFilesOf(entry.id),
     });
   };
 
@@ -2272,6 +2282,9 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     // through Wine. Switching drops the file picked for the other one.
     const platform = options.platform ?? (was?.wine ? "windows" : undefined);
     const lastPick = options.platform && was && options.platform !== (was.wine ? "windows" : config.os) ? undefined : was?.pick;
+    // The player's own release files filter: only the files it keeps are installed, unless they click one themselves.
+    const mine = releaseFilesOf(entry.id);
+    const wanted = (list: Asset[]) => wantedFiles(list, mine);
     const noAnswer = () => new Problem(msg`Couldn't reach quiverlauncher.com. Check your connection and try again.`);
     const stop = (stage: "unverified_prompt" | "file_choice") => {
       setJobs(({ [entry.id]: _, ...rest }) => rest);
@@ -2359,28 +2372,33 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         ? []
         : clicked
           ? !kind || isMsi(clicked.filename) === (kind === "msi") ? [clicked] : []
-          : bestAssets(release.assets, config.os, config.arch, settings.releaseAssetFilter, kind, platform);
+          : bestAssets(wanted(release.assets), config.os, config.arch, settings.releaseAssetFilter, kind, platform);
       // A file the player picked that a later release names differently: they pick again, even from one.
       const missed = !stray && !candidates.length && !clicked && Boolean(custom && settings.releaseAssetFilter);
-      if (missed) candidates = bestAssets(release.assets, config.os, config.arch, undefined, kind, platform);
+      if (missed) candidates = bestAssets(wanted(release.assets), config.os, config.arch, undefined, kind, platform);
       let [asset, ...others] = candidates;
       // An automatic update never stops to ask: it waits until the launcher starts again, or the player updates it.
       const waitForPlayer = (until = Infinity) => {
         waiting.current.set(`${entry.id}@${bare(release!.version)}`, until);
         setJobs(({ [entry.id]: _, ...rest }) => rest);
       };
-      if (!asset && kind && bestAssets(release.assets, config.os, config.arch).length && !bestAssets(release.assets, config.os, config.arch, undefined, kind).length)
+      if (!asset && kind && bestAssets(wanted(release.assets), config.os, config.arch).length && !bestAssets(wanted(release.assets), config.os, config.arch, undefined, kind).length)
         throw new Problem(
           kind === "msi"
             ? msg`This release has no Windows installer (MSI) to update it with. Uninstall it, then get it again to install this release's download.`
             : msg`This release only comes as a Windows installer (MSI). Uninstall it, then get it again to install it that way.`,
         );
       // A phone or tablet is a device, not a computer.
-      const noDownload =
-        config.os === "android" ? msg`This release has no download for your device.` : msg`This release has no download for your computer.`;
+      const filter = mine?.trim() ?? "";
+      const filtered = Boolean(filter) && installable(release.assets, config.os).length > 0 && !installable(wanted(release.assets), config.os).length;
+      const noDownload = filtered
+        ? msg`None of this release's files match your release files filter "${filter}". Change it under Release files, on the app's Manage tab.`
+        : config.os === "android"
+          ? msg`This release has no download for your device.`
+          : msg`This release has no download for your computer.`;
       // Of the release's files, the ones this computer can install, of the kind installed.
       const ofKind = (list: Asset[]) => installable(list, config.os).filter((a) => !kind || isMsi(a.filename) === (kind === "msi"));
-      const approved = ofKind(release.assets);
+      const approved = ofKind(wanted(release.assets));
       // None marked for this computer: the player picks from the files there are, as they may know which runs. Files
       // the site put on no platform aren't marked for it either (a PS5 or Switch build can be one), so several of them
       // ask the same way, not as files for this computer.
@@ -2399,7 +2417,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       } else if (again) asset = again;
       else if (!asset || others.length || missed || unmatched) {
         if (auto) return waitForPlayer();
-        unapproved = stray || custom ? [] : ofKind(release.otherAssets ?? (await otherFilesOf(entry.slug, release.version)));
+        unapproved = stray || custom ? [] : ofKind(wanted(release.otherAssets ?? (await otherFilesOf(entry.slug, release.version))));
         if (!asset && !unapproved.length) throw new Problem(noDownload);
         const choices = asset ? [asset, ...others] : [];
         const all = [...approved, ...unapproved];
@@ -2537,7 +2555,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         );
         if (!custom) {
           void client.downloadProblem(entry, { version: release.version, file, problem: error }).catch(() => {});
-          const fits = (r: Release) => bestAssets(r.assets, config.os, config.arch, (r.installationOverride ?? entry.launcher).releaseAssetFilter, kind).length > 0;
+          const fits = (r: Release) => bestAssets(wantedFiles(r.assets, releaseFilesOf(entry.id)), config.os, config.arch, (r.installationOverride ?? entry.launcher).releaseAssetFilter, kind).length > 0;
           instead = insteadOf((await client.releases(entry.slug, 5, null, prereleasesFor(entry.id)).catch(() => null))?.items ?? [], release.version, was, fits);
         }
       }
@@ -2848,6 +2866,16 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     },
     settings,
     setSettings,
+    setReleaseFiles: (id, filter) => {
+      const releaseFiles = filter.trim() || undefined;
+      setLibrary((l) => l.map((i) => (i.id !== id ? i : { ...i, overrides: { ...i.overrides, releaseFiles } })));
+      // Which release it can update to is looked up again, by the new filter.
+      setCatalog((c) => {
+        if (!c[id]?.forHere) return c;
+        const { forHere: _, ...entry } = c[id];
+        return { ...c, [id]: entry };
+      });
+    },
     customize: (id, { name, cover, pictures }) =>
       setLibrary((l) =>
         l.map((i) => {
