@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Entry } from "@quiverlauncher/api";
-import { downloadsLine, downloadsOf, sizeLabel, updateAllOf } from "./downloads";
+import { downloadsLine, downloadsOf, offersUpdates, sizeLabel, updateAllOf, updateKeysOf } from "./downloads";
 import { forHereKey, type Install, type Job } from "./store";
 
 const entry = (id: string, version: string, releasedAt: number) =>
@@ -71,5 +71,26 @@ describe("updateAllOf", () => {
       msi: { ...install("v1", 1), installer: "msi" },
     };
     expect(updateAllOf(["plain", "bySetup", "elsewhere", "msi"], installs)).toEqual(["plain"]);
+  });
+});
+
+describe("updates put away", () => {
+  const catalog = { a: entry("a", "2.0", 20), c: entry("c", "3.0", 20) };
+  const installs = { a: install("1.0", 10), c: install("1.0", 10) };
+
+  it("names each update by its app and version", () => {
+    expect(updateKeysOf(["a", "c"], catalog, installs)).toEqual(["a@2.0", "c@3.0"]);
+  });
+
+  it("stays put away until an update comes that wasn't", () => {
+    expect(offersUpdates(["a@2.0", "c@3.0"])).toBe(true);
+    expect(offersUpdates([], [])).toBe(false);
+    const putAway = ["a@2.0", "c@3.0"];
+    expect(offersUpdates(["a@2.0", "c@3.0"], putAway)).toBe(false);
+    // One updated since: the rest stay put away.
+    expect(offersUpdates(["c@3.0"], putAway)).toBe(false);
+    // A newer release of one put away, or another app's update, is new.
+    expect(offersUpdates(["a@2.1", "c@3.0"], putAway)).toBe(true);
+    expect(offersUpdates(["a@2.0", "b@1.1"], putAway)).toBe(true);
   });
 });

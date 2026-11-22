@@ -6191,6 +6191,11 @@ msgstr "보기"
 msgid "Show {name}"
 msgstr "{name} 보기"
 
+#. Setting: a banner over the library says how many app updates are waiting
+#: ../../apps/launcher/src/app-updates.tsx
+msgid "Show a banner when updates are ready"
+msgstr "업데이트가 준비되면 배너 표시"
+
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Show a picture of your own behind the library's grid. The List layout doesn't show it."
 msgstr "라이브러리 그리드 뒤에 원하는 이미지를 표시합니다. 목록 레이아웃에서는 표시되지 않습니다."
@@ -7750,6 +7755,10 @@ msgstr "다운로드가 설치 프로그램이면 Quiver가 설치 중에 한 �
 #: ../../apps/launcher/src/own-copy-settings.tsx
 msgid "When an app needs your own copy of a game, like a ROM or a disc image, Quiver looks for it in these folders, and nowhere else."
 msgstr "앱에 ROM이나 디스크 이미지 같은 내 게임 사본이 필요하면 Quiver는 이 폴더에서만 찾습니다."
+
+#: ../../apps/launcher/src/app-updates.tsx
+msgid "When it's off, the library doesn't show it. The Downloads button still counts the updates waiting, and its page has Update all."
+msgstr "끄면 라이브러리에 표시되지 않습니다. 다운로드 버튼에는 대기 중인 업데이트 수가 계속 표시되고, 그 페이지에서 모두 업데이트를 할 수 있습니다."
 
 #: ../../apps/launcher/src/setup.tsx
 msgid "Where apps install"

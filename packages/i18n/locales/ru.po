@@ -6191,6 +6191,11 @@ msgstr "Показать"
 msgid "Show {name}"
 msgstr "Показать {name}"
 
+#. Setting: a banner over the library says how many app updates are waiting
+#: ../../apps/launcher/src/app-updates.tsx
+msgid "Show a banner when updates are ready"
+msgstr "Показывать баннер, когда есть обновления"
+
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Show a picture of your own behind the library's grid. The List layout doesn't show it."
 msgstr "Показывайте своё изображение за сеткой библиотеки. В режиме «Список» оно не отображается."
@@ -7750,6 +7755,10 @@ msgstr "Если загрузка — установщик, Quiver запуск�
 #: ../../apps/launcher/src/own-copy-settings.tsx
 msgid "When an app needs your own copy of a game, like a ROM or a disc image, Quiver looks for it in these folders, and nowhere else."
 msgstr "Когда приложению нужна ваша копия игры, например ROM или образ диска, Quiver ищет её только в этих папках."
+
+#: ../../apps/launcher/src/app-updates.tsx
+msgid "When it's off, the library doesn't show it. The Downloads button still counts the updates waiting, and its page has Update all."
+msgstr "Если выключено, библиотека его не показывает. Кнопка «Загрузки» по-прежнему показывает число ожидающих обновлений, а на её странице есть «Обновить все»."
 
 #: ../../apps/launcher/src/setup.tsx
 msgid "Where apps install"

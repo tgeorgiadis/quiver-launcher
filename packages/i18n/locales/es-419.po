@@ -6191,6 +6191,11 @@ msgstr "Mostrar"
 msgid "Show {name}"
 msgstr "Mostrar {name}"
 
+#. Setting: a banner over the library says how many app updates are waiting
+#: ../../apps/launcher/src/app-updates.tsx
+msgid "Show a banner when updates are ready"
+msgstr "Mostrar un aviso cuando haya actualizaciones"
+
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Show a picture of your own behind the library's grid. The List layout doesn't show it."
 msgstr "Muestra una imagen propia detrás de la cuadrícula de la biblioteca. El diseño Lista no la muestra."
@@ -7750,6 +7755,10 @@ msgstr "Cuando una descarga es un programa de instalación, Quiver lo ejecuta un
 #: ../../apps/launcher/src/own-copy-settings.tsx
 msgid "When an app needs your own copy of a game, like a ROM or a disc image, Quiver looks for it in these folders, and nowhere else."
 msgstr "Cuando una app necesita tu propia copia de un juego, como una ROM o una imagen de disco, Quiver la busca solo en estas carpetas."
+
+#: ../../apps/launcher/src/app-updates.tsx
+msgid "When it's off, the library doesn't show it. The Downloads button still counts the updates waiting, and its page has Update all."
+msgstr "Si está desactivado, la biblioteca no lo muestra. El botón Descargas sigue contando las actualizaciones pendientes, y su página tiene Actualizar todo."
 
 #: ../../apps/launcher/src/setup.tsx
 msgid "Where apps install"
