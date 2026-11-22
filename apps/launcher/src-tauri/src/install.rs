@@ -13,6 +13,9 @@ use tokio::io::AsyncWriteExt;
 pub const MISMATCH: &str = "mismatch";
 /// What an install fails with when its file is gone from where it was published (a 404).
 pub const MISSING: &str = "missing";
+/// What the download cache's fetch fails with when the file went from under it as it came, as antivirus software
+/// (Windows Defender) takes away a file it flags.
+pub const BLOCKED: &str = "blocked";
 /// What an install stopped because the player cancelled it fails with.
 pub const CANCELLED: &str = "cancelled";
 /// Written into an installed app's folder; holds the installed version.
@@ -50,6 +53,10 @@ pub struct InstallRequest {
     /// a public repository's file still downloads that way, as it did before the token was saved.
     #[serde(default)]
     pub fallback_url: Option<String>,
+    /// The download cache (cache.rs), when the player turned it on: the file is taken from it when it's there, and
+    /// kept in it once downloaded when `keep` says so.
+    #[serde(default)]
+    pub cache: Option<crate::cache::CacheUse>,
     /// A download that's a Windows setup program is run while it installs (setup.rs). False (the player turned it off
     /// in Settings), it's kept in the app's folder as any other file, and Play starts it.
     #[serde(default = "yes")]
@@ -78,6 +85,15 @@ pub struct Installed {
     pub restart: bool,
     /// A setup program installed it, in the app's folder or outside it.
     pub setup: bool,
+    /// Earlier releases' programs this release's took the place of (`replaced_programs`).
+    pub replaced: Option<Replaced>,
+}
+
+/// The programs an update took away, and the one in their place: names in the app's folder.
+#[derive(Serialize, Debug, PartialEq)]
+pub struct Replaced {
+    pub from: Vec<String>,
+    pub to: String,
 }
 
 #[derive(Serialize, Clone)]
@@ -148,11 +164,30 @@ pub async fn install(
     fs::create_dir_all(&staging).map_err(text)?;
     let result = async {
         let mut file = staging.join(&filename);
-        let hash = {
-            let stop = std::pin::pin!(cancel.wait_for(|c| *c));
-            match futures_util::future::select(std::pin::pin!(download(&req, &file, &progress)), stop).await {
-                futures_util::future::Either::Left((hash, _)) => hash?,
-                futures_util::future::Either::Right(_) => return Err(CANCELLED.to_string()),
+        // The same file from the download cache, checked against its checksum there, rather than downloaded again.
+        let cached = match (&req.cache, req.checksum.as_deref()) {
+            (Some(cache), Some(checksum)) => {
+                let (cache, checksum, to) = (cache.clone(), checksum.to_string(), file.clone());
+                tokio::task::spawn_blocking(move || crate::cache::take(&cache, &checksum, &to).and_then(|_| crate::cache::hex_of(&checksum)))
+                    .await
+                    .ok()
+                    .flatten()
+            }
+            _ => None,
+        };
+        let from_cache = cached.is_some();
+        let hash = match cached {
+            Some(hash) => {
+                let size = fs::metadata(&file).map(|m| m.len()).ok();
+                progress(Progress { id: req.id.clone(), phase: "downloading", received: size.unwrap_or(0), total: size, setup: false });
+                hash
+            }
+            None => {
+                let stop = std::pin::pin!(cancel.wait_for(|c| *c));
+                match futures_util::future::select(std::pin::pin!(download(&req, &file, &progress)), stop).await {
+                    futures_util::future::Either::Left((hash, _)) => hash?,
+                    futures_util::future::Either::Right(_) => return Err(CANCELLED.to_string()),
+                }
             }
         };
         if *cancel.borrow() {
@@ -160,6 +195,11 @@ pub async fn install(
         }
         if !matches_checksum(req.checksum.as_deref(), &hash) {
             return Err(MISMATCH.to_string());
+        }
+        // Kept in the download cache, as checked: a cache that can't take it never stops the install.
+        if let Some(cache) = req.cache.clone().filter(|c| c.keep && !from_cache) {
+            let (kept, name, hash) = (file.clone(), filename.clone(), hash.clone());
+            let _ = tokio::task::spawn_blocking(move || crate::cache::keep(&cache, &kept, &name, &hash)).await;
         }
         // A host can name a file without its extension ("Game-v1.2-Windows"): it's named for what's in it.
         let filename = match named_for_contents(&filename, &file) {
@@ -197,6 +237,7 @@ pub async fn install(
                 location: path(setup.location),
                 restart: setup.restart,
                 setup: false,
+                replaced: None,
             });
         }
         // Android asks the player to confirm installing an APK.
@@ -204,6 +245,8 @@ pub async fn install(
         progress(Progress { id: req.id.clone(), phase: "installing", received: 0, total: None, setup });
         let files = req.files_to_add.clone();
         let version = req.version.clone();
+        // A download that's a single program, kept as it is rather than unpacked.
+        let single = (!is_archive(&filename)).then(|| filename.clone());
         let out = staging.join("out");
         let dir = target.clone();
         let unpacked = out.clone();
@@ -243,24 +286,45 @@ pub async fn install(
                     location: (!setup.here).then(|| path(setup.location)),
                     restart: false,
                     setup: true,
+                    replaced: None,
                 });
             }
         }
-        tokio::task::spawn_blocking(move || -> Result<(), String> {
+        let replaced = tokio::task::spawn_blocking(move || -> Result<Option<Replaced>, String> {
             // On Android an archive is only an app with an APK in it: one without (another system's build the player
             // picked) fails before it's put in the folder.
             #[cfg(target_os = "android")]
             if crate::android::apk_in(&out).is_none() {
                 return Err("This download has no Android app (APK) in it. Pick another of the release's files.".into());
             }
+            // A single program goes in without its release's version in its name, so the next update replaces it in
+            // place and a shortcut to it keeps working.
+            let single = single.map(|name| match without_version(&name, &version) {
+                Some(stable) if fs::rename(out.join(&name), out.join(&stable)).is_ok() => stable,
+                _ => name,
+            });
             // This release's Flatpak bundle, where it lands: not one an earlier build left in the folder.
             let bundle = crate::flatpak::bundle_in(&out).and_then(|b| b.strip_prefix(&out).ok().map(|rel| dir.join(rel)));
             // Marked as Quiver's before anything goes in, so an install cut short can still be retried or removed.
             fs::create_dir_all(&dir).map_err(text)?;
+            let previous = fs::read_to_string(dir.join(VERSION_FILE)).unwrap_or_default();
             if !dir.join(VERSION_FILE).exists() {
                 fs::write(dir.join(VERSION_FILE), "").map_err(text)?;
             }
             merge(&out, &dir).map_err(text)?;
+            // Earlier releases' copies of the program, which this one's is in place of now: Play would find one of
+            // them first, and every version would stay. Taken away only once this one is in.
+            let replaced = single.and_then(|to| {
+                let from: Vec<String> = replaced_programs(&dir, previous.trim(), &to)
+                    .into_iter()
+                    .filter(|name| {
+                        let path = dir.join(name);
+                        writable(&path);
+                        fs::remove_file(&path).is_ok()
+                    })
+                    .collect();
+                (!from.is_empty()).then_some(Replaced { from, to })
+            });
             // A Flatpak bundle is installed for the player; Play then runs it with flatpak. A build that isn't one (the
             // Windows build in place of a Flatpak, say) is what Play runs instead.
             if cfg!(target_os = "linux") {
@@ -283,7 +347,8 @@ pub async fn install(
                 fs::write(dir.join(crate::android::FILE), installed?.package_name).map_err(text)?;
             }
             set_files(&dir, &files, &[])?;
-            fs::write(dir.join(VERSION_FILE), &version).map_err(text)
+            fs::write(dir.join(VERSION_FILE), &version).map_err(text)?;
+            Ok(replaced)
         })
         .await
         .map_err(text)??;
@@ -296,6 +361,7 @@ pub async fn install(
             location: None,
             restart: false,
             setup: false,
+            replaced,
         })
     }
     .await;
@@ -395,8 +461,79 @@ fn refused(status: reqwest::StatusCode, url: &reqwest::Url) -> String {
     }
 }
 
+/// Downloads a release file into the download cache alone, without installing it: the cache's own fetches (Every
+/// latest, Hoarder, Selected titles). Only a file with a checksum is kept, once it matches it. `cancel` turning true
+/// stops it with `CANCELLED`.
+pub async fn fetch_to_cache(req: InstallRequest, mut cancel: tokio::sync::watch::Receiver<bool>, progress: impl Fn(Progress)) -> Result<(), String> {
+    let cache = req.cache.clone().ok_or("No download cache to fetch into.")?;
+    // Only a release's source code comes without a checksum: kept by its own, as there's nothing to check it against.
+    let checksum = req.checksum.as_deref().and_then(crate::cache::hex_of);
+    if checksum.is_none() && !cache.source {
+        return Err("Only a file with a checksum is cached.".into());
+    }
+    let filename = plain_name(&req.filename)?.to_string();
+    if checksum.as_ref().is_some_and(|c| crate::cache::has(Path::new(&cache.dir), std::slice::from_ref(c))[0]) {
+        return Ok(());
+    }
+    // In the cache's own folder, so it's moved into place rather than copied across drives. Named for its app, version
+    // and file, as published: what antivirus software says it flagged, for the player (or Quiver's maintainers) to tell
+    // which release it was.
+    let incoming = incoming_dir(Path::new(&cache.dir), &req.folder, &req.version);
+    fs::create_dir_all(&incoming).map_err(text)?;
+    let file = incoming.join(&filename);
+    let result = async {
+        let stop = std::pin::pin!(cancel.wait_for(|c| *c));
+        // Blocked only when the file was there and went as it came: a host's 404, a refusal or no connection fail
+        // before anything is written, and say so as they would for an install.
+        let fetch = async {
+            let response = respond(&req).await?;
+            let written = tokio::fs::File::create(&file).await.map_err(text)?;
+            stream_to(&req, response, written, &progress).await.map_err(|e| if file.exists() { e } else { BLOCKED.to_string() })
+        };
+        let hash = match futures_util::future::select(std::pin::pin!(fetch), stop).await {
+            futures_util::future::Either::Left((hash, _)) => hash?,
+            futures_util::future::Either::Right(_) => return Err(CANCELLED.to_string()),
+        };
+        if !file.exists() {
+            return Err(BLOCKED.to_string());
+        }
+        if checksum.as_ref().is_some_and(|c| *c != hash) {
+            return Err(MISMATCH.to_string());
+        }
+        let kept = file.clone();
+        tokio::task::spawn_blocking(move || crate::cache::keep(&cache, &kept, &filename, &hash))
+            .await
+            .map_err(text)?
+            .map_err(|e| if e.kind() == io::ErrorKind::NotFound { BLOCKED.to_string() } else { text(e) })
+    }
+    .await;
+    let _ = fs::remove_file(&file);
+    // Its app's and version's folders go once empty; another fetch's, under way, keep theirs.
+    let _ = fs::remove_dir(&incoming);
+    let _ = incoming.parent().map(fs::remove_dir);
+    result
+}
+
+/// Where the cache's fetch of an app's version comes in: `.incoming/<app>/<version>`, each made a safe folder name.
+fn incoming_dir(cache: &Path, app: &str, version: &str) -> PathBuf {
+    let safe = |s: &str, or: &str| {
+        let name: String = s.trim().chars().map(|c| if c.is_alphanumeric() || "-_.+ ".contains(c) { c } else { '_' }).collect();
+        let name = name.trim_matches(|c| c == '.' || c == ' ').to_string();
+        if name.is_empty() || plain_name(&name).is_err() { or.to_string() } else { name }
+    };
+    cache.join(".incoming").join(safe(app, "app")).join(safe(version, "version"))
+}
+
 /// Streams the file to disk, hashing as it goes; returns its SHA-256.
 async fn download(req: &InstallRequest, to: &Path, progress: &impl Fn(Progress)) -> Result<String, String> {
+    let response = respond(req).await?;
+    let file = tokio::fs::File::create(to).await.map_err(text)?;
+    stream_to(req, response, file, progress).await
+}
+
+/// The host's answer for the file, ready to stream: fails with `MISSING` for a 404, or says why the host or the
+/// connection refused it. Nothing is written yet.
+async fn respond(req: &InstallRequest) -> Result<reqwest::Response, String> {
     let client = reqwest::Client::builder().user_agent("QuiverLauncher/4").build().map_err(text)?;
     let failed = |_| "The download failed. Check your connection and try again.".to_string();
     let token = req.github_token.as_deref().map(str::trim).filter(|t| !t.is_empty());
@@ -419,8 +556,12 @@ async fn download(req: &InstallRequest, to: &Path, progress: &impl Fn(Progress))
     if !status.is_success() {
         return Err(refused(status, response.url()));
     }
+    Ok(response)
+}
+
+/// Writes the host's answer into `file`, hashing as it goes; returns its SHA-256.
+async fn stream_to(req: &InstallRequest, response: reqwest::Response, mut file: tokio::fs::File, progress: &impl Fn(Progress)) -> Result<String, String> {
     let total = response.content_length();
-    let mut file = tokio::fs::File::create(to).await.map_err(text)?;
     let mut hasher = Sha256::new();
     let (mut received, mut reported) = (0u64, 0u64);
     let mut stream = response.bytes_stream();
@@ -469,7 +610,7 @@ fn has_known_extension(name: &str) -> bool {
 
 /// The name a file with no known extension should have, from its first bytes;
 /// None when its name already says, or its contents don't (a bare program).
-fn named_for_contents(name: &str, file: &Path) -> Option<String> {
+pub(crate) fn named_for_contents(name: &str, file: &Path) -> Option<String> {
     if has_known_extension(name) {
         return None;
     }
@@ -757,6 +898,96 @@ fn drop_records(out: &Path) {
     }
 }
 
+/// Whether `extract` unpacks a file of this name, rather than keeping it as it is: a single program.
+fn is_archive(name: &str) -> bool {
+    let lower = name.to_lowercase();
+    tarball(&lower).is_some() || [".zip", ".7z", ".rar"].iter().any(|end| lower.ends_with(end))
+}
+
+/// Where in a name `start..end` stands as a word of its own: a separator or the name's edge on either side, and not
+/// the start of a longer number ("1.2" in "1.2.1" or "1.20").
+fn alone(name: &[u8], start: usize, end: usize) -> bool {
+    let separator = |i: usize| name.get(i).is_some_and(|c| b"-_. ".contains(c));
+    (start == 0 || separator(start - 1)) && (end == name.len() || (separator(end) && !(name[end] == b'.' && name.get(end + 1).is_some_and(u8::is_ascii_digit))))
+}
+
+/// `name` without its word at `start..end` and the separator before it (after it, at the start of the name); None
+/// when that leaves no name of its own (".exe").
+fn without_word(name: &str, start: usize, end: usize) -> Option<String> {
+    let rest = if start > 0 {
+        format!("{}{}", &name[..start - 1], &name[end..])
+    } else if end < name.len() && name.as_bytes()[end] != b'.' {
+        name[end + 1..].to_string()
+    } else {
+        return None;
+    };
+    (!rest.starts_with('.') && added_file_name(&rest).is_ok_and(|n| n == rest)).then_some(rest)
+}
+
+/// A program's name without its release's version, so each update replaces the one before in place:
+/// `game-0.4.8-linux.AppImage` for `v0.4.8` is `game-linux.AppImage`. Only the version being installed, with its "v"
+/// or without, standing as a word of its own; nothing guessed. None when the name doesn't have it, or would be left
+/// with no name of its own.
+pub(crate) fn without_version(name: &str, version: &str) -> Option<String> {
+    let version = version.trim();
+    let bare = version.strip_prefix(['v', 'V']).unwrap_or(version).to_ascii_lowercase();
+    if bare.is_empty() {
+        return None;
+    }
+    // Lowercased letter for letter, so it lines up with `name` byte for byte.
+    let lower = name.to_ascii_lowercase();
+    let b = lower.as_bytes();
+    let (at, _) = lower.match_indices(&bare).find(|&(at, _)| {
+        let start = if at > 0 && b[at - 1] == b'v' { at - 1 } else { at };
+        alone(b, start, at + bare.len()) || alone(b, at, at + bare.len())
+    })?;
+    let start = if at > 0 && b[at - 1] == b'v' && alone(b, at - 1, at + bare.len()) { at - 1 } else { at };
+    without_word(name, start, at + bare.len())
+}
+
+/// The words of a name that are versions, as `start..end`: "v" and a number ("v2", "v0.9.21"), or numbers with dots
+/// between ("0.4.8"). A lone number isn't one: "game-64.exe" is another program than "game.exe".
+fn versions_in(name: &str) -> Vec<(usize, usize)> {
+    let b = name.as_bytes();
+    let mut found = Vec::new();
+    let mut i = 0;
+    while i < b.len() {
+        let v = matches!(b[i], b'v' | b'V');
+        let digits = if v { i + 1 } else { i };
+        if !b.get(digits).is_some_and(u8::is_ascii_digit) || (i > 0 && b[i - 1].is_ascii_alphanumeric()) {
+            i += 1;
+            continue;
+        }
+        let mut end = digits;
+        let mut dots = 0;
+        while end < b.len() && (b[end].is_ascii_digit() || (b[end] == b'.' && b.get(end + 1).is_some_and(u8::is_ascii_digit))) {
+            dots += usize::from(b[end] == b'.');
+            end += 1;
+        }
+        if (v || dots > 0) && alone(b, i, end) {
+            found.push((i, end));
+        }
+        i = end.max(i + 1);
+    }
+    found
+}
+
+/// The programs earlier releases put in the app's folder that `program`, this release's, takes the place of: a file
+/// whose name, with `previous` (the version installed before) or another version in it taken out, is `program`'s.
+fn replaced_programs(dir: &Path, previous: &str, program: &str) -> Vec<String> {
+    let is_program = |rest: Option<String>| rest.is_some_and(|rest| rest.eq_ignore_ascii_case(program));
+    let Ok(entries) = fs::read_dir(dir) else { return Vec::new() };
+    let mut found: Vec<String> = entries
+        .flatten()
+        .filter(|entry| entry.file_type().is_ok_and(|t| t.is_file()))
+        .map(|entry| entry.file_name().to_string_lossy().into_owned())
+        .filter(|name| !name.eq_ignore_ascii_case(program))
+        .filter(|name| is_program(without_version(name, previous)) || versions_in(name).into_iter().any(|(start, end)| is_program(without_word(name, start, end))))
+        .collect();
+    found.sort();
+    found
+}
+
 /// Moves `from` into `to`, replacing files but keeping anything else in `to`
 /// (saves, configs, files the player added).
 fn merge(from: &Path, to: &Path) -> io::Result<()> {
@@ -860,10 +1091,37 @@ fn preferred_in<'a>(dir: &Path, files: &'a [PathBuf], preferred: &[String]) -> O
     let name = |p: &PathBuf| p.file_name().map(|n| n.to_string_lossy().to_lowercase()).unwrap_or_default();
     preferred.iter().find_map(|pattern| {
         let pattern = pattern.replace('\\', "/").to_lowercase();
-        let glob = glob::Pattern::new(&pattern).ok()?;
         let folder = pattern.contains('/');
-        files.iter().find(|p| glob.matches(&if folder { relative(p) } else { name(p) }))
+        // As written first, then as a single program's name is now that it goes in without its version.
+        std::iter::once(pattern.clone()).chain(without_wildcard(&pattern)).find_map(|pattern| {
+            let glob = glob::Pattern::new(&pattern).ok()?;
+            files.iter().find(|p| glob.matches(&if folder { relative(p) } else { name(p) }))
+        })
     })
+}
+
+/// A pattern with each of its `*` taken out, together with the separator before it (or after it, at the start of a
+/// name): `Game-*-x86_64.AppImage` is also `Game-x86_64.AppImage`. A single program goes in without its release's
+/// version (`without_version`), so the catalog's patterns written for the versioned names still find it. A `*` with no
+/// separator beside it (`*.exe`, `Game*.exe`) stands for more than a version and is left as it is.
+fn without_wildcard(pattern: &str) -> Vec<String> {
+    let separator = |c: u8| b"-_. ".contains(&c);
+    let b = pattern.as_bytes();
+    let start = pattern.rfind('/').map_or(0, |i| i + 1);
+    b.iter()
+        .enumerate()
+        .filter(|&(_, &c)| c == b'*')
+        .filter_map(|(i, _)| {
+            if i > start && separator(b[i - 1]) {
+                Some(format!("{}{}", &pattern[..i - 1], &pattern[i + 1..]))
+            } else if i == start && b.get(i + 1).is_some_and(|&c| c != b'.' && separator(c)) {
+                Some(format!("{}{}", &pattern[..i], &pattern[i + 2..]))
+            } else {
+                None
+            }
+        })
+        .filter(|rest| rest.len() > start && !rest[start..].starts_with('.'))
+        .collect()
 }
 
 /// Programs reported to the catalog at most, when none is its preferred one.
@@ -1117,10 +1375,174 @@ mod tests {
             program: None,
             github_token: github_token.map(Into::into),
             fallback_url,
+            cache: None,
             run_setup: true,
         };
         let dir = tempfile::tempdir().unwrap();
         tauri::async_runtime::block_on(download(&req, &dir.path().join("game.zip"), &|_| {}))
+    }
+
+    #[test]
+    fn a_cache_fetch_comes_in_named_for_its_app_version_and_file() {
+        let cache = Path::new("/cache");
+        assert_eq!(incoming_dir(cache, "ship-of-harkinian", "9.1.2"), cache.join(".incoming").join("ship-of-harkinian").join("9.1.2"));
+        // Never out of the cache's folder, nor a name Windows refuses.
+        assert_eq!(incoming_dir(cache, "../..", "v1/../../x"), cache.join(".incoming").join("_").join("v1_.._.._x"));
+        assert_eq!(incoming_dir(cache, "", "CON"), cache.join(".incoming").join("app").join("version"));
+    }
+
+    #[test]
+    fn a_cache_fetch_that_fails_before_its_file_comes_says_why_not_that_it_was_blocked() {
+        let tmp = tempfile::tempdir().unwrap();
+        let cache = tmp.path().join("cache");
+        let request = |url: String| InstallRequest {
+            id: "gone".into(),
+            url,
+            filename: "Gone-Windows.zip".into(),
+            checksum: Some(format!("sha256:{}", "ab".repeat(32))),
+            folder: "gone-app".into(),
+            dir: None,
+            into: None,
+            files_to_add: vec![],
+            version: "1.0".into(),
+            preferred: vec![],
+            program: None,
+            github_token: None,
+            fallback_url: None,
+            cache: Some(crate::cache::CacheUse { dir: cache.to_string_lossy().into(), keep: true, app: "gone".into(), version: "1.0".into(), ..Default::default() }),
+            run_setup: true,
+        };
+        let fetch = |req| {
+            let (_cancel, cancelled) = tokio::sync::watch::channel(false);
+            tauri::async_runtime::block_on(fetch_to_cache(req, cancelled, |_| {}))
+        };
+        // Gone from its host.
+        let (port, _) = serve(|_| "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\nConnection: close\r\n\r\n".into());
+        assert_eq!(fetch(request(format!("http://127.0.0.1:{port}/Gone-Windows.zip"))), Err(MISSING.to_string()));
+        // Refused.
+        let (port, _) = serve(|_| "HTTP/1.1 403 Forbidden\r\nContent-Length: 0\r\nConnection: close\r\n\r\n".into());
+        let refused = fetch(request(format!("http://127.0.0.1:{port}/Gone-Windows.zip")));
+        assert!(refused.as_ref().is_err_and(|e| e != BLOCKED), "{refused:?}");
+        // No connection.
+        let offline = fetch(request("http://127.0.0.1:1/Gone-Windows.zip".into()));
+        assert!(offline.as_ref().is_err_and(|e| e != BLOCKED), "{offline:?}");
+        assert!(!cache.join(".incoming").join("gone-app").exists());
+    }
+
+    #[test]
+    fn a_cache_fetch_says_its_file_was_blocked_when_it_went_from_under_it() {
+        let tmp = tempfile::tempdir().unwrap();
+        let cache = tmp.path().join("cache");
+        let body = "flagged by an antivirus";
+        let checksum = format!("sha256:{}", hex::encode(Sha256::digest(body.as_bytes())));
+        let watched = incoming_dir(&cache, "bad-app", "1.0").join("Bad-Windows.zip");
+        let (port, _) = serve(move |_| format!("HTTP/1.1 200 OK\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}", body.len()));
+        let req = InstallRequest {
+            id: "bad".into(),
+            url: format!("http://127.0.0.1:{port}/Bad-Windows.zip"),
+            filename: "Bad-Windows.zip".into(),
+            checksum: Some(checksum),
+            folder: "bad-app".into(),
+            dir: None,
+            into: None,
+            files_to_add: vec![],
+            version: "1.0".into(),
+            preferred: vec![],
+            program: None,
+            github_token: None,
+            fallback_url: None,
+            cache: Some(crate::cache::CacheUse { dir: cache.to_string_lossy().into(), keep: true, app: "bad".into(), version: "1.0".into(), ..Default::default() }),
+            run_setup: true,
+        };
+        let (_cancel, cancelled) = tokio::sync::watch::channel(false);
+        // As Windows Defender does: the file goes as soon as it's written, from where it's named for its release.
+        let result = tauri::async_runtime::block_on(fetch_to_cache(req, cancelled, |p| {
+            if p.received > 0 {
+                fs::remove_file(&watched).expect("it came in named for its app, version and file");
+            }
+        }));
+        assert_eq!(result, Err(BLOCKED.to_string()));
+        assert_eq!(crate::cache::status(&cache, &Default::default()).files, 0);
+        // Nothing left behind for the next fetch.
+        assert!(!cache.join(".incoming").join("bad-app").exists());
+    }
+
+    #[test]
+    fn a_releases_source_code_is_kept_without_a_checksum_but_nothing_else_is() {
+        let tmp = tempfile::tempdir().unwrap();
+        let cache = tmp.path().join("cache");
+        let body = "the source at its tag";
+        let (port, _) = serve(move |_| format!("HTTP/1.1 200 OK\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}", body.len()));
+        let request = |source: bool| InstallRequest {
+            id: "app".into(),
+            url: format!("http://127.0.0.1:{port}/archive/refs/tags/v1.0.zip"),
+            filename: "app-v1.0-source.zip".into(),
+            checksum: None,
+            folder: "app".into(),
+            dir: None,
+            into: None,
+            files_to_add: vec![],
+            version: "v1.0".into(),
+            preferred: vec![],
+            program: None,
+            github_token: None,
+            fallback_url: None,
+            cache: Some(crate::cache::CacheUse { dir: cache.to_string_lossy().into(), keep: true, app: "app".into(), version: "v1.0".into(), source, ..Default::default() }),
+            run_setup: true,
+        };
+        let fetch = |req| {
+            let (_cancel, cancelled) = tokio::sync::watch::channel(false);
+            tauri::async_runtime::block_on(fetch_to_cache(req, cancelled, |_| {}))
+        };
+        // A build with no checksum is never kept, and nothing is asked of its host.
+        assert!(fetch(request(false)).is_err());
+        fetch(request(true)).unwrap();
+        let kept = &crate::cache::status(&cache, &Default::default()).entries[0];
+        assert!(kept.source);
+        assert_eq!(kept.hash, hex::encode(Sha256::digest(body.as_bytes())));
+        assert_eq!(fs::read_to_string(cache.join("app/v1.0/app-v1.0-source.zip")).unwrap(), body);
+    }
+
+    #[test]
+    fn a_kept_file_installs_again_from_the_download_cache_without_downloading_it() {
+        let tmp = tempfile::tempdir().unwrap();
+        let (apps, cache) = (tmp.path().join("apps"), tmp.path().join("cache"));
+        let body = "the app's notes";
+        let checksum = format!("sha256:{}", hex::encode(Sha256::digest(body.as_bytes())));
+        let request = |url: String, keep: bool| InstallRequest {
+            id: "cached-app".into(),
+            url,
+            filename: "notes.txt".into(),
+            checksum: Some(checksum.clone()),
+            folder: "cached-app".into(),
+            dir: None,
+            into: None,
+            files_to_add: vec![],
+            version: "1.0".into(),
+            preferred: vec![],
+            program: None,
+            github_token: None,
+            fallback_url: None,
+            cache: Some(crate::cache::CacheUse { dir: cache.to_string_lossy().into(), keep, app: "cached-app".into(), version: "1.0".into(), ..Default::default() }),
+            run_setup: true,
+        };
+        let run = |req: InstallRequest| {
+            let (_cancel, cancelled) = tokio::sync::watch::channel(false);
+            tauri::async_runtime::block_on(install(&apps, req, cancelled, |_| {}))
+        };
+        let (port, _) = serve(move |_| format!("HTTP/1.1 200 OK\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}", body.len()));
+        run(request(format!("http://127.0.0.1:{port}/notes.txt"), true)).unwrap();
+        assert!(crate::cache::has(&cache, &[checksum.clone()])[0], "kept once downloaded");
+        fs::remove_dir_all(apps.join("cached-app")).unwrap();
+        // Nothing listens there now: only the cache can have it.
+        let installed = run(request(format!("http://127.0.0.1:{port}/notes.txt"), false)).unwrap();
+        assert_eq!(installed.checksum, checksum);
+        assert_eq!(fs::read_to_string(apps.join("cached-app").join("notes.txt")).unwrap(), body);
+        // Without the cache, the same request fails to download.
+        let mut plain = request(format!("http://127.0.0.1:{port}/notes.txt"), false);
+        plain.cache = None;
+        fs::remove_dir_all(apps.join("cached-app")).unwrap();
+        assert!(run(plain).is_err());
     }
 
     #[test]
@@ -1214,6 +1636,106 @@ mod tests {
         // And uninstalling still removes them all.
         read_only(&to.join("Game.exe"));
         fs::remove_dir_all(&to).unwrap();
+    }
+
+    #[test]
+    fn a_single_program_goes_in_without_its_releases_version() {
+        for (name, version, stable) in [
+            ("gen1recomp-0.4.8-linux-x86_64.AppImage", "v0.4.8", Some("gen1recomp-linux-x86_64.AppImage")),
+            ("project-reclaimer-client-v0.9.21.exe", "v0.9.21", Some("project-reclaimer-client.exe")),
+            ("project-reclaimer-client-v0.9.21.exe", "0.9.21", Some("project-reclaimer-client.exe")),
+            ("Game_V2.exe", "v2", Some("Game.exe")),
+            ("Game 1.2", "1.2", Some("Game")),
+            ("1.2-Game.exe", "v1.2", Some("Game.exe")),
+            ("v1.2-Game.exe", "v1.2", Some("Game.exe")),
+            // Not there, or not as a word of its own.
+            ("Game.exe", "v1.2", None),
+            ("Game-1.2.1.exe", "v1.2", None),
+            ("Game-1.20.exe", "v1.2", None),
+            ("Game-x1.2.exe", "v1.2", None),
+            ("Gamedev1.2.exe", "v1.2", None),
+            // Nothing left but the extension.
+            ("v1.2.exe", "v1.2", None),
+            ("1.2", "1.2", None),
+            ("Game-1.2.exe", "", None),
+        ] {
+            assert_eq!(without_version(name, version).as_deref(), stable, "{name} at {version}");
+        }
+    }
+
+    #[test]
+    fn an_update_takes_away_only_earlier_releases_copies_of_its_program() {
+        let dir = tempfile::tempdir().unwrap();
+        let program = "gen1recomp-linux-x86_64.AppImage";
+        let old = ["gen1recomp-0.4.6-linux-x86_64.AppImage", "gen1recomp-0.4.7-linux-x86_64.AppImage", "gen1recomp-v0.5-linux-x86_64.AppImage", "0.4.5-gen1recomp-linux-x86_64.AppImage"];
+        let others = [
+            program,
+            // Another program, a number that isn't a version, the player's own files, another system's build.
+            "gen1recomp-64-linux-x86_64.AppImage",
+            "gen1recomp-0.4.7-linux-x86_64.AppImage.bak",
+            "gen1recomp-0.4.7-windows-x86_64.exe",
+            "saves-0.4.7.zip",
+        ];
+        for name in old.iter().chain(&others) {
+            fs::write(dir.path().join(name), "").unwrap();
+        }
+        fs::create_dir(dir.path().join("gen1recomp-0.4.7-linux-x86_64")).unwrap();
+        let mut old = old.map(String::from).to_vec();
+        old.sort();
+        assert_eq!(replaced_programs(dir.path(), "v0.4.7", program), old);
+        // A previous version that isn't shaped like one is still known by the release it was.
+        fs::write(dir.path().join("gen1recomp-nightly-linux-x86_64.AppImage"), "").unwrap();
+        assert!(replaced_programs(dir.path(), "nightly", program).contains(&"gen1recomp-nightly-linux-x86_64.AppImage".to_string()));
+        assert!(!replaced_programs(dir.path(), "", program).contains(&"gen1recomp-nightly-linux-x86_64.AppImage".to_string()));
+    }
+
+    #[test]
+    fn updating_a_single_program_replaces_it_in_place() {
+        let apps = tempfile::tempdir().unwrap();
+        let dir = apps.path().join("gen1recomp");
+        fs::create_dir_all(&dir).unwrap();
+        // Installed before Quiver dropped the version: two releases' programs, and the player's saves beside them.
+        for name in ["gen1recomp-0.4.6-linux-x86_64.AppImage", "gen1recomp-0.4.7-linux-x86_64.AppImage", "saves.dat"] {
+            fs::write(dir.join(name), "old").unwrap();
+        }
+        fs::write(dir.join(VERSION_FILE), "v0.4.7").unwrap();
+        let update = |version: &str, filename: &str| {
+            let (port, _) = serve(|_| "HTTP/1.1 200 OK\r\nContent-Length: 3\r\nConnection: close\r\n\r\nnew".into());
+            let req = InstallRequest {
+                id: "github:bryanthaboi/gen1recomp".into(),
+                url: format!("http://127.0.0.1:{port}/file"),
+                filename: filename.into(),
+                checksum: None,
+                folder: "gen1recomp".into(),
+                dir: Some(dir.to_string_lossy().into()),
+                into: None,
+                files_to_add: vec![],
+                version: version.into(),
+                preferred: vec![],
+                program: None,
+                github_token: None,
+                fallback_url: None,
+                cache: None,
+                run_setup: true,
+            };
+            let (_cancel, cancelled) = tokio::sync::watch::channel(false);
+            tauri::async_runtime::block_on(install(apps.path(), req, cancelled, |_| {})).unwrap()
+        };
+        let installed = update("v0.4.8", "gen1recomp-0.4.8-linux-x86_64.AppImage");
+        let program = "gen1recomp-linux-x86_64.AppImage";
+        assert_eq!(
+            installed.replaced,
+            Some(Replaced { from: vec!["gen1recomp-0.4.6-linux-x86_64.AppImage".into(), "gen1recomp-0.4.7-linux-x86_64.AppImage".into()], to: program.into() })
+        );
+        let mut left: Vec<String> = fs::read_dir(&dir).unwrap().map(|e| e.unwrap().file_name().to_string_lossy().into_owned()).collect();
+        left.sort();
+        assert_eq!(left, [VERSION_FILE, program, "saves.dat"]);
+        assert_eq!(fs::read_to_string(dir.join(program)).unwrap(), "new");
+        assert_eq!(find_executable(&dir, &[], "linux").unwrap(), dir.join(program));
+        // The next one goes over it, under the same name: nothing to take away.
+        assert_eq!(update("v0.4.9", "gen1recomp-0.4.9-linux-x86_64.AppImage").replaced, None);
+        assert_eq!(fs::read_to_string(dir.join(VERSION_FILE)).unwrap(), "v0.4.9");
+        assert!(dir.join(program).is_file() && dir.join("saves.dat").is_file());
     }
 
     #[test]
@@ -1400,6 +1922,32 @@ mod tests {
         // A pattern with a folder is matched against the path.
         assert_eq!(find_executable(dir.path(), &["BIN/game-*.exe".into()], "windows"), Some(dir.path().join("bin/Game-1.2.exe")));
         assert_eq!(missed(&["tool.exe"]), None);
+    }
+
+    #[test]
+    fn the_catalogs_pattern_for_versioned_names_finds_a_program_without_its_version() {
+        for (pattern, stable) in [
+            ("SplosionMan-x86_64-*.AppImage", Some("SplosionMan-x86_64.AppImage")),
+            ("Game-*-x86_64.AppImage", Some("Game-x86_64.AppImage")),
+            ("*-Game.exe", Some("Game.exe")),
+            ("bin/Game_*.exe", Some("bin/Game.exe")),
+            // A `*` with no separator beside it, or one that leaves no name, stands for more than a version.
+            ("Game*.exe", None),
+            ("*.exe", None),
+            ("Game.exe", None),
+        ] {
+            assert_eq!(without_wildcard(pattern).first().map(String::as_str), stable, "{pattern}");
+        }
+        let dir = tempfile::tempdir().unwrap();
+        let program = without_version("SplosionMan-x86_64-2.3.5.AppImage", "v2.3.5").unwrap();
+        fs::write(dir.path().join(&program), "").unwrap();
+        fs::write(dir.path().join("other-x86_64.AppImage"), "").unwrap();
+        let preferred = ["SplosionMan-x86_64-*.AppImage".to_string()];
+        assert_eq!(find_executable(dir.path(), &preferred, "linux"), Some(dir.path().join(&program)));
+        assert_eq!(preferred_missed(dir.path(), &preferred, "linux"), None, "not reported to the catalog as missing");
+        // A copy an older launcher left under its versioned name still matches the pattern as written, first.
+        fs::write(dir.path().join("SplosionMan-x86_64-2.3.4.AppImage"), "").unwrap();
+        assert_eq!(find_executable(dir.path(), &preferred, "linux"), Some(dir.path().join("SplosionMan-x86_64-2.3.4.AppImage")));
     }
 
     #[test]

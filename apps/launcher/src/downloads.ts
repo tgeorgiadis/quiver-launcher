@@ -6,7 +6,7 @@
 import { plural, t } from "@lingui/core/macro";
 import type { Entry } from "@quiverlauncher/api";
 import { i18n } from "@quiverlauncher/i18n";
-import { hasUpdate, updatesWithSetup, type Install, type Job, type LibraryItem } from "./store";
+import { hasUpdate, updateFor, updatesWithSetup, type CatalogEntry, type Install, type Job, type LibraryItem } from "./store";
 import type { Progress } from "./native";
 
 export type Downloads = {
@@ -83,6 +83,16 @@ export function sizeLabel(bytes: number): string {
 
 /** The updates Update all goes through: not an app whose update opens a setup window (`updatesWithSetup`). */
 export const updateAllOf = (updates: string[], installs: Record<string, Install>) => updates.filter((id) => !updatesWithSetup(installs[id]));
+
+/**
+ * Each waiting update as "app@version": what Not now on the strip puts away (`Settings.updatesPutAway`), so a newer
+ * release of an app put away counts as a new update.
+ */
+export const updateKeysOf = (updates: string[], catalog: Record<string, CatalogEntry | undefined>, installs: Record<string, Install>) =>
+  updates.map((id) => `${id}@${updateFor(catalog[id], installs[id])?.version ?? ""}`);
+
+/** Whether the strip offers the updates: some are waiting, and one isn't among those the player put away. */
+export const offersUpdates = (keys: string[], putAway: string[] = []) => keys.some((k) => !putAway.includes(k));
 
 /** Update all's label, for `updateCount` apps. */
 export const updateAllLabel = (updateCount: number) => t`Update all (${updateCount})`;
