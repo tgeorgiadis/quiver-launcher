@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Entry } from "@quiverlauncher/api";
-import { downloadsLine, downloadsOf, sizeLabel } from "./downloads";
+import { downloadsLine, downloadsOf, sizeLabel, updateAllOf } from "./downloads";
 import { forHereKey, type Install, type Job } from "./store";
 
 const entry = (id: string, version: string, releasedAt: number) =>
@@ -59,5 +59,17 @@ describe("sizeLabel", () => {
     expect(sizeLabel(820 * 1024)).toBe("820 KB");
     expect(sizeLabel(12.34 * 1024 * 1024)).toBe("12.3 MB");
     expect(sizeLabel(1.4 * 1024 ** 3)).toBe("1.4 GB");
+  });
+});
+
+describe("updateAllOf", () => {
+  it("leaves out apps whose update opens a setup window", () => {
+    const installs: Record<string, Install> = {
+      plain: install("v1", 1),
+      bySetup: { ...install("v1", 1), setup: true },
+      elsewhere: { ...install("v1", 1), setup: true, installer: "setup" },
+      msi: { ...install("v1", 1), installer: "msi" },
+    };
+    expect(updateAllOf(["plain", "bySetup", "elsewhere", "msi"], installs)).toEqual(["plain"]);
   });
 });

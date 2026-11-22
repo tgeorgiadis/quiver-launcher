@@ -12,7 +12,7 @@ import { i18n } from "@quiverlauncher/i18n";
 import type { Entry } from "@quiverlauncher/api";
 import { Artwork, cardSources, coverOf } from "@quiverlauncher/ui";
 import { updateFor, useLauncher } from "./store";
-import { downloadsLine, downloadsOf, sizeLabel, type Downloads } from "./downloads";
+import { downloadsLine, downloadsOf, leftOutOfUpdateAll, sizeLabel, updateAllLabel, updateAllOf, type Downloads } from "./downloads";
 import { LauncherNotes, useLauncherUpdate } from "./update";
 import { namesOf } from "./library-tile";
 import { withOverrides } from "./library";
@@ -101,7 +101,7 @@ export function DownloadsStrip({
   offerUpdates?: boolean;
 }) {
   const { downloads, jobs, name } = useDownloads();
-  const { catalog, get } = useLauncher();
+  const { catalog, installs, get } = useLauncher();
   const [putAway, setPutAway] = useState("");
   if (active !== downloads.active.length > 0) return null;
   const key = downloads.updates.join(" ");
@@ -111,8 +111,9 @@ export function DownloadsStrip({
   return (
     <div className="banner downloads-strip" role="status" aria-label={t`Downloads`}>
       <p>{lines.join(" ")}</p>
-      {updates && (
-        <button className="primary" onClick={() => downloads.updates.forEach((id) => void get(catalog[id]))}>
+      {/* Not for apps whose update opens a setup window: those wait for the player, so they're updated one at a time. */}
+      {updates && updateAllOf(downloads.updates, installs).length > 0 && (
+        <button className="primary" onClick={() => updateAllOf(downloads.updates, installs).forEach((id) => void get(catalog[id]))}>
           {downloads.updates.length === 1 ? t({ message: "Update", comment: "Button: update the one app with an update" }) : t`Update all`}
         </button>
       )}
@@ -172,7 +173,10 @@ export function DownloadsPage({
   const now: string[] = [...downloads.active, ...downloads.failed];
   // One downloading again shows under Downloading only.
   const done = finished.filter((f) => entryOf(f.id) && installs[f.id] && !now.includes(f.id));
-  const updateCount = downloads.updates.length;
+  // Update all leaves out apps whose update opens a setup window, which waits for the player.
+  const updateAll = updateAllOf(downloads.updates, installs);
+  const updateCount = updateAll.length;
+  const bySetup = downloads.updates.length - updateCount;
   const newest = launcher.available?.version;
   const yours = config.version;
   /** `button` in place of the app's usual one: Update for one waiting, Play for one that's done. */
@@ -235,13 +239,15 @@ export function DownloadsPage({
         title={t`Updates available`}
         count={downloads.updates.length + (launcher.available ? 1 : 0)}
         tools={
-          downloads.updates.length > 1 && (
-            <button className="primary" onClick={() => downloads.updates.forEach((id) => void get(catalog[id]))}>
-              <Trans>Update all ({updateCount})</Trans>
+          downloads.updates.length > 1 &&
+          updateCount > 0 && (
+            <button className="primary" onClick={() => updateAll.forEach((id) => void get(catalog[id]))}>
+              {updateAllLabel(updateCount)}
             </button>
           )
         }
       >
+        {downloads.updates.length > 1 && bySetup > 0 && <p className="muted update-all-note">{leftOutOfUpdateAll(bySetup)}</p>}
         {downloads.updates.length || launcher.available ? (
           <ul>
             {launcher.available && (

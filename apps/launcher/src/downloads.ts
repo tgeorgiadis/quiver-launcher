@@ -6,7 +6,7 @@
 import { plural, t } from "@lingui/core/macro";
 import type { Entry } from "@quiverlauncher/api";
 import { i18n } from "@quiverlauncher/i18n";
-import { hasUpdate, type Install, type Job, type LibraryItem } from "./store";
+import { hasUpdate, updatesWithSetup, type Install, type Job, type LibraryItem } from "./store";
 import type { Progress } from "./native";
 
 export type Downloads = {
@@ -80,3 +80,16 @@ export function sizeLabel(bytes: number): string {
   const size = tenths(bytes / 1024 ** 3);
   return t({ message: `${size} GB`, comment: "A file's size in gigabytes" });
 }
+
+/** The updates Update all goes through: not an app whose update opens a setup window (`updatesWithSetup`). */
+export const updateAllOf = (updates: string[], installs: Record<string, Install>) => updates.filter((id) => !updatesWithSetup(installs[id]));
+
+/** Update all's label, for `updateCount` apps. */
+export const updateAllLabel = (updateCount: number) => t`Update all (${updateCount})`;
+
+/** Says Update all leaves out `bySetup` apps whose update opens a setup window (`updateAllOf`). */
+export const leftOutOfUpdateAll = (bySetup: number) =>
+  plural(bySetup, {
+    one: "Update all leaves out # app that updates with its setup program, which waits for you. Update it on its own.",
+    other: "Update all leaves out # apps that update with their setup programs, which wait for you. Update them one at a time.",
+  });

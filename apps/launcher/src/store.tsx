@@ -942,6 +942,12 @@ export function installedAs(install: Install, release: { version: string; releas
 }
 
 /**
+ * Whether an app's update opens a setup window that waits for the player: one installed by its setup program or an MSI
+ * package. Update all leaves these out, as each needs the player there; they update one at a time, from their own button.
+ */
+export const updatesWithSetup = (install: Pick<Install, "installer" | "setup"> | undefined) => Boolean(install?.setup || install?.installer);
+
+/**
  * How an app updates: its own choice, else the player's default (`Settings.autoUpdates`). Unset: it offers them. One
  * that can't update by itself (`updatesByItself`) offers them either way.
  */
