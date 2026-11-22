@@ -6483,6 +6483,11 @@ msgstr "Show"
 msgid "Show {name}"
 msgstr "Show {name}"
 
+#. Setting: a banner over the library says how many app updates are waiting
+#: ../../apps/launcher/src/app-updates.tsx
+msgid "Show a banner when updates are ready"
+msgstr "Show a banner when updates are ready"
+
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Show a picture of your own behind the library's grid. The List layout doesn't show it."
 msgstr "Show a picture of your own behind the library's grid. The List layout doesn't show it."
@@ -8109,6 +8114,10 @@ msgstr "When an app needs your own copy of a game, like a ROM or a disc image, Q
 #: ../../apps/launcher/src/cache-page.tsx
 msgid "When it's full, the files used longest ago make room. The files of the versions you have installed always stay."
 msgstr "When it's full, the files used longest ago make room. The files of the versions you have installed always stay."
+
+#: ../../apps/launcher/src/app-updates.tsx
+msgid "When it's off, the library doesn't show it. The Downloads button still counts the updates waiting, and its page has Update all."
+msgstr "When it's off, the library doesn't show it. The Downloads button still counts the updates waiting, and its page has Update all."
 
 #: ../../apps/launcher/src/setup.tsx
 msgid "Where apps install"

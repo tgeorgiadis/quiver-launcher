@@ -6484,6 +6484,11 @@ msgstr "보기"
 msgid "Show {name}"
 msgstr "{name} 보기"
 
+#. Setting: a banner over the library says how many app updates are waiting
+#: ../../apps/launcher/src/app-updates.tsx
+msgid "Show a banner when updates are ready"
+msgstr "업데이트가 준비되면 배너 표시"
+
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Show a picture of your own behind the library's grid. The List layout doesn't show it."
 msgstr "라이브러리 그리드 뒤에 원하는 이미지를 표시합니다. 목록 레이아웃에서는 표시되지 않습니다."
@@ -8110,6 +8115,10 @@ msgstr "앱에 ROM이나 디스크 이미지 같은 내 게임 사본이 필요�
 #: ../../apps/launcher/src/cache-page.tsx
 msgid "When it's full, the files used longest ago make room. The files of the versions you have installed always stay."
 msgstr "가득 차면 가장 오래전에 사용한 파일부터 자리를 비웁니다. 설치한 버전의 파일은 항상 남습니다."
+
+#: ../../apps/launcher/src/app-updates.tsx
+msgid "When it's off, the library doesn't show it. The Downloads button still counts the updates waiting, and its page has Update all."
+msgstr "끄면 라이브러리에 표시되지 않습니다. 다운로드 버튼에는 대기 중인 업데이트 수가 계속 표시되고, 그 페이지에서 모두 업데이트를 할 수 있습니다."
 
 #: ../../apps/launcher/src/setup.tsx
 msgid "Where apps install"

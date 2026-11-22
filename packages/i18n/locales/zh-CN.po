@@ -6484,6 +6484,11 @@ msgstr "显示"
 msgid "Show {name}"
 msgstr "显示 {name}"
 
+#. Setting: a banner over the library says how many app updates are waiting
+#: ../../apps/launcher/src/app-updates.tsx
+msgid "Show a banner when updates are ready"
+msgstr "有更新时显示横幅"
+
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Show a picture of your own behind the library's grid. The List layout doesn't show it."
 msgstr "显示一张你自己的图片作为游戏库网格背景。“列表”布局不会显示此图片。"
@@ -8110,6 +8115,10 @@ msgstr "当应用需要你自己的游戏副本（例如 ROM 或光盘映像）�
 #: ../../apps/launcher/src/cache-page.tsx
 msgid "When it's full, the files used longest ago make room. The files of the versions you have installed always stay."
 msgstr "缓存满时，最久未使用的文件会腾出空间。你已安装版本的文件始终保留。"
+
+#: ../../apps/launcher/src/app-updates.tsx
+msgid "When it's off, the library doesn't show it. The Downloads button still counts the updates waiting, and its page has Update all."
+msgstr "关闭后，游戏库中不显示横幅。“下载”按钮仍会显示待更新的数量，其页面中也有“全部更新”。"
 
 #: ../../apps/launcher/src/setup.tsx
 msgid "Where apps install"

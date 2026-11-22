@@ -12,7 +12,7 @@ import { i18n } from "@quiverlauncher/i18n";
 import type { Entry } from "@quiverlauncher/api";
 import { Artwork, cardSources, coverOf } from "@quiverlauncher/ui";
 import { updateFor, useLauncher } from "./store";
-import { downloadsLine, downloadsOf, leftOutOfUpdateAll, sizeLabel, updateAllLabel, updateAllOf, type Downloads } from "./downloads";
+import { downloadsLine, downloadsOf, leftOutOfUpdateAll, offersUpdates, sizeLabel, updateAllLabel, updateAllOf, updateKeysOf, type Downloads } from "./downloads";
 import { LauncherNotes, useLauncherUpdate } from "./update";
 import { namesOf } from "./library-tile";
 import { withOverrides } from "./library";
@@ -88,8 +88,9 @@ export function DownloadsButton({ open, onOpen }: { open: boolean; onOpen: () =>
 
 /**
  * Above the library and Browse while something downloads or has an update;
- * the updates can be put away until another one comes. A download that
- * didn't finish says so on its card, and counts on the Downloads button.
+ * the updates can be put away until another one comes, even after a restart,
+ * or not offered here at all (Settings, Updates). A download that didn't
+ * finish says so on its card, and counts on the Downloads button.
  */
 export function DownloadsStrip({
   onOpen,
@@ -103,11 +104,10 @@ export function DownloadsStrip({
   offerUpdates?: boolean;
 }) {
   const { downloads, jobs, name } = useDownloads();
-  const { catalog, installs, get } = useLauncher();
-  const [putAway, setPutAway] = useState("");
+  const { catalog, installs, get, settings, setSettings } = useLauncher();
   if (active !== downloads.active.length > 0) return null;
-  const key = downloads.updates.join(" ");
-  const updates = offerUpdates && Boolean(key) && key !== putAway;
+  const keys = updateKeysOf(downloads.updates, catalog, installs);
+  const updates = offerUpdates && !settings.updatesBannerOff && offersUpdates(keys, settings.updatesPutAway);
   const lines = downloadsLine({ ...downloads, failed: [] }, jobs, name, updates);
   if (!lines.length) return null;
   return (
@@ -127,7 +127,7 @@ export function DownloadsStrip({
         </span>
       </button>
       {updates && !downloads.active.length && (
-        <button onClick={() => setPutAway(key)}>
+        <button onClick={() => setSettings((s) => ({ ...s, updatesPutAway: keys }))}>
           <X size={15} className="strip-icon" aria-hidden="true" />
           <span className="strip-label">
             <Trans>Not now</Trans>

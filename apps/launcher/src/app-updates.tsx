@@ -64,6 +64,7 @@ export function AppUpdatesSetting({ inSetup = false }: { inSetup?: boolean }) {
       </div>
       {!inSetup && <AutoUpdatesSetting />}
       {!inSetup && <PrereleasesSetting />}
+      {!inSetup && <UpdatesBannerSetting />}
     </section>
   );
 }
@@ -97,6 +98,33 @@ function AutoUpdatesSetting() {
       </p>
       <p className="muted">
         <Trans>Each app can update by itself, ask first, or stay on its version, whatever this says, from its own settings.</Trans>
+      </p>
+    </div>
+  );
+}
+
+/** Whether the strip above the library offers the updates waiting, with Update all and Not now (downloads-page.tsx). */
+function UpdatesBannerSetting() {
+  const { settings, setSettings } = useLauncher();
+  return (
+    <div className="prereleases-setting">
+      <label className="toggle">
+        <input
+          type="checkbox"
+          checked={!settings.updatesBannerOff}
+          onChange={(e) => {
+            const on = e.target.checked;
+            setSettings((s) => {
+              const { updatesBannerOff: _, ...rest } = s;
+              return on ? rest : { ...rest, updatesBannerOff: true };
+            });
+            track("updates_banner_set", { on });
+          }}
+        />
+        <Trans comment="Setting: a banner over the library says how many app updates are waiting">Show a banner when updates are ready</Trans>
+      </label>
+      <p className="muted">
+        <Trans>When it&apos;s off, the library doesn&apos;t show it. The Downloads button still counts the updates waiting, and its page has Update all.</Trans>
       </p>
     </div>
   );

@@ -1427,6 +1427,10 @@ export type Settings = {
   systemFolderNames?: SystemNaming;
   /** Apps hidden from the library here. */
   hidden?: string[];
+  /** The strip above the library doesn't offer the updates waiting; the Downloads button's count and page still do. */
+  updatesBannerOff?: boolean;
+  /** The updates the player said Not now to on that strip, as "app@version" (`updateKeysOf`): it's back for a new one. */
+  updatesPutAway?: string[];
   /** The catalog's tags hidden here: everywhere, on one app, or as they're added (catalog-tags.ts). */
   hiddenTags?: HiddenTags;
   /** Keyboard and controller bindings; unset uses the defaults. */
