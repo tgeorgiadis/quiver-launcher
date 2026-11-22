@@ -13,9 +13,9 @@ import type { TvSettings } from "./tv/settings";
 import { programHints } from "./tv/programs/programs";
 import { tvNative } from "./tv/tvNative";
 import { hideOnApp, shownTags, type HiddenTags } from "./catalog-tags";
-import { native, type Config, type SaveBackup, type LaunchOptions, type MovingApp, type OldApp, type OldFilter, type Progress, type StateProblem, type V3Library, type WindowsRunner } from "./native";
+import { native, type Config, type Installed, type SaveBackup, type ShortcutPlay, type LaunchOptions, type MovingApp, type OldApp, type OldFilter, type Progress, type StateProblem, type V3Library, type WindowsRunner } from "./native";
 import { Recovery } from "./recovery";
-import { assetFilterFor, bestAssets, installable, installFormat, isMsi, pickedBefore, releaseFor } from "./assets";
+import { assetFilterFor, bestAssets, installable, installFormat, isMsi, pickedBefore, releaseFor, wantedFiles } from "./assets";
 import { cameAfter, fromSite, scanAsks, installedFile, insteadOf, newestUnblocked, sameChecksum, unverifiedFile, versionLabel, withdrawnAsBlocked } from "./versions";
 import { captureError, captureFailure, failureKind, Problem, reasonOf, reportStartupFailure, setTelemetryAppsDir, setTelemetryAppsFolders, telemetryChoice, track, type TelemetryContext } from "./telemetry";
 import { appsDueToday, appsOnComputer, librarySummary } from "./usage-summary";
@@ -36,6 +36,8 @@ import { folderBeforePlay } from "./sync-folder";
 import { beforePlay, onSent, retries, sendBackup, sendCurrent, type CloudApi, type Conflict, type ConfirmPlaces } from "./cloud-saves";
 import { activate, pick, type Language } from "@quiverlauncher/i18n";
 import { providerFetch } from "./provider-fetch";
+import { cacheOf, cachedReleases, cacheUse, protectedFiles, sameVersion, type CacheSettings } from "./cache";
+import { requestCache } from "./cache-signal";
 
 /** The language the launcher shows in: the one picked in Settings, or else the system's nearest. */
 export const languageOf = (settings: Settings): Language => settings.language ?? pick(navigator.languages);
@@ -62,6 +64,11 @@ export type LibraryItem = {
     pictures?: Pictures;
     tags?: string[];
     consoles?: string[];
+    /**
+     * Which release files Quiver installs it from, as Quiver Launcher 3's release asset filter: the player's own
+     * patterns (`parseFileFilter` in assets.ts), over the catalog's. This device only.
+     */
+    releaseFiles?: string;
   };
   /** Changed here and not yet saved to the account. */
   pending?: { added?: boolean; name?: boolean; cover?: boolean; tags?: boolean; consoles?: boolean; removed?: boolean };
@@ -155,10 +162,15 @@ export type Install = {
   /** The player's own copies of its game, by the catalog's setup file id (own-copy.ts). Kept through updates. */
   copies?: Record<string, OwnCopy>;
 };
-/** The player's copy of an app's game, checked and put where the app reads it. */
+/**
+ * The player's copy of an app's game, checked and put where the app reads it; or, `yours`, one the player says they
+ * set up themselves, which Quiver doesn't ask for at Play.
+ */
 export type OwnCopy = {
-  /** Where the player keeps it. */
+  /** Where the player keeps it; empty when it's `yours`. */
   path: string;
+  /** The player said they set it up themselves: Quiver didn't check it or put it anywhere, and passes the game nothing. */
+  yours?: true;
   /** Where Quiver put it for the app, when the catalog says where. */
   placed?: string;
   /** The dump it matched ("US 1.0"), when it matched one. */
@@ -193,6 +205,7 @@ export type Choice = {
   resolve: (asset: Asset | null) => void;
 };
 /** Deleting an app's files, waiting on the player's yes: `remove` takes it out of the library too, and `then` runs after. */
+/** `remove`: it leaves the library too, and the player can keep its files instead of uninstalling it. */
 export type Confirming = { entry: Entry; remove?: boolean; then?: () => void };
 /**
  * What Quiver hasn't verified, waiting on the player's yes before it installs (`resolve(true)`): the newest release of
@@ -280,8 +293,9 @@ type Launcher = {
   choosingProgram: ProgramChoice | null;
   chooseProgram: (choice: ProgramChoice | null) => void;
   /** The app whose page asks for the player's own copy of its game (own-copy-setup.tsx): `play` once it's set up, from Play. */
-  settingUpCopy: { id: string; fileId?: string; play?: boolean } | null;
-  setUpCopy: (asking: { id: string; fileId?: string; play?: boolean } | null) => void;
+  /** `shortcut`: a desktop or Steam shortcut is waiting to start the game once it's set up (shortcut_play.rs). */
+  settingUpCopy: { id: string; fileId?: string; play?: boolean; shortcut?: ShortcutPlay } | null;
+  setUpCopy: (asking: { id: string; fileId?: string; play?: boolean; shortcut?: ShortcutPlay } | null) => void;
   /** The Quiver Launcher 3 library the launcher found by itself, until a library is brought over; undefined while it looks. */
   oldLibrary: V3Library | null | undefined;
   /**
@@ -310,14 +324,18 @@ type Launcher = {
    */
   get: (entry: Entry, release?: Release, options?: GetOptions) => Promise<void>;
   /** Starts an app: `executable`, else its one program the player picked, else asks which of them, else the launcher's own choice. */
-  /** Starts an installed app. Without the player's copy of its game that it needs, asks for it first, unless `withoutCopy`. */
-  play: (id: string, executable?: string, withoutCopy?: boolean) => Promise<void>;
+  /**
+   * Starts an installed app. Without the player's copy of its game that it needs, asks for it first, unless `withoutCopy`.
+   * `shortcut`: for a desktop or Steam shortcut, which starts the game itself once its saves are in line
+   * (shortcut_play.rs); what Play would ask the player about first, the shortcut says to do in Quiver instead.
+   */
+  play: (id: string, executable?: string, withoutCopy?: boolean, shortcut?: ShortcutPlay) => Promise<void>;
   /** Runs a Windows installer's setup again, for the version installed. */
   reinstall: (id: string) => Promise<void>;
   /** Stops a download; whatever was installed before stays as it was. */
   cancel: (id: string) => void;
-  /** Uninstalls the app and takes it out of the library. */
-  remove: (id: string) => Promise<void>;
+  /** Uninstalls the app and takes it out of the library; with `keepFiles`, only takes it out, its files left where they are. */
+  remove: (id: string, keepFiles?: boolean) => Promise<void>;
   /** Deletes the app's files (to the trash), keeping it in the library to get again. */
   uninstall: (id: string) => Promise<void>;
   /** A repository from any supported host: the catalog's app when it lists it, else what adding it would install. */
@@ -352,6 +370,8 @@ type Launcher = {
   setPrereleases: (id: string, prereleases: Install["prereleases"]) => void;
   /** Stops offering this release of an app; a newer one is offered as usual. */
   declineUpdate: (id: string, version: string) => void;
+  /** Records the update as what's installed already, downloading nothing: the player has it (`installedAs`). */
+  haveUpdate: (id: string, release: { version: string; releasedAt?: number }) => void;
   /** Sets how an installed app starts; nothing set goes back to the launcher's choice. */
   setLaunch: (id: string, launch: LaunchOptions) => void;
   /** The empty files the player chose for an app's folder, which updates keep to. */
@@ -360,6 +380,8 @@ type Launcher = {
   setCopy: (id: string, fileId: string, copy: OwnCopy | undefined) => void;
   /** Sets the player's own name and artwork; undefined shows the catalog's. */
   customize: (id: string, overrides: { name?: string; cover?: string; pictures?: Pictures }) => void;
+  /** Sets which release files an app installs from (`LibraryItem.overrides.releaseFiles`); empty takes them all again. */
+  setReleaseFiles: (id: string, filter: string) => void;
   /** The player's own tags on an app; hand-picked collections are tags. */
   setTags: (id: string, tags: string[]) => void;
   /** Renames one of the player's tags on every app that has it; with no new name, takes it off them all. */
@@ -620,6 +642,22 @@ export const samePath = (a: string, b: string) => {
     return /^[A-Za-z]:/.test(s) ? s.toLowerCase() : s;
   };
   return norm(a) === norm(b);
+};
+/**
+ * Launch options after an update took away earlier releases' copies of the app's program (`replaced.from`, in its
+ * folder `dir`) for this release's (`replaced.to`): a program they named, in the folder or by its full path, is now
+ * the new one. Anything else stays as the player chose it.
+ */
+export const withReplaced = (launch: LaunchOptions | undefined, replaced: Installed["replaced"], dir: string): LaunchOptions | undefined => {
+  if (!launch || !replaced) return launch;
+  const now = (path: string) => {
+    if (replaced.from.some((name) => samePath(path, name))) return replaced.to;
+    if (replaced.from.some((name) => samePath(path, joinPath(dir, name)))) return joinPath(dir, replaced.to);
+    return path;
+  };
+  const executable = launch.executable && now(launch.executable);
+  const programs = launch.programs && [...new Set(launch.programs.map(now))];
+  return { ...launch, ...(executable ? { executable } : {}), ...(programs ? { programs } : {}) };
 };
 /** Whether `inner` is `outer` or a folder somewhere inside it. */
 const within = (inner: string, outer: string) => {
@@ -906,13 +944,36 @@ export const catalogOs = (os: Os) => (os === "linux" ? undefined : os);
 export const canGet = (entry: Entry, os: string) => availableOn(entry, os) && Boolean(entry.verified || entry.lastReleaseVersion);
 
 /**
+ * Whether Quiver knows which release an install is. A copy it doesn't (3.x's 0.0.0, v3.rs: one the player unzipped and
+ * pointed Quiver at, or 3.x didn't know) has no release date, which an install from a release always has.
+ */
+export const versionKnown = (install: Partial<Pick<Install, "version" | "releasedAt">> | undefined) =>
+  !(bare(install?.version ?? "") === "0.0.0" && !install?.releasedAt);
+
+/**
  * Whether an install can update by itself. A Windows installer's setup waits for the player. A copy whose version
- * Quiver doesn't know (3.x's 0.0.0, v3.rs: one the player unzipped and pointed Quiver at, or 3.x didn't know) has
- * every release as its update, the one it already has, or an older one when it's newer than the verified release, so
- * only the player can tell whether to take it. It has no release date, which an install from a release always has.
+ * Quiver doesn't know has every release as its update, the one it already has, or an older one when it's newer than
+ * the verified release, so only the player can tell whether to take it.
  */
 export const updatesByItself = (install: Partial<Pick<Install, "installer" | "setup" | "version" | "releasedAt">> | undefined) =>
-  !install?.installer && !install?.setup && !(bare(install?.version ?? "") === "0.0.0" && !install?.releasedAt);
+  !install?.installer && !install?.setup && versionKnown(install);
+
+/**
+ * An install as the release the player says it already is, nothing downloaded: a copy whose version Quiver didn't know,
+ * or an app that updated itself past the version Quiver installed. It's then as an update to that release would have
+ * left it, so the next release is its update. What Quiver knew of the files it installed (their release, checksum, a
+ * block or a difference from the verified file) was of the old ones, and a release skipped is behind it now.
+ */
+export function installedAs(install: Install, release: { version: string; releasedAt?: number }): Install {
+  const { releaseId: _, checksum: __, differs: ___, blocked: ____, unverified: _____, declined: ______, skip: _______, ...kept } = install;
+  return { ...kept, version: release.version, releasedAt: release.releasedAt };
+}
+
+/**
+ * Whether an app's update opens a setup window that waits for the player: one installed by its setup program or an MSI
+ * package. Update all leaves these out, as each needs the player there; they update one at a time, from their own button.
+ */
+export const updatesWithSetup = (install: Pick<Install, "installer" | "setup"> | undefined) => Boolean(install?.setup || install?.installer);
 
 /**
  * How an app updates: its own choice, else the player's default (`Settings.autoUpdates`). Unset: it offers them. One
@@ -1337,6 +1398,8 @@ export const tvModeOn = (settings: Pick<Settings, "tvMode">, config: Pick<Config
 
 /** This computer's preferences; they don't sync. */
 export type Settings = {
+  /** The download cache (cache.ts): what it keeps, where, and how much. Unset, off. */
+  cache?: CacheSettings;
   /** What runs Windows programs on Linux, for every app without a runner of its own; unset, Automatic (a Proton, else Wine). */
   windowsRunner?: WindowsRunner;
   /**
@@ -1378,6 +1441,12 @@ export type Settings = {
   language?: Language;
   /** New installs get `portable.txt` in their folder, beside what the catalog asks for. */
   portableByDefault?: boolean;
+  /**
+   * A download that's a Windows setup program is run while it installs (setup.rs), and Play starts what it installed.
+   * Unset: it's kept in the app's folder as a file, for the player to run. An app its setup already installed still
+   * updates through its setup either way.
+   */
+  runSetupPrograms?: boolean;
   /** Every new install asks where it goes first (Install to…), whichever button started it. */
   askWhereToInstall?: boolean;
   /** New installs go in a folder for their console inside the apps folder (`groupFolder`). */
@@ -1392,6 +1461,10 @@ export type Settings = {
   systemFolderNames?: SystemNaming;
   /** Apps hidden from the library here. */
   hidden?: string[];
+  /** The strip above the library doesn't offer the updates waiting; the Downloads button's count and page still do. */
+  updatesBannerOff?: boolean;
+  /** The updates the player said Not now to on that strip, as "app@version" (`updateKeysOf`): it's back for a new one. */
+  updatesPutAway?: string[];
   /** The catalog's tags hidden here: everywhere, on one app, or as they're added (catalog-tags.ts). */
   hiddenTags?: HiddenTags;
   /** Keyboard and controller bindings; unset uses the defaults. */
@@ -1645,6 +1718,8 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     return () => void off.then((stop) => stop());
   }, [setNotice]);
   const library = useMemo(() => allItems.filter((i) => !i.removed), [allItems]);
+  /** The player's release files filter for an app, if they set one. */
+  const releaseFilesOf = (id: string) => library.find((i) => i.id === id)?.overrides?.releaseFiles;
   // The consoles the player chose for an app, by id: where grouping by console puts it, as the library shows it.
   const ownConsoles = useMemo(() => Object.fromEntries(library.flatMap((i) => (i.overrides?.consoles ? [[i.id, i.overrides.consoles]] : []))), [library]);
   // The catalog comes from the site's REST API, which Cloudflare caches for every player; only the account uses Convex.
@@ -1747,11 +1822,11 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
   const syncFolder = savesOn(config.os) ? settings.syncFolder : undefined;
   /** Said once each time the launcher runs: a folder on a drive that's unplugged fails for every backup. */
   const folderFailed = useRef(false);
-  /** Keeps a backup that was just made in the sync folder too; never waited for. */
+  /** Keeps a backup that was just made in the sync folder too. Never waited for by Play; resolves once it's there, or failed. */
   const sendToFolder = (id: string, install: Install, made: SaveBackup) => {
     const folder = forUsage.current.settings.syncFolder;
-    if (!folder || !savesOn(config.os)) return;
-    native.savesFolderPut(savesOf(id, install, forUsage.current.catalog[id]), folder, made.name).then(
+    if (!folder || !savesOn(config.os)) return Promise.resolve();
+    return native.savesFolderPut(savesOf(id, install, forUsage.current.catalog[id]), folder, made.name).then(
       () => ((folderFailed.current = false), savesChanged(id)),
       (e) => {
         if (folderFailed.current) return;
@@ -1760,16 +1835,17 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       },
     );
   };
-  /** Sends a backup that was just made to the sync folder and to the account; never waited for. */
-  const sendToCloud = (id: string, install: Install, made: SaveBackup | null | undefined) => {
-    if (made) sendToFolder(id, install, made);
+  /** Sends a backup that was just made to the sync folder and to the account. Never waited for by Play; resolves once both are done. */
+  const sendToCloud = (id: string, install: Install, made: SaveBackup | null | undefined): Promise<unknown> => {
+    const folder = made ? sendToFolder(id, install, made) : Promise.resolve();
     const api = made && cloudNow.current(id);
-    if (!api || !made) return;
-    void native
+    if (!api || !made) return folder;
+    const cloud = native
       .savesCloud(savesOf(id, install, forUsage.current.catalog[id]))
       .then((state) => (state.off ? null : sendBackup(savesOf(id, install, forUsage.current.catalog[id]), id, made, { api, native })))
       .then(() => savesChanged(id))
       .catch(() => {});
+    return Promise.all([folder, cloud]);
   };
   // How each send to the account went (cloud-saves.ts). One that didn't get there is tried again after 1, 5, 15 and 60
   // minutes. One the account had no room for is said once, with ways to make room, and sent when there is some.
@@ -1816,21 +1892,25 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       .catch(() => {});
   };
   useEffect(() => {
-    const closed = native.onAppClosed(({ id, seconds }) => {
+    const closed = native.onAppClosed(({ id, seconds, via, ended }) => {
       const { catalog, installs } = forUsage.current;
-      track("app_closed", { ...playedRef(appRef(id, catalog[id]?.slug ?? ""), installs[id]?.version ?? ""), seconds });
+      track("app_closed", { ...playedRef(appRef(id, catalog[id]?.slug ?? ""), installs[id]?.version ?? ""), seconds, via: via ?? "play", ...(ended ? { ended } : {}) });
       // Its saves, backed up if the session changed them.
       const install = installs[id];
-      if (install && savesOn(config.os))
-        void native.savesPlayed(savesOf(id, install, catalog[id])).then(
-          (made) => {
-            if (made) savesChanged(id);
-            sendToCloud(id, install, made);
-            tellCatalog(id, install, true);
-          },
-          // Refused as too big to be saves, say: the catalog hears of that too.
-          () => tellCatalog(id, install, false),
-        );
+      const sent =
+        install && savesOn(config.os)
+          ? native.savesPlayed(savesOf(id, install, catalog[id])).then(
+              (made) => {
+                if (made) savesChanged(id);
+                tellCatalog(id, install, true);
+                return sendToCloud(id, install, made);
+              },
+              // Refused as too big to be saves, say: the catalog hears of that too.
+              () => tellCatalog(id, install, false),
+            )
+          : Promise.resolve();
+      // A Quiver a shortcut started quits once they're sent (shortcut_play.rs).
+      if (via) void sent.finally(() => native.shortcutDone().catch(() => {}));
     });
     // Once the catalog and the account have had time to come in, so its counts are of the library as it is.
     const counted = setTimeout(() => {
@@ -2027,6 +2107,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       filter: custom ? undefined : (r) => (r.installationOverride ?? entry.launcher).releaseAssetFilter,
       kind: was ? (was.installer === "msi" ? "msi" : "files") : undefined,
       platform: platform ?? (was ? (was.wine ? "windows" : config.os) : undefined),
+      files: releaseFilesOf(entry.id),
     });
   };
 
@@ -2212,6 +2293,18 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
    * now, which doesn't ask: one whose file Quiver hasn't verified waits for it instead.
    */
   /** Installs or updates an app, never one that's moving: its folder is on its way somewhere else. */
+  /**
+   * An app's versions as the download cache has them, for installing while quiverlauncher.com can't be reached: the
+   * catalog's verified one first when it's there, else the newest kept. None while the cache is off.
+   */
+  async function keptReleases(entry: Entry): Promise<Release[]> {
+    const cache = config.cacheDir || settings.cache?.dir ? cacheOf(settings.cache, config.cacheDir ?? "") : undefined;
+    if (!cache?.on) return [];
+    const kept = cachedReleases((await native.cacheStatus(cache.dir).catch(() => null))?.entries ?? [], entry.id);
+    const verified = (catalog[entry.id] ?? entry).verified?.version;
+    return verified ? [...kept.filter((r) => sameVersion(r.version, verified)), ...kept.filter((r) => !sameVersion(r.version, verified))] : kept;
+  }
+
   async function installEntry(entry: Entry, chosen?: Release, options: InstallOptions = {}) {
     if (moving.current.has(entry.id)) {
       // An automatic update tries again next time.
@@ -2240,8 +2333,12 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     const was = installs[entry.id];
     const from = was?.version;
     const portableByDefault = settings.portableByDefault && config.os !== "android" && config.os !== "ios";
+    // Kept as a file, not run: never for an app its setup already installed, whose update goes through its setup again.
+    const keepSetup = !settings.runSetupPrograms && !was?.setup;
     // The player's, read here: further down, `settings` is the catalog's for installing it.
     const groupByConsole = Boolean(settings.groupByConsole);
+    // The download cache, as the player set it: the file from it when it's there, and kept in it as its mode says.
+    const cacheNow = config.cacheDir || settings.cache?.dir ? cacheOf(settings.cache, config.cacheDir ?? "") : undefined;
     const systemFolders = { consoleFolders: settings.consoleFolders, systemFolderNames: settings.systemFolderNames };
     let version = chosen?.version ?? entry.verified?.version;
     let format: string | undefined;
@@ -2256,6 +2353,9 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     // through Wine. Switching drops the file picked for the other one.
     const platform = options.platform ?? (was?.wine ? "windows" : undefined);
     const lastPick = options.platform && was && options.platform !== (was.wine ? "windows" : config.os) ? undefined : was?.pick;
+    // The player's own release files filter: only the files it keeps are installed, unless they click one themselves.
+    const mine = releaseFilesOf(entry.id);
+    const wanted = (list: Asset[]) => wantedFiles(list, mine);
     const noAnswer = () => new Problem(msg`Couldn't reach quiverlauncher.com. Check your connection and try again.`);
     const stop = (stage: "unverified_prompt" | "file_choice") => {
       setJobs(({ [entry.id]: _, ...rest }) => rest);
@@ -2268,7 +2368,10 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         ? undefined
         : custom
           ? await releasesOf(custom)
-          : (await client.releases(entry.slug, 100, null, prereleasesFor(entry.id)).catch(() => {
+          : (await client.releases(entry.slug, 100, null, prereleasesFor(entry.id)).catch(async () => {
+              // quiverlauncher.com out of reach (offline): the versions the download cache has, each checked as ever.
+              const kept = await keptReleases(entry);
+              if (kept.length) return { items: kept };
               throw noAnswer();
             })).items;
       const here = listed && releaseHere(entry, listed, Boolean(custom), was, options.platform);
@@ -2343,28 +2446,33 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         ? []
         : clicked
           ? !kind || isMsi(clicked.filename) === (kind === "msi") ? [clicked] : []
-          : bestAssets(release.assets, config.os, config.arch, settings.releaseAssetFilter, kind, platform);
+          : bestAssets(wanted(release.assets), config.os, config.arch, settings.releaseAssetFilter, kind, platform);
       // A file the player picked that a later release names differently: they pick again, even from one.
       const missed = !stray && !candidates.length && !clicked && Boolean(custom && settings.releaseAssetFilter);
-      if (missed) candidates = bestAssets(release.assets, config.os, config.arch, undefined, kind, platform);
+      if (missed) candidates = bestAssets(wanted(release.assets), config.os, config.arch, undefined, kind, platform);
       let [asset, ...others] = candidates;
       // An automatic update never stops to ask: it waits until the launcher starts again, or the player updates it.
       const waitForPlayer = (until = Infinity) => {
         waiting.current.set(`${entry.id}@${bare(release!.version)}`, until);
         setJobs(({ [entry.id]: _, ...rest }) => rest);
       };
-      if (!asset && kind && bestAssets(release.assets, config.os, config.arch).length && !bestAssets(release.assets, config.os, config.arch, undefined, kind).length)
+      if (!asset && kind && bestAssets(wanted(release.assets), config.os, config.arch).length && !bestAssets(wanted(release.assets), config.os, config.arch, undefined, kind).length)
         throw new Problem(
           kind === "msi"
             ? msg`This release has no Windows installer (MSI) to update it with. Uninstall it, then get it again to install this release's download.`
             : msg`This release only comes as a Windows installer (MSI). Uninstall it, then get it again to install it that way.`,
         );
       // A phone or tablet is a device, not a computer.
-      const noDownload =
-        config.os === "android" ? msg`This release has no download for your device.` : msg`This release has no download for your computer.`;
+      const filter = mine?.trim() ?? "";
+      const filtered = Boolean(filter) && installable(release.assets, config.os).length > 0 && !installable(wanted(release.assets), config.os).length;
+      const noDownload = filtered
+        ? msg`None of this release's files match your release files filter "${filter}". Change it under Release files, on the app's Manage tab.`
+        : config.os === "android"
+          ? msg`This release has no download for your device.`
+          : msg`This release has no download for your computer.`;
       // Of the release's files, the ones this computer can install, of the kind installed.
       const ofKind = (list: Asset[]) => installable(list, config.os).filter((a) => !kind || isMsi(a.filename) === (kind === "msi"));
-      const approved = ofKind(release.assets);
+      const approved = ofKind(wanted(release.assets));
       // None marked for this computer: the player picks from the files there are, as they may know which runs. Files
       // the site put on no platform aren't marked for it either (a PS5 or Switch build can be one), so several of them
       // ask the same way, not as files for this computer.
@@ -2383,7 +2491,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       } else if (again) asset = again;
       else if (!asset || others.length || missed || unmatched) {
         if (auto) return waitForPlayer();
-        unapproved = stray || custom ? [] : ofKind(release.otherAssets ?? (await otherFilesOf(entry.slug, release.version)));
+        unapproved = stray || custom ? [] : ofKind(wanted(release.otherAssets ?? (await otherFilesOf(entry.slug, release.version))));
         if (!asset && !unapproved.length) throw new Problem(noDownload);
         const choices = asset ? [asset, ...others] : [];
         const all = [...approved, ...unapproved];
@@ -2465,7 +2573,11 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         version: release.version,
         preferred: executables,
         program: was?.installer ? was.program : undefined,
+        ...(cacheNow && { cache: cacheUse(cacheNow, { id: entry.id, version: release.version, os: asset.os, arch: asset.architecture, slug: entry.slug }, protectedFiles(installs)) }),
+        ...(keepSetup && { runSetup: false }),
       });
+      // Installed only, keeping every system's files or source code: those come once it's in, in the background.
+      if (cacheNow?.mode === "installed" && (cacheNow.allPlatforms || cacheNow.sources) && !custom) requestCache([entry.id]);
       // A Windows installer's program, when Quiver can't tell which it is: the player says, as in Quiver Launcher 3.
       const msi = Boolean(done.installer);
       const program = msi ? (done.program ?? (await native.pickProgram(done.location ?? undefined).catch(() => null)) ?? undefined) : undefined;
@@ -2488,7 +2600,8 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         // were the old build's. Its command line stays.
         const wine = asset.os === "windows" && config.os === "linux";
         const old = i[entry.id]?.launch;
-        const launch = old && Boolean(i[entry.id]?.wine) !== wine ? (old.command ? { command: old.command } : undefined) : old;
+        // A program the player chose that the update took away (an earlier release's copy of it) is now this one's.
+        const launch = withReplaced(old && Boolean(i[entry.id]?.wine) !== wine ? (old.command ? { command: old.command } : undefined) : old, done.replaced, done.dir);
         // Kept where it was, or in the folder it went in: one that's an apps folder already is one of its apps.
         const dir = into && !msi ? done.dir : i[entry.id]?.dir;
         const inApps = into && !msi ? Boolean(group) || appsFolders(i, config.appsDir).some((f) => samePath(f.path, into)) : i[entry.id]?.inApps;
@@ -2520,7 +2633,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         );
         if (!custom) {
           void client.downloadProblem(entry, { version: release.version, file, problem: error }).catch(() => {});
-          const fits = (r: Release) => bestAssets(r.assets, config.os, config.arch, (r.installationOverride ?? entry.launcher).releaseAssetFilter, kind).length > 0;
+          const fits = (r: Release) => bestAssets(wantedFiles(r.assets, releaseFilesOf(entry.id)), config.os, config.arch, (r.installationOverride ?? entry.launcher).releaseAssetFilter, kind).length > 0;
           instead = insteadOf((await client.releases(entry.slug, 5, null, prereleasesFor(entry.id)).catch(() => null))?.items ?? [], release.version, was, fits);
         }
       }
@@ -2725,6 +2838,13 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         return { ...i, [id]: prereleases ? { ...install, prereleases } : install };
       }),
     declineUpdate: (id, version) => setInstalls((i) => (i[id] ? { ...i, [id]: { ...i[id], declined: version } } : i)),
+    haveUpdate: (id, release) => {
+      const install = installs[id];
+      if (!install) return;
+      setInstalls((i) => (i[id] ? { ...i, [id]: installedAs(i[id], release) } : i));
+      // In its folder too, as installing it would: locating the folder again keeps the version.
+      native.markVersion(install.folder, install.dir, release.version).catch((e) => void native.logError(`Couldn't record ${release.version} in ${install.folder}'s folder: ${e}`));
+    },
     setLaunch: (id, launch) =>
       setInstalls((i) => {
         if (!i[id]) return i;
@@ -2824,6 +2944,16 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     },
     settings,
     setSettings,
+    setReleaseFiles: (id, filter) => {
+      const releaseFiles = filter.trim() || undefined;
+      setLibrary((l) => l.map((i) => (i.id !== id ? i : { ...i, overrides: { ...i.overrides, releaseFiles } })));
+      // Which release it can update to is looked up again, by the new filter.
+      setCatalog((c) => {
+        if (!c[id]?.forHere) return c;
+        const { forHere: _, ...entry } = c[id];
+        return { ...c, [id]: entry };
+      });
+    },
     customize: (id, { name, cover, pictures }) =>
       setLibrary((l) =>
         l.map((i) => {
@@ -2888,33 +3018,63 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       add(entry);
       await installEntry(entry, release, { pin: options?.pin, unverified: options?.unverified || Boolean(options?.blocked), blocked: options?.blocked, asset: options?.asset, platform: options?.platform, to: options?.to, early: options?.early });
     },
-    async play(id, executable, withoutCopy) {
+    async play(id, executable, withoutCopy, shortcut) {
+      /**
+       * A shortcut's app doesn't start: with what to say, which a Quiver the shortcut started shows its window for
+       * first, so it stays open with it rather than quitting with nothing left to do.
+       */
+      const refuse = (why?: string) => {
+        if (why) setNotice(why, { stays: Boolean(shortcut) });
+        if (!shortcut) return;
+        const shown = why && shortcut.hidden ? native.shortcutWindow(true).catch(() => {}) : Promise.resolve();
+        void shown.then(() => native.shortcutRefuse(shortcut.request, why ?? "")).catch(() => {});
+      };
       const install = installs[id];
-      if (!install) return;
-      if (appMoves[id]) return setNotice(t`Wait for it to finish moving, then play it.`);
+      if (!install) return refuse(shortcut ? t`That shortcut's app isn't installed any more.` : undefined);
+      const name = catalog[id]?.projectName ?? install.folder;
+      if (appMoves[id]) return refuse(t`Wait for it to finish moving, then play it.`);
       // The game needs the player's own copy, which Quiver gets to it: asked for first.
-      if (!withoutCopy && copiesNeeded(catalog[id], install, config.os).length) return setUpCopy({ id, play: true });
-      // The programs the player picked for Play: one starts; more, and they choose.
+      // From a shortcut too, which waits meanwhile: a Quiver it started shows its window for the question, and
+      // whatever the player chooses that plays (the copy, Play without it, already set up) starts it through the shortcut.
+      if (!withoutCopy && copiesNeeded(catalog[id], install, config.os).length) {
+        if (shortcut?.hidden) await native.shortcutWindow(true).catch(() => {});
+        return setUpCopy({ id, play: true, ...(shortcut ? { shortcut } : {}) });
+      }
+      // The programs the player picked for Play: one starts; more, and they choose (a shortcut starts the first).
       const programs = install.launch?.programs ?? [];
-      if (!executable && programs.length > 1) return chooseProgram({ id, programs });
+      if (!executable && programs.length > 1 && !shortcut) return chooseProgram({ id, programs });
       // None picked: the catalog's name for it, else the player says which of several (tv/programs.rs), once.
+      // Not for a shortcut, which starts what Play would without asking.
       if (!executable && !programs.length && ownFolder(install) && config.os !== "android" && config.os !== "ios") {
         const hints = programHints(config.os, install.executables, catalog[id]?.launcher?.preferredExecutables);
         const found = await tvNative.programs(install.folder, install.dir, hints).catch(() => null);
         if (found?.matched) executable = found.matched;
-        else if (found && found.choices.length > 1 && (config.os !== "windows" || found.unsure)) return chooseProgram({ id, programs: found.choices, remember: true });
+        else if (!shortcut && found && found.choices.length > 1 && (config.os !== "windows" || found.unsure)) return chooseProgram({ id, programs: found.choices, remember: true });
       }
       const chosen = executable ?? programs[0];
       const launch = { ...install.launch, ...(chosen ? { executable: chosen } : {}), windowsRunner: settings.windowsRunner, copies: launchCopies(catalog[id], install) };
       let program = install.program;
       // A Windows installer's program the player didn't choose after its setup: they choose it now.
       if (install.installer && !program) {
+        if (shortcut) return refuse(t`Play ${name} from Quiver once, to choose the program its setup installed.`);
         program = (await native.pickProgram().catch(() => null)) ?? undefined;
         if (!program) return;
       }
       setInstalls((i) => ({ ...i, [id]: { ...i[id], lastPlayed: Date.now(), ...(program ? { program } : {}) } }));
       const ref = appRef(id, catalog[id]?.slug ?? allItems.find((i) => i.id === id)?.slug ?? "");
-      const played = { ...playedRef(ref, install.version), wine: Boolean(install.wine) };
+      const played = { ...playedRef(ref, install.version), wine: Boolean(install.wine), via: shortcut ? (shortcut.hidden ? "shortcut_hidden" : "shortcut") : "play" };
+      const asking = (conflict: Conflict) => new Promise<"cloud" | "here" | null>((resolve) => setSavesConflict({ ...conflict, answer: (keep) => (setSavesConflict(null), resolve(keep)) }));
+      // A Quiver a shortcut started has no window: it shows one for the question, and hides it again once answered.
+      const ask = !shortcut?.hidden
+        ? asking
+        : async (conflict: Conflict) => {
+            await native.shortcutWindow(true).catch(() => {});
+            try {
+              return await asking(conflict);
+            } finally {
+              void native.shortcutWindow(false).catch(() => {});
+            }
+          };
       // On the player's Discord profile while it runs: its square icon, else its box art.
       const entry = catalog[id];
       const presence = entry?.projectName ? { name: entry.projectName, image: entry.artwork || entry.libraryArt?.capsule || entry.libraryArt?.header || undefined } : undefined;
@@ -2926,9 +3086,9 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
           api: cloud,
           native,
           changed: savesChanged,
-          ask: (conflict) => new Promise((resolve) => setSavesConflict({ ...conflict, answer: (keep) => (setSavesConflict(null), resolve(keep)) })),
+          ask,
         }).catch(() => ({ go: true }) as Awaited<ReturnType<typeof beforePlay>>);
-        if (!synced.go) return;
+        if (!synced.go) return refuse();
         const device = synced.fetched?.device;
         if (device) setNotice(t`Your saves from ${device} were put in place. The saves that were here are backed up.`);
         else if (synced.problem !== undefined) setNotice(synced.problem || t`Couldn't get your cloud saves. The app starts with the saves on this computer.`, { stays: true });
@@ -2939,9 +3099,9 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         const synced = await folderBeforePlay(savesOf(id, { ...install, program }, entry), named, syncFolder, {
           native,
           changed: savesChanged,
-          ask: (conflict) => new Promise((resolve) => setSavesConflict({ ...conflict, answer: (keep) => (setSavesConflict(null), resolve(keep)) })),
+          ask,
         }).catch(() => ({ go: true }) as Awaited<ReturnType<typeof folderBeforePlay>>);
-        if (!synced.go) return;
+        if (!synced.go) return refuse();
         const device = synced.fetched?.device;
         if (device) setNotice(t`Your saves from ${device} were put in place from your sync folder. The saves that were here are backed up.`);
         else if (synced.problem !== undefined) setNotice(synced.problem || t`Couldn't get the saves in your sync folder. The app starts with the saves on this computer.`, { stays: true });
@@ -2950,7 +3110,13 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       if (savesOn(config.os)) await native.savesWatch(savesOf(id, { ...install, program }, catalog[id])).catch(() => {});
       // The catalog's programs as they are now: a fix to them reaches this app without an update.
       const patterns = program || launch?.executable ? install.executables : startPatterns(install, entry, config.os);
-      await native.launch(id, install.folder, install.dir, patterns, Boolean(install.wine), program, launch, presence).then(
+      // From a shortcut, the shortcut starts it, so Steam ties its overlay, controls and Stop to the game; a window a
+      // shortcut's Quiver showed for a question goes, so the game is in front.
+      if (shortcut?.hidden) await native.shortcutWindow(false).catch(() => {});
+      const started = shortcut
+        ? native.shortcutStart(shortcut.request, id, install.folder, install.dir, patterns, Boolean(install.wine), program, launch, presence)
+        : native.launch(id, install.folder, install.dir, patterns, Boolean(install.wine), program, launch, presence);
+      await started.then(
         () => {
           musicForGame();
           track("app_launched", played);
@@ -2963,6 +3129,8 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
           // Windows asked for administrator rights and the player said no.
           if (e === "cancelled") return;
           fail(id, e);
+          // What went wrong is on its card, in a window a shortcut's Quiver shows for it.
+          if (shortcut?.hidden) void native.shortcutWindow(true).catch(() => {});
           track("app_launch_failed", { ...played, reason: reasonOf(e), error: failureKind(e) });
           // No program found: what is there says why, since it's different apps on every system.
           const kinds = e === NO_PROGRAM ? await native.fileKinds(install.folder, install.dir).catch(() => null) : null;
@@ -2982,7 +3150,11 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       try {
         const release = custom
           ? (await releasesOf(custom)).find(same)
-          : ((await client.releases(entry.slug, 100, null, true)).items.find(same) ??
+          : ((await client.releases(entry.slug, 100, null, true).catch(async (e) => {
+              const kept = await keptReleases(entry);
+              if (kept.length) return { items: kept };
+              throw e;
+            })).items.find(same) ??
             (install.unverified ? (await client.unverifiedReleases(entry.slug).catch(() => [])).filter(same).map(fromSite)[0] : undefined));
         const version = versionLabel(install.version);
         if (!release) throw new Problem(msg`${version} can't be installed again: its release isn't available any more.`);
@@ -2992,10 +3164,16 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         captureFailure("reinstall", e, appRef(id, entry.slug));
       }
     },
-    async remove(id) {
+    async remove(id, keepFiles) {
+      if (keepFiles) {
+        // Its folder is on its way somewhere else: it stays, as it would for an uninstall.
+        if (moving.current.has(id)) return void setNotice(t`Wait for it to finish moving, then try again.`);
+        // Only out of the library: its folder stays as it is, for Locate existing install to find again.
+        chosenFolder.current.delete(id);
+      }
       // Saying no when Windows asks to uninstall it keeps it, in the library too.
-      if (await uninstall(id).then(() => false, (e) => (captureFailure("remove", e, appRef(id, catalog[id]?.slug ?? "")), e === "cancelled"))) return;
-      track("app_removed", appRef(id, catalog[id]?.slug ?? ""));
+      else if (await uninstall(id).then(() => false, (e) => (captureFailure("remove", e, appRef(id, catalog[id]?.slug ?? "")), e === "cancelled"))) return;
+      track("app_removed", { ...appRef(id, catalog[id]?.slug ?? ""), ...(keepFiles && installs[id] && !installs[id].local ? { kept_files: true } : {}) });
       setInstalls(({ [id]: _, ...rest }) => rest);
       // A synced app is removed from its account too; one that never synced just goes.
       setLibrary((l) =>
@@ -3280,6 +3458,39 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
   };
   const now = useRef(value);
   now.current = value;
+  // Desktop and Steam shortcuts start their app through Quiver (shortcut_play.rs): Play's steps, then the shortcut
+  // starts the game itself. Those that asked before this page was ready are answered now.
+  // Not before the account has loaded: until then cloud saves are off, and the game would start without the account's.
+  useEffect(() => {
+    if (!account.ready) return;
+    const answer = (asked: ShortcutPlay) => void now.current.play(asked.app, undefined, false, asked);
+    const listening = native.onShortcutPlay(answer);
+    void native.shortcutRequests().then((waiting) => waiting.forEach(answer), () => {});
+    return () => void listening.then((stop) => stop());
+  }, [account.ready]);
+  // A Quiver started to send an app's saves after Steam's Exit Game stopped it: backs them up, now the game has
+  // closed, sends them, counts the session if no one did, and quits.
+  const uploading = useRef(false);
+  const upload = config.shortcut?.upload;
+  useEffect(() => {
+    if (!upload || uploading.current || !account.ready) return;
+    uploading.current = true;
+    const [id, seconds] = upload;
+    const install = installs[id];
+    if (seconds !== null) track("app_closed", { ...playedRef(appRef(id, catalog[id]?.slug ?? ""), install?.version ?? ""), seconds, via: "shortcut_hidden", ended: "handed_off" });
+    const send = async () => {
+      if (!install || !savesOn(config.os)) return;
+      const of = savesOf(id, install, catalog[id]);
+      const made = await native.savesPlayed(of).catch(() => null);
+      if (made) savesChanged(id);
+      // Backed up already (the game closed before Steam stopped it): the newest backup, which the account may not have.
+      const newest = made ?? (await native.savesInfo(of).catch(() => null))?.backups[0];
+      await sendToCloud(id, install, newest);
+    };
+    void send()
+      .catch(() => {})
+      .finally(() => native.shortcutDone().catch(() => {}));
+  }, [account.ready]); // eslint-disable-line react-hooks/exhaustive-deps
   return (
     <LauncherNow.Provider value={now}>
       <LauncherContext.Provider value={value}>{children}</LauncherContext.Provider>

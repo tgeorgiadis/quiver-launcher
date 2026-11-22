@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Entry } from "@quiverlauncher/api";
-import { sortPlan, systemFolder, appsRightIn, consoleFolderChoice, consoleFolderChoices, consoleHome, consoleHomePath, wholePath, withOwnConsoles, adoptedInstall, appRef, appsFolders, groupFolder, joinPath, rootOf, unsortedApps, folderClash, keptWhereTheyAre, ownedBy, bringsAlong, catalogMatch, declinedUpdate, earlyGet, earlyGetOffer, earlyKey, earlyOffer, earlyRelease, earlyUpdate, filesAddable, folderNameOf, renamable, folderGone, forHereKey, hasUpdate, importedPlaylists, importedTags, removedTags, withAllTags, markedInApps, retagged, withOldPictures, installFiles, keptInstall, locatable, looseInstalls, mayUpdate, movableApps, movedInside, noProgram, notOfferedYet, oncePerFolder, twinsOf, withCopiesIn, withTwins, playedRef, relocatedInstall, skipped, uniqueFiles, updateFor, mainRelease, onlyPrereleases, updatesOf, usableCatalog, wantsPrereleases, withEarlyFor, withMainRelease, withPrereleases, type ImportedApp, type LibraryItem } from "./store";
+import { sortPlan, systemFolder, appsRightIn, consoleFolderChoice, consoleFolderChoices, consoleHome, consoleHomePath, wholePath, withOwnConsoles, adoptedInstall, appRef, appsFolders, groupFolder, joinPath, rootOf, unsortedApps, folderClash, keptWhereTheyAre, ownedBy, bringsAlong, catalogMatch, declinedUpdate, earlyGet, earlyGetOffer, earlyKey, earlyOffer, earlyRelease, earlyUpdate, filesAddable, folderNameOf, renamable, folderGone, forHereKey, hasUpdate, importedPlaylists, importedTags, removedTags, withAllTags, withReplaced, markedInApps, retagged, withOldPictures, installFiles, keptInstall, locatable, looseInstalls, mayUpdate, movableApps, movedInside, noProgram, notOfferedYet, oncePerFolder, twinsOf, withCopiesIn, withTwins, playedRef, relocatedInstall, skipped, uniqueFiles, updateFor, mainRelease, onlyPrereleases, updatesOf, usableCatalog, wantsPrereleases, withEarlyFor, withMainRelease, withPrereleases, installedAs, versionKnown, type ImportedApp, type LibraryItem } from "./store";
 import type { OldApp, OldFilter } from "./native";
 
 const entry = {
@@ -306,7 +306,7 @@ describe("an update for this computer", () => {
   const linuxOnly = { version: "linux-v0.1.0-beta", releasedAt: 30 };
   const listed = { verified: linuxOnly } as unknown as Entry;
   const install = { version: "v0.3.1-beta", releasedAt: 10, folder: "Port", executables: [] };
-  const found = (release?: { version: string; releasedAt: number }, on = install) => ({ ...listed, forHere: { of: forHereKey(linuxOnly, on), ...(release ? { release } : {}) } });
+  const found = (release?: { version: string; releasedAt: number }, on: Parameters<typeof forHereKey>[1] = install) => ({ ...listed, forHere: { of: forHereKey(linuxOnly, on), ...(release ? { release } : {}) } });
   const windows = { version: "v0.3.2-beta", releasedAt: 20 };
 
   it("isn't offered until the app's releases say there's one", () => {
@@ -348,6 +348,25 @@ describe("an update for this computer", () => {
     const pinned = { ...install, updates: "pinned" as const };
     expect(hasUpdate(found(windows), pinned)).toBe(false);
     expect(updateFor(found(windows), pinned)).toEqual(windows);
+  });
+
+  it("is what the player says they have, once they say so, and the next one is offered as usual", () => {
+    // A copy unzipped by hand and located: 3.x's 0.0.0, with no release date, a release it skipped before.
+    const unknown = { version: "0.0.0", folder: "Port", dir: "/games/Port", executables: [], declined: "v0.3.1-beta" };
+    expect(versionKnown(unknown)).toBe(false);
+    expect(hasUpdate(found(windows, unknown), unknown)).toBe(true);
+    const have = installedAs(unknown, windows);
+    expect(have).toEqual({ version: "v0.3.2-beta", releasedAt: 20, folder: "Port", dir: "/games/Port", executables: [] });
+    expect(versionKnown(have)).toBe(true);
+    expect(updatesOf({ autoUpdates: true }, have)).toBe("auto");
+    expect(hasUpdate(found(windows, have), have)).toBe(false);
+    const newer = { version: "v0.3.3-beta", releasedAt: 25 };
+    expect(hasUpdate(found(newer, have), have)).toBe(true);
+  });
+
+  it("drops what Quiver knew of the files it installed, when the app updated itself past them", () => {
+    const installed = { ...install, releaseId: "r1", checksum: "sha256:ab", differs: true as const, unverified: true as const, blocked: "why", skip: "v0.3.2-beta", updates: "ask" as const, launch: { executable: "port.exe" } };
+    expect(installedAs(installed, windows)).toEqual({ version: "v0.3.2-beta", releasedAt: 20, folder: "Port", executables: [], updates: "ask", launch: { executable: "port.exe" } });
   });
 });
 
@@ -980,5 +999,21 @@ describe("console folders the player names or places", () => {
       top: at("D"),
     };
     expect(appsRightIn(installs, `${apps}\\Ports\\N64`)).toEqual([{ id: "a", folder: "A" }]);
+  });
+});
+
+describe("withReplaced", () => {
+  const replaced = { from: ["game-0.4.6.AppImage", "game-0.4.7.AppImage"], to: "game.AppImage" };
+  it("points a program the update took away at the one in its place", () => {
+    expect(withReplaced({ executable: "game-0.4.7.AppImage", command: "-fullscreen" }, replaced, "/apps/Game")).toEqual({ executable: "game.AppImage", command: "-fullscreen" });
+    expect(withReplaced({ executable: "C:\\Apps\\Game\\game-0.4.6.AppImage" }, replaced, "C:\\Apps\\Game")).toEqual({ executable: "C:\\Apps\\Game\\game.AppImage" });
+    expect(withReplaced({ programs: ["game-0.4.7.AppImage", "game.AppImage", "editor.AppImage"] }, replaced, "/apps/Game")).toEqual({ programs: ["game.AppImage", "editor.AppImage"] });
+  });
+  it("leaves any other choice as it was", () => {
+    const launch = { executable: "editor.AppImage" };
+    expect(withReplaced(launch, replaced, "/apps/Game")).toEqual(launch);
+    expect(withReplaced({ executable: "/elsewhere/game-0.4.7.AppImage" }, replaced, "/apps/Game")).toEqual({ executable: "/elsewhere/game-0.4.7.AppImage" });
+    expect(withReplaced(launch, null, "/apps/Game")).toBe(launch);
+    expect(withReplaced(undefined, replaced, "/apps/Game")).toBeUndefined();
   });
 });

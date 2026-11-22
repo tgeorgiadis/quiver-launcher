@@ -16,7 +16,8 @@ import type { MessageDescriptor } from "@lingui/core";
 import { i18n } from "@quiverlauncher/i18n";
 import { listSlug, listUrl, type Entry, type SharedList } from "@quiverlauncher/api";
 import { OS_NAMES, PlatformIcons, SourcedImage, heroSources, tagLabel } from "@quiverlauncher/ui";
-import { hasUpdate, updateFor, useLauncher, type LibraryItem } from "./store";
+import { hasUpdate, updateFor, updatesWithSetup, useLauncher, type LibraryItem } from "./store";
+import { leftOutOfUpdateAll, updateAllLabel } from "./downloads";
 import { haloMoved, pageArea, readyFocus } from "./spatial";
 import { usePads } from "./pad-hints";
 import { jumpLetters, letterOf } from "./letters";
@@ -460,6 +461,8 @@ export function LibraryPage({
       </div>
     );
   const updateCount = updates.length;
+  // Update all leaves out apps whose update opens a setup window, which waits for the player.
+  const updateAll = updates.filter((i) => !updatesWithSetup(installs[i.id]));
   const hiddenCount = hidden.size;
   const tabs: [Tab, string][] = [
     ["all", t({ message: "All", comment: "Library tab: every app in the library" })],
@@ -529,10 +532,13 @@ export function LibraryPage({
         <div className="library-note">
           <p className="muted">
             <Plural value={updateCount} one="# app has an update." other="# apps have updates." />
+            {updateAll.length < updateCount && <> {leftOutOfUpdateAll(updateCount - updateAll.length)}</>}
           </p>
-          <button className="primary" onClick={() => updates.forEach((i) => get(catalog[i.id]))}>
-            <Trans>Update all ({updateCount})</Trans>
-          </button>
+          {updateAll.length > 0 && (
+            <button className="primary" onClick={() => updateAll.forEach((i) => get(catalog[i.id]))}>
+              {updateAllLabel(updateAll.length)}
+            </button>
+          )}
         </div>
       )}
       {collection?.follows && loaded && (

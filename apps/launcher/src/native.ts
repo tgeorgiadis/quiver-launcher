@@ -2,8 +2,9 @@
 import { invoke as tauriInvoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { currentMonitor, getCurrentWindow } from "@tauri-apps/api/window";
-import type { GitlabLimit, ModSettings, ModSource, Os, SetupFile } from "@quiverlauncher/api";
+import type { GitlabLimit, ModSettings, ModSource, Os, Readme, SetupFile } from "@quiverlauncher/api";
 import { noteFailure } from "./command-failures";
+import type { CacheUse } from "./cache";
 
 /** Tauri's, remembering which command failed; the error is the same one, for those who check what it says. */
 const invoke = <T>(...[command, args, options]: Parameters<typeof tauriInvoke>) =>
@@ -60,6 +61,8 @@ export type Config = {
   os: Os;
   arch: string;
   appsDir: string;
+  /** The download cache's folder unless the player picks another (cache.ts): `cache` in the data folder. Missing from an older build. */
+  cacheDir?: string;
   /** Where anonymous usage data goes (telemetry.ts). */
   usageHost: string;
   version: string;
@@ -80,7 +83,17 @@ export type Config = {
   steamDeck?: boolean;
   /** How this copy was installed, for usage data (update.rs). Missing from an older build. */
   package?: string;
+  /**
+   * Started by a desktop or Steam shortcut, with no window (shortcut_play.rs): it quits once the game's saves are sent.
+   * `upload`: started to send this app's saves after Steam stopped it, and the seconds it was played when that's still
+   * to count. Missing from an older build.
+   */
+  shortcut?: { host: boolean; upload: [string, number | null] | null };
 };
+/** A desktop or Steam shortcut waiting to start an app through Quiver (shortcut_play.rs). `hidden`: it started this Quiver. */
+export type ShortcutPlay = { request: number; app: string; hidden: boolean };
+/** How a game ended, for usage data: it quit, or Steam's Stop or Exit Game ended it. */
+export type Closed = { id: string; seconds: number; via?: "shortcut" | "shortcut_hidden"; ended?: "closed" | "stopped" };
 /** The hardware specs.rs reads. */
 export type PcSpecs = { cpu: string | null; gpu: string | null; ramGb: number | null };
 /** A repository host's answer, fetched by the Rust side for hosts that don't send CORS headers. */
@@ -112,7 +125,14 @@ export type InstallRequest = {
   githubToken?: string;
   /** The file's browser link, downloaded without the token when GitHub refuses the token (expired or revoked). */
   fallbackUrl?: string;
+  /** The download cache, while it's on (cache.ts): the file comes from it when it's there, and is kept in it as it says. */
+  cache?: CacheUse;
+  /** False: a download that's a Windows setup program is kept as a file, not run (`Settings.runSetupPrograms` off). Unset: run. */
+  runSetup?: boolean;
 };
+/** A file in the download cache (cache.rs). */
+export type CachedFile = { hash: string; filename: string; path: string; source?: boolean; size: number; apps: { app: string; version: string; os?: string; arch?: string; slug?: string }[]; cachedAt: number; usedAt: number };
+export type CacheStatus = { files: number; bytes: number; entries: CachedFile[] };
 /** What an install did. A Windows installer (MSI) puts its files where its setup chose. */
 export type Installed = {
   dir: string;
@@ -129,6 +149,8 @@ export type Installed = {
   restart: boolean;
   /** A setup program installed it, in the app's folder or outside it. Missing from the web side's stand-in. */
   setup?: boolean;
+  /** Earlier releases' copies of a single program that this release's took the place of, by their names in the app's folder. */
+  replaced?: { from: string[]; to: string } | null;
 };
 
 /** A game as Discord shows it while it runs: its name, and a picture Discord can fetch from the web. */
@@ -176,6 +198,8 @@ export type WindowsRunner = { kind: "wine" } | { kind: "proton"; path: string };
 
 /** An installed app, for a desktop or Steam shortcut. */
 export type ShortcutRequest = {
+  /** The app, which the shortcut names to Quiver. */
+  id: string;
   name: string;
   folder: string;
   dir?: string;
@@ -314,13 +338,58 @@ export const native = {
   startEmptyLibrary: () => invoke<void>("start_empty_library"),
   /** Fails with "cancelled" when the player stops it, "missing" when its file is gone (a 404), or "mismatch" when the download isn't the file its checksum names. */
   install: (request: InstallRequest) => invoke<Installed>("install", { request }),
+  /** Downloads a release file into the download cache only (cache.ts). Fails with "cancelled", "missing" or "mismatch" as an install does. */
+  cacheFetch: (request: InstallRequest) => invoke<void>("cache_fetch", { request }),
+  cacheFetchCancel: () => invoke<void>("cache_fetch_cancel"),
+  onCacheProgress: (handler: (p: { id: string; received: number; total?: number | null }) => void) =>
+    listen<{ id: string; received: number; total?: number | null }>("cache-progress", (e) => handler(e.payload)),
+  /** What's in the cache. `names`, apps' ids to their slugs, names the folders of files an older build kept by hash, which move to them. */
+  cacheStatus: (dir: string, names?: Record<string, string>) => invoke<CacheStatus>("cache_status", { dir, names: names ?? null }),
+  cacheHas: (dir: string, checksums: string[]) => invoke<boolean[]>("cache_has", { dir, checksums }),
+  /** Clears what a launcher closed mid-download left in the cache (`.incoming`, half-written files); nothing while a fetch is under way. How many files went. */
+  cacheClean: (dir: string) => invoke<number>("cache_clean", { dir }),
+  /** Rotates the cache down to `limit` bytes (null: no limit), never the files of `protect`. */
+  cacheTrim: (dir: string, limit: number | null, protect: string[]) => invoke<void>("cache_trim", { dir, limit, protect }),
+  /** Removes these files (by hash), or every one Quiver kept there. */
+  cacheRemove: (dir: string, hashes?: string[]) => invoke<void>("cache_remove", { dir, hashes: hashes ?? null }),
+  /** Shows the cache folder settings.json names, else the default one. */
+  cacheOpen: () => invoke<void>("cache_open"),
+  /** Keeps an app's README and the pictures it shows (their resolved addresses), unless it's kept as it is already. Whether it kept it. */
+  cacheReadmeSave: (dir: string, app: string, slug: string, readme: Readme, images: string[]) =>
+    invoke<boolean>("cache_readme_save", { dir, app, slug, readme: { markdown: readme.markdown, rawBase: readme.rawBase, htmlBase: readme.htmlBase, fetchedAt: readme.fetchedAt }, images }),
+  /** The README the cache keeps of an app, its pictures as data: addresses; null when there's none. */
+  cacheReadmeRead: (dir: string, app: string, slug: string) => invoke<(Readme & { keptAt: number; images: Record<string, string> }) | null>("cache_readme_read", { dir, app, slug }),
+  /** Shows an app's folder in the cache; fails while none of its files are kept. */
+  cacheOpenApp: (app: string) => invoke<void>("cache_open_app", { app }),
   /** Starts an app; `id` names it in `onAppClosed` once it closes. `presence` is what Discord shows the player playing while it runs. */
   launch: (id: string | undefined, folder: string, dir: string | undefined, preferred: string[], wine: boolean, program?: string, launch?: LaunchOptions, presence?: DiscordGame) =>
     invoke<void>("launch", { id, folder, dir, preferred, wine, program, launch, presence }),
   /** Discord's Rich Presence on or off (discord.rs), with its words in the player's language. */
   setDiscordPresence: (enabled: boolean, texts: { idle: string; button: string }) => invoke<void>("set_discord_presence", { enabled, texts }),
-  /** An app started with an id has closed, after running this long. */
-  onAppClosed: (handler: (p: { id: string; seconds: number }) => void) => listen<{ id: string; seconds: number }>("app-closed", (e) => handler(e.payload)),
+  /** An app started with an id has closed, after running this long; one a shortcut started says how it ended. */
+  onAppClosed: (handler: (p: Closed) => void) => listen<Closed>("app-closed", (e) => handler(e.payload)),
+  /** The shortcuts waiting for this Quiver to start their app: for a page that's only now ready. */
+  shortcutRequests: () => invoke<ShortcutPlay[]>("shortcut_requests"),
+  /** A shortcut asks this Quiver to start an app. */
+  onShortcutPlay: (handler: (p: ShortcutPlay) => void) => listen<ShortcutPlay>("shortcut-play", (e) => handler(e.payload)),
+  /** Hands a shortcut the app's command, as `launch` would start it, for the shortcut to start. */
+  shortcutStart: (
+    request: number,
+    id: string,
+    folder: string,
+    dir: string | undefined,
+    preferred: string[],
+    wine: boolean,
+    program?: string,
+    launch?: LaunchOptions,
+    presence?: DiscordGame,
+  ) => invoke<void>("shortcut_start", { request, id, folder, dir, preferred, wine, program, launch, presence }),
+  /** Tells a shortcut its app won't start: the player said no, or the window says why. */
+  shortcutRefuse: (request: number, why: string) => invoke<void>("shortcut_refuse", { request, why }),
+  /** The saves of a game a shortcut started are sent: a Quiver it started can quit. */
+  shortcutDone: () => invoke<void>("shortcut_done"),
+  /** Shows the window of a Quiver a shortcut started, for a question, or hides it again. */
+  shortcutWindow: (show: boolean) => invoke<void>("shortcut_window", { show }),
   /** Where an app's saves are and its backups (saves.rs). */
   savesInfo: (of: SavesOf) => invoke<SavesInfo | null>("saves_info", { of }),
   /** Backs up an app's saves if they changed; null when there was nothing new. Fails while the app runs. */
@@ -511,6 +580,8 @@ export const native = {
   installMod: (folder: string, dir: string | undefined, config: ModSettings, pkg: ModPackage, file: ModFile) =>
     invoke<InstalledMod>("install_mod", { folder, dir, config, package: pkg, file }),
   uninstallMod: (folder: string, dir: string | undefined, config: ModSettings, key: string) => invoke<void>("uninstall_mod", { folder, dir, config, key }),
+  /** Writes the release the player says an app's folder holds into its version file, as installing it does. */
+  markVersion: (folder: string, dir: string | undefined, version: string) => invoke<void>("mark_version", { folder, dir, version }),
   /** True when Steam was asked: the launcher runs under Steam or Gamescope. */
   steamKeyboard: (open: boolean) => invoke<boolean>("steam_keyboard", { open }),
   /** Asks which program starts an installed app; relative to its folder, unless it's a program the player added. */
@@ -546,6 +617,8 @@ export const native = {
   /** Puts a checked copy where the app reads it; where it went, or null when the app is told by flag or variable. */
   placeCopy: (folder: string, dir: string | undefined, wine: boolean, file: SetupFile, path: string) =>
     invoke<string | null>("place_copy", { folder, dir, wine, file, path }),
+  /** What's already where the app reads its copy, put there by the player before Quiver knew of it: its path, or null. */
+  copyInPlace: (folder: string, dir: string | undefined, wine: boolean, file: SetupFile) => invoke<string | null>("copy_in_place", { folder, dir, wine, file }),
   copyPresent: (folder: string, dir: string | undefined, wine: boolean, file: SetupFile, path: string) =>
     invoke<boolean>("copy_present", { folder, dir, wine, file, path }),
   onCopyProgress: (handler: (p: CopyProgress) => void) => listen<CopyProgress>("copy-progress", (e) => handler(e.payload)),

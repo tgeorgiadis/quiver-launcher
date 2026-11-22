@@ -55,6 +55,14 @@ pub fn page_focus(focused: bool) {
     let _ = focused;
 }
 
+/// Quiver with no window on screen (started by a shortcut, shortcut_play.rs): it leaves the controllers alone, as
+/// behind a game, though its hidden page may still say it has the focus. Its window shown for a question, it has them.
+pub fn unseen(unseen: bool) {
+    #[cfg(not(target_os = "android"))]
+    sdl::UNSEEN.store(unseen, std::sync::atomic::Ordering::Relaxed);
+    let _ = unseen;
+}
+
 /// None on Android: SDL reads controllers there through its own Java
 /// activity, which Quiver's app doesn't have.
 #[cfg(target_os = "android")]
@@ -87,6 +95,13 @@ mod sdl {
     /// Whether Quiver's window is in front. Until it says otherwise it is, so a
     /// window that never reports its focus still has controllers.
     pub(super) static FOCUSED: AtomicBool = AtomicBool::new(true);
+    /// Quiver has no window on screen (super::unseen): it's behind whatever is, focused or not.
+    pub(super) static UNSEEN: AtomicBool = AtomicBool::new(false);
+
+    /// In front: focused, with its window on screen.
+    fn in_front() -> bool {
+        FOCUSED.load(Ordering::Relaxed) && !UNSEEN.load(Ordering::Relaxed)
+    }
 
     /// How far a stick or trigger goes before it counts as pressed: half way.
     const HALF: i16 = i16::MAX / 2;
@@ -102,7 +117,7 @@ mod sdl {
             });
         }
         std::thread::spawn(move || loop {
-            let behind = !FOCUSED.load(Ordering::Relaxed);
+            let behind = !in_front();
             if !behind || crate::session::watching() {
                 if !read(&app, behind) {
                     return;
@@ -115,7 +130,7 @@ mod sdl {
 
     /// Whether to go on reading: in front, or `behind` while a game wants watching.
     fn reading(behind: bool) -> bool {
-        let focused = FOCUSED.load(Ordering::Relaxed);
+        let focused = in_front();
         if behind {
             !focused && crate::session::watching()
         } else {

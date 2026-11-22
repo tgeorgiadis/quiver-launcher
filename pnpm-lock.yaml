@@ -11,8 +11,8 @@ importers:
   apps/launcher:
     dependencies:
       '@convex-dev/auth':
-        specifier: 2.0.0-beta.0
-        version: 2.0.0-beta.0(convex@1.46.0(react@19.3.0))(react@19.3.0)(typescript@5.9.3)
+        specifier: 2.1.0
+        version: 2.1.0(convex@1.51.0(react@19.3.0))(react@19.3.0)(typescript@5.9.3)
       '@lingui/core':
         specifier: 6.10.1
         version: 6.10.1(@babel/core@7.29.7)
@@ -35,8 +35,8 @@ importers:
         specifier: ^2
         version: 2.12.1
       convex:
-        specifier: ^1.46.0
-        version: 1.46.0(react@19.3.0)
+        specifier: ^1.51.0
+        version: 1.51.0(react@19.3.0)
       lucide-react:
         specifier: ^0.468.0
         version: 0.468.0(react@19.3.0)
@@ -299,12 +299,11 @@ packages:
     resolution: {integrity: sha512-ooWCrlZP11i8GImSjTHYHLkvFDP48nS4+204nGb1RiX/WXYHmJA2III9/e2DWVabCESdW7hBAEzHRqUn9OUVvQ==}
     engines: {node: '>=0.1.90'}
 
-  '@convex-dev/auth@2.0.0-beta.0':
-    resolution: {integrity: sha512-GNIYITbRvLg8Ev5YW3j/rJ71Dft/fGYO5kkTJigVwuYCcn3WOeVY9+1IpKDntzMOZou1uDZwlPnR0BcWZWGaKg==}
-    hasBin: true
+  '@convex-dev/auth@2.1.0':
+    resolution: {integrity: sha512-C3fCWPIf74NJfl2SE8x7mUXHCx3nTX96QDRWFh4/tg/U3vuTpR6PZeLq3y63hsS9h/m1rzLElN42rXFENaGHLA==}
     peerDependencies:
       '@convex-dev/resend': ^0.2.8
-      convex: ^1.46.0
+      convex: ^1.48.0
       next: ^16.0.0
       react: ^18.0.0 || ^19.0.0
     peerDependenciesMeta:
@@ -1507,9 +1506,6 @@ packages:
     resolution: {integrity: sha512-fV1orZfsnPn9BaSByR/qE67rJCLJEy2Ox5bq7nJh+jquWaNh6Sfec75kJ2T6PtdGUbPQlrVoSVCEOa5SdiTQ1g==}
     engines: {node: '>=18'}
 
-  argon2id-wasm@0.0.0-alpha.2:
-    resolution: {integrity: sha512-Bxa3aVWUbpg/hKTyHdjeLT68mJXNLftm1W3tXVXu/X83vmpTJ3zzgOhNMzu33Th2iNDxMU1kU4/MEGgW5udMgQ==}
-
   aria-query@5.3.0:
     resolution: {integrity: sha512-b0P0sZPKtyu8HkeRAfCq0IfURZK+SuwMjY1UXGBU27wpAiTwQAIlq56IbIO+ytk/JjS1fMR14ee5WBBfKi5J6A==}
 
@@ -1751,9 +1747,9 @@ packages:
       zod:
         optional: true
 
-  convex@1.46.0:
-    resolution: {integrity: sha512-dhBwDQTZDOhi5SUGAX17EWNehCdNq6/UFrSL0eLZuGfMkdsQbCVWVRZCzbZ5CF+/pgvoGxtApbEoTSipqL4JTw==}
-    engines: {node: '>=20.0.0', npm: '>=7.0.0'}
+  convex@1.51.0:
+    resolution: {integrity: sha512-Y5gS+JmT2JBq76S3CrQDrdL/Ijs4ZRKsvz3cu5EmHf/QxW18QrHunb5j9WC6lAbWbWc/gvmqpa5lvXzLXFQVJA==}
+    engines: {node: '>=22.0.0', npm: '>=7.0.0'}
     hasBin: true
     peerDependencies:
       '@auth0/auth0-react': ^2.0.1
@@ -2538,6 +2534,9 @@ packages:
 
   parse5@8.0.1:
     resolution: {integrity: sha512-z1e/HMG90obSGeidlli3hj7cbocou0/wa5HacvI3ASx34PecNjNQeaHNo5WIZpWofN9kgkqV1q5YvXe3F0FoPw==}
+
+  password-hash-wasm@0.0.0:
+    resolution: {integrity: sha512-SpVGWB4mMf8VuHM1LqrZWLPtH7B4K2vVqAZ6pAnL/eeTLtPqewwnt0DD7428xUPSDrEWd2SDoLoU4z61gj9sYw==}
 
   path-key@3.1.1:
     resolution: {integrity: sha512-ojmeN0qd+y0jszEtoY48r0Peq5dwMEkIlCOu6Q5f41lfkswXuKtYrhgoTpLnyIcHm24Uhqx+5Tqm2InSwLhE6Q==}
@@ -3390,20 +3389,16 @@ snapshots:
   '@colors/colors@1.5.0':
     optional: true
 
-  '@convex-dev/auth@2.0.0-beta.0(convex@1.46.0(react@19.3.0))(react@19.3.0)(typescript@5.9.3)':
+  '@convex-dev/auth@2.1.0(convex@1.51.0(react@19.3.0))(react@19.3.0)(typescript@5.9.3)':
     dependencies:
-      '@babel/code-frame': 7.29.7
-      '@convex-dev/batch-worker': 0.3.4(convex@1.46.0(react@19.3.0))(react@19.3.0)(typescript@5.9.3)
-      '@convex-dev/rate-limiter': 0.3.2(convex@1.46.0(react@19.3.0))(react@19.3.0)
+      '@convex-dev/batch-worker': 0.3.4(convex@1.51.0(react@19.3.0))(react@19.3.0)(typescript@5.9.3)
+      '@convex-dev/rate-limiter': 0.3.2(convex@1.51.0(react@19.3.0))(react@19.3.0)
       '@simplewebauthn/browser': 14.0.0
       '@simplewebauthn/server': 14.0.3
-      argon2id-wasm: 0.0.0-alpha.2
-      chalk: 5.6.2
-      commander: 14.0.3
-      convex: 1.46.0(react@19.3.0)
+      convex: 1.51.0(react@19.3.0)
       cookie: 1.1.1
       jose: 5.10.0
-      ora: 9.4.1
+      password-hash-wasm: 0.0.0
     optionalDependencies:
       react: 19.3.0
     transitivePeerDependencies:
@@ -3412,10 +3407,10 @@ snapshots:
       - typescript
       - zod
 
-  '@convex-dev/batch-worker@0.3.4(convex@1.46.0(react@19.3.0))(react@19.3.0)(typescript@5.9.3)':
+  '@convex-dev/batch-worker@0.3.4(convex@1.51.0(react@19.3.0))(react@19.3.0)(typescript@5.9.3)':
     dependencies:
-      convex: 1.46.0(react@19.3.0)
-      convex-helpers: 0.1.126(convex@1.46.0(react@19.3.0))(react@19.3.0)(typescript@5.9.3)
+      convex: 1.51.0(react@19.3.0)
+      convex-helpers: 0.1.126(convex@1.51.0(react@19.3.0))(react@19.3.0)(typescript@5.9.3)
     transitivePeerDependencies:
       - '@standard-schema/spec'
       - hono
@@ -3423,9 +3418,9 @@ snapshots:
       - typescript
       - zod
 
-  '@convex-dev/rate-limiter@0.3.2(convex@1.46.0(react@19.3.0))(react@19.3.0)':
+  '@convex-dev/rate-limiter@0.3.2(convex@1.51.0(react@19.3.0))(react@19.3.0)':
     dependencies:
-      convex: 1.46.0(react@19.3.0)
+      convex: 1.51.0(react@19.3.0)
     optionalDependencies:
       react: 19.3.0
 
@@ -4454,8 +4449,6 @@ snapshots:
       - bare-buffer
       - react-native-b4a
 
-  argon2id-wasm@0.0.0-alpha.2: {}
-
   aria-query@5.3.0:
     dependencies:
       dequal: 2.0.3
@@ -4656,14 +4649,14 @@ snapshots:
 
   convert-source-map@2.0.0: {}
 
-  convex-helpers@0.1.126(convex@1.46.0(react@19.3.0))(react@19.3.0)(typescript@5.9.3):
+  convex-helpers@0.1.126(convex@1.51.0(react@19.3.0))(react@19.3.0)(typescript@5.9.3):
     dependencies:
-      convex: 1.46.0(react@19.3.0)
+      convex: 1.51.0(react@19.3.0)
     optionalDependencies:
       react: 19.3.0
       typescript: 5.9.3
 
-  convex@1.46.0(react@19.3.0):
+  convex@1.51.0(react@19.3.0):
     dependencies:
       esbuild: 0.27.0
       prettier: 3.9.9
@@ -5759,6 +5752,8 @@ snapshots:
   parse5@8.0.1:
     dependencies:
       entities: 8.1.0
+
+  password-hash-wasm@0.0.0: {}
 
   path-key@3.1.1: {}
 

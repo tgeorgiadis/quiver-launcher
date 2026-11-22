@@ -685,6 +685,16 @@ mod tests {
     }
 
     #[test]
+    fn a_located_folder_keeps_the_version_the_player_said_it_has() {
+        let root = tempfile::tempdir().unwrap();
+        folder(root.path(), &[("port.exe", "")]);
+        assert_eq!(existing(root.path()).unwrap().version, UNKNOWN_VERSION);
+        crate::install::mark_version(root.path(), "v0.2.0").unwrap();
+        assert_eq!(existing(root.path()).unwrap().version, "v0.2.0");
+        assert!(crate::install::is_install(root.path()), "Quiver's now, as an install of that release is");
+    }
+
+    #[test]
     fn finds_the_library_of_a_3x_copy_this_launcher_was_put_beside() {
         let root = tempfile::tempdir().unwrap();
         let copy = root.path().join("Quiver");

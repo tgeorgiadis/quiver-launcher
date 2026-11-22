@@ -49,6 +49,37 @@ app's saves load on any system. The player can still restore any copy from the S
 The check never holds an app back for long: when the account can't be reached within a few seconds, the app starts
 with the saves on the computer.
 
+## From a shortcut
+
+A desktop shortcut or a Steam shortcut made in Quiver starts the game through Quiver
+(`apps/launcher/src-tauri/src/shortcut_play.rs`), so the same happens as with Play: the saves are brought in line
+before the game starts, and backed up and sent after it closes. The shortcut runs `quiver --launch <app>`. That finds
+the Quiver that's open, or starts one with no window, which works out the game's command as Play would, with the
+player's launch options as they are now. Anything the player adds to the shortcut's own arguments goes after the
+game's.
+
+The shortcut starts the game itself, not Quiver: Steam ties its overlay, the shortcut's controller settings, its
+"playing" status and its Stop to the program it started and what that starts. A game started by another program has
+none of them, and Game Mode doesn't show it at all.
+
+- **A question to ask** (both sides changed): a Quiver the shortcut started shows its window for it, then hides it
+  again. In Game Mode that works because that Quiver runs among the shortcut's processes, which Game Mode shows.
+- **What Play would ask first:** for the player's copy of the game, the window shows the same question, and setting it
+  up, Play without it and "I've already set it up" all start the game through the shortcut; Cancel tells it not to.
+  With several programs, the shortcut starts the first; for the program a Windows installer put somewhere, it says to
+  play it from Quiver once.
+- **Steam's Stop (Windows)** ends the shortcut and the game at once. A Quiver the shortcut starts there runs outside
+  Steam's processes, so it's still there to back up and send the saves.
+- **Steam's Exit Game (Linux)** asks the shortcut's processes to stop and ends them two seconds later. The shortcut
+  starts a Quiver outside Steam's processes at once (`systemd-run --user`, or `flatpak run` on the host for the Flatpak)
+  with `--upload-saves`, which backs up the saves once the game has closed, sends them and quits. Offline, the backup
+  waits on the computer, and the next start of the app sends it.
+
+A Quiver a shortcut started quits once the saves are sent, unless the player opened its window. Each step is noted in
+`quiver.log` ("shortcut: …"). Quiver listens for
+shortcuts on 127.0.0.1, at a port written to `shortcuts.json` in its data folder with a token only the player's own
+programs can read.
+
 ## Limits
 
 The site sets them, and the launcher shows what the site says: by default 250 MB an account, the 5 newest copies of
