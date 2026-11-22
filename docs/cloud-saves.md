@@ -64,8 +64,10 @@ none of them, and Game Mode doesn't show it at all.
 
 - **A question to ask** (both sides changed): a Quiver the shortcut started shows its window for it, then hides it
   again. In Game Mode that works because that Quiver runs among the shortcut's processes, which Game Mode shows.
-- **What Play would ask first** (the player's copy of the game, which of several programs, the program a Windows
-  installer put somewhere): the shortcut starts the first program, or says to play it from Quiver once.
+- **What Play would ask first:** for the player's copy of the game, the window shows the same question, and setting it
+  up, Play without it and "I've already set it up" all start the game through the shortcut; Cancel tells it not to.
+  With several programs, the shortcut starts the first; for the program a Windows installer put somewhere, it says to
+  play it from Quiver once.
 - **Steam's Stop (Windows)** ends the shortcut and the game at once. A Quiver the shortcut starts there runs outside
   Steam's processes, so it's still there to back up and send the saves.
 - **Steam's Exit Game (Linux)** asks the shortcut's processes to stop and ends them two seconds later. The shortcut

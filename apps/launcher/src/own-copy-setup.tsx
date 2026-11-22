@@ -144,7 +144,7 @@ export function OwnCopyPrompt() {
     if (copiesNeeded(entry, install, config.os).length) return;
     setLaunching(false);
     setUpCopy(null);
-    void play(asking.id);
+    void play(asking.id, undefined, false, asking.shortcut);
   }, [launching, install?.copies]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!open) return;
@@ -179,6 +179,15 @@ export function OwnCopyPrompt() {
   if (!open || !entry || !install || !file || !asking) return null;
   const name = entry.projectName;
   const close = () => setUpCopy(null);
+  // Closed without playing: a shortcut waiting on it hears it won't start, and a Quiver it started goes once its
+  // window does (shortcut_play.rs).
+  const cancel = () => {
+    const waiting = asking.shortcut;
+    close();
+    if (!waiting) return;
+    const hidden = waiting.hidden ? native.shortcutWindow(false).catch(() => {}) : Promise.resolve();
+    void hidden.then(() => native.shortcutRefuse(waiting.request, "")).catch(() => {});
+  };
   const folder = file.kind === "folder";
 
   const use = async (path: string, inPlace = false) => {
@@ -224,7 +233,7 @@ export function OwnCopyPrompt() {
     if (asking.play) setLaunching(true);
     else close();
   };
-  const askAgain = () => (setCopy(entry.id, file.id, undefined), close());
+  const askAgain = () => (setCopy(entry.id, file.id, undefined), cancel());
   const choose = async () => {
     const path = await native.pickCopy(file).catch(() => null);
     if (path) void use(path);
@@ -246,7 +255,7 @@ export function OwnCopyPrompt() {
   const pct = progress && progress.total > 0 ? Math.min(100, Math.round((progress.done / progress.total) * 100)) : null;
 
   return (
-    <Dialog label={t`Set up your copy for ${name}`} className="own-copy-prompt" onClose={busy ? () => {} : close}>
+    <Dialog label={t`Set up your copy for ${name}`} className="own-copy-prompt" onClose={busy ? () => {} : cancel}>
       <div className="detail-body">
         {phase.kind === "done" ? (
           <>
@@ -283,10 +292,10 @@ export function OwnCopyPrompt() {
               </p>
             ) : (
               <div className="row">
-                <button className="primary" autoFocus onClick={() => (close(), void play(entry.id))}>
+                <button className="primary" autoFocus onClick={() => (close(), void play(entry.id, undefined, false, asking.shortcut))}>
                   <Play size={16} aria-hidden="true" /> {t({ message: "Play", comment: "Button that starts an app" })}
                 </button>
-                <button onClick={close}>{t`Close`}</button>
+                <button onClick={cancel}>{t`Close`}</button>
               </div>
             )}
           </>
@@ -385,9 +394,9 @@ export function OwnCopyPrompt() {
                 <FolderOpen size={16} aria-hidden="true" /> {folder ? t`Choose a folder…` : t`Choose a file…`}
               </button>
               {asking.play && !busy && (
-                <button onClick={() => (close(), void play(entry.id, undefined, true))}>{t`Play without it`}</button>
+                <button onClick={() => (close(), void play(entry.id, undefined, true, asking.shortcut))}>{t`Play without it`}</button>
               )}
-              <button disabled={busy} onClick={close}>
+              <button disabled={busy} onClick={cancel}>
                 {t`Cancel`}
               </button>
             </div>

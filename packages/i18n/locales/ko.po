@@ -601,10 +601,6 @@ msgstr "{name} 공유됨"
 msgid "{name} menu"
 msgstr "{name} 메뉴"
 
-#: ../../apps/launcher/src/store.tsx
-msgid "{name} needs your copy of the game. Play it from Quiver once to set it up."
-msgstr "{name}에는 직접 가진 게임 사본이 필요해요. Quiver에서 한 번 실행해서 설정해 주세요."
-
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "{name} needs your own copy of the game to run, and asks for it when it starts. Choose the disc image, and Quiver checks it's one {name} takes."
 msgstr "{name}을(를) 실행하려면 직접 가진 게임 사본이 필요하고, 시작할 때 사본을 물어봐요. 디스크 이미지를 고르면 Quiver가 {name}에서 쓸 수 있는 사본인지 확인해요."

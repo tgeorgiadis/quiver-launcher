@@ -601,10 +601,6 @@ msgstr "{name} 已共享"
 msgid "{name} menu"
 msgstr "{name} 菜单"
 
-#: ../../apps/launcher/src/store.tsx
-msgid "{name} needs your copy of the game. Play it from Quiver once to set it up."
-msgstr "{name} 需要你的游戏副本。请先在 Quiver 中运行一次来完成设置。"
-
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "{name} needs your own copy of the game to run, and asks for it when it starts. Choose the disc image, and Quiver checks it's one {name} takes."
 msgstr "{name} 需要你自己的游戏副本才能运行，并会在启动时提示你提供。请选择光盘映像，Quiver 会检查它是否为 {name} 支持的格式。"

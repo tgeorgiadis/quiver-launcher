@@ -288,8 +288,9 @@ type Launcher = {
   choosingProgram: string | null;
   chooseProgram: (id: string | null) => void;
   /** The app whose page asks for the player's own copy of its game (own-copy-setup.tsx): `play` once it's set up, from Play. */
-  settingUpCopy: { id: string; fileId?: string; play?: boolean } | null;
-  setUpCopy: (asking: { id: string; fileId?: string; play?: boolean } | null) => void;
+  /** `shortcut`: a desktop or Steam shortcut is waiting to start the game once it's set up (shortcut_play.rs). */
+  settingUpCopy: { id: string; fileId?: string; play?: boolean; shortcut?: ShortcutPlay } | null;
+  setUpCopy: (asking: { id: string; fileId?: string; play?: boolean; shortcut?: ShortcutPlay } | null) => void;
   /** The Quiver Launcher 3 library the launcher found by itself, until a library is brought over; undefined while it looks. */
   oldLibrary: V3Library | null | undefined;
   /**
@@ -2971,9 +2972,11 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       const name = catalog[id]?.projectName ?? install.folder;
       if (appMoves[id]) return refuse(t`Wait for it to finish moving, then play it.`);
       // The game needs the player's own copy, which Quiver gets to it: asked for first.
+      // From a shortcut too, which waits meanwhile: a Quiver it started shows its window for the question, and
+      // whatever the player chooses that plays (the copy, Play without it, already set up) starts it through the shortcut.
       if (!withoutCopy && copiesNeeded(catalog[id], install, config.os).length) {
-        if (shortcut) return refuse(t`${name} needs your copy of the game. Play it from Quiver once to set it up.`);
-        return setUpCopy({ id, play: true });
+        if (shortcut?.hidden) await native.shortcutWindow(true).catch(() => {});
+        return setUpCopy({ id, play: true, ...(shortcut ? { shortcut } : {}) });
       }
       // The programs the player picked for Play: one starts; more, and they choose (a shortcut starts the first).
       const programs = install.launch?.programs ?? [];
@@ -3037,7 +3040,9 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       if (savesOn(config.os)) await native.savesWatch(savesOf(id, { ...install, program }, catalog[id])).catch(() => {});
       // The catalog's programs as they are now: a fix to them reaches this app without an update.
       const patterns = program || launch?.executable ? install.executables : startPatterns(install, entry, config.os);
-      // From a shortcut, the shortcut starts it, so Steam ties its overlay, controls and Stop to the game.
+      // From a shortcut, the shortcut starts it, so Steam ties its overlay, controls and Stop to the game; a window a
+      // shortcut's Quiver showed for a question goes, so the game is in front.
+      if (shortcut?.hidden) await native.shortcutWindow(false).catch(() => {});
       const started = shortcut
         ? native.shortcutStart(shortcut.request, id, install.folder, install.dir, patterns, Boolean(install.wine), program, launch, presence)
         : native.launch(id, install.folder, install.dir, patterns, Boolean(install.wine), program, launch, presence);

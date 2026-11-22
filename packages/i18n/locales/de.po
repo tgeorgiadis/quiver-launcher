@@ -601,10 +601,6 @@ msgstr "{name} wird geteilt"
 msgid "{name} menu"
 msgstr "Menü von {name}"
 
-#: ../../apps/launcher/src/store.tsx
-msgid "{name} needs your copy of the game. Play it from Quiver once to set it up."
-msgstr "{name} braucht deine Kopie des Spiels. Spiele es einmal in Quiver, um sie einzurichten."
-
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "{name} needs your own copy of the game to run, and asks for it when it starts. Choose the disc image, and Quiver checks it's one {name} takes."
 msgstr "{name} braucht deine eigene Kopie des Spiels, um zu laufen, und fragt beim Start danach. Wähle das Disc-Image, und Quiver prüft, ob {name} es annimmt."

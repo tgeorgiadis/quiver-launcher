@@ -601,10 +601,6 @@ msgstr "Доступ к «{name}» открыт"
 msgid "{name} menu"
 msgstr "Меню {name}"
 
-#: ../../apps/launcher/src/store.tsx
-msgid "{name} needs your copy of the game. Play it from Quiver once to set it up."
-msgstr "Для {name} нужна ваша копия игры. Запустите его один раз из Quiver, чтобы настроить её."
-
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "{name} needs your own copy of the game to run, and asks for it when it starts. Choose the disc image, and Quiver checks it's one {name} takes."
 msgstr "Для запуска {name} нужна ваша копия игры, и игра сама попросит её при старте. Выберите образ диска — Quiver проверит, подходит ли он {name}."
