@@ -111,17 +111,30 @@ pub async fn download_image(url: &str, data: &Path) -> Result<image::DynamicImag
 
 /// Puts a shortcut on the desktop; returns where.
 pub fn desktop(target: &Target, name: &str, icon: Option<&Path>) -> Result<PathBuf, String> {
-    // Without XDG user folders set up, Linux desktops still use ~/Desktop.
-    let desktop = dirs::desktop_dir()
-        .or_else(|| dirs::home_dir().map(|h| h.join("Desktop")))
-        .ok_or("Couldn't find your desktop folder.")?;
+    let desktop = desktop_dir().ok_or("Couldn't find your desktop folder.")?;
     std::fs::create_dir_all(&desktop).map_err(|e| e.to_string())?;
     write_shortcut(&desktop, target, name, icon)
 }
 
-#[cfg(windows)]
+/// The player's desktop folder. Without XDG user folders set up, Linux desktops still use ~/Desktop.
+pub fn desktop_dir() -> Option<PathBuf> {
+    dirs::desktop_dir().or_else(|| dirs::home_dir().map(|h| h.join("Desktop")))
+}
+
+/// The desktop shortcut's file for an app, as Quiver names it.
+pub fn desktop_file(desktop: &Path, name: &str) -> PathBuf {
+    desktop.join(format!("{}.{}", file_name(name), if cfg!(windows) { "lnk" } else { "desktop" }))
+}
+
 fn write_shortcut(desktop: &Path, target: &Target, name: &str, icon: Option<&Path>) -> Result<PathBuf, String> {
-    let path = desktop.join(format!("{}.lnk", file_name(name)));
+    let path = desktop_file(desktop, name);
+    write_at(&path, target, name, icon)?;
+    Ok(path)
+}
+
+/// Writes a desktop shortcut at `path`, over one that's there.
+#[cfg(windows)]
+pub fn write_at(path: &Path, target: &Target, name: &str, icon: Option<&Path>) -> Result<(), String> {
     // A shortcut can't carry environment variables; Play and Steam shortcuts do.
     let (program, args, _) = target.command();
     let mut link = mslnk::ShellLink::new(&program).map_err(|e| e.to_string())?;
@@ -132,20 +145,19 @@ fn write_shortcut(desktop: &Path, target: &Target, name: &str, icon: Option<&Pat
     link.set_name(Some(format!("Play {name}")));
     let icon = icon.map(Path::to_path_buf).unwrap_or_else(|| target.exe.clone());
     link.set_icon_location(Some(icon.to_string_lossy().into()));
-    link.create_lnk(&path).map_err(|e| e.to_string())?;
-    Ok(path)
+    link.create_lnk(path).map_err(|e| e.to_string())
 }
 
+/// Writes a desktop shortcut at `path`, over one that's there.
 #[cfg(not(windows))]
-fn write_shortcut(desktop: &Path, target: &Target, name: &str, icon: Option<&Path>) -> Result<PathBuf, String> {
-    let path = desktop.join(format!("{}.desktop", file_name(name)));
-    std::fs::write(&path, desktop_entry(target, name, icon)).map_err(|e| e.to_string())?;
+pub fn write_at(path: &Path, target: &Target, name: &str, icon: Option<&Path>) -> Result<(), String> {
+    std::fs::write(path, desktop_entry(target, name, icon)).map_err(|e| e.to_string())?;
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt;
-        let _ = std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o755));
+        let _ = std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o755));
     }
-    Ok(path)
+    Ok(())
 }
 
 /// A freedesktop.org launcher file.

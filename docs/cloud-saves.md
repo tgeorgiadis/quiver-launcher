@@ -75,6 +75,26 @@ none of them, and Game Mode doesn't show it at all.
   with `--upload-saves`, which backs up the saves once the game has closed, sends them and quits. Offline, the backup
   waits on the computer, and the next start of the app sends it.
 
+**Shortcuts made before this** named the game itself, so their saves didn't sync. As Quiver starts, it changes those
+it can tell are its own and an installed app's (`apps/launcher/src-tauri/src/shortcut_upgrade.rs`), with no question
+asked:
+
+- **Desktop shortcuts:** the `.lnk` (Windows) or `.desktop` (Linux) on the desktop under the name Quiver gives the
+  app's, that says "Play <name>" and points into the app's folder or at its program. It's rewritten in place, keeping
+  its icon. One the player renamed or moved isn't found.
+- **Steam shortcuts:** those in `shortcuts.vdf` tagged `QuiverLauncher`, or added from one of Quiver's launchers in
+  `data/steam` (on Linux Steam's own add doesn't tag them). One goes to its app by that launcher, or else by its program,
+  folder or launch options naming the app's folder or program; one Quiver can't tie to a single installed app is left.
+  It keeps its app id, so its artwork, collections and play time stay, and its name; launch options the player added
+  after Quiver's are passed on to the game, and on Linux a Proton Steam had for it is taken away, since it runs Quiver
+  now. The write goes through Add to Steam's guarded one (a backup beside the file, and never fewer shortcuts). Steam
+  rewrites the file as it closes and its own add can't change a shortcut, so while Steam is open a waiting copy of
+  Quiver makes the change once it closes. On Linux the launcher's files change at once, so an old shortcut that ran its
+  script starts through Quiver straight away. Add to Steam for an app whose shortcut is old changes it the same way.
+
+What's changed is worked out from the files each start, so it happens once in effect: a changed shortcut starts
+through Quiver and isn't found again. Each change is noted in `quiver.log` ("shortcuts: …").
+
 A Quiver a shortcut started quits once the saves are sent, unless the player opened its window. Each step is noted in
 `quiver.log` ("shortcut: …"). Quiver listens for
 shortcuts on 127.0.0.1, at a port written to `shortcuts.json` in its data folder with a token only the player's own

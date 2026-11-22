@@ -15,6 +15,7 @@ import { VersionsDialog, PanelFormHead, ProjectDetails, Readme, ReleasesTab, Rep
 import { UpdateBanner, useUpdateCheck } from "./update";
 import { useAnnouncementsCheck } from "./announcements";
 import { AnnouncementBanner, AnnouncementsButton, AnnouncementsDialog, useTidyDismissals } from "./announcements-ui";
+import { useShortcutUpgrade } from "./shortcut-upgrade";
 import { LaunchOptionsButton, outsideFolder } from "./launch-options";
 import { AddFilesButton, AddFilesDialogBody } from "./app-files";
 import { versionLabel, wayOffLabel } from "./versions";
@@ -91,6 +92,7 @@ export function App() {
   const setTv = (on: boolean) => setSettings({ ...settings, tvMode: on ? "on" : "off" });
   useAnnouncementsCheck(client);
   useTidyDismissals();
+  useShortcutUpgrade();
   // A new player starts in the catalog; everyone else in their library.
   const [tab, setTab] = useState<Tab>(library.length ? "library" : "browse");
   // Pages opened from the list, each over the one before: Back goes down one.
