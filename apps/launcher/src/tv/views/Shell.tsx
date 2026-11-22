@@ -221,7 +221,8 @@ export function Shell() {
           />
         )}
       </main>
-      {search && (grid || tab.kind === "discover") && (
+      {/* Discover says what was searched for with what its filters picked (its own top right). */}
+      {search && grid && (
         <button type="button" className="tv-search-chip" onClick={() => setSearch("")} aria-label={t`Clear the search`}>
           <Search aria-hidden="true" />“{search}”<span>✕</span>
         </button>

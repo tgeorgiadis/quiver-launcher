@@ -8,7 +8,7 @@
  * downloads it in one press. Pages load as focus nears the end.
  */
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Search } from "lucide-react";
 import type { Entry, Sort } from "@quiverlauncher/api";
 import { useLauncher } from "../../store";
 import { useGameYears } from "../../game-years";
@@ -320,6 +320,11 @@ export function Discover({ state, memory, focused, onFocus, onGlobal, back, onDe
     <div className="tv-discover">
       <GameHeader app={zone === "grid" ? focused : null} consoleName={focused && zone === "grid" ? consoleName(focused) : ""} />
       <div className="tv-filter-summary" aria-label={filterName()}>
+        {search && (
+          <span className="searched">
+            <Search aria-hidden="true" />“{search}”
+          </span>
+        )}
         {picks.map((pick) => (
           <span key={pick}>{pick}</span>
         ))}

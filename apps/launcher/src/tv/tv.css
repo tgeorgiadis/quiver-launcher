@@ -66,7 +66,8 @@ html[data-navigating] .tv-picker-layer :focus {
   visibility: hidden;
 }
 
-.tv-root > :not(.tv-backdrop, .tv-overlay, .tv-dialog-backdrop, .tv-debug, .tv-notices) {
+/* Not what lies over the page (the keyboard, the search's pill): a place of its own in the page's rows squeezed the rest. */
+.tv-root > :not(.tv-backdrop, .tv-overlay, .tv-dialog-backdrop, .tv-osk-backdrop, .tv-search-chip, .tv-debug, .tv-notices) {
   position: relative;
   z-index: 1;
 }
@@ -991,6 +992,19 @@ html[data-navigating] .tv-picker-layer :focus {
   gap: calc(var(--u) * 6);
   max-width: 44%;
   pointer-events: none;
+}
+.tv-filter-summary .searched {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(var(--u) * 6);
+  border-color: #38bdf866;
+  background: #0b1018cc;
+  color: #e0f2fe;
+}
+.tv-filter-summary .searched svg {
+  width: calc(var(--u) * 13);
+  height: calc(var(--u) * 13);
+  color: var(--tv-accent);
 }
 .tv-filter-summary span {
   padding: calc(var(--u) * 4) calc(var(--u) * 11);
