@@ -13,8 +13,9 @@
 //!
 //! Steam's Stop (Windows) and Exit Game (Linux) end the helper and the game without warning on Windows, and two
 //! seconds after a SIGTERM on Linux. So:
-//! - On Windows, a Quiver the helper starts runs outside Steam's processes (it breaks away from Steam's job), and a
-//!   dropped connection counts as the game closing.
+//! - On Windows, Steam's Stop ends the program it started and every process whose parent leads back to it (no job:
+//!   tested). So a Quiver the helper starts is started by a middleman (`--shortcut-hop`) that exits at once, leaving
+//!   it no living parent to be found by; a dropped connection counts as the game closing.
 //! - On Linux, it runs inside them, where Game Mode shows its window for the question about which saves to keep. On
 //!   SIGTERM the helper, which is already waiting on the game, starts a Quiver outside Steam's processes
 //!   (`--upload-saves`, by systemd-run, or `flatpak run` on the host) that backs the saves up once the game has
@@ -39,6 +40,8 @@ use tauri::{AppHandle, Emitter, Manager};
 pub const LAUNCH: &str = "--launch";
 /// Quiver started by a shortcut: no window, and it quits once the game's saves are sent.
 pub const HOST: &str = "--shortcut-host";
+/// The middleman a shortcut starts its Quiver through on Windows, which starts it and exits at once (start_host).
+pub const HOP: &str = "--shortcut-hop";
 /// Quiver started to send an app's saves after Steam stopped the game: `--upload-saves <app id> [seconds played]`, the
 /// seconds when this session's play time is still to count.
 pub const UPLOAD: &str = "--upload-saves";
@@ -536,30 +539,46 @@ fn outside_steam(args: &[&str]) -> Option<Command> {
     Some(command)
 }
 
-/// Starts a Quiver with no window to answer a shortcut. On Windows it breaks away from Steam's job, so Steam's Stop
-/// doesn't end it before the saves are sent; on Linux it stays among Steam's processes (see the top of this file), and
-/// the returned process is waited for.
+/// Starts this Quiver with `args` and no console, outside a job if it can be (none of Steam's is, tested, but a job
+/// that's there may refuse it).
+#[cfg(windows)]
+fn spawn_detached(args: &[&str]) -> std::io::Result<std::process::Child> {
+    use std::os::windows::process::CommandExt;
+    const BREAKAWAY: u32 = 0x0100_0000; // CREATE_BREAKAWAY_FROM_JOB
+    const DETACHED: u32 = 0x0000_0008; // DETACHED_PROCESS
+    let mut command = quiver(args);
+    command.stdin(std::process::Stdio::null()).stdout(std::process::Stdio::null()).stderr(std::process::Stdio::null());
+    command.creation_flags(BREAKAWAY | DETACHED);
+    command.spawn().or_else(|_| {
+        command.creation_flags(DETACHED);
+        command.spawn()
+    })
+}
+
+/// The middleman (`--shortcut-hop`): starts the Quiver a shortcut needs and exits at once, so that Quiver's parent is
+/// gone and Steam's Stop, which ends what its program started, doesn't find it.
+pub fn hop() -> i32 {
+    #[cfg(windows)]
+    return spawn_detached(&[HOST]).map_or(1, |_| 0);
+    #[allow(unreachable_code)]
+    1
+}
+
+/// Starts a Quiver with no window to answer a shortcut. On Windows through the middleman, so Steam's Stop doesn't end
+/// it before the saves are sent; on Linux it stays among Steam's processes (see the top of this file), and the returned
+/// process is waited for.
 fn start_host() -> std::io::Result<Option<std::process::Child>> {
+    #[cfg(windows)]
+    {
+        let status = spawn_detached(&[HOP])?.wait()?;
+        return if status.success() { Ok(None) } else { Err(std::io::Error::other("the middleman couldn't start it")) };
+    }
+    #[allow(unreachable_code)]
     let mut command = quiver(&[HOST]);
     command.stdin(std::process::Stdio::null()).stdout(std::process::Stdio::null()).stderr(std::process::Stdio::null());
     // An AppImage's runtime lets go of its mount as soon as Quiver closes, rather than keeping Steam's shortcut
     // "running" for seconds after (scripts/tauri-cef.sh puts this in the AppImage too).
     command.env("REUSE_CHECK_DELAY", "0");
-    #[cfg(windows)]
-    {
-        use std::os::windows::process::CommandExt;
-        const BREAKAWAY: u32 = 0x0100_0000; // CREATE_BREAKAWAY_FROM_JOB
-        const DETACHED: u32 = 0x0000_0008; // DETACHED_PROCESS
-        command.creation_flags(BREAKAWAY | DETACHED);
-        // A job that doesn't allow breaking away refuses it: started inside, the saves are still backed up next time.
-        return match command.spawn() {
-            Ok(_) => Ok(None),
-            Err(_) => {
-                command.creation_flags(DETACHED);
-                command.spawn().map(|_| None)
-            }
-        };
-    }
     #[cfg(target_os = "linux")]
     {
         return command.spawn().map(Some);

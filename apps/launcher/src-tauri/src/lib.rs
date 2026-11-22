@@ -2111,7 +2111,8 @@ fn append_log(path: &Path, line: &str) {
     use std::io::Write;
     let stamp = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0);
     if let Ok(mut file) = std::fs::OpenOptions::new().create(true).append(true).open(path) {
-        let _ = writeln!(file, "{stamp} {line}");
+        // In one write, so lines from Quiver and a shortcut's helper at once don't run into each other.
+        let _ = file.write_all(format!("{stamp} {line}\n").as_bytes());
     }
 }
 
@@ -2377,6 +2378,11 @@ pub fn run() {
     // Quivers it starts get too.
     if let Some(data) = shortcut_play::data_arg(&args) {
         std::env::set_var("QUIVER_DATA", data);
+    }
+    // The middleman a shortcut starts its Quiver through on Windows (shortcut_play.rs).
+    #[cfg(desktop)]
+    if args.iter().any(|a| a == shortcut_play::HOP) {
+        std::process::exit(shortcut_play::hop());
     }
     // A shortcut starting a game through Quiver: no window, and none of the launcher (shortcut_play.rs).
     #[cfg(desktop)]
