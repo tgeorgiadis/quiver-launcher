@@ -489,6 +489,24 @@ fn quiver(args: &[&str]) -> Command {
     command
 }
 
+/// What a Quiver started outside Steam's processes needs of the session: its display, its bus, and what says it's
+/// Game Mode (keyboard::game_mode) and a Steam Deck.
+#[cfg(target_os = "linux")]
+const SESSION: &[&str] = &[
+    "DISPLAY",
+    "WAYLAND_DISPLAY",
+    "XAUTHORITY",
+    "XDG_RUNTIME_DIR",
+    "DBUS_SESSION_BUS_ADDRESS",
+    "XDG_SESSION_TYPE",
+    "XDG_CURRENT_DESKTOP",
+    "XDG_SESSION_DESKTOP",
+    "GAMESCOPE_WAYLAND_DISPLAY",
+    "SteamDeck",
+    "LANG",
+    "LC_ALL",
+];
+
 /// Linux: this Quiver, started so it's no part of the processes Steam ends: by systemd for the player's session, or
 /// for the Flatpak, `flatpak run` on the host. None without either.
 #[cfg(target_os = "linux")]
@@ -497,14 +515,24 @@ fn outside_steam(args: &[&str]) -> Option<Command> {
     let data = data_args();
     let args: Vec<&str> = data.iter().map(String::as_str).chain(args.iter().copied()).collect();
     let args = args.as_slice();
-    let owned: Vec<&std::ffi::OsStr> = args.iter().map(std::ffi::OsStr::new).collect();
-    if let Some(relaunch) = crate::sandbox::relaunch(&owned) {
-        return Some(relaunch);
+    // Nor the session's display: without it, it can't open even the window it keeps hidden. Nor what says it's Game
+    // Mode. Not what Steam set for the game, though: it's no part of it.
+    let session: Vec<&str> = SESSION.iter().copied().filter(|name| std::env::var_os(name).is_some()).collect();
+    if let Some(flatpak) = crate::sandbox::id() {
+        let mut command = Command::new("flatpak");
+        command.arg("run").arg(flatpak).args(args);
+        for name in &session {
+            command.env(name, std::env::var_os(name).unwrap_or_default());
+        }
+        return Some(crate::sandbox::host(command));
     }
     let systemd = crate::sandbox::which("systemd-run")?;
     let inner = quiver(args);
     let mut command = crate::host::command(systemd);
-    command.args(["--user", "--collect", "--quiet"]).arg(inner.get_program()).args(inner.get_args());
+    command.args(["--user", "--collect", "--quiet"]);
+    // A name alone: systemd-run takes its value from here.
+    command.args(session.iter().map(|name| format!("--setenv={name}")));
+    command.arg(inner.get_program()).args(inner.get_args());
     Some(command)
 }
 
