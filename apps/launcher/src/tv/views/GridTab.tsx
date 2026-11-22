@@ -7,6 +7,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import { t } from "@lingui/core/macro";
 import { useTv, useInputHandler } from "../context";
+import { glideTarget, glideTo } from "./glide";
 import type { TvApp } from "../bridge";
 import type { InputAction } from "../input/actions";
 import type { ButtonHint } from "../input/router";
@@ -105,12 +106,13 @@ export function GridTab({ tabId, apps, memory, onFocus, onGlobal, back, onDetail
     const top = m.padY + row * m.rowH;
     const minTop = top + m.tileH + m.rowH - height; // a row below shows
     const maxTop = top - m.rowH; // a row above shows
-    let target = el.scrollTop;
+    // From where it's heading, not where it is: it may still be on its way to the last row.
+    let target = glideTarget(el);
     if (minTop > maxTop) target = top - (height - m.tileH) / 2;
     else if (target > maxTop) target = maxTop;
     else if (target < minTop) target = minTop;
     target = Math.max(0, target);
-    if (Math.abs(target - el.scrollTop) > 1) el.scrollTo({ top: target, behavior: settings.reduceMotion ? "auto" : "smooth" });
+    glideTo(el, target, settings.reduceMotion);
   }, [row, height, m.rowH, m.tileH, m.padY, settings.reduceMotion]);
 
   const rows = Math.ceil(apps.length / m.columns);

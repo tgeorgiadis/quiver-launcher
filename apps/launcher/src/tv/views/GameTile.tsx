@@ -7,6 +7,7 @@ import { memo, useState } from "react";
 import { AlertTriangle, ArrowUp, CheckCircle2, Download, Loader2 } from "lucide-react";
 import { t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
+import { SourcedImage, cardSources } from "@quiverlauncher/ui";
 import type { TvApp } from "../bridge";
 import { useIconColors } from "../art/useIconColors";
 
@@ -62,7 +63,8 @@ export const GameTile = memo(function GameTile({ app, focused, x, y, w, h, index
       style={{ left: x, top: y, width: w, height: h }}
     >
       <div className="tv-tile-inner">
-        {art ? <img className="tv-tile-art" src={art} alt="" loading="lazy" decoding="async" draggable={false} onError={() => setFailed(art)} /> : <FallbackArt app={app} />}
+        {/* A copy about the tile's size (the site's resizer, as the desktop's cards ask for it), not the 600×900 original. */}
+        {art ? <SourcedImage key={art} className="tv-tile-art" sources={cardSources(art, `${Math.round(w)}px`)} alt="" onFail={() => setFailed(art)} /> : <FallbackArt app={app} />}
         {(focused || !art) && (
           <div className="tv-tile-scrim">
             <span>{app.title}</span>

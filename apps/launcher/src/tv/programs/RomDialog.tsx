@@ -106,7 +106,7 @@ function Frame({ rom, glyphs }: { rom: NonNullable<ReturnType<typeof useRom>>; g
           {error && <p className="tv-error">{error}</p>}
           <div className="tv-dialog-buttons">
             {buttons.map((b) => (
-              <button key={b.action} type="button" className={b.action === "accept" ? "primary" : ""} onClick={b.run}>
+              <button key={b.action} type="button" className={b.action === "accept" ? "tv-primary" : ""} onClick={b.run}>
                 {glyphs && <Glyph action={b.action} size={22} />}
                 {b.label}
               </button>

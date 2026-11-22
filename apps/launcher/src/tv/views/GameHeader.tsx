@@ -1,11 +1,11 @@
-/** The focused game: its logo (or name) and chips for its console, version and state; and its art behind everything. */
+/** The focused game: its name and chips for its console, version and state on one line; and its art behind everything. */
 import { useEffect, useState } from "react";
 import { AlertTriangle, ArrowUpCircle, Clock, Download, Gamepad2 } from "lucide-react";
 import { t } from "@lingui/core/macro";
 import { i18n } from "@quiverlauncher/i18n";
+import { SourcedImage, blurSource, cardSources } from "@quiverlauncher/ui";
 import type { TvApp } from "../bridge";
 import { versionLabel } from "../../versions";
-import { useFitted } from "../art/fitted";
 
 /** When a game was played last, in the language shown: "today", "3 days ago", "last month". */
 export function playedWhen(at: number, now = Date.now()) {
@@ -27,11 +27,9 @@ export function playedLabel(at: number, now = Date.now()) {
 export function GameLogo({ app, className = "" }: { app: TvApp; className?: string }) {
   const [failed, setFailed] = useState<string | null>(null);
   const logo = app.art.logo && failed !== app.art.logo ? app.art.logo : null;
-  // An oversized logo is shown from its smaller copy (art/fitted.ts); nothing until its size is known.
-  const src = useFitted(logo);
-  if (logo && !src) return null;
-  return logo && src ? (
-    <img className={`tv-logo ${className}`} src={src} alt={app.title} onError={() => setFailed(logo)} />
+  // A copy no wider than it shows (the site's resizer): a logo can be 18106 × 4509, which lagged drawn from full size.
+  return logo ? (
+    <SourcedImage key={logo} className={`tv-logo ${className}`} sources={cardSources(logo, "40vw")} alt={app.title} priority onFail={() => setFailed(logo)} />
   ) : (
     <h1 className={`tv-title ${className}`}>{app.title}</h1>
   );
@@ -65,7 +63,7 @@ export function GameChips({ app, consoleName }: { app: TvApp; consoleName: strin
       {app.state === "error" && (
         <span className="tv-chip danger">
           <AlertTriangle aria-hidden="true" />
-          {app.installedVersion ? t({ message: "Didn't start", comment: "A game's launch failed" }) : t`Download failed`}
+          {!app.installedVersion ? t`Download failed` : app.downloadFailed ? t({ message: "Update failed", comment: "A game's update didn't install; the version it had is still there" }) : t({ message: "Didn't start", comment: "A game's launch failed" })}
         </span>
       )}
       {app.lastPlayed ? (
@@ -83,8 +81,8 @@ export function GameHeader({ app, consoleName }: { app: TvApp | null; consoleNam
   return (
     <header className="tv-header">
       {app && (
-        <div className="tv-header-inner" key={app.id}>
-          <GameLogo app={app} />
+        <div className="tv-header-inner">
+          <h1 className="tv-header-title">{app.title}</h1>
           <GameChips app={app} consoleName={consoleName} />
         </div>
       )}
@@ -92,18 +90,30 @@ export function GameHeader({ app, consoleName }: { app: TvApp | null; consoleNam
   );
 }
 
-/** The focused game's hero, blurred, crossfading (250 ms) from the last one. */
+/** How long the focus rests on a game before the backdrop takes its colours: moving across a row changes nothing until it stops. */
+const SETTLE_MS = 350;
+
+/** The focused game's hero, blurred and dim, crossfading slowly from the last one once the focus has settled. */
 export function Backdrop({ app }: { app: TvApp | null }) {
   const url = app ? (app.art.hero ?? app.art.capsule ?? null) : null;
   const [layers, setLayers] = useState<string[]>([]);
+  const [shown, setShown] = useState<string | null>(null);
   useEffect(() => {
     if (!url) return;
-    setLayers((l) => (l.at(-1) === url ? l : [...l.slice(-1), url]));
-  }, [url]);
+    const show = () => {
+      setLayers((l) => (l.at(-1) === url ? l : [...l.slice(-1), url]));
+      setShown(url);
+    };
+    // The first one has nothing to switch from.
+    if (shown === null) return show();
+    const timer = setTimeout(show, SETTLE_MS);
+    return () => clearTimeout(timer);
+  }, [url, shown === null]);
+  // A small copy: no more detail than the blur leaves.
   return (
     <div className="tv-backdrop" aria-hidden="true">
       {layers.map((src) => (
-        <img key={src} src={src} alt="" className={src === url ? "shown" : ""} decoding="async" />
+        <img key={src} src={blurSource(src)} alt="" className={src === shown ? "shown" : ""} decoding="async" />
       ))}
     </div>
   );

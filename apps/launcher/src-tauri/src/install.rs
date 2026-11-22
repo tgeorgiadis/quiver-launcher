@@ -202,6 +202,8 @@ pub async fn install(
         // A download that's a Windows setup program is run, not kept as the app: it installs the app itself.
         let installer = tokio::task::spawn_blocking(move || -> Result<Option<(PathBuf, crate::setup::Kind)>, String> {
             extract(&file, &filename, &unpacked)?;
+            // An app's only: a mod that is one archive (mods.rs) stays as its game wants it.
+            unpack_inner(&unpacked)?;
             flatten(&unpacked).map_err(text)?;
             drop_records(&unpacked);
             Ok(if cfg!(windows) { crate::setup::installer_in(&unpacked) } else { None })
@@ -488,7 +490,6 @@ fn named_for_contents(name: &str, file: &Path) -> Option<String> {
 
 pub(crate) fn extract(file: &Path, name: &str, out: &Path) -> Result<(), String> {
     unpack(file, name, out)?;
-    unpack_inner(out)?;
     #[cfg(unix)]
     open_up(out);
     Ok(())
@@ -1745,6 +1746,7 @@ mod tests {
         fs::write(&file, zip).unwrap();
         let out = dir.path().join("Game");
         extract(&file, "artifact.zip", &out).unwrap();
+        unpack_inner(&out).unwrap();
         flatten(&out).unwrap();
         assert!(out.join("game.x86_64").is_file());
         assert!(!out.join("Game-linux.tar.gz").exists() && !dir.path().join("Game.inner").exists());

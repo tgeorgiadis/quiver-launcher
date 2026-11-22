@@ -604,6 +604,10 @@ msgstr "{name} didn't install"
 msgid "{name} didn't start"
 msgstr "{name} didn't start"
 
+#: ../../apps/launcher/src/tv/views/Notices.tsx
+msgid "{name} didn't update"
+msgstr "{name} didn't update"
+
 #: ../../apps/launcher/src/library-view.tsx
 msgid "{name} icon"
 msgstr "{name} icon"
@@ -7943,7 +7947,9 @@ msgstr "Update early…"
 msgid "Update every game with one press, then play the newest versions."
 msgstr "Update every game with one press, then play the newest versions."
 
+#. A game's update didn't install; the version it had is still there
 #: ../../apps/launcher/src/tv/updates/PlayFlow.tsx
+#: ../../apps/launcher/src/tv/views/GameHeader.tsx
 msgid "Update failed"
 msgstr "Update failed"
 

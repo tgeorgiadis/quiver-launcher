@@ -19,11 +19,24 @@ export function decide(app: Pick<TvApp, "state" | "updates">, behavior: UpdateBe
   return "ask";
 }
 
-/** The first lines of release notes worth showing in the prompt: no headings' #, bullets or blank lines. */
+/**
+ * The first lines of release notes worth showing in the prompt, as plain text: no headings' #, bullets or blank lines,
+ * no pictures, HTML tags or bare links (GitHub's notes are full of them), and a link as its words.
+ */
 export function noteLines(notes: string | undefined, max = 6): string[] {
   return (notes ?? "")
+    .replace(/<!--[\s\S]*?-->/g, "")
+    .replace(/<[^>\n]*(?:\n[^>\n]*){0,3}>/g, "")
     .split(/\r?\n/)
-    .map((l) => l.replace(/^\s*(#{1,6}\s+|[-*+]\s+|\d+\.\s+)/, "").replace(/\*\*|__|`/g, "").trim())
-    .filter(Boolean)
+    .map((l) =>
+      l
+        .replace(/!\[[^\]]*\]\([^)]*\)/g, "")
+        .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
+        .replace(/^\s*(#{1,6}\s+|[-*+]\s+|\d+\.\s+|>\s*)/, "")
+        .replace(/\*\*|__|`/g, "")
+        .replace(/https?:\/\/\S+/g, "")
+        .trim(),
+    )
+    .filter((l) => /[\p{L}\p{N}]/u.test(l))
     .slice(0, max);
 }

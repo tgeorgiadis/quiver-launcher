@@ -605,6 +605,10 @@ msgstr "{name} 설치 실패"
 msgid "{name} didn't start"
 msgstr "{name} 실행 실패"
 
+#: ../../apps/launcher/src/tv/views/Notices.tsx
+msgid "{name} didn't update"
+msgstr ""
+
 #: ../../apps/launcher/src/library-view.tsx
 msgid "{name} icon"
 msgstr "{name} 아이콘"
@@ -7944,7 +7948,9 @@ msgstr "미리 업데이트…"
 msgid "Update every game with one press, then play the newest versions."
 msgstr "한 번 눌러 모든 게임을 업데이트하고 최신 버전으로 플레이하세요."
 
+#. A game's update didn't install; the version it had is still there
 #: ../../apps/launcher/src/tv/updates/PlayFlow.tsx
+#: ../../apps/launcher/src/tv/views/GameHeader.tsx
 msgid "Update failed"
 msgstr "업데이트 실패"
 

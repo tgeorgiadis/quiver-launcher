@@ -605,6 +605,10 @@ msgstr "Installazione di {name} non riuscita"
 msgid "{name} didn't start"
 msgstr "Avvio di {name} non riuscito"
 
+#: ../../apps/launcher/src/tv/views/Notices.tsx
+msgid "{name} didn't update"
+msgstr ""
+
 #: ../../apps/launcher/src/library-view.tsx
 msgid "{name} icon"
 msgstr "Icona di {name}"
@@ -7944,7 +7948,9 @@ msgstr "Aggiorna in anticipo…"
 msgid "Update every game with one press, then play the newest versions."
 msgstr "Aggiorna tutti i giochi con una sola pressione, poi gioca alle versioni più recenti."
 
+#. A game's update didn't install; the version it had is still there
 #: ../../apps/launcher/src/tv/updates/PlayFlow.tsx
+#: ../../apps/launcher/src/tv/views/GameHeader.tsx
 msgid "Update failed"
 msgstr "Aggiornamento non riuscito"
 

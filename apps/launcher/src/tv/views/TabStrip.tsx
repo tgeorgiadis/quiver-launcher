@@ -66,6 +66,8 @@ export function TabStrip({ tabs, selected, onSelect, pop }: { tabs: Tab[]; selec
   const scroller = useRef<HTMLDivElement>(null);
   const [compact, setCompact] = useState(false);
   const [bar, setBar] = useState<{ left: number; width: number } | null>(null);
+  /** Library tabs past the row's edges (more consoles than fit): each side fades to say so. */
+  const [more, setMore] = useState({ left: false, right: false });
   const library = tabs.filter((t) => t.kind !== "discover" && t.kind !== "downloads");
   const end = tabs.filter((t) => t.kind === "discover" || t.kind === "downloads");
   const key = library.map((t) => t.id).join(" ");
@@ -83,6 +85,11 @@ export function TabStrip({ tabs, selected, onSelect, pop }: { tabs: Tab[]; selec
     const frame = nav.current?.getBoundingClientRect();
     const box = tab?.getBoundingClientRect();
     setBar(frame && box ? { left: box.left - frame.left, width: box.width } : null);
+    const el = scroller.current;
+    if (el) {
+      const next = { left: el.scrollLeft > 1, right: el.scrollLeft + el.clientWidth < el.scrollWidth - 1 };
+      setMore((m) => (m.left === next.left && m.right === next.right ? m : next));
+    }
   }, [selected, compact, key, tabs.length]);
 
   return (
@@ -96,7 +103,7 @@ export function TabStrip({ tabs, selected, onSelect, pop }: { tabs: Tab[]; selec
       >
         <Glyph action="tabPrev" />
       </button>
-      <div className="tv-tabs" ref={scroller} role="tablist">
+      <div className={`tv-tabs${more.left ? " more-left" : ""}${more.right ? " more-right" : ""}`} ref={scroller} role="tablist">
         {library.map(tabLabel)}
       </div>
       <div className="tv-tabs-end" role="tablist">

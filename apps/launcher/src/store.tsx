@@ -1405,8 +1405,8 @@ export type Settings = {
   closeComboOff?: boolean;
   /** The buttons that close it, as gamepad.rs names them; unset is Start + Select (CLOSE_COMBOS in controls.tsx). */
   closeCombo?: string[];
-  /** Linux: holding Select while a game runs doesn't make the right stick a mouse pointer (src-tauri/src/tv/pointer.rs). */
-  selectPointerOff?: boolean;
+  /** Linux: holding Select while a game runs makes the right stick a mouse pointer (src-tauri/src/tv/pointer.rs); off unless turned on, as games use Select themselves. */
+  selectPointer?: boolean;
   /** The library in sections by original console: what groupBy "console" was before there were other sections. */
   byConsole?: boolean;
   /** The library in sections (group.ts); unset is one piece. */
@@ -1874,8 +1874,8 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
   // Start + Select, or the buttons the player chose, close the game being played (gamepad.rs), unless they turned it off.
   const closeCombo = settings.closeCombo?.join("+");
   useEffect(() => void native.closeCombo(!settings.closeComboOff, closeCombo?.split("+")).catch(() => {}), [settings.closeComboOff, closeCombo]);
-  // On Linux, Select is a mouse pointer during a game (gamepad.rs), unless the player turned it off.
-  useEffect(() => void native.selectPointer(!settings.selectPointerOff).catch(() => {}), [settings.selectPointerOff]);
+  // On Linux, Select is a mouse pointer during a game (gamepad.rs), once the player turned it on.
+  useEffect(() => void native.selectPointer(Boolean(settings.selectPointer)).catch(() => {}), [settings.selectPointer]);
   const tv = tvModeOn(settings, config);
   // Again as the window changes: TV mode's going full screen, or the launcher moving to another screen.
   useEffect(() => {

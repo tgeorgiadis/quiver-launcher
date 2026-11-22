@@ -9,10 +9,12 @@ import { AlertTriangle, CheckCircle2, Clock, Download, RefreshCw } from "lucide-
 import { plural, t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import { useTv, useInputHandler } from "../context";
+import { SourcedImage, cardSources } from "@quiverlauncher/ui";
 import type { TvApp } from "../bridge";
 import type { InputAction } from "../input/actions";
 import type { ButtonHint } from "../input/router";
 import { versionLabel } from "../../versions";
+import { glideIntoView } from "./glide";
 import { CANCEL_HOLD_MS, HINT, useTileActions, type Back } from "./tileActions";
 import { downloadRows, type DownloadRow } from "./lists";
 
@@ -66,7 +68,7 @@ export function Downloads({ onFocus, onGlobal, back, onDetails }: Props) {
   useEffect(() => onFocus(app), [app, onFocus]);
   const list = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    list.current?.querySelector(".tv-dl-row.focused")?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    if (list.current) glideIntoView(list.current, list.current.querySelector(".tv-dl-row.focused"));
   }, [index]);
 
   const move = (to: number) => rows[to] && setFocusKey(keyOf(rows[to]));
@@ -131,7 +133,7 @@ export function Downloads({ onFocus, onGlobal, back, onDetails }: Props) {
         const Icon = r.status === "done" ? CheckCircle2 : r.status === "failed" ? AlertTriangle : r.status === "queued" ? Clock : Download;
         return (
           <div key={r.app.id} className={`tv-dl-row ${r.status}${focused ? " focused" : ""}`} onMouseMove={() => move(i)} onClick={click}>
-            {r.app.art.capsule ? <img className="tv-dl-art" src={r.app.art.capsule} alt="" /> : <span className="tv-dl-art" />}
+            {r.app.art.capsule ? <SourcedImage key={r.app.art.capsule} className="tv-dl-art" sources={cardSources(r.app.art.capsule, "96px")} alt="" onFail={() => {}} /> : <span className="tv-dl-art" />}
             <span className="tv-dl-text">
               <strong>{r.app.title}</strong>
               <span className="tv-dl-status">

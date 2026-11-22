@@ -105,7 +105,7 @@ export function ControlSettings() {
       </label>
       {config.os === "linux" && (
         <label className="toggle">
-          <input type="checkbox" checked={!settings.selectPointerOff} onChange={(e) => setSettings({ ...settings, selectPointerOff: !e.target.checked })} />
+          <input type="checkbox" checked={Boolean(settings.selectPointer)} onChange={(e) => setSettings({ ...settings, selectPointer: e.target.checked || undefined })} />
           <Trans>While a game runs, hold Select for a mouse pointer: the right stick moves it, RT clicks, LT right-clicks, the left stick scrolls</Trans>
         </label>
       )}

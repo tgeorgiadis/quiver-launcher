@@ -6,6 +6,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { ArrowUpCircle, Download, FolderOpen, Gamepad2, History, Play, SquareTerminal, Trash2 } from "lucide-react";
 import type { Release } from "@quiverlauncher/api";
+import { SourcedImage, heroSources } from "@quiverlauncher/ui";
 import { t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import { i18n } from "@quiverlauncher/i18n";
@@ -178,7 +179,7 @@ export function Details({ app: opened, onClose }: { app: TvApp; onClose: () => v
   const hero = app.art.hero ?? app.art.capsule;
   return (
     <section className="tv-overlay tv-details" role="dialog" aria-label={app.title}>
-      {hero && <img className="tv-details-hero" src={hero} alt="" />}
+      {hero && <SourcedImage key={hero} className="tv-details-hero" sources={heroSources(hero)} alt="" priority onFail={() => {}} />}
       <div className="tv-details-body">
         <GameLogo app={app} className="large" />
         <GameChips app={app} consoleName={consoleName} />
@@ -187,7 +188,7 @@ export function Details({ app: opened, onClose }: { app: TvApp; onClose: () => v
             <button
               key={b.id}
               type="button"
-              className={`tv-details-button${i === at ? " focused" : ""}${b.id === "play" || b.id === "get" ? " primary" : ""}${b.hold ? " danger" : ""}`}
+              className={`tv-details-button${i === at ? " focused" : ""}${b.id === "play" || b.id === "get" ? " tv-primary" : ""}${b.hold ? " danger" : ""}`}
               onMouseMove={() => setIndex(i)}
               onClick={() => !b.hold && b.run()}
               // A held button is held with the mouse too: pressed as long as it's down, as A is.

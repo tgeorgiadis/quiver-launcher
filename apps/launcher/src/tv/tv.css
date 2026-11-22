@@ -63,7 +63,7 @@ html[data-navigating] .tv-picker-layer :focus {
   z-index: 1;
 }
 
-/* The focused game's hero, blurred into the background; crossfades in 250 ms. */
+/* The focused game's hero, blurred into the background as a hint of its colours; crossfades slowly. */
 .tv-backdrop {
   position: absolute;
   inset: 0;
@@ -79,10 +79,10 @@ html[data-navigating] .tv-picker-layer :focus {
   object-fit: cover;
   filter: blur(calc(var(--u) * 40)) saturate(1.3) brightness(0.55);
   opacity: 0;
-  transition: opacity 250ms ease;
+  transition: opacity 900ms ease;
 }
 .tv-backdrop img.shown {
-  opacity: 0.55;
+  opacity: 0.36;
 }
 .tv-backdrop::after {
   content: "";
@@ -119,6 +119,19 @@ html[data-navigating] .tv-picker-layer :focus {
   flex: 0 1 auto;
   min-width: 0;
   overflow: hidden;
+}
+/* More tabs than fit: the side they're past fades out. */
+.tv-tabs.more-right {
+  -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - var(--u) * 56), transparent);
+  mask-image: linear-gradient(90deg, #000 calc(100% - var(--u) * 56), transparent);
+}
+.tv-tabs.more-left {
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 calc(var(--u) * 56));
+  mask-image: linear-gradient(90deg, transparent, #000 calc(var(--u) * 56));
+}
+.tv-tabs.more-left.more-right {
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 calc(var(--u) * 56), #000 calc(100% - var(--u) * 56), transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 calc(var(--u) * 56), #000 calc(100% - var(--u) * 56), transparent);
 }
 .tv-tabs-end {
   flex: none;
@@ -238,11 +251,11 @@ html[data-navigating] .tv-picker-layer :focus {
 }
 .tv-library {
   display: grid;
-  grid-template-rows: calc(var(--u) * 112) minmax(0, 1fr);
+  grid-template-rows: calc(var(--u) * 52) minmax(0, 1fr);
   height: 100%;
 }
 
-/* The focused game's logo and chips */
+/* The focused game's name and chips, on one line */
 .tv-header {
   display: flex;
   flex-direction: column;
@@ -252,9 +265,27 @@ html[data-navigating] .tv-picker-layer :focus {
 }
 .tv-header-inner {
   display: flex;
-  flex-direction: column;
-  gap: calc(var(--u) * 10);
-  animation: tv-rise 220ms var(--tv-ease);
+  align-items: center;
+  gap: calc(var(--u) * 14);
+  min-width: 0;
+  overflow: hidden;
+}
+.tv-header-title {
+  flex: 0 1 auto;
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  font-size: calc(var(--u) * 20);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-shadow: 0 calc(var(--u) * 2) calc(var(--u) * 12) #000a;
+}
+.tv-header .tv-chips {
+  flex: 0 0 auto;
+  flex-wrap: nowrap;
 }
 .tv-logo {
   display: block;
@@ -715,12 +746,13 @@ html[data-navigating] .tv-picker-layer :focus {
 }
 .tv-details {
   display: grid;
-  grid-template-rows: minmax(0, 52%) minmax(0, 1fr);
+  /* Of the window, not a share of the grid: WebKitGTK gave the art the whole page for a 52% row, under the text. */
+  grid-template-rows: 52vh minmax(0, 1fr);
   overflow: hidden;
 }
 .tv-details-hero {
   width: 100%;
-  height: 100%;
+  height: 52vh;
   min-height: 0;
   object-fit: cover;
   -webkit-mask-image: linear-gradient(180deg, #000 55%, transparent);
@@ -764,7 +796,7 @@ html[data-navigating] .tv-picker-layer :focus {
   width: calc(var(--u) * 18);
   height: calc(var(--u) * 18);
 }
-.tv-details-button.primary {
+.tv-details-button.tv-primary {
   background: var(--tv-accent-soft);
   border-color: #38bdf866;
 }
@@ -929,7 +961,7 @@ html[data-navigating] .tv-picker-layer :focus {
 .tv-discover {
   position: relative;
   display: grid;
-  grid-template-rows: calc(var(--u) * 112) calc(var(--u) * 50) minmax(0, 1fr);
+  grid-template-rows: calc(var(--u) * 52) calc(var(--u) * 50) minmax(0, 1fr);
   height: 100%;
 }
 /* Filter: X's picture, its name and what it has picked, apart from the consoles after it. */
@@ -1496,7 +1528,7 @@ html[data-navigating] .tv-picker-layer :focus {
   font-size: calc(var(--u) * 14);
   font-weight: 700;
 }
-.tv-dialog-buttons button.primary {
+.tv-dialog-buttons button.tv-primary {
   border-color: transparent;
   background: #fff;
   color: #0b1018;

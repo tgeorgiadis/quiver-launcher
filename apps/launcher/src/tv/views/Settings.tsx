@@ -292,8 +292,8 @@ export function Settings({ onClose }: { onClose: () => void }) {
             label: t`Mouse pointer with Select`,
             detail: t`While a game runs, hold Select: right stick moves the pointer, RT clicks, LT right-clicks, left stick scrolls`,
             options: onOffOptions,
-            value: !launcher.settings.selectPointerOff,
-            set: (value: unknown) => launcher.setSettings((settings) => ({ ...settings, selectPointerOff: !value })),
+            value: Boolean(launcher.settings.selectPointer),
+            set: (value: unknown) => launcher.setSettings((settings) => ({ ...settings, selectPointer: value ? true : undefined })),
           },
         ]
       : []),

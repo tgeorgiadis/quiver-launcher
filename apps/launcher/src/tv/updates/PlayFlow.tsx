@@ -9,6 +9,7 @@ import { useRef, useState, type ReactNode } from "react";
 import { AlertTriangle, ArrowUpCircle } from "lucide-react";
 import { t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
+import { SourcedImage, heroSources } from "@quiverlauncher/ui";
 import { useTv, useInputHandler } from "../context";
 import type { TvApp } from "../bridge";
 import type { Bridge } from "../useBridge";
@@ -108,7 +109,7 @@ function DialogButtons({ hints, onPress }: { hints: ButtonHint[]; onPress: (acti
   return (
     <div className="tv-dialog-buttons">
       {hints.map((h) => (
-        <button key={h.action} type="button" className={h.action === "accept" ? "primary" : ""} onClick={() => onPress(h.action)}>
+        <button key={h.action} type="button" className={h.action === "accept" ? "tv-primary" : ""} onClick={() => onPress(h.action)}>
           <Glyph action={h.action} size={22} />
           {h.label}
         </button>
@@ -123,7 +124,7 @@ function Dialog({ app, children }: { app: TvApp; children: ReactNode }) {
     <div className="tv-dialog-backdrop" role="dialog" aria-modal="true" aria-label={app.title}>
       <section className="tv-dialog">
         <div className="tv-dialog-banner">
-          {banner && <img src={banner} alt="" />}
+          {banner && <SourcedImage key={banner} sources={heroSources(banner)} alt="" priority onFail={() => {}} />}
           <GameLogo app={app} />
         </div>
         <div className="tv-dialog-body">{children}</div>

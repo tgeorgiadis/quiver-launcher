@@ -144,7 +144,9 @@ function ConsoleFilter({ filter, setFilter, sort, setSort, makers, picked, forms
 
 export function Discover({ state, memory, focused, onFocus, onGlobal, back, onDetails, onDownloads, consoleName, onGot, search: typed, flash: showFlash }: Props) {
   const { bridge, consoles } = useTv();
-  const { client } = useLauncher();
+  const { client, settings: launcherSettings } = useLauncher();
+  // Apps the player hid from Browse (browse-hidden.ts) stay out of Discover too.
+  const hiddenIds = useMemo(() => new Set((launcherSettings.browseHidden ?? []).map((h) => h.id)), [launcherSettings.browseHidden]);
   const [filter, setFilter] = useState(state.filter);
   const [sort, setSort] = useState(state.sort);
   const [makers, setMakers] = useState(state.makers);
@@ -210,7 +212,7 @@ export function Discover({ state, memory, focused, onFocus, onGlobal, back, onDe
     if (filter !== "inLibrary" && !page.entries.length) loadMore();
   }, [filter, key, page.entries.length, loadMore]);
 
-  const catalog = useMemo(() => page.entries.map((e) => bridge.view(e)), [page.entries, bridge]);
+  const catalog = useMemo(() => page.entries.filter((e) => !hiddenIds.has(e.id)).map((e) => bridge.view(e)), [page.entries, bridge, hiddenIds]);
   // Memoized: the grid reports the focused app up on every change of identity, so a new copy each render would loop.
   const listed = useMemo(
     () =>

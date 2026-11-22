@@ -28,7 +28,7 @@ export function Notices() {
       if (was && app.state === "error" && was.get(app.id) !== "error" && romNeed.get()?.id !== app.id) {
         const name = app.title;
         // A crash's message comes from the Rust side (session.rs), in English, so it's known by its start.
-        const title = !app.installedVersion ? t`${name} didn't install` : app.error?.startsWith("It crashed") ? t`${name} crashed` : t`${name} didn't start`;
+        const title = !app.installedVersion ? t`${name} didn't install` : app.downloadFailed ? t`${name} didn't update` : app.error?.startsWith("It crashed") ? t`${name} crashed` : t`${name} didn't start`;
         fresh.push({ key: ++next.current, title, text: app.error ?? "" });
       }
     }

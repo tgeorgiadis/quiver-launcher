@@ -99,8 +99,8 @@ pub fn track(game: Started, dir: Option<PathBuf>, ended: impl FnOnce(Ended) + Se
         .ok();
 }
 
-/// The launcher's setting "Mouse pointer with Select" (tv/pointer.rs, Linux).
-pub static POINTER: AtomicBool = AtomicBool::new(true);
+/// The launcher's setting "Mouse pointer with Select" (tv/pointer.rs, Linux): off until the player turns it on.
+pub static POINTER: AtomicBool = AtomicBool::new(false);
 
 #[tauri::command]
 pub fn select_pointer(on: bool) {

@@ -8,9 +8,11 @@ import { RefreshCw } from "lucide-react";
 import { plural, t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import { useTv, useInputHandler } from "../context";
+import { SourcedImage, heroSources } from "@quiverlauncher/ui";
 import type { TvApp } from "../bridge";
 import type { InputAction } from "../input/actions";
 import { ShelfNavigator } from "../nav/shelf";
+import { glideIntoView } from "./glide";
 import { GameTile } from "./GameTile";
 import { GameChips, GameLogo } from "./GameHeader";
 import { Glyph } from "./Glyph";
@@ -126,7 +128,7 @@ export function Home({ nav, onFocus, onGlobal, onDetails, onDownloads, consoleNa
 
   const list = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
-    list.current?.querySelector(`[data-row="${nav.row}"]`)?.scrollIntoView({ block: "nearest", behavior: settings.reduceMotion ? "auto" : "smooth" });
+    if (list.current) glideIntoView(list.current, list.current.querySelector(`[data-row="${nav.row}"]`), settings.reduceMotion);
   }, [nav.row, settings.reduceMotion]);
 
   useInputHandler({
@@ -156,7 +158,7 @@ export function Home({ nav, onFocus, onGlobal, onDetails, onDownloads, consoleNa
   return (
     <div className="tv-home">
       <section className="tv-home-hero" aria-live="polite">
-        {hero && <img key={hero} className="tv-home-hero-art" src={hero} alt="" decoding="async" />}
+        {hero && <SourcedImage key={hero} className="tv-home-hero-art" sources={heroSources(hero)} alt="" priority onFail={() => {}} />}
         <div className="tv-home-info" key={app?.id ?? "all"}>
           {app ? (
             <>

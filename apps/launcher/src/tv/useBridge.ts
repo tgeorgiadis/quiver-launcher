@@ -65,8 +65,8 @@ export function useBridge() {
     oldApps: launcher.oldLibrary?.apps ?? [],
     /** Brings it over: installed apps stay where they are. Resolves to the names that couldn't come. */
     importOld: () => (launcher.oldLibrary ? launcher.importOld(launcher.oldLibrary) : Promise.resolve([])),
-    /** Uninstalls and removes from the library, as upstream's Remove does. */
-    uninstall: (id: string) => launcher.remove(id),
+    /** Uninstalls: its files go, and it stays in the library to install again, as the desktop's Uninstall does. */
+    uninstall: (id: string) => launcher.uninstall(id),
     releases: (slug: string, limit?: number) => launcher.client.releases(slug, limit),
     discover: (query: AppQuery) => launcher.client.apps({ os: launcher.config.os, ...query }),
   };

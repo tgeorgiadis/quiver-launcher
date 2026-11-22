@@ -27,6 +27,8 @@ export type TvApp = {
   progress: number | null;
   phase?: "downloading" | "installing";
   error?: string;
+  /** The error is a download's or an update's, not a launch's. */
+  downloadFailed?: boolean;
   /** Upstream's per-app update choice: undefined asks. */
   updates?: Install["updates"];
   lastPlayed?: number;
@@ -87,6 +89,7 @@ export function toTvApp(entry: CatalogEntry, input: BridgeInput, item?: LibraryI
     progress,
     phase: job && !("error" in job) ? job.phase : undefined,
     error: job && "error" in job ? job.error : undefined,
+    downloadFailed: Boolean(job && "error" in job && job.download),
     updates: install?.updates,
     lastPlayed: install?.lastPlayed,
     installedAt: install?.installedAt,

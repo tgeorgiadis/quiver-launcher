@@ -27,4 +27,9 @@ describe("noteLines", () => {
     expect(noteLines(notes)).toEqual(["What's new", "Faster loading", "Fixed audio", "Widescreen", "more", "and more"]);
     expect(noteLines(undefined)).toEqual([]);
   });
+
+  it("leaves out pictures, HTML and bare links, and shows a link as its words", () => {
+    const notes = '![shot](https://github.com/user-attachments/assets/a1)\n<a\n href="https://example.com/x.zip">\n<picture>\nDownload\n</a>\n\nSee [the wiki](https://example.com/wiki) for more\nhttps://example.com/full\n---\n> Thanks to **everyone**';
+    expect(noteLines(notes)).toEqual(["Download", "See the wiki for more", "Thanks to everyone"]);
+  });
 });
