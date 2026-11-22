@@ -918,6 +918,10 @@ msgstr "<0>Two library views:</0> List, inspired by Steam, and Grid, with a rang
 msgid "A cover's address follows your account. The other pictures, and any from a file, stay on this computer."
 msgstr "A cover's address follows your account. The other pictures, and any from a file, stay on this computer."
 
+#: ../../apps/launcher/src/app-files.tsx
+msgid "A download that's a setup program stays in the app's folder as it is, and Play starts it, so you install the app yourself."
+msgstr "A download that's a setup program stays in the app's folder as it is, and Play starts it, so you install the app yourself."
+
 #: ../../apps/launcher/src/setup.tsx
 msgid "A few quick questions to get you started. You can change any of these later in Settings."
 msgstr "A few quick questions to get you started. You can change any of these later in Settings."
@@ -5734,6 +5738,10 @@ msgstr "Run installer again"
 msgid "Run setup again"
 msgstr "Run setup again"
 
+#: ../../apps/launcher/src/app-files.tsx
+msgid "Run setup programs for me"
+msgstr "Run setup programs for me"
+
 #: ../../apps/launcher/src/launch-options.tsx
 msgid "Run with"
 msgstr "Run with"
@@ -7641,6 +7649,10 @@ msgstr "What's wrong or missing?"
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "When {name} asks for it, pick this file: {0}"
 msgstr "When {name} asks for it, pick this file: {0}"
+
+#: ../../apps/launcher/src/app-files.tsx
+msgid "When a download is a setup program, Quiver runs it once while installing, and Play starts what it installed."
+msgstr "When a download is a setup program, Quiver runs it once while installing, and Play starts what it installed."
 
 #: ../../apps/launcher/src/own-copy-settings.tsx
 msgid "When an app needs your own copy of a game, like a ROM or a disc image, Quiver looks for it in these folders, and nowhere else."

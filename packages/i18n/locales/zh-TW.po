@@ -919,6 +919,10 @@ msgstr "<0>兩種遊戲庫檢視：</0>受 Steam 啟發的清單，以及格狀�
 msgid "A cover's address follows your account. The other pictures, and any from a file, stay on this computer."
 msgstr "封面圖片的地址與你的帳戶繫結。其他圖片以及從檔案新增的圖片僅儲存在此電腦上。"
 
+#: ../../apps/launcher/src/app-files.tsx
+msgid "A download that's a setup program stays in the app's folder as it is, and Play starts it, so you install the app yourself."
+msgstr "屬於安裝程式的下載會原樣保留在應用程式資料夾中，按「遊玩」會執行它，由你自行安裝應用程式。"
+
 #: ../../apps/launcher/src/setup.tsx
 msgid "A few quick questions to get you started. You can change any of these later in Settings."
 msgstr "先回答幾個簡單問題，幫助你開始使用。之後可以隨時在“設定”中更改這些選項。"
@@ -5735,6 +5739,10 @@ msgstr "再次執行安裝程式"
 msgid "Run setup again"
 msgstr "再次執行設定程式"
 
+#: ../../apps/launcher/src/app-files.tsx
+msgid "Run setup programs for me"
+msgstr "替我執行安裝程式"
+
 #: ../../apps/launcher/src/launch-options.tsx
 msgid "Run with"
 msgstr "使用以下方式執行"
@@ -7642,6 +7650,10 @@ msgstr "有什麼問題或缺少什麼？"
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "When {name} asks for it, pick this file: {0}"
 msgstr "當 {name} 提示你提供檔案時，請選擇此檔案：{0}"
+
+#: ../../apps/launcher/src/app-files.tsx
+msgid "When a download is a setup program, Quiver runs it once while installing, and Play starts what it installed."
+msgstr "下載的是安裝程式時，Quiver 會在安裝過程中執行一次，「遊玩」則啟動它安裝的程式。"
 
 #: ../../apps/launcher/src/own-copy-settings.tsx
 msgid "When an app needs your own copy of a game, like a ROM or a disc image, Quiver looks for it in these folders, and nowhere else."

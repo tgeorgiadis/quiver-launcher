@@ -50,6 +50,14 @@ pub struct InstallRequest {
     /// a public repository's file still downloads that way, as it did before the token was saved.
     #[serde(default)]
     pub fallback_url: Option<String>,
+    /// A download that's a Windows setup program is run while it installs (setup.rs). False (the player turned it off
+    /// in Settings), it's kept in the app's folder as any other file, and Play starts it.
+    #[serde(default = "yes")]
+    pub run_setup: bool,
+}
+
+fn yes() -> bool {
+    true
 }
 
 #[derive(Serialize)]
@@ -199,12 +207,14 @@ pub async fn install(
         let out = staging.join("out");
         let dir = target.clone();
         let unpacked = out.clone();
-        // A download that's a Windows setup program is run, not kept as the app: it installs the app itself.
+        let run_setup = req.run_setup;
+        // A download that's a Windows setup program is run, not kept as the app: it installs the app itself. Unless the
+        // player turned that off: then it's kept, as any other file.
         let installer = tokio::task::spawn_blocking(move || -> Result<Option<(PathBuf, crate::setup::Kind)>, String> {
             extract(&file, &filename, &unpacked)?;
             flatten(&unpacked).map_err(text)?;
             drop_records(&unpacked);
-            Ok(if cfg!(windows) { crate::setup::installer_in(&unpacked) } else { None })
+            Ok(if cfg!(windows) && run_setup { crate::setup::installer_in(&unpacked) } else { None })
         })
         .await
         .map_err(text)??;
@@ -1082,6 +1092,16 @@ mod tests {
         (port, heard)
     }
 
+    #[test]
+    fn setup_programs_run_unless_the_player_turned_that_off() {
+        let base = serde_json::json!({ "id": "a", "url": "u", "filename": "f.zip", "folder": "a", "filesToAdd": [], "version": "1" });
+        let req: InstallRequest = serde_json::from_value(base.clone()).unwrap();
+        assert!(req.run_setup, "run when the launcher doesn't say");
+        let mut off = base;
+        off["runSetup"] = false.into();
+        assert!(!serde_json::from_value::<InstallRequest>(off).unwrap().run_setup);
+    }
+
     fn fetch(url: String, github_token: Option<&str>, fallback_url: Option<String>) -> Result<String, String> {
         let req = InstallRequest {
             id: "github:quiver/private".into(),
@@ -1097,6 +1117,7 @@ mod tests {
             program: None,
             github_token: github_token.map(Into::into),
             fallback_url,
+            run_setup: true,
         };
         let dir = tempfile::tempdir().unwrap();
         tauri::async_runtime::block_on(download(&req, &dir.path().join("game.zip"), &|_| {}))

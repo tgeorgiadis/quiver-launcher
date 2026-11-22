@@ -1389,6 +1389,11 @@ export type Settings = {
   language?: Language;
   /** New installs get `portable.txt` in their folder, beside what the catalog asks for. */
   portableByDefault?: boolean;
+  /**
+   * A download that's a Windows setup program is kept in the app's folder as a file, for the player to run, instead of
+   * Quiver running it while it installs. An app its setup already installed still updates through its setup. Unset: run.
+   */
+  keepSetupPrograms?: boolean;
   /** Every new install asks where it goes first (Install to…), whichever button started it. */
   askWhereToInstall?: boolean;
   /** New installs go in a folder for their console inside the apps folder (`groupFolder`). */
@@ -2247,6 +2252,8 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     const was = installs[entry.id];
     const from = was?.version;
     const portableByDefault = settings.portableByDefault && config.os !== "android" && config.os !== "ios";
+    // Kept as a file, not run: never for an app its setup already installed, whose update goes through its setup again.
+    const keepSetup = Boolean(settings.keepSetupPrograms) && !was?.setup;
     // The player's, read here: further down, `settings` is the catalog's for installing it.
     const groupByConsole = Boolean(settings.groupByConsole);
     const systemFolders = { consoleFolders: settings.consoleFolders, systemFolderNames: settings.systemFolderNames };
@@ -2472,6 +2479,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         version: release.version,
         preferred: executables,
         program: was?.installer ? was.program : undefined,
+        ...(keepSetup && { runSetup: false }),
       });
       // A Windows installer's program, when Quiver can't tell which it is: the player says, as in Quiver Launcher 3.
       const msi = Boolean(done.installer);

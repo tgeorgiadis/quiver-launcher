@@ -919,6 +919,10 @@ msgstr "<0>Deux vues de la bibliothèque :</0> Liste, inspirée de Steam, et Gri
 msgid "A cover's address follows your account. The other pictures, and any from a file, stay on this computer."
 msgstr "L'adresse d'une couverture suit ton compte. Les autres images, et celles qui viennent d'un fichier, restent sur cet ordinateur."
 
+#: ../../apps/launcher/src/app-files.tsx
+msgid "A download that's a setup program stays in the app's folder as it is, and Play starts it, so you install the app yourself."
+msgstr "Un téléchargement qui est un programme d'installation reste tel quel dans le dossier de l'app, et Jouer le lance pour que vous installiez l'app vous-même."
+
 #: ../../apps/launcher/src/setup.tsx
 msgid "A few quick questions to get you started. You can change any of these later in Settings."
 msgstr "Quelques questions rapides pour bien démarrer. Vous pourrez tout modifier plus tard dans les Paramètres."
@@ -5735,6 +5739,10 @@ msgstr "Relancer l'installateur"
 msgid "Run setup again"
 msgstr "Relancer la configuration"
 
+#: ../../apps/launcher/src/app-files.tsx
+msgid "Run setup programs for me"
+msgstr "Lancer les programmes d'installation pour moi"
+
 #: ../../apps/launcher/src/launch-options.tsx
 msgid "Run with"
 msgstr "Exécuter avec"
@@ -7642,6 +7650,10 @@ msgstr "Qu'est-ce qui est faux ou manquant ?"
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "When {name} asks for it, pick this file: {0}"
 msgstr "Quand {name} la demande, choisis ce fichier : {0}"
+
+#: ../../apps/launcher/src/app-files.tsx
+msgid "When a download is a setup program, Quiver runs it once while installing, and Play starts what it installed."
+msgstr "Quand un téléchargement est un programme d'installation, Quiver le lance une fois pendant l'installation, et Jouer lance ce qu'il a installé."
 
 #: ../../apps/launcher/src/own-copy-settings.tsx
 msgid "When an app needs your own copy of a game, like a ROM or a disc image, Quiver looks for it in these folders, and nowhere else."

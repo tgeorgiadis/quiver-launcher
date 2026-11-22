@@ -112,6 +112,8 @@ export type InstallRequest = {
   githubToken?: string;
   /** The file's browser link, downloaded without the token when GitHub refuses the token (expired or revoked). */
   fallbackUrl?: string;
+  /** False: a download that's a Windows setup program is kept as a file, not run (`Settings.keepSetupPrograms`). Unset: run. */
+  runSetup?: boolean;
 };
 /** What an install did. A Windows installer (MSI) puts its files where its setup chose. */
 export type Installed = {

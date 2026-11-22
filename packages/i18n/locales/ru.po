@@ -919,6 +919,10 @@ msgstr "<0>Два вида библиотеки:</0> «Список» в дух�
 msgid "A cover's address follows your account. The other pictures, and any from a file, stay on this computer."
 msgstr "Адрес обложки хранится в вашем аккаунте. Остальные изображения и всё, что выбрано из файла, остаются на этом компьютере."
 
+#: ../../apps/launcher/src/app-files.tsx
+msgid "A download that's a setup program stays in the app's folder as it is, and Play starts it, so you install the app yourself."
+msgstr "Загрузка, которая является установщиком, остаётся в папке приложения как есть, и «Играть» запускает её, чтобы вы установили приложение сами."
+
 #: ../../apps/launcher/src/setup.tsx
 msgid "A few quick questions to get you started. You can change any of these later in Settings."
 msgstr "Несколько быстрых вопросов для начала. Всё это можно изменить позже в настройках."
@@ -5735,6 +5739,10 @@ msgstr "Запустить установщик снова"
 msgid "Run setup again"
 msgstr "Пройти настройку заново"
 
+#: ../../apps/launcher/src/app-files.tsx
+msgid "Run setup programs for me"
+msgstr "Запускать установщики за меня"
+
 #: ../../apps/launcher/src/launch-options.tsx
 msgid "Run with"
 msgstr "Запускать через"
@@ -7642,6 +7650,10 @@ msgstr "Что не так или чего не хватает?"
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "When {name} asks for it, pick this file: {0}"
 msgstr "Когда {name} попросит, выберите этот файл: {0}"
+
+#: ../../apps/launcher/src/app-files.tsx
+msgid "When a download is a setup program, Quiver runs it once while installing, and Play starts what it installed."
+msgstr "Если загрузка — установщик, Quiver запускает его один раз при установке, а «Играть» запускает то, что он установил."
 
 #: ../../apps/launcher/src/own-copy-settings.tsx
 msgid "When an app needs your own copy of a game, like a ROM or a disc image, Quiver looks for it in these folders, and nowhere else."
