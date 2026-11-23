@@ -3493,6 +3493,16 @@ msgctxt "README callout"
 msgid "Important"
 msgstr "重要"
 
+#. Playlists filter: apps on at least one of the player's playlists
+#: ../../apps/launcher/src/library.tsx
+msgid "In a playlist"
+msgstr "在播放列表中"
+
+#. Playlists filter: off
+#: ../../apps/launcher/src/library.tsx
+msgid "In a playlist or not"
+msgstr "在或不在播放列表中"
+
 #. How system folders are named: by full name
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "In full (Nintendo 64, Game Boy Color, PlayStation 2)"
@@ -4926,6 +4936,11 @@ msgstr "未在目录中找到"
 msgid "Not found. Is its drive connected?"
 msgstr "未找到。是否已连接其驱动器？"
 
+#. Playlists filter: apps on none of the player's playlists, still to sort
+#: ../../apps/launcher/src/library.tsx
+msgid "Not in a playlist"
+msgstr "不在任何播放列表中"
+
 #: ../../apps/launcher/src/library.tsx
 msgid "Not in your library"
 msgstr "不在你的游戏库中"
@@ -5417,6 +5432,7 @@ msgstr "播放列表名称"
 
 #. Button over the selected apps: puts them on playlists
 #. Button over the selected apps: puts them on playlists
+#. Filter by whether an app is on any of the player's playlists
 #. Heading over the player's playlists in the library's side panel
 #: ../../apps/launcher/src/browse-ticking.tsx
 #: ../../apps/launcher/src/detail.tsx

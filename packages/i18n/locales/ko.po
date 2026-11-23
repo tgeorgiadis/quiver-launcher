@@ -3493,6 +3493,16 @@ msgctxt "README callout"
 msgid "Important"
 msgstr "중요"
 
+#. Playlists filter: apps on at least one of the player's playlists
+#: ../../apps/launcher/src/library.tsx
+msgid "In a playlist"
+msgstr "재생 목록에 있음"
+
+#. Playlists filter: off
+#: ../../apps/launcher/src/library.tsx
+msgid "In a playlist or not"
+msgstr "재생 목록 여부 무관"
+
 #. How system folders are named: by full name
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "In full (Nintendo 64, Game Boy Color, PlayStation 2)"
@@ -4926,6 +4936,11 @@ msgstr "카탈로그에서 찾을 수 없음"
 msgid "Not found. Is its drive connected?"
 msgstr "찾을 수 없어요. 드라이브가 연결되어 있나요?"
 
+#. Playlists filter: apps on none of the player's playlists, still to sort
+#: ../../apps/launcher/src/library.tsx
+msgid "Not in a playlist"
+msgstr "재생 목록에 없음"
+
 #: ../../apps/launcher/src/library.tsx
 msgid "Not in your library"
 msgstr "라이브러리에 없음"
@@ -5417,6 +5432,7 @@ msgstr "재생 목록 이름"
 
 #. Button over the selected apps: puts them on playlists
 #. Button over the selected apps: puts them on playlists
+#. Filter by whether an app is on any of the player's playlists
 #. Heading over the player's playlists in the library's side panel
 #: ../../apps/launcher/src/browse-ticking.tsx
 #: ../../apps/launcher/src/detail.tsx
