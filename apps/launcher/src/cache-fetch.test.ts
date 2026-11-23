@@ -1,7 +1,7 @@
-import { describe, expect, test, vi } from "vitest";
+import { beforeEach, describe, expect, test, vi } from "vitest";
 import type { Asset, Entry, Release } from "@quiverlauncher/api";
 import { cacheOf } from "./cache";
-import { runCacheFetch, type FetchDeps } from "./cache-fetch";
+import { forgetSettled, runCacheFetch, type FetchDeps } from "./cache-fetch";
 import type { CachedFile, InstallRequest } from "./native";
 
 const sum = (c: string) => `sha256:${c.repeat(64)}`;
@@ -40,6 +40,9 @@ function deps(apps: Entry[], releases: Record<string, Release[]>, held: string[]
   };
   return { d, fetched, removed };
 }
+
+// Each test is a launcher just started: nothing is known to be up to date yet.
+beforeEach(() => forgetSettled());
 
 describe("a run of the cache's fetches", () => {
   const catalog = [app("a"), app("b"), app("c")];
@@ -192,5 +195,74 @@ describe("a run of the cache's fetches", () => {
     expect(fetched.map((r) => r.filename)).toEqual(["b5.zip"]);
     expect(done).toMatchObject({ failed: 1, fetched: 1, running: false });
     expect(seen).toEqual(["a2.zip", "b5.zip"]);
+  });
+});
+
+describe("apps with nothing newer than what's kept", () => {
+  const listed = (id: string, version: string, rolling = false) => ({ ...app(id), verified: { version, releasedAt: 0, prerelease: false, pinned: true, ...(rolling && { rolling }) } }) as Entry;
+  const kept = (hash: string, id: string, version: string): CachedFile => ({ hash, filename: `${id}${version}.zip`, path: "", size: 10, apps: [{ app: id, version }], cachedAt: 0, usedAt: 0 });
+  const releases = {
+    a: [rel("2", [file("a2.zip", sum("1"))])],
+    b: [rel("v5", [file("b5.zip", sum("3"))])],
+    c: [rel("9", [file("c9.zip", sum("4"))])],
+  };
+  const asked = (d: FetchDeps) => vi.mocked(d.client.releases).mock.calls.map(([slug]) => slug);
+
+  test("Every latest: an app whose listed release is kept already isn't asked for its releases, from the first run", async () => {
+    // a's newest is kept, b's is kept under the other spelling of its version, c's isn't.
+    const { d, fetched } = deps([listed("a", "2"), listed("b", "5"), listed("c", "9")], releases, [sum("1"), sum("3")], 20, [kept("1".repeat(64), "a", "2"), kept("3".repeat(64), "b", "v5")]);
+    const done = await runCacheFetch(cacheOf({ mode: "latest" }, "/cache"), d, () => {}, () => false);
+    expect(asked(d)).toEqual(["c"]);
+    expect(fetched.map((r) => r.filename)).toEqual(["c9.zip"]);
+    expect(done).toMatchObject({ apps: 3, fetched: 1 });
+  });
+
+  test("Every latest: a newer release listed has the app's releases read again", async () => {
+    const { d, fetched } = deps([listed("a", "3")], { a: [rel("3", [file("a3.zip", sum("5"))]), ...releases.a] }, [sum("1")], 10, [kept("1".repeat(64), "a", "2")]);
+    await runCacheFetch(cacheOf({ mode: "latest" }, "/cache"), d, () => {}, () => false);
+    expect(asked(d)).toEqual(["a"]);
+    expect(fetched.map((r) => r.filename)).toEqual(["a3.zip"]);
+  });
+
+  test("a rolling release, whose files change under one version, is asked for every run", async () => {
+    const { d } = deps([listed("a", "2", true)], releases, [sum("1")], 10, [kept("1".repeat(64), "a", "2")]);
+    const cache = cacheOf({ mode: "latest" }, "/cache");
+    await runCacheFetch(cache, d, () => {}, () => false);
+    await runCacheFetch(cache, d, () => {}, () => false);
+    expect(asked(d)).toEqual(["a", "a"]);
+  });
+
+  test("Hoarder and every system's builds: asked for once a launcher, then only when a newer release is listed", async () => {
+    for (const settings of [{ mode: "hoarder" }, { mode: "latest", allPlatforms: true }] as const) {
+      forgetSettled();
+      const apps = [listed("a", "2"), app("b")];
+      const { d } = deps(apps, releases, [sum("1"), sum("3")], 20, [kept("1".repeat(64), "a", "2")]);
+      const cache = cacheOf(settings, "/cache");
+      await runCacheFetch(cache, d, () => {}, () => false);
+      // The file kept doesn't say every release, or every system's build, is: the first run reads them.
+      expect(asked(d), settings.mode).toEqual(["a", "b"]);
+      await runCacheFetch(cache, d, () => {}, () => false);
+      expect(asked(d), settings.mode).toEqual(["a", "b"]);
+      apps[0] = listed("a", "3");
+      await runCacheFetch(cache, d, () => {}, () => false);
+      expect(asked(d), settings.mode).toEqual(["a", "b", "a"]);
+    }
+  });
+
+  test("an app whose file didn't download, or didn't fit, is asked for again next run", async () => {
+    const { d } = deps([listed("c", "9")], releases);
+    d.native.cacheFetch = async () => Promise.reject("failed");
+    const cache = cacheOf({ mode: "hoarder" }, "/cache");
+    await runCacheFetch(cache, d, () => {}, () => false);
+    await runCacheFetch(cache, d, () => {}, () => false);
+    expect(asked(d)).toEqual(["c", "c"]);
+  });
+
+  test("Selected titles go by what the launcher knew of an app, so they're always asked for", async () => {
+    const { d } = deps([listed("a", "2")], releases, [sum("1")], 10, [kept("1".repeat(64), "a", "2")]);
+    const cache = cacheOf({ mode: "selected", apps: [{ id: "a", slug: "a" }] }, "/cache");
+    await runCacheFetch(cache, d, () => {}, () => false);
+    await runCacheFetch(cache, d, () => {}, () => false);
+    expect(asked(d)).toEqual(["a", "a"]);
   });
 });
