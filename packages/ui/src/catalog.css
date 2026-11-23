@@ -1060,9 +1060,15 @@
   overflow-wrap: anywhere;
   border-radius: 12px;
 }
+/* The app's icon inline, at the start of the name's first line, so the lines after it run under it, not indented. */
 .wrap-names .card-body .card-title.with-icon {
-  align-items: flex-start;
+  display: block;
 }
 .wrap-names .card-body .card-title.with-icon .card-icon {
-  margin-top: 0.1em;
+  display: inline-block;
+  margin-right: 6px;
+  vertical-align: -0.22em;
+}
+.wrap-names .card-body .card-title.with-icon .scrolling-text {
+  display: inline;
 }
