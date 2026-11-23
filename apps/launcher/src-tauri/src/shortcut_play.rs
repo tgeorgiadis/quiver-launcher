@@ -434,8 +434,10 @@ pub fn shortcut_window(app: AppHandle, show: bool) {
     crate::gamepad::unseen(!show);
     if show {
         let _ = window.show();
+        #[cfg(desktop)]
         let _ = window.unminimize();
         let _ = window.set_focus();
+        #[cfg(desktop)]
         if crate::in_game_mode() {
             let _ = window.set_fullscreen(true);
         }
