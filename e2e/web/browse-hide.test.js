@@ -21,7 +21,7 @@ before(async () => {
 
 beforeEach(async () => {
   await page.reload();
-  await page.getByRole("button", { name: "Browse", exact: true }).click();
+  await page.getByRole("button", { name: /^Browse ?\d*$/ }).click();
   await card("tampered-port").first().waitFor();
 });
 

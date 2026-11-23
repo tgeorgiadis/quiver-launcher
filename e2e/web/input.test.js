@@ -85,7 +85,7 @@ test("after a mouse click, and back in front of other windows, a controller's fo
   await home();
   const ringed = () => app.execute(() => document.activeElement?.matches(":focus-visible") ?? false);
   // A click with the mouse, then the d-pad: the browser alone would leave the ring off.
-  await page.getByRole("button", { name: "Browse", exact: true }).click();
+  await page.getByRole("button", { name: /^Browse ?\d*$/ }).click();
   await reach.press(app, "DPadDown");
   assert.ok(await ringed(), "the d-pad's focus shows after a click");
   // Back in front of other windows, as the controller left it: the ring the browser dropped comes back. A script's
