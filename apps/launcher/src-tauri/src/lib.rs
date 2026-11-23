@@ -1477,8 +1477,9 @@ async fn upgrade_shortcuts(app: tauri::AppHandle, requests: Vec<shortcut::Shortc
         done.steam = shortcuts.len();
         return Ok(done);
     }
-    // Steam's Stop would end a waiting copy Quiver started while Steam runs it on Windows: it's done another time.
-    if cfg!(windows) && steam_runs_us() {
+    // A waiting copy Quiver started while Steam runs it would run under Steam: its Stop would end it, and on Linux it keeps
+    // Quiver showing as running (a Steam Deck in Game Mode, where Steam doesn't close anyway). It's done another time.
+    if steam_runs_us() {
         return Ok(done);
     }
     // Steam writes its file as it closes, and its add can't change a shortcut: a waiting copy does it once Steam closes.
