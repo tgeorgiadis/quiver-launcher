@@ -87,7 +87,7 @@ export function App() {
   useTray();
   useDiscordPresence();
   useDownloadCache();
-  const { library, client, settings, setSettings, config, catalog } = useLauncher();
+  const { library, client, settings, setSettings, config, catalog, catalogTotal } = useLauncher();
   // TV mode, a larger look over the library and Browse: turned on, or by itself in Steam's Game Mode.
   const tv = tvModeOn(settings, config);
   const setTv = (on: boolean) => setSettings({ ...settings, tvMode: on ? "on" : "off" });
@@ -264,6 +264,7 @@ export function App() {
           </button>
           <button className={tab === "browse" ? "active" : ""} aria-current={tab === "browse" && !top ? "page" : undefined} onClick={() => switchTab("browse")}>
             <Compass size={16} aria-hidden="true" /> <Trans comment="The tab with the catalog of apps">Browse</Trans>
+            {catalogTotal !== undefined && <span className="count">{catalogTotal}</span>}
           </button>
           {tv && <TabPrompt step="nextTab" />}
         </nav>
