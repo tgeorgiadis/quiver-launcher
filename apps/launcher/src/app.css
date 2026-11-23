@@ -2019,7 +2019,7 @@ body:has(.overlay) .shell > main { overflow: hidden; scrollbar-gutter: stable; }
 .recovery p { max-width: 520px; }
 
 /* Tags in Settings: how many, and the way into their own window. */
-.tags-summary { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; max-width: 560px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 9px; background: var(--panel); }
+.tags-summary { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 18px; max-width: 560px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 9px; background: var(--panel); }
 .tags-summary-counts { display: flex; flex-wrap: wrap; gap: 4px 18px; }
 .tags-summary-counts .muted { margin-left: 4px; }
 /* Their window: its tabs, search, filters and buttons stay put, and the list scrolls under them. */
