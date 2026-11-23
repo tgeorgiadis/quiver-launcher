@@ -224,6 +224,16 @@ describe("apps with nothing newer than what's kept", () => {
     expect(fetched.map((r) => r.filename)).toEqual(["a3.zip"]);
   });
 
+  test("an app whose file another app keeps already (the same checksum) is settled too", async () => {
+    // b ships the very file a does; the cache has it once, under a.
+    const { d, fetched } = deps([listed("a", "2"), listed("b", "5")], { a: releases.a, b: [rel("5", [file("b5.zip", sum("1"))])] }, [sum("1")], 10, [kept("1".repeat(64), "a", "2")]);
+    const cache = cacheOf({ mode: "latest" }, "/cache");
+    await runCacheFetch(cache, d, () => {}, () => false);
+    await runCacheFetch(cache, d, () => {}, () => false);
+    expect(asked(d)).toEqual(["b"]);
+    expect(fetched).toEqual([]);
+  });
+
   test("a rolling release, whose files change under one version, is asked for every run", async () => {
     const { d } = deps([listed("a", "2", true)], releases, [sum("1")], 10, [kept("1".repeat(64), "a", "2")]);
     const cache = cacheOf({ mode: "latest" }, "/cache");

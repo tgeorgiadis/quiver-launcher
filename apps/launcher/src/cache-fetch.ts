@@ -189,8 +189,9 @@ export async function runCacheFetch(cache: Cache, deps: FetchDeps, report: (s: F
     // under one version, and in the modes that go by what the launcher already knew of the app.
     const newest = walks && !entry.verified?.rolling ? (entry.verified?.version ?? "") : undefined;
     const sign = newest === undefined ? undefined : signOf(cache, newest);
+    let onDisk = false;
     if (newest !== undefined) {
-      const onDisk = !!newest && kept.some((f) => !f.source && f.apps.some((o) => o.app === entry.id && sameVersion(o.version, newest)));
+      onDisk = !!newest && kept.some((f) => !f.source && f.apps.some((o) => o.app === entry.id && sameVersion(o.version, newest)));
       const was = settled.get(entry.id);
       const filesKept = (was !== undefined && was.sign === sign && (!was.files || !newest || onDisk)) || (cache.mode === "latest" && !cache.allPlatforms && onDisk);
       const sourceKept = !cache.sources || !newest || sources.has(`${entry.id}@${plain(newest)}`);
@@ -278,7 +279,9 @@ export async function runCacheFetch(cache: Cache, deps: FetchDeps, report: (s: F
         note({ ...file, state: "failed", why: whyOf(e), at: Date.now() });
       }
     }
-    if (sign !== undefined && done && !stopped()) settled.set(entry.id, { sign, files: targets.length > 0 });
+    if (sign !== undefined && done && !stopped())
+      // A file another app keeps already (the same checksum) isn't kept under this one: nothing of its own to find next time.
+      settled.set(entry.id, { sign, files: onDisk || targets.some((_, i) => !held[i]) });
   }
   state.running = false;
   state.current = undefined;
