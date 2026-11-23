@@ -219,11 +219,17 @@ export const fullDate = (time: number) =>
 
 /**
  * One-line text that truncates with an ellipsis, then scrolls back and forth
- * while its card (or, outside one, its button or link) is hovered or focused, from a moment after: not on each card
- * a controller passes on its way down a long grid, where starting and stopping
+ * while its card (or, outside one, its button or link) is hovered or focused, from a moment after (SCROLL_AFTER_MS):
+ * not on each card a controller passes on its way down a long grid, where starting and stopping
  * its animation had WebKit rebuild the page's layers with every step. `children` shows styled content in
  * place of `text`, which is then only its plain-text version for the tooltip.
  */
+/**
+ * How long a card is hovered or focused before its cut-off text starts scrolling: soon enough to read at once, but
+ * longer than a held d-pad's repeat (120 ms, spatial.ts), so the cards it passes on the way don't start and stop.
+ */
+export const SCROLL_AFTER_MS = 250;
+
 export function ScrollingText({
   text,
   children,
@@ -258,7 +264,7 @@ export function ScrollingText({
     let timer: ReturnType<typeof setTimeout> | undefined;
     const start = () => {
       clearTimeout(timer);
-      if (!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) timer = setTimeout(() => setActive(true), 700);
+      if (!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) timer = setTimeout(() => setActive(true), SCROLL_AFTER_MS);
     };
     const stop = () => {
       clearTimeout(timer);
