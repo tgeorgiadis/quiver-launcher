@@ -3492,6 +3492,16 @@ msgctxt "README callout"
 msgid "Important"
 msgstr "Important"
 
+#. Playlists filter: apps on at least one of the player's playlists
+#: ../../apps/launcher/src/library.tsx
+msgid "In a playlist"
+msgstr "In a playlist"
+
+#. Playlists filter: off
+#: ../../apps/launcher/src/library.tsx
+msgid "In a playlist or not"
+msgstr "In a playlist or not"
+
 #. How system folders are named: by full name
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "In full (Nintendo 64, Game Boy Color, PlayStation 2)"
@@ -4925,6 +4935,11 @@ msgstr "Not found in the catalog"
 msgid "Not found. Is its drive connected?"
 msgstr "Not found. Is its drive connected?"
 
+#. Playlists filter: apps on none of the player's playlists, still to sort
+#: ../../apps/launcher/src/library.tsx
+msgid "Not in a playlist"
+msgstr "Not in a playlist"
+
 #: ../../apps/launcher/src/library.tsx
 msgid "Not in your library"
 msgstr "Not in your library"
@@ -5416,6 +5431,7 @@ msgstr "Playlist name"
 
 #. Button over the selected apps: puts them on playlists
 #. Button over the selected apps: puts them on playlists
+#. Filter by whether an app is on any of the player's playlists
 #. Heading over the player's playlists in the library's side panel
 #: ../../apps/launcher/src/browse-ticking.tsx
 #: ../../apps/launcher/src/detail.tsx

@@ -305,7 +305,7 @@ export function LibraryPage({
   useEffect(() => {
     const libraryTab = keepsTab(tab, collections) ? tab : undefined;
     // Not hidden apps shown for now (view.ts).
-    const set = Object.fromEntries(Object.entries(filters).filter(([key, value]) => value && key !== "hidden"));
+    const set = Object.fromEntries(Object.entries(filters).filter(([key, value]) => value && key !== "hidden" && key !== "playlists"));
     const libraryFilters = Object.keys(set).length ? set : undefined;
     if (libraryTab === settings.libraryTab && JSON.stringify(libraryFilters) === JSON.stringify(settings.libraryFilters)) return;
     setSettings({ ...settings, libraryTab, libraryFilters });
@@ -397,6 +397,11 @@ export function LibraryPage({
   // As Browse's: once some are hidden. Not on the Hidden tab, all hidden already, nor a followed playlist's.
   const hiddenChoice = tab !== "hidden" && !collection?.follows && (hidden.size > 0 || Boolean(filters.hidden));
   const hiddenToo = tab === "hidden" ? "only" : hiddenChoice ? filters.hidden : undefined;
+  // The player's own playlists, for whether an app is on one: not on a playlist's tab, whose apps all are.
+  const ownPlaylists = collections.filter((c) => !c.follows);
+  const playlistChoice = !collection && (ownPlaylists.length > 0 || Boolean(filters.playlists));
+  /** The filters that are this tab's, not a playlist's own: shown and counted only where they apply. */
+  const applies = (key: string) => (key === "hidden" ? hiddenChoice : key === "playlists" ? playlistChoice : true);
   const shown = all.filter((i) => (hiddenToo === "show" ? true : hidden.has(i.id) === (hiddenToo === "only")));
   const updates = shown.filter((i) => !jobs[i.id] && hasUpdate(catalog[i.id], installs[i.id]));
   const words = search.toLowerCase().split(/\s+/).filter(Boolean);
@@ -435,12 +440,18 @@ export function LibraryPage({
     if (!collection) return Boolean(item);
     return inCollection(collection, facts(entry, item), makers);
   };
-  const filtering = Object.entries(filters).some(([key, value]) => value && (key !== "hidden" || hiddenChoice));
-  // What a playlist saved from them would hold: not the hidden apps' choice.
-  const toSave = Object.entries(filters).some(([key, value]) => value && key !== "hidden");
+  const filtering = Object.entries(filters).some(([key, value]) => value && applies(key));
+  // What a playlist saved from them would hold: not the hidden apps' choice, nor whether they're on a playlist.
+  const toSave = Object.entries(filters).some(([key, value]) => value && key !== "hidden" && key !== "playlists");
+  const onPlaylist = (entry: Entry, item?: LibraryItem) => ownPlaylists.some((c) => inCollection(c, facts(entry, item), makers));
   const passes = (entry: Entry, item?: LibraryItem) => {
     const text = [entry.projectName, ...entry.games.map((g) => g.title), ...entry.tags, ...(item?.overrides?.tags ?? [])].join(" ").toLowerCase();
-    return words.every((w) => text.includes(w)) && inTab(entry, item) && (!filtering || matches(toPlaylist(filters), facts(entry, item), makers));
+    return (
+      words.every((w) => text.includes(w)) &&
+      inTab(entry, item) &&
+      (!filtering || matches(toPlaylist(filters), facts(entry, item), makers)) &&
+      (!playlistChoice || !filters.playlists || onPlaylist(entry, item) === (filters.playlists === "some"))
+    );
   };
   const matching = candidates.filter(({ entry, item }) => passes(entry, item));
   // The hidden apps the tab, search and filters would show but for the Hidden apps filter: said, with a way to show them,
@@ -772,13 +783,13 @@ export function LibraryPage({
               {/* The filters on, each removable, while the panel is away. */}
               {filtering && !filtersOpen && (
                 <div className="filter-bar sidebar-pills" role="group" aria-label={t`Filters on`}>
-                  <FilterFields value={filters} set={set} many={many} entries={choosable} ownTags={ownTags} hiddenChoice={hiddenChoice} pills={{ all: false, clear: clearFilter }} />
+                  <FilterFields value={filters} set={set} many={many} entries={choosable} ownTags={ownTags} hiddenChoice={hiddenChoice} playlistChoice={playlistChoice} pills={{ all: false, clear: clearFilter }} />
                 </div>
               )}
               {filtersOpen && (
                 <FiltersPanel onClose={() => setFiltersOpen(false)}>
                   <div className="filter-bar">
-                    <FilterFields value={filters} set={set} many={many} entries={choosable} ownTags={ownTags} hiddenChoice={hiddenChoice} pills={{ all: true, clear: clearFilter }} />
+                    <FilterFields value={filters} set={set} many={many} entries={choosable} ownTags={ownTags} hiddenChoice={hiddenChoice} playlistChoice={playlistChoice} pills={{ all: true, clear: clearFilter }} />
                   </div>
                   <div className="filter-bar sidebar-filters-foot">
                     <span className="view-label">
@@ -890,7 +901,7 @@ export function LibraryPage({
       {(view.byGame ? stacks(entries, sortFacts) : entries).map(card)}
     </div>
   );
-  const on = Object.entries(filters).filter(([key, value]) => value && (key !== "hidden" || hiddenChoice)).length;
+  const on = Object.entries(filters).filter(([key, value]) => value && applies(key)).length;
   // An empty library over apps still installed here: their section says it all.
   const nothing = items.length === 0 && !(loose.length && tab === "all" && !search && !filtering);
   // The library under the tabs, or beside the panel.
@@ -1019,6 +1030,7 @@ export function LibraryPage({
                 entries={choosable}
                 ownTags={ownTags}
                 hiddenChoice={hiddenChoice}
+                playlistChoice={playlistChoice}
                 pills={{ all: filtersOpen, clear: clearFilter }}
               />
             </span>
@@ -1316,6 +1328,7 @@ export function filterLabel(key: "console" | "projectType" | OneFilter, value: s
   if (key === "installed") return value === "yes" ? t`Installed` : t`Not installed`;
   if (key === "managed") return value === "manual" ? t`Manually managed` : t`Managed by Quiver`;
   if (key === "hidden") return value === "only" ? t`Hidden apps only` : t`Hidden apps shown`;
+  if (key === "playlists") return value === "none" ? t`Not in a playlist` : t`In a playlist`;
   return tagLabel(value);
 }
 
@@ -1325,7 +1338,7 @@ export function filterLabel(key: "console" | "projectType" | OneFilter, value: s
  * removable once it's on; `all: false` shows only the ones on.
  */
 /** The library's filters with one choice each, a dropdown's. */
-type OneFilter = "ai" | "tag" | "installed" | "managed" | "hidden";
+type OneFilter = "ai" | "tag" | "installed" | "managed" | "hidden" | "playlists";
 /** The library's filters with several choices, a list to tick. */
 type ManyFilter = "consoles" | "projectTypes";
 
@@ -1355,6 +1368,7 @@ function FilterFields({
   entries,
   ownTags = [],
   hiddenChoice = false,
+  playlistChoice = false,
   pills,
 }: {
   value: Filters;
@@ -1365,6 +1379,8 @@ function FilterFields({
   ownTags?: string[];
   /** The library's, where hidden apps can show with the rest: not a playlist's. */
   hiddenChoice?: boolean;
+  /** The library's All, Updates and Hidden, with playlists to be on or not: not a playlist's own tab. */
+  playlistChoice?: boolean;
   pills?: { all: boolean; clear: (key: keyof Filters) => void };
 }) {
   const { consoles, consoleNames } = useLauncher();
@@ -1433,6 +1449,15 @@ function FilterFields({
           </option>
         </select>,
       )}
+      {playlistChoice &&
+        pill(
+          "playlists",
+          <select aria-label={t({ message: "Playlists", comment: "Filter by whether an app is on any of the player's playlists" })} value={value.playlists ?? ""} onChange={set("playlists")}>
+            <option value="">{t({ message: "In a playlist or not", comment: "Playlists filter: off" })}</option>
+            <option value="some">{t({ message: "In a playlist", comment: "Playlists filter: apps on at least one of the player's playlists" })}</option>
+            <option value="none">{t({ message: "Not in a playlist", comment: "Playlists filter: apps on none of the player's playlists, still to sort" })}</option>
+          </select>,
+        )}
       {hiddenChoice &&
         pill(
           "hidden",

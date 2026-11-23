@@ -201,6 +201,11 @@ export type LibraryFilters = {
    * playlist. Not kept for next time, nor saved with a playlist.
    */
   hidden?: "show" | "only";
+  /**
+   * Apps on `some` of the player's own playlists (picked for one, or matching its filters), or on `none`: the ones still to
+   * sort. On All, Updates and Hidden, not a playlist's tab. Not kept for next time, nor saved with a playlist.
+   */
+  playlists?: "some" | "none";
 };
 
 /**
