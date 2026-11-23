@@ -21,7 +21,7 @@ import { applyServer, applyServerCollections, changesFrom, hasFilters, joinAccou
 import type { Platform } from "./platforms";
 import { setBindings, setScrolling, type Bindings } from "./spatial";
 import { musicForGame, setMusic } from "./music";
-import { appsOfRepository, movedTo, bestGameArt, customEntry, customKey, folderNameFor, fromKey, freeFolder, isCustom, isLocal, isOwn, localEntry, localKey, withGame, type CustomApp, type GameArt, type LocalApp } from "./custom";
+import { appsOfRepository, catalogSlug, movedTo, bestGameArt, customEntry, customKey, folderNameFor, fromKey, freeFolder, isCustom, isLocal, isOwn, localEntry, localKey, withGame, type CustomApp, type GameArt, type LocalApp } from "./custom";
 import { artFile, artFiles, isArtAddress, type ArtSlot, type Pictures } from "./custom-art";
 import { followTheme, type Theme } from "./theme";
 import type { LibraryView } from "./view";
@@ -2706,6 +2706,13 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
 
   /** The catalog's apps for a repository, or a preview of its latest release. */
   async function lookUpRepository(input: string, chosen?: string): ReturnType<Launcher["lookUpRepository"]> {
+    // A link to an app's page on quiverlauncher.com: that app, asked for alone.
+    const slug = catalogSlug(input);
+    if (slug)
+      return client.app(slug).then(
+        (detail) => ({ listed: [detail.entry] }),
+        (e) => ({ error: e instanceof ApiError && e.status === 404 ? t`Quiver's catalog has no app at that address.` : e instanceof Error ? e.message : String(e) }),
+      );
     let parsed = parseRepository(input, chosen);
     if (!parsed) return { error: t`Enter a repository: owner/name, or its address on a forge.` };
     if (parsed.provider === "unknown") {

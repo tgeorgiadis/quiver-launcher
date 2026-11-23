@@ -5219,6 +5219,10 @@ msgstr "Параметры"
 msgid "or"
 msgstr "или"
 
+#: ../../apps/launcher/src/own.tsx
+msgid "Or paste an app's link from quiverlauncher.com to open its page."
+msgstr "Или вставьте ссылку на приложение с quiverlauncher.com, чтобы открыть его страницу."
+
 #. A kind of video
 #. Library section for apps with no console, maker, game or developer
 #: ../../apps/launcher/src/group.ts
@@ -5819,6 +5823,10 @@ msgstr "Quiver не будет её устанавливать."
 #: ../ui/src/index.tsx
 msgid "Quiver won't install this release"
 msgstr "Quiver не установит эту версию"
+
+#: ../../apps/launcher/src/store.tsx
+msgid "Quiver's catalog has no app at that address."
+msgstr "В каталоге Quiver нет приложения по этому адресу."
 
 #: ../../apps/launcher/src/own.tsx
 msgid "Quiver's catalog lists more than one app from this repository."

@@ -2,7 +2,7 @@ import { expect, test } from "vitest";
 import { parseRepository, type Client, type GameDetail, type GameMatch } from "@quiverlauncher/api";
 import type { LibraryItem } from "./store";
 import { changesFrom, joinAccount } from "./sync";
-import { appsOfRepository, bestGameArt, folderNameFor, freeFolder, movedTo } from "./custom";
+import { appsOfRepository, bestGameArt, catalogSlug, folderNameFor, freeFolder, movedTo } from "./custom";
 
 test("a pasted repository is found on GitHub or GitLab, from any page of it", () => {
   expect(parseRepository("owner/name")).toEqual({ provider: "github", host: "github.com", repository: "owner/name" });
@@ -90,6 +90,17 @@ test("a year after an app's name isn't searched for as part of the game's", asyn
   await bestGameArt(client, "Folklore (2007)");
   await bestGameArt(client, "(2007)");
   expect(searched).toEqual(["Folklore", "(2007)"]);
+});
+
+test("a link to an app's page on quiverlauncher.com gives its slug, and nothing else does", () => {
+  expect(catalogSlug("https://quiverlauncher.com/apps/zelda-64-recompiled")).toBe("zelda-64-recompiled");
+  expect(catalogSlug(" quiverlauncher.com/apps/zelda-64-recompiled/ ")).toBe("zelda-64-recompiled");
+  expect(catalogSlug("https://www.QuiverLauncher.com/apps/zelda-64-recompiled?tab=releases#top")).toBe("zelda-64-recompiled");
+  expect(catalogSlug("https://quiverlauncher.com/")).toBeNull();
+  expect(catalogSlug("https://quiverlauncher.com/apps/")).toBeNull();
+  expect(catalogSlug("https://quiverlauncher.com/apps/zelda/releases")).toBeNull();
+  expect(catalogSlug("https://quiverlauncher.com.example.org/apps/zelda")).toBeNull();
+  expect(catalogSlug("github.com/Zelda64Recomp/Zelda64Recomp")).toBeNull();
 });
 
 test("a repository renamed or moved since it was added is found under its name now", () => {

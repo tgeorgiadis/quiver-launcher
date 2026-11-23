@@ -140,6 +140,9 @@ function FromRepository({ onBack, onDone }: Done) {
       >
         <Heading title={t`From a git repository`} onBack={onBack} />
         <input autoFocus aria-label={t`Repository`} placeholder={t`owner/name, or a repository address (github.com, gitlab.com, codeberg.org, …)`} value={input} onChange={(e) => setInput(e.target.value)} />
+        <p className="muted">
+          <Trans>Or paste an app&apos;s link from quiverlauncher.com to open its page.</Trans>
+        </p>
         <label className="field">
           <Trans>Where it&apos;s hosted</Trans>
           <select value={forge} onChange={(e) => setForge(e.target.value)}>

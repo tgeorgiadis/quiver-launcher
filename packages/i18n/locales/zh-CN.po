@@ -5219,6 +5219,10 @@ msgstr "选项"
 msgid "or"
 msgstr "或"
 
+#: ../../apps/launcher/src/own.tsx
+msgid "Or paste an app's link from quiverlauncher.com to open its page."
+msgstr "也可以粘贴 quiverlauncher.com 上的应用链接，打开它的页面。"
+
 #. A kind of video
 #. Library section for apps with no console, maker, game or developer
 #: ../../apps/launcher/src/group.ts
@@ -5819,6 +5823,10 @@ msgstr "Quiver 不会安装它。"
 #: ../ui/src/index.tsx
 msgid "Quiver won't install this release"
 msgstr "Quiver 不会安装此版本"
+
+#: ../../apps/launcher/src/store.tsx
+msgid "Quiver's catalog has no app at that address."
+msgstr "Quiver 的目录中没有该地址对应的应用。"
 
 #: ../../apps/launcher/src/own.tsx
 msgid "Quiver's catalog lists more than one app from this repository."
