@@ -96,6 +96,10 @@ export function TagSettings() {
       </p>
       {any && (
         <div className="tags-summary">
+          {/* First, at the line's start: Down from the Platforms above lands on it, not on the next section's button. */}
+          <Button variant="main" onClick={() => setOpen(own.length || !theirs.length ? "yours" : "catalog")}>
+            <Trans comment="Button: opens the window listing the player's tags and the catalog's">Manage tags</Trans>
+          </Button>
           <span role="status" className="tags-summary-counts">
             <span>
               <strong>{own.length}</strong> <span className="muted">{plural(own.length, { one: "of your tags", other: "of your tags" })}</span>
@@ -109,9 +113,6 @@ export function TagSettings() {
               </span>
             </span>
           </span>
-          <Button variant="main" onClick={() => setOpen(own.length || !theirs.length ? "yours" : "catalog")}>
-            <Trans comment="Button: opens the window listing the player's tags and the catalog's">Manage tags</Trans>
-          </Button>
         </div>
       )}
       {(theirs.length > 0 || hidden?.hideNew) && (

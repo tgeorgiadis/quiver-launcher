@@ -219,11 +219,17 @@ export const fullDate = (time: number) =>
 
 /**
  * One-line text that truncates with an ellipsis, then scrolls back and forth
- * while its card (or, outside one, its button or link) is hovered or focused, from a moment after: not on each card
- * a controller passes on its way down a long grid, where starting and stopping
+ * while its card (or, outside one, its button or link) is hovered or focused, from a moment after (SCROLL_AFTER_MS):
+ * not on each card a controller passes on its way down a long grid, where starting and stopping
  * its animation had WebKit rebuild the page's layers with every step. `children` shows styled content in
  * place of `text`, which is then only its plain-text version for the tooltip.
  */
+/**
+ * How long a card is hovered or focused before its cut-off text starts scrolling: soon enough to read at once, but
+ * longer than a held d-pad's repeat (120 ms, spatial.ts), so the cards it passes on the way don't start and stop.
+ */
+export const SCROLL_AFTER_MS = 250;
+
 export function ScrollingText({
   text,
   children,
@@ -258,7 +264,7 @@ export function ScrollingText({
     let timer: ReturnType<typeof setTimeout> | undefined;
     const start = () => {
       clearTimeout(timer);
-      if (!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) timer = setTimeout(() => setActive(true), 700);
+      if (!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) timer = setTimeout(() => setActive(true), SCROLL_AFTER_MS);
     };
     const stop = () => {
       clearTimeout(timer);
@@ -709,8 +715,11 @@ export function EntryCard({
   tick,
   ticked,
   mark,
+  wrap,
 }: {
   entry: CardEntry & { slug: string };
+  /** Its name and the line under it wrap onto more lines, rather than being cut short and scrolling (`wrap-names`). */
+  wrap?: boolean;
   /** Selecting several cards (the launcher's): which apps this card is (`data-tick`), and whether it's selected. */
   tick?: string;
   ticked?: boolean;
@@ -738,7 +747,7 @@ export function EntryCard({
 }) {
   const consoleName = (tag: string) => (Object.hasOwn(consoleNames, tag) ? consoleNames[tag] : undefined);
   return (
-    <article className={["entry-card", look, className].filter(Boolean).join(" ")} data-slug={entry.slug} data-tick={tick} data-ticked={ticked || undefined}>
+    <article className={["entry-card", look, wrap && "wrap-names", className].filter(Boolean).join(" ")} data-slug={entry.slug} data-tick={tick} data-ticked={ticked || undefined}>
       <button type="button" className="card-open" onClick={onOpen} aria-label={entry.projectName} aria-pressed={mark ? Boolean(ticked) : undefined}>
         <EntryCardContent entry={entry} artwork={cover} coverSources={coverSources} badge={badge} consoleName={consoleName} status={status} look={look} details={details} mark={mark} />
       </button>

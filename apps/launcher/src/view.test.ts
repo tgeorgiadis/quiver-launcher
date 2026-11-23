@@ -15,6 +15,11 @@ test("a library view keeps only what differs from today's look, and ignores what
   expect(viewOf({ greyUninstalled: false })).toEqual({ ...DEFAULT_VIEW, greyUninstalled: false });
   expect(viewOf({ greyUninstalled: "no" as never }).greyUninstalled).toBe(true);
   expect(savedView({ ...DEFAULT_VIEW, greyUninstalled: false })).toEqual({ greyUninstalled: false });
+  // Long names are cut short unless wrapping them was picked.
+  expect(viewOf({}).wrapNames).toBe(false);
+  expect(viewOf({ wrapNames: true })).toEqual({ ...DEFAULT_VIEW, wrapNames: true });
+  expect(viewOf({ wrapNames: "yes" as never }).wrapNames).toBe(false);
+  expect(savedView({ ...DEFAULT_VIEW, wrapNames: true })).toEqual({ wrapNames: true });
 });
 
 test("the grid's playlists go along the top unless the side panel was picked; the List layout is still saved as sidebar", () => {

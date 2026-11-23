@@ -141,6 +141,7 @@ export function ViewOptions({ groups }: { groups?: boolean }) {
           <Trans comment="Library view option: the cards of apps in the library but not installed on this computer have a greyed picture">Grey out apps that aren't installed</Trans>
         </label>
       )}
+      {cards && view.names && <WrapNamesToggle value={view.wrapNames} onChange={(wrapNames) => set({ wrapNames })} />}
       {/* With the names: a card without them has the art alone. */}
       {cards && view.names && <DetailChoice options={LIBRARY_DETAILS} value={view.details} onChange={(details) => set({ details })} names={LIBRARY_DETAIL_NAMES} />}
       {groups && (
@@ -332,7 +333,7 @@ export function useBrowseCards() {
     set: (next: Partial<BrowseCards>) => setSettings({ ...settings, browseCards: savedBrowseCards({ ...cards, ...next }) }),
     card: (entry: Entry) => {
       const art = box ? boxOf(entry) : coverOf(entry);
-      return { look: cards.look, details: cards.details, coverSources: art ? cardSources(art, box ? CATALOG_BOX : CATALOG_COVER) : undefined };
+      return { look: cards.look, details: cards.details, wrap: cards.wrap, coverSources: art ? cardSources(art, box ? CATALOG_BOX : CATALOG_COVER) : undefined };
     },
     grid: box ? "catalog-grid boxes" : "catalog-grid",
   };
@@ -340,10 +341,11 @@ export function useBrowseCards() {
 
 /** Browse's card style, and a box for each detail its cards can show, beside a card showing them; in Browse's View menu and Settings. */
 export function BrowseCardOptions() {
-  const { look, details, set } = useBrowseCards();
+  const { look, details, wrap, set } = useBrowseCards();
   return (
     <div className="view-options card-options">
       <Choice label={t({ message: "Card style", comment: "Browse view option" })} options={CARD_LOOKS} icons={LOOK_ICONS} value={look} onChange={(look) => set({ look })} />
+      <WrapNamesToggle value={wrap} onChange={(wrap) => set({ wrap })} />
       <div className="card-preview">
         <CardSample />
         <DetailChoice options={CARD_DETAILS} value={details} onChange={(details) => set({ details })} />
@@ -361,7 +363,7 @@ let sampled: Entry | undefined;
  */
 function CardSample() {
   const { client, config, catalog, consoleNames } = useLauncher();
-  const { look, details, card } = useBrowseCards();
+  const { look, details, wrap, card } = useBrowseCards();
   const [entry, setEntry] = useState<Entry | null | undefined>(sampled);
   useEffect(() => {
     if (sampled) return;
@@ -383,7 +385,7 @@ function CardSample() {
       <span className="view-label">
         <Trans comment="Above a sample card, showing how the options picked look">Preview</Trans>
       </span>
-      <div className={`entry-card ${look}`}>
+      <div className={`entry-card ${look}${wrap ? " wrap-names" : ""}`}>
         <div className="card-open">
           {/* Any app can be New here, or its box would seem to do nothing. */}
           {entry ? (
@@ -394,6 +396,16 @@ function CardSample() {
         </div>
       </div>
     </div>
+  );
+}
+
+/** Whether the cards' long names wrap onto more lines (issue 507), in the library's View menu and Browse's. */
+function WrapNamesToggle({ value, onChange }: { value: boolean; onChange: (wrap: boolean) => void }) {
+  return (
+    <label className="toggle">
+      <input type="checkbox" checked={value} onChange={(e) => onChange(e.target.checked)} />
+      <Trans comment="Library and Browse view option: a card's long name (and the line under it) goes onto more lines, rather than being cut short with … and scrolling on hover">Show long names on more lines</Trans>
+    </label>
   );
 }
 

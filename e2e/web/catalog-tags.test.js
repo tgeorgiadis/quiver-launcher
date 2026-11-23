@@ -73,7 +73,7 @@ test("an app's Tags menu lists the catalog's tags, and unticking one takes it of
 
 test("Settings sums the tags up, and the tags window's catalog tab hides one on every app, and shows it again", async () => {
   await openSettings();
-  assert.match(await section().locator(".tags-summary").innerText(), /0\s+of your tags\s+2\s+from the catalog\s+Manage tags/);
+  assert.match(await section().locator(".tags-summary").innerText(), /Manage tags\s+0\s+of your tags\s+2\s+from the catalog/);
   assert.equal(await section().locator("li").count(), 0, "the list isn't in Settings itself");
   await openTags();
   assert.deepEqual(await listed(), ["Nintendo", "Recomp"]);

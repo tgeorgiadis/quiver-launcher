@@ -6649,6 +6649,11 @@ msgstr "설치됨 및 업데이트 아이콘 표시"
 msgid "Show less"
 msgstr "간략히 보기"
 
+#. Library and Browse view option: a card's long name (and the line under it) goes onto more lines, rather than being cut short with … and scrolling on hover
+#: ../../apps/launcher/src/library-view.tsx
+msgid "Show long names on more lines"
+msgstr "긴 이름을 여러 줄로 표시"
+
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/mods.tsx
 msgid "Show more"

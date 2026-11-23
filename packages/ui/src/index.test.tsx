@@ -182,7 +182,10 @@ describe("ScrollingText", () => {
       expect(text.getAttribute("title")).toBe("The Legend of Zelda: Ocarina of Time 3D");
       expect(text.classList.contains("overflows")).toBe(true);
       fireEvent.pointerEnter(container.querySelector("button")!);
-      act(() => void vi.advanceTimersByTime(700));
+      // Not on a card a held d-pad only passes (a step each 120 ms): from a moment after.
+      act(() => void vi.advanceTimersByTime(200));
+      expect(text.classList.contains("active")).toBe(false);
+      act(() => void vi.advanceTimersByTime(50));
       expect(text.classList.contains("active")).toBe(true);
       fireEvent.pointerLeave(container.querySelector("button")!);
       expect(text.classList.contains("active")).toBe(false);

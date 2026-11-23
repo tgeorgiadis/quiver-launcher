@@ -6649,6 +6649,11 @@ msgstr "Mostra icone di installazione e aggiornamento"
 msgid "Show less"
 msgstr "Mostra meno"
 
+#. Library and Browse view option: a card's long name (and the line under it) goes onto more lines, rather than being cut short with … and scrolling on hover
+#: ../../apps/launcher/src/library-view.tsx
+msgid "Show long names on more lines"
+msgstr "Mostra i nomi lunghi su più righe"
+
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/mods.tsx
 msgid "Show more"
