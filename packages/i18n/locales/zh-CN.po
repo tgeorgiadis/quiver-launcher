@@ -6649,6 +6649,11 @@ msgstr "显示已安装和更新图标"
 msgid "Show less"
 msgstr "显示较少"
 
+#. Library and Browse view option: a card's long name (and the line under it) goes onto more lines, rather than being cut short with … and scrolling on hover
+#: ../../apps/launcher/src/library-view.tsx
+msgid "Show long names on more lines"
+msgstr "长名称分多行显示"
+
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/mods.tsx
 msgid "Show more"

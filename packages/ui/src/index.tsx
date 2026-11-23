@@ -709,8 +709,11 @@ export function EntryCard({
   tick,
   ticked,
   mark,
+  wrap,
 }: {
   entry: CardEntry & { slug: string };
+  /** Its name and the line under it wrap onto more lines, rather than being cut short and scrolling (`wrap-names`). */
+  wrap?: boolean;
   /** Selecting several cards (the launcher's): which apps this card is (`data-tick`), and whether it's selected. */
   tick?: string;
   ticked?: boolean;
@@ -738,7 +741,7 @@ export function EntryCard({
 }) {
   const consoleName = (tag: string) => (Object.hasOwn(consoleNames, tag) ? consoleNames[tag] : undefined);
   return (
-    <article className={["entry-card", look, className].filter(Boolean).join(" ")} data-slug={entry.slug} data-tick={tick} data-ticked={ticked || undefined}>
+    <article className={["entry-card", look, wrap && "wrap-names", className].filter(Boolean).join(" ")} data-slug={entry.slug} data-tick={tick} data-ticked={ticked || undefined}>
       <button type="button" className="card-open" onClick={onOpen} aria-label={entry.projectName} aria-pressed={mark ? Boolean(ticked) : undefined}>
         <EntryCardContent entry={entry} artwork={cover} coverSources={coverSources} badge={badge} consoleName={consoleName} status={status} look={look} details={details} mark={mark} />
       </button>

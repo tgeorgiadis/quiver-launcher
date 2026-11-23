@@ -1021,3 +1021,48 @@
 .release-notes.markdown {
   font-size: 13px;
 }
+
+/*
+ * Names in full (a launcher option, on the card or anything around it): a card's name and the line under it wrap onto
+ * as many lines as they take, rather than being cut short and scrolling. Nothing is cut then, so nothing scrolls.
+ * Cards side by side stay level at their foot (the box and wide cards' spacer, above). Last in the file, to win over
+ * the box card's one line under its name.
+ */
+.wrap-names .card-body :is(.card-title, .card-subtitle) .scrolling-text,
+.wrap-names .card-body .card-subtitle {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+/* A wide card's games: one chip's name on more lines, and several chips onto more rows. */
+.wrap-names .card-body .based-on {
+  align-items: flex-start;
+}
+.wrap-names .card-body .based-on-label {
+  line-height: 24px;
+}
+.wrap-names .card-body .based-on > .game-chip,
+.wrap-names .card-body .based-on > .game-chip .scrolling-text,
+.wrap-names .card-body .game-chip-row .scrolling-text {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.wrap-names .card-body .based-on > .game-chip {
+  border-radius: 12px;
+}
+.wrap-names .card-body .game-chip-row .scrolling-text > span {
+  display: flex;
+  flex-wrap: wrap;
+}
+.wrap-names .card-body .game-chip-row .game-chip {
+  flex-shrink: 1;
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  border-radius: 12px;
+}
+.wrap-names .card-body .card-title.with-icon {
+  align-items: flex-start;
+}
+.wrap-names .card-body .card-title.with-icon .card-icon {
+  margin-top: 0.1em;
+}

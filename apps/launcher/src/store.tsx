@@ -1477,7 +1477,7 @@ export type Settings = {
   /** Browse lists apps already in the library too. */
   browseShowsLibrary?: boolean;
   /** How Browse's cards look and which details they show (browse-cards.ts); only what differs from the defaults. */
-  browseCards?: { look?: string; details?: string[] };
+  browseCards?: { look?: string; details?: string[]; wrap?: boolean };
   /** Apps hidden from Browse here (browse-hidden.ts); apart from `hidden`, the library's. */
   browseHidden?: HiddenApp[];
   /** How the library is sorted (sort.ts); unset is recently played. */

@@ -8,13 +8,18 @@ import type { MessageDescriptor } from "@lingui/core";
 import type { Entry } from "@quiverlauncher/api";
 import { CARD_DETAILS, hasEasySetup, ownIcon, type CardDetail, type CardLook } from "@quiverlauncher/ui";
 
-export type BrowseCards = { look: CardLook; details: CardDetail[] };
+export type BrowseCards = {
+  look: CardLook;
+  details: CardDetail[];
+  /** Long names (and the line under them) wrap onto more lines, rather than being cut short and scrolling on hover. */
+  wrap: boolean;
+};
 
 /**
  * Box art, with every detail but New: the app's icon, its kinds, both what players said and when it was updated, and
- * Easy setup.
+ * Easy setup; long names cut short.
  */
-export const DEFAULT_BROWSE_CARDS: BrowseCards = { look: "box", details: ["icon", "subtitle", "kinds", "rating", "updated", "platforms", "ai", "setup"] };
+export const DEFAULT_BROWSE_CARDS: BrowseCards = { look: "box", details: ["icon", "subtitle", "kinds", "rating", "updated", "platforms", "ai", "setup"], wrap: false };
 
 // The choices' names put in the language when shown (i18n._), not here, where the module loads before any is picked.
 export const CARD_LOOKS: [CardLook, MessageDescriptor][] = [
@@ -55,15 +60,20 @@ export function sampleEntry(entries: readonly Entry[]): Entry | undefined {
 }
 
 /** The saved choices over the defaults; anything unknown (an older or newer launcher's) is left out. */
-export function browseCardsOf(saved?: { look?: unknown; details?: unknown }): BrowseCards {
+export function browseCardsOf(saved?: { look?: unknown; details?: unknown; wrap?: unknown }): BrowseCards {
   const look = CARD_LOOKS.some(([l]) => l === saved?.look) ? (saved!.look as CardLook) : DEFAULT_BROWSE_CARDS.look;
   const details = Array.isArray(saved?.details) ? CARD_DETAILS.filter((d) => (saved.details as unknown[]).includes(d)) : DEFAULT_BROWSE_CARDS.details;
-  return { look, details };
+  const wrap = typeof saved?.wrap === "boolean" ? saved.wrap : DEFAULT_BROWSE_CARDS.wrap;
+  return { look, details, wrap };
 }
 
 /** Only what differs from the defaults is saved. */
-export function savedBrowseCards({ look, details }: BrowseCards): { look?: CardLook; details?: CardDetail[] } | undefined {
+export function savedBrowseCards({ look, details, wrap }: BrowseCards): { look?: CardLook; details?: CardDetail[]; wrap?: boolean } | undefined {
   const same = details.length === DEFAULT_BROWSE_CARDS.details.length && details.every((d) => DEFAULT_BROWSE_CARDS.details.includes(d));
-  const changed = { ...(look !== DEFAULT_BROWSE_CARDS.look && { look }), ...(!same && { details: CARD_DETAILS.filter((d) => details.includes(d)) }) };
+  const changed = {
+    ...(look !== DEFAULT_BROWSE_CARDS.look && { look }),
+    ...(!same && { details: CARD_DETAILS.filter((d) => details.includes(d)) }),
+    ...(wrap !== DEFAULT_BROWSE_CARDS.wrap && { wrap }),
+  };
   return Object.keys(changed).length ? changed : undefined;
 }

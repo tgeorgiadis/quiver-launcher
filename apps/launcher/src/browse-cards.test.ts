@@ -4,13 +4,20 @@ import { DEFAULT_BROWSE_CARDS, browseCardsOf, sampleEntry, savedBrowseCards } fr
 
 test("nothing saved is box art with every detail but New", () => {
   expect(browseCardsOf()).toEqual(DEFAULT_BROWSE_CARDS);
-  expect(browseCardsOf({})).toEqual({ look: "box", details: ["icon", "subtitle", "kinds", "rating", "updated", "platforms", "ai", "setup"] });
+  expect(browseCardsOf({})).toEqual({ look: "box", details: ["icon", "subtitle", "kinds", "rating", "updated", "platforms", "ai", "setup"], wrap: false });
 });
 
 test("the saved choices are kept in order, and anything unknown is left out", () => {
-  expect(browseCardsOf({ look: "wide", details: ["new", "rating", "sparkles"] })).toEqual({ look: "wide", details: ["rating", "new"] });
-  expect(browseCardsOf({ look: "list", details: [] })).toEqual({ look: "box", details: [] });
+  expect(browseCardsOf({ look: "wide", details: ["new", "rating", "sparkles"] })).toEqual({ look: "wide", details: ["rating", "new"], wrap: false });
+  expect(browseCardsOf({ look: "list", details: [] })).toEqual({ look: "box", details: [], wrap: false });
   expect(browseCardsOf({ details: "rating" }).details).toEqual(DEFAULT_BROWSE_CARDS.details);
+});
+
+test("long names are cut short unless the player picked wrapping them", () => {
+  expect(browseCardsOf({ wrap: true }).wrap).toBe(true);
+  expect(browseCardsOf({ wrap: "yes" }).wrap).toBe(false);
+  expect(savedBrowseCards({ ...DEFAULT_BROWSE_CARDS, wrap: true })).toEqual({ wrap: true });
+  expect(savedBrowseCards({ ...DEFAULT_BROWSE_CARDS, wrap: false })).toBeUndefined();
 });
 
 test("a sample card shows the first app with the most details to turn on and off", () => {
@@ -30,8 +37,8 @@ test("a sample card shows the first app with the most details to turn on and off
 
 test("only what differs from the defaults is saved", () => {
   expect(savedBrowseCards(DEFAULT_BROWSE_CARDS)).toBeUndefined();
-  expect(savedBrowseCards({ look: "box", details: [...DEFAULT_BROWSE_CARDS.details].reverse() })).toBeUndefined();
-  expect(savedBrowseCards({ look: "wide", details: DEFAULT_BROWSE_CARDS.details })).toEqual({ look: "wide" });
-  expect(savedBrowseCards({ look: "box", details: ["new", "subtitle"] })).toEqual({ details: ["subtitle", "new"] });
-  expect(savedBrowseCards({ look: "box", details: [] })).toEqual({ details: [] });
+  expect(savedBrowseCards({ look: "box", details: [...DEFAULT_BROWSE_CARDS.details].reverse(), wrap: false })).toBeUndefined();
+  expect(savedBrowseCards({ look: "wide", details: DEFAULT_BROWSE_CARDS.details, wrap: false })).toEqual({ look: "wide" });
+  expect(savedBrowseCards({ look: "box", details: ["new", "subtitle"], wrap: false })).toEqual({ details: ["subtitle", "new"] });
+  expect(savedBrowseCards({ look: "box", details: [], wrap: false })).toEqual({ details: [] });
 });
