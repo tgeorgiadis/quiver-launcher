@@ -29,17 +29,39 @@ import { zoom } from "./zoom";
 type Tick = { ticked: ReadonlySet<string>; toggle: (ids: string[]) => void; select: (ids: string[]) => void };
 const TickContext = createContext<Tick | null>(null);
 
-/** Whether the library is selecting, and whether these apps (a card's, a game card's ports) are selected; null outside the library. */
-export function useTicked(ids: readonly string[]): { ticking: boolean; ticked: boolean } {
+/**
+ * Whether the page is selecting, and whether these apps (a card's, a game card's ports) are selected; `selectable`,
+ * whether the card is somewhere that selects (the library, Browse), not another page's.
+ */
+export function useTicked(ids: readonly string[]): { ticking: boolean; ticked: boolean; selectable: boolean } {
   const tick = useContext(TickContext);
-  return { ticking: Boolean(tick?.ticked.size), ticked: Boolean(tick && ids.length && ids.every((id) => tick.ticked.has(id))) };
+  return { ticking: Boolean(tick?.ticked.size), ticked: Boolean(tick && ids.length && ids.every((id) => tick.ticked.has(id))), selectable: Boolean(tick) };
 }
 
-/** Selects an app, or unselects it, from its menu: none outside the library. */
+/** Selects an app, or unselects it, from its menu: none outside the library and Browse. */
 export const useTickToggle = () => useContext(TickContext)?.toggle;
+
+/** Selects just these, as Undo after hiding them does. */
+export const useTickSelect = () => useContext(TickContext)?.select;
+
+/**
+ * Installs these apps, each as its Install would. Where the player chooses where each new app goes, they choose once
+ * for them all, rather than a prompt for each that would leave only the last.
+ */
+export function useInstallAll() {
+  const { get, askPlace, settings, config } = useLauncher();
+  return (entries: Entry[]) => {
+    const desktop = config.os !== "android" && config.os !== "ios";
+    if (settings.askWhereToInstall && desktop && entries.length > 1) return askPlace(entries[0], undefined, undefined, entries.slice(1));
+    for (const entry of entries) void get(entry);
+  };
+}
 
 /** What's selecting and not: Escape and Back close these first. */
 const OVER = '[role="dialog"], [role="menu"], [role="listbox"], .menu.floating, .page-layer:not([hidden])';
+
+/** What a selecting area's bar is given: the apps selected, what shows, its right-click menu's opener, Select all and Done. */
+export type BarProps = { ids: string[]; shown: readonly string[]; menu: { current: ((x: number, y: number) => void) | null }; onSelectAll: () => void; onDone: () => void };
 
 /**
  * Around the library's apps: takes clicks on its cards and rows first while selecting (or with Ctrl or Shift), and
@@ -48,10 +70,22 @@ const OVER = '[role="dialog"], [role="menu"], [role="listbox"], .menu.floating, 
  */
 export function TickArea({ shown, playlist, children }: { shown: readonly string[]; playlist?: string; children: ReactNode }) {
   const { library } = useLauncher();
-  const [all, setTicked] = useState<ReadonlySet<string>>(new Set());
   // Only apps still in the library: one removed meanwhile drops out.
   const inLibrary = new Set(library.map((i) => i.id));
-  const ticked = [...all].some((id) => !inLibrary.has(id)) ? new Set([...all].filter((id) => inLibrary.has(id))) : all;
+  return (
+    <SelectArea shown={shown} keep={(id) => inLibrary.has(id)} bar={(props) => <TickBar {...props} playlist={playlist} />}>
+      {children}
+    </SelectArea>
+  );
+}
+
+/**
+ * Selecting cards (`data-tick`) on a page, the library's or Browse's: takes their clicks first while selecting (or
+ * with Ctrl or Shift), and shows `bar` along the page's foot. `keep`: which of those selected still count.
+ */
+export function SelectArea({ shown, keep, bar, children }: { shown: readonly string[]; keep?: (id: string) => boolean; bar: (props: BarProps) => ReactNode; children: ReactNode }) {
+  const [all, setTicked] = useState<ReadonlySet<string>>(new Set());
+  const ticked = keep && [...all].some((id) => !keep(id)) ? new Set([...all].filter(keep)) : all;
   const ticking = ticked.size > 0;
   // The card clicked last, which Shift+click selects from.
   const anchor = useRef<string>(undefined);
@@ -68,8 +102,8 @@ export function TickArea({ shown, playlist, children }: { shown: readonly string
     return () => document.documentElement.removeAttribute("data-ticking");
   }, [ticking]);
   // The page's own listeners, ahead of the cards' (React's, and a menu's opener): what the cards would do waits.
-  const now = useRef({ ticking, toggle });
-  now.current = { ticking, toggle };
+  const now = useRef({ ticking, toggle, shown });
+  now.current = { ticking, toggle, shown };
   useEffect(() => {
     // The cards and rows showing, in the order they show (across sections, in any layout).
     const order = () => [...document.querySelectorAll<HTMLElement>("[data-tick]")].flatMap((el) => el.dataset.tick!.split(" "));
@@ -111,14 +145,15 @@ export function TickArea({ shown, playlist, children }: { shown: readonly string
         const r = card.getBoundingClientRect();
         return openMenu(card, (r.left + 12) * zoom(), (r.top + 12) * zoom());
       }
-      // Escape and Back stop selecting, and Ctrl+A selects everything showing, unless something's open over the library.
+      // Escape and Back stop selecting, and Ctrl+A selects everything showing, unless something's open over the page.
       if (document.querySelector(OVER)) return;
       if (e.key === "Escape") {
         e.stopPropagation();
         setTicked(new Set());
       } else if (e.key.toLowerCase() === "a" && (e.ctrlKey || e.metaKey) && !(e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement)) {
         e.preventDefault();
-        const shown = order();
+        // What Select all selects: Browse's front page has its shelves' cards too, which aren't the list's.
+        const shown = now.current.shown;
         setTicked((t) => new Set([...t, ...shown]));
       }
     };
@@ -132,27 +167,13 @@ export function TickArea({ shown, playlist, children }: { shown: readonly string
     <TickContext.Provider value={tick}>
       {children}
       {ticking && <div className="tick-space" aria-hidden="true" />}
-      {ticking && <TickBar ids={[...ticked]} shown={shown} playlist={playlist} menu={menu} onSelectAll={() => setTicked((t) => new Set([...t, ...shown]))} onDone={() => setTicked(new Set())} />}
+      {ticking && bar({ ids: [...ticked], shown, menu, onSelectAll: () => setTicked((t) => new Set([...t, ...shown])), onDone: () => setTicked(new Set()) })}
     </TickContext.Provider>
   );
 }
 
 /** Along the foot while apps are selected: how many, Select all and Done, and what to change on them. */
-function TickBar({
-  ids,
-  shown,
-  playlist,
-  menu,
-  onSelectAll,
-  onDone,
-}: {
-  ids: string[];
-  shown: readonly string[];
-  playlist?: string;
-  menu: { current: ((x: number, y: number) => void) | null };
-  onSelectAll: () => void;
-  onDone: () => void;
-}) {
+function TickBar({ ids, shown, playlist, menu, onSelectAll, onDone }: BarProps & { playlist?: string }) {
   const [uninstalling, setUninstalling] = useState<"uninstall" | "remove" | null>(null);
   const count = ids.length;
   const away = ids.filter((id) => !shown.includes(id)).length;
@@ -242,7 +263,7 @@ function useHide(ids: string[], onDone: () => void) {
 type Part = "playlists" | "tags" | "more" | "all";
 
 /** A box ticked, half-ticked or not, by how many of the selected apps have it. */
-function TickBox({ state }: { state: TickState }) {
+export function TickBox({ state }: { state: TickState }) {
   return <span className="game-menu-check">{state === "all" ? <Check size={14} /> : state === "some" ? <Minus size={14} /> : null}</span>;
 }
 
@@ -306,8 +327,10 @@ function TickedItems({ ids, part, playlist, close, onDone, onUninstall }: { ids:
   const busy = (id: string) => Boolean(jobs[id] && !("error" in jobs[id]));
   const gettable = ids.filter((id) => !installs[id] && !busy(id) && catalog[id] && canGet(catalog[id], config.os) && !pulledVerified(catalog[id]));
   const updatable = ids.filter((id) => installs[id] && !busy(id) && catalog[id] && hasUpdate(catalog[id], installs[id]));
+  const installAll = useInstallAll();
   const getAll = (list: string[], action: string) => {
-    for (const id of list) void get(catalog[id]);
+    if (action === "install") installAll(list.map((id) => catalog[id]));
+    else for (const id of list) void get(catalog[id]);
     did(action, list.length);
   };
   // How they update: the choice they all have ticked; "Install automatically" only where some can (updatesByItself).

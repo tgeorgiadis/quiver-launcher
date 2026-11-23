@@ -5,7 +5,7 @@ import { msg, plural, t } from "@lingui/core/macro";
 import { Plural, Trans } from "@lingui/react/macro";
 import { i18n } from "@quiverlauncher/i18n";
 import type { MessageDescriptor } from "@lingui/core";
-import { Artwork, EntryCard, OS_NAMES, PlatformIcons, ReleaseBadge, SourcedImage, heroSources } from "@quiverlauncher/ui";
+import { Artwork, OS_NAMES, PlatformIcons, ReleaseBadge, SourcedImage, heroSources } from "@quiverlauncher/ui";
 import { PORTABLE_FILE, availableOn, canGet, catalogOs, declinedUpdate, earlyGetOffer, earlyOffer, filesAddable, folderNameOf, hasUpdate, locatable, movable, noProgram, pulledVerified, renamable, rootOf, samePath, skipped, stillWaiting, tvModeOn, updateFor, updatesByItself, updatesOf, useLauncher, versionKnown, type AppMove, type Choice } from "./store";
 import { TabPrompt } from "./pad-hints";
 import { Dialog, FilterPill, LibraryPage, MultiPill, Popover, consoleOptions, filterLabel, pickedLabel, projectTypeOptions, withOverrides, type MultiOption } from "./library";
@@ -53,6 +53,7 @@ import { SavesTab } from "./saves-tab";
 import { FilePicker } from "./file-picker";
 import { BrowseMenu, fileName } from "./card-menu";
 import { browseShown, hiddenMatches, toggleHidden, type HiddenView } from "./browse-hidden";
+import { BrowseTickArea, TickableCard } from "./browse-ticking";
 import { closesOutside } from "./overlay";
 import { OwnCopyChips, OwnCopyPrompt } from "./own-copy-setup";
 import { copiesNeeded } from "./own-copy";
@@ -704,7 +705,8 @@ function BrowsePage({
   const refresh = () => (only ? (setHiddenApps(null), setReloads((n) => n + 1)) : load(null, true));
   const typed = search.trim();
   return (
-    <>
+    // Its cards selected several at once, to add, install, put on a playlist or hide together (browse-ticking.tsx).
+    <BrowseTickArea shown={entries.map((e) => e.id)}>
       {/* The search in the row's middle, as large as the library's; sort, Filters and Submit an app at its end. */}
       <div className="browse-head">
       <div className="browse-bar">
@@ -902,7 +904,7 @@ function BrowsePage({
           )}
           <div className={looks.grid}>
             {entries.map((entry) => (
-              <EntryCard
+              <TickableCard
                 key={entry.id}
                 entry={withShownTags(entry)}
                 {...looks.card(entry)}
@@ -954,7 +956,7 @@ function BrowsePage({
           )}
         </>
       )}
-    </>
+    </BrowseTickArea>
   );
 }
 
@@ -2706,6 +2708,9 @@ function PlaceAppPrompt() {
   if (!placing) return null;
   const entry = catalog[placing.id] ?? placing;
   const app = entry.projectName;
+  // Several selected to install (library-ticking.tsx): all of them in the folder chosen.
+  const also = asked?.also ?? [];
+  const count = also.length + 1;
   // The version it was going to install, when one was chosen (Choose a version…): said, so it's clear which goes.
   const version = asked?.release ? versionLabel(asked.release.version) : null;
   const moving = appMoves[placing.id];
@@ -2726,6 +2731,7 @@ function PlaceAppPrompt() {
     if (!install) {
       close();
       void get(entry, asked?.release, { ...asked?.options, to });
+      for (const other of also) void get(catalog[other.id] ?? other, undefined, { to });
       return;
     }
     moveApp(placing.id, to).then(
@@ -2737,10 +2743,10 @@ function PlaceAppPrompt() {
     );
   };
   return (
-    <Dialog label={install ? t`Move ${app}` : version ? t`Install ${app} ${version} to` : t`Install ${app} to`} onClose={close}>
+    <Dialog label={install ? t`Move ${app}` : also.length ? plural(count, { one: "Install # app to", other: "Install # apps to" }) : version ? t`Install ${app} ${version} to` : t`Install ${app} to`} onClose={close}>
       <div className="detail-body place-app">
         <h2>
-          <FolderOpen size={18} /> {install ? <Trans>Move {app}</Trans> : version ? <Trans>Install {app} {version} to</Trans> : <Trans>Install {app} to</Trans>}
+          <FolderOpen size={18} /> {install ? <Trans>Move {app}</Trans> : also.length ? <Plural value={count} one="Install # app to" other="Install # apps to" /> : version ? <Trans>Install {app} {version} to</Trans> : <Trans>Install {app} to</Trans>}
         </h2>
         <div className="move-choice" role="radiogroup" aria-label={t`Folder`}>
           {options.map((path) => {
@@ -2775,7 +2781,7 @@ function PlaceAppPrompt() {
           {install ? (
             <Trans>It gets a folder of its own in there, with its saves and settings. Desktop and Steam shortcuts you made before point at the old place, so make them again.</Trans>
           ) : (
-            <Trans>It gets a folder of its own in there, and updates keep installing into it.</Trans>
+            also.length ? <Trans>Each gets a folder of its own in there, and updates keep installing into it.</Trans> : <Trans>It gets a folder of its own in there, and updates keep installing into it.</Trans>
           )}
         </p>
         {moving && <MovingBar moving={moving} />}
