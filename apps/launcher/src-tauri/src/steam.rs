@@ -20,7 +20,7 @@ use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
-const TAG: &str = "QuiverLauncher";
+pub const TAG: &str = "QuiverLauncher";
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Vdf {
@@ -122,6 +122,15 @@ pub struct Shortcut {
     pub proton: bool,
     /// Downloaded artwork: grid file suffix ("", "p", "_hero", "_logo", "_icon") to a PNG.
     pub art: Vec<(String, PathBuf)>,
+    /// The shortcut already in Steam to change, by its app id: one Quiver made before its shortcuts started games
+    /// through it (shortcut_upgrade.rs). Only that one is changed, its name and the rest left as the player has them,
+    /// and none is added if it's gone.
+    #[serde(default)]
+    pub appid: Option<u32>,
+    /// Takes away a compat tool Steam has for the shortcut: one that runs Quiver, not a Windows game, mustn't run
+    /// through Proton.
+    #[serde(default)]
+    pub drop_proton: bool,
 }
 
 fn quoted(path: &Path) -> String {
@@ -130,7 +139,7 @@ fn quoted(path: &Path) -> String {
 
 /// A program's arguments as Steam stores a desktop's launch options: each quoted.
 #[cfg_attr(not(target_os = "linux"), allow(dead_code))]
-fn options_of(args: &[String]) -> String {
+pub fn options_of(args: &[String]) -> String {
     args.iter().map(|a| format!("\"{a}\"")).collect::<Vec<_>>().join(" ")
 }
 
@@ -169,6 +178,8 @@ impl Shortcut {
             icon: icon.map(|p| p.to_string_lossy().into_owned()).unwrap_or_default(),
             proton,
             art: Vec::new(),
+            appid: None,
+            drop_proton: false,
         }
     }
 }
@@ -295,6 +306,9 @@ impl Launcher {
             icon: icon.map(|p| p.to_string_lossy().into_owned()).unwrap_or_default(),
             proton: false,
             art,
+            appid: None,
+            // It runs natively: a Proton Steam had for an older shortcut of the app's would run Quiver with it.
+            drop_proton: true,
         }
     }
 }
@@ -334,7 +348,25 @@ fn shell_word(word: &str) -> String {
 }
 
 /// Adds or updates the shortcut in a shortcuts.vdf's contents; returns its app id.
+#[cfg_attr(not(test), allow(dead_code))]
 pub fn upsert(file: Option<&[u8]>, s: &Shortcut) -> Result<(Vec<u8>, u32), String> {
+    let (bytes, ids) = upsert_all(file, std::slice::from_ref(s))?;
+    Ok((bytes, ids[0].ok_or(GONE)?))
+}
+
+const GONE: &str = "That shortcut isn't in Steam any more.";
+
+/// A shortcuts.vdf entry is one that starts its game through Quiver (`--launch`, shortcut_play.rs).
+pub fn through_quiver(m: &[(String, Vdf)]) -> bool {
+    let get = |key: &str| m.iter().find(|(k, _)| k.eq_ignore_ascii_case(key)).map(|(_, v)| v);
+    ["exe", "LaunchOptions"]
+        .iter()
+        .any(|key| matches!(get(key), Some(Vdf::Str(s)) if s.split_whitespace().any(|w| w.trim_matches('"') == crate::shortcut_play::LAUNCH)))
+}
+
+/// Adds or updates each shortcut in a shortcuts.vdf's contents; returns their app ids, none for one to change by its
+/// id that isn't there.
+pub fn upsert_all(file: Option<&[u8]>, all: &[Shortcut]) -> Result<(Vec<u8>, Vec<Option<u32>>), String> {
     let mut root = match file {
         Some(bytes) => parse(bytes).ok_or("Steam's shortcuts file couldn't be read.")?,
         None => vec![("shortcuts".into(), Vdf::Map(Vec::new()))],
@@ -342,10 +374,24 @@ pub fn upsert(file: Option<&[u8]>, s: &Shortcut) -> Result<(Vec<u8>, u32), Strin
     let Some((_, Vdf::Map(list))) = root.iter_mut().find(|(k, _)| k.eq_ignore_ascii_case("shortcuts")) else {
         return Err("Steam's shortcuts file couldn't be read.".into());
     };
+    let ids = all.iter().map(|s| upsert_one(list, s)).collect();
+    // Steam numbers its shortcuts 0, 1, 2…
+    for (n, (key, _)) in list.iter_mut().enumerate() {
+        *key = n.to_string();
+    }
+    Ok((write(&root), ids))
+}
+
+fn upsert_one(list: &mut Vec<(String, Vdf)>, s: &Shortcut) -> Option<u32> {
     let get = |m: &[(String, Vdf)], key: &str| m.iter().find(|(k, _)| k.eq_ignore_ascii_case(key)).map(|(_, v)| v.clone());
     let ours = |m: &[(String, Vdf)]| {
+        if let Some(id) = s.appid {
+            return get(m, "appid") == Some(Vdf::Int(id));
+        }
         let tagged = matches!(get(m, "tags"), Some(Vdf::Map(t)) if t.iter().any(|(_, v)| *v == Vdf::Str(TAG.into())));
-        get(m, "appname") == Some(Vdf::Str(s.name.clone())) && (get(m, "exe") == Some(Vdf::Str(s.exe.clone())) || tagged)
+        // One Steam added from this launcher's desktop itself, which it doesn't tag.
+        let from_desktop = !s.shortcut_path.is_empty() && get(m, "ShortcutPath") == Some(Vdf::Str(s.shortcut_path.clone()));
+        from_desktop || get(m, "appname") == Some(Vdf::Str(s.name.clone())) && (get(m, "exe") == Some(Vdf::Str(s.exe.clone())) || tagged)
     };
     let existing = list.iter_mut().find_map(|(_, v)| match v {
         Vdf::Map(m) if ours(m) => Some(m),
@@ -370,6 +416,8 @@ pub fn upsert(file: Option<&[u8]>, s: &Shortcut) -> Result<(Vec<u8>, u32), Strin
             }
             id
         }
+        // One to change that the player has taken out of Steam since stays out.
+        None if s.appid.is_some() => return None,
         None => {
             let id = app_id(&s.exe, &s.name);
             let str = |v: &str| Vdf::Str(v.into());
@@ -399,11 +447,7 @@ pub fn upsert(file: Option<&[u8]>, s: &Shortcut) -> Result<(Vec<u8>, u32), Strin
             id
         }
     };
-    // Steam numbers its shortcuts 0, 1, 2…
-    for (n, (key, _)) in list.iter_mut().enumerate() {
-        *key = n.to_string();
-    }
-    Ok((write(&root), id))
+    Some(id)
 }
 
 fn set(m: &mut Vec<(String, Vdf)>, key: &str, value: Vdf) {
@@ -504,14 +548,26 @@ pub fn running() -> bool {
 
 /// Writes the shortcut, its artwork and Proton choice. Steam must be closed.
 pub fn apply(s: &Shortcut) -> Result<(), String> {
+    apply_all(std::slice::from_ref(s))
+}
+
+/// Writes the shortcuts in one guarded write of Steam's file, with their artwork and Proton choices. Steam must be
+/// closed.
+pub fn apply_all(all: &[Shortcut]) -> Result<(), String> {
     if running() {
         return Err("Steam is open. Close Steam, then try again.".into());
     }
     let (user, root) = account()?;
-    let id = write_shortcuts(&user.join("config/shortcuts.vdf"), s)?;
-    let _ = place_art(&user, id, &s.art);
-    if s.proton {
-        let _ = use_proton(&root.join("config/config.vdf"), id);
+    let ids = write_all(&user.join("config/shortcuts.vdf"), all)?;
+    let config = root.join("config/config.vdf");
+    for (s, id) in all.iter().zip(ids) {
+        let Some(id) = id else { continue };
+        let _ = place_art(&user, id, &s.art);
+        if s.proton {
+            let _ = use_proton(&config, id);
+        } else if s.drop_proton {
+            let _ = drop_proton(&config, id);
+        }
     }
     Ok(())
 }
@@ -524,23 +580,32 @@ const BACKUPS: usize = 5;
 /// there but can't be read stops the write instead of being started over, the
 /// file is backed up beside itself first, and a result that would hold fewer
 /// shortcuts than before isn't written.
+#[cfg_attr(not(test), allow(dead_code))]
 pub fn write_shortcuts(file: &Path, s: &Shortcut) -> Result<u32, String> {
+    write_all(file, std::slice::from_ref(s))?[0].ok_or_else(|| GONE.into())
+}
+
+/// write_shortcuts for several at once, in one write and one backup. A file this leaves as it was isn't written.
+pub fn write_all(file: &Path, all: &[Shortcut]) -> Result<Vec<Option<u32>>, String> {
     let current = match std::fs::read(file) {
         Ok(bytes) => Some(bytes),
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => None,
         Err(e) => return Err(format!("Steam's shortcuts file couldn't be read, so it was left as it is: {e}")),
     };
     let before = current.as_deref().map(count).transpose()?.unwrap_or(0);
-    let (bytes, id) = upsert(current.as_deref(), s)?;
+    let (bytes, ids) = upsert_all(current.as_deref(), all)?;
     if count(&bytes)? < before {
         return Err("Adding to Steam would have lost other shortcuts, so Steam's file was left as it is.".into());
+    }
+    if current.as_deref() == Some(bytes.as_slice()) {
+        return Ok(ids);
     }
     if let Some(old) = &current {
         backup(file, old)?;
     }
     let temp = file.with_extension("vdf.quiver.tmp");
     std::fs::write(&temp, bytes).and_then(|_| std::fs::rename(&temp, file)).map_err(|e| e.to_string())?;
-    Ok(id)
+    Ok(ids)
 }
 
 /// The number of shortcuts in a shortcuts.vdf's contents.
@@ -584,29 +649,49 @@ pub fn place_art(user: &Path, id: u32, art: &[(String, PathBuf)]) -> Result<(), 
     Ok(())
 }
 
-/// The app id of the first shortcut in Steam's file that `pick` accepts.
-fn id_where(user: &Path, pick: impl Fn(&[(String, Vdf)]) -> bool) -> Option<u32> {
+/// The shortcuts in Steam's file for the account at `user`, each a map of its fields.
+pub fn shortcuts_in(user: &Path) -> Option<Vec<Vec<(String, Vdf)>>> {
     let bytes = std::fs::read(user.join("config/shortcuts.vdf")).ok()?;
     let root = parse(&bytes)?;
-    let (_, Vdf::Map(list)) = root.iter().find(|(k, _)| k.eq_ignore_ascii_case("shortcuts"))? else { return None };
-    list.iter().find_map(|(_, v)| match v {
-        Vdf::Map(m) if pick(m) => m.iter().find_map(|(k, v)| match (k.to_ascii_lowercase().as_str(), v) {
-            ("appid", Vdf::Int(id)) => Some(*id),
-            _ => None,
-        }),
+    let (_, Vdf::Map(list)) = root.into_iter().find(|(k, _)| k.eq_ignore_ascii_case("shortcuts"))? else { return None };
+    Some(list.into_iter().filter_map(|(_, v)| if let Vdf::Map(m) = v { Some(m) } else { None }).collect())
+}
+
+/// A shortcut's app id.
+pub fn id_in(m: &[(String, Vdf)]) -> Option<u32> {
+    m.iter().find_map(|(k, v)| match (k.to_ascii_lowercase().as_str(), v) {
+        ("appid", Vdf::Int(id)) => Some(*id),
         _ => None,
     })
+}
+
+/// The first shortcut in Steam's file that `pick` accepts.
+fn shortcut_where(user: &Path, pick: impl Fn(&[(String, Vdf)]) -> bool) -> Option<Vec<(String, Vdf)>> {
+    shortcuts_in(user)?.into_iter().find(|m| pick(m))
+}
+
+/// The app id of the first shortcut in Steam's file that `pick` accepts.
+fn id_where(user: &Path, pick: impl Fn(&[(String, Vdf)]) -> bool) -> Option<u32> {
+    id_in(&shortcut_where(user, pick)?)
 }
 
 /// The app id Steam already gave this launcher's shortcut, if it's there: a
 /// live add shouldn't be asked for twice.
 #[cfg_attr(not(target_os = "linux"), allow(dead_code))]
 pub fn existing_id(launcher: &Launcher) -> Option<u32> {
+    existing(launcher).map(|(id, _)| id)
+}
+
+/// The app id Steam already gave this launcher's shortcut, and whether it starts the game through Quiver yet: one
+/// added before Quiver's shortcuts did still names the game (shortcut_upgrade.rs).
+#[cfg_attr(not(target_os = "linux"), allow(dead_code))]
+pub fn existing(launcher: &Launcher) -> Option<(u32, bool)> {
     let (user, _) = account().ok()?;
     let path = launcher.desktop.to_string_lossy().into_owned();
-    id_where(&user, |m| {
+    let m = shortcut_where(&user, |m| {
         m.iter().any(|(k, v)| k.eq_ignore_ascii_case("ShortcutPath") && matches!(v, Vdf::Str(p) if *p == path))
-    })
+    })?;
+    Some((id_in(&m)?, through_quiver(&m)))
 }
 
 /// The app id Steam gave a shortcut it added itself, found by the name and
@@ -679,9 +764,94 @@ fn use_proton(config: &Path, id: u32) -> Result<(), String> {
     std::fs::write(&temp, updated).and_then(|_| std::fs::rename(&temp, config)).map_err(|e| e.to_string())
 }
 
-/// `--add-to-steam <file>`: waits for Steam to close, then writes the shortcut.
+/// Takes away the compat tool Steam's text config has for a shortcut, if it has one.
+fn drop_proton(config: &Path, id: u32) -> Result<(), String> {
+    let text = std::fs::read_to_string(config).map_err(|e| e.to_string())?;
+    let Some(updated) = without_tool(&text, id) else { return Ok(()) };
+    let temp = config.with_extension("vdf.quiver.tmp");
+    std::fs::write(&temp, updated).and_then(|_| std::fs::rename(&temp, config)).map_err(|e| e.to_string())
+}
+
+/// Past the quoted string whose opening quote is at `at`: Steam's text VDF escapes with a backslash.
+fn past_string(b: &[u8], mut at: usize) -> usize {
+    at += 1;
+    while at < b.len() && b[at] != b'"' {
+        at += if b[at] == b'\\' { 2 } else { 1 };
+    }
+    at + 1
+}
+
+/// Past the block whose `{` is at `at`.
+fn past_block(b: &[u8], mut at: usize) -> Option<usize> {
+    let mut depth = 0;
+    while at < b.len() {
+        match b[at] {
+            b'"' => {
+                at = past_string(b, at);
+                continue;
+            }
+            b'{' => depth += 1,
+            b'}' => {
+                depth -= 1;
+                if depth == 0 {
+                    return Some(at + 1);
+                }
+            }
+            _ => {}
+        }
+        at += 1;
+    }
+    None
+}
+
+/// Steam's text config without the shortcut's entry in CompatToolMapping; none when it has none.
+fn without_tool(text: &str, id: u32) -> Option<String> {
+    let b = text.as_bytes();
+    let name = "\"CompatToolMapping\"";
+    let mut at = text.find(name)? + name.len();
+    while b.get(at)?.is_ascii_whitespace() {
+        at += 1;
+    }
+    if b[at] != b'{' {
+        return None;
+    }
+    let end = past_block(b, at)?;
+    let key = format!("\"{id}\"");
+    at += 1;
+    while at < end {
+        if b[at] != b'"' {
+            at += 1;
+            continue;
+        }
+        // A key, and the block or value after it.
+        let start = at;
+        at = past_string(b, at);
+        let mut next = at;
+        while next < end && b[next].is_ascii_whitespace() {
+            next += 1;
+        }
+        if next >= end || b[next] != b'{' {
+            // A value: past it too.
+            at = if next < end && b[next] == b'"' { past_string(b, next) } else { next };
+            continue;
+        }
+        let close = past_block(b, next)?;
+        if text.get(start..at) == Some(key.as_str()) {
+            // From the end of the line before, so no empty line is left.
+            let line = text[..start].rfind('\n').filter(|&n| text[n..start].trim().is_empty()).unwrap_or(start);
+            return Some(format!("{}{}", &text[..line], &text[close..]));
+        }
+        at = close;
+    }
+    None
+}
+
+/// `--add-to-steam <file>`: waits for Steam to close, then writes the shortcut, or the shortcuts (shortcut_upgrade.rs).
 pub fn wait_and_apply(file: &Path) {
-    let Ok(s) = std::fs::read(file).map_err(|_| ()).and_then(|b| serde_json::from_slice::<Shortcut>(&b).map_err(|_| ())) else {
+    let Ok(bytes) = std::fs::read(file) else { return };
+    let one = || serde_json::from_slice::<Shortcut>(&bytes).ok().map(|s| vec![s]);
+    let Some(all) = serde_json::from_slice::<Vec<Shortcut>>(&bytes).ok().or_else(one) else {
+        let _ = std::fs::remove_file(file);
         return;
     };
     // A day at most; the player may leave Steam open for a while. Steam saves
@@ -691,7 +861,7 @@ pub fn wait_and_apply(file: &Path) {
     let mut closed = 0;
     for _ in 0..86_400 {
         closed = if running() { 0 } else { closed + 1 };
-        if closed >= 5 && (apply(&s).is_ok() || !running()) {
+        if closed >= 5 && (apply_all(&all).is_ok() || !running()) {
             break;
         }
         std::thread::sleep(Duration::from_secs(1));
@@ -735,6 +905,8 @@ mod tests {
             icon: String::new(),
             proton: false,
             art: vec![],
+            appid: None,
+            drop_proton: false,
         }
     }
 
@@ -891,6 +1063,63 @@ mod tests {
         let saved = backups(dir.path());
         assert_eq!(saved.len(), 1);
         assert_eq!(std::fs::read(&saved[0]).unwrap(), before);
+    }
+
+    #[test]
+    fn a_shortcut_steam_added_from_the_desktop_is_updated_not_added_again() {
+        // Steam's own add doesn't tag it, and it names the game Quiver used to.
+        let live = vec![
+            ("appid".into(), Vdf::Int(77)),
+            ("appname".into(), Vdf::Str("Game".into())),
+            ("exe".into(), Vdf::Str("\"/games/a/old\"".into())),
+            ("ShortcutPath".into(), Vdf::Str("/data/steam/Game.desktop".into())),
+        ];
+        let file = write(&[("shortcuts".into(), Vdf::Map(vec![("0".into(), Vdf::Map(live))]))]);
+        let mut s = shortcut("Game");
+        s.shortcut_path = "/data/steam/Game.desktop".into();
+        let (bytes, id) = upsert(Some(&file), &s).unwrap();
+        assert_eq!(id, 77);
+        assert_eq!(count(&bytes).unwrap(), 1);
+    }
+
+    #[test]
+    fn a_file_left_as_it_was_isnt_written_or_backed_up() {
+        let dir = tempfile::tempdir().unwrap();
+        let file = dir.path().join("shortcuts.vdf");
+        write_shortcuts(&file, &shortcut("Game")).unwrap();
+        let mut gone = shortcut("Gone");
+        gone.appid = Some(1);
+        assert_eq!(write_all(&file, &[gone]).unwrap(), [None]);
+        write_shortcuts(&file, &shortcut("Game")).unwrap();
+        assert!(backups(dir.path()).is_empty());
+    }
+
+    #[test]
+    fn a_shortcuts_proton_is_taken_away_and_nothing_else() {
+        let config = "\"InstallConfigStore\"\n{\n\t\"Software\"\n\t{\n\t\t\"CompatToolMapping\"\n\t\t{\n\t\t\t\"0\"\n\t\t\t{\n\t\t\t\t\"name\"\t\t\"\"\n\t\t\t}\n\t\t\t\"2914560721\"\n\t\t\t{\n\t\t\t\t\"name\"\t\t\"proton_experimental\"\n\t\t\t\t\"config\"\t\t\"a{b\\\"}\"\n\t\t\t\t\"priority\"\t\t\"250\"\n\t\t\t}\n\t\t\t\"12\"\n\t\t\t{\n\t\t\t\t\"name\"\t\t\"GE\"\n\t\t\t}\n\t\t}\n\t\t\"2914560721\"\t\t\"elsewhere\"\n\t}\n}\n";
+        let without = without_tool(config, 2914560721).unwrap();
+        assert!(!without.contains("proton_experimental"), "{without}");
+        assert!(without.contains("\t\t\t\"0\"\n") && without.contains("\t\t\t\"12\"\n\t\t\t{\n\t\t\t\t\"name\"\t\t\"GE\""), "{without}");
+        assert!(without.contains("\"2914560721\"\t\t\"elsewhere\""), "outside the mapping, left: {without}");
+        assert!(!without.contains("\n\n"), "{without}");
+        assert_eq!(without_tool(&without, 2914560721), None);
+        assert_eq!(without_tool(config, 5), None);
+        // Its own add: taken away again as it was put.
+        let dir = tempfile::tempdir().unwrap();
+        let file = dir.path().join("config.vdf");
+        std::fs::write(&file, &without).unwrap();
+        use_proton(&file, 99).unwrap();
+        drop_proton(&file, 99).unwrap();
+        assert_eq!(std::fs::read_to_string(&file).unwrap(), without);
+    }
+
+    #[test]
+    fn a_waiting_copy_reads_one_shortcut_or_several() {
+        let one = serde_json::to_vec(&shortcut("A")).unwrap();
+        let several = serde_json::to_vec(&[shortcut("A"), shortcut("B")]).unwrap();
+        assert!(serde_json::from_slice::<Vec<Shortcut>>(&one).is_err());
+        assert!(serde_json::from_slice::<Shortcut>(&one).is_ok_and(|s| s.appid.is_none() && !s.drop_proton));
+        assert_eq!(serde_json::from_slice::<Vec<Shortcut>>(&several).unwrap().len(), 2);
     }
 
     #[test]

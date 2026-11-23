@@ -29,6 +29,7 @@ mod session;
 mod setup;
 mod shortcut;
 mod shortcut_play;
+mod shortcut_upgrade;
 mod snapshots;
 mod specs;
 mod steam;
@@ -1337,8 +1338,16 @@ fn add_native(data: &Data, name: &str, folder: &str, target: &shortcut::Target, 
         return Ok(format!("{name} is in Steam. Start Steam to see it."));
     }
     // Steam is running: it adds the shortcut itself, at once, and its own write is what lasts.
-    let ids = match steam::existing_id(&launcher) {
-        Some(id) => vec![id],
+    let ids = match steam::existing(&launcher) {
+        Some((id, true)) => vec![id],
+        // One added before Quiver's shortcuts started games through it, which Steam's add won't replace: changed, with
+        // its id, once Steam closes (shortcut_upgrade.rs).
+        Some((id, false)) => {
+            let mut shortcut = shortcut;
+            shortcut.appid = Some(id);
+            queue_steam(data, folder, &shortcut)?;
+            return Ok(format!("{name} is in Steam already. It will start through Quiver once Steam closes."));
+        }
         None => match steam::add_now(launcher.desktop()) {
             Ok(()) => steam_ids(&launcher, name),
             // Steam wouldn't take it now: a waiting copy adds it once Steam closes.
@@ -1374,8 +1383,12 @@ fn steam_ids(launcher: &steam::Launcher, name: &str) -> Vec<u32> {
 
 /// Leaves a shortcut for a separate copy of the launcher to add once Steam closes.
 fn queue_steam(data: &Data, folder: &str, shortcut: &steam::Shortcut) -> Result<(), String> {
-    let queued = data.0.join(format!("steam-{folder}.json"));
-    std::fs::write(&queued, serde_json::to_vec(shortcut).map_err(|e| e.to_string())?).map_err(|e| e.to_string())?;
+    queue_steam_file(&data.0.join(format!("steam-{folder}.json")), shortcut)
+}
+
+/// Leaves what's in `queued` (a shortcut, or several) for a separate copy of the launcher to write once Steam closes.
+fn queue_steam_file(queued: &Path, what: &impl Serialize) -> Result<(), String> {
+    std::fs::write(queued, serde_json::to_vec(what).map_err(|e| e.to_string())?).map_err(|e| e.to_string())?;
     let args = [OsStr::new("--add-to-steam"), queued.as_os_str()];
     // A Flatpak's copy in a sandbox of its own: this one's ends with the launcher.
     let mut waiting = match sandbox::relaunch(&args) {
@@ -1394,6 +1407,91 @@ fn queue_steam(data: &Data, folder: &str, shortcut: &steam::Shortcut) -> Result<
         .spawn()
         .map_err(|e| e.to_string())?;
     Ok(())
+}
+
+/// What changing the old shortcuts did (shortcut_upgrade.rs): desktop shortcuts and Steam shortcuts changed, and Steam
+/// shortcuts to change once Steam closes.
+#[derive(Serialize, Default)]
+#[serde(rename_all = "camelCase")]
+struct ShortcutsUpgraded {
+    desktop: usize,
+    steam: usize,
+    steam_later: usize,
+}
+
+/// Changes the desktop and Steam shortcuts Quiver made before its shortcuts started games through it so they do, as
+/// Quiver starts (shortcut_upgrade.rs). `requests` are the installed apps, each as for a new shortcut. The apps' games
+/// are only looked for when there's a shortcut of Quiver's that might be old.
+#[tauri::command]
+async fn upgrade_shortcuts(app: tauri::AppHandle, requests: Vec<shortcut::ShortcutRequest>) -> Result<ShortcutsUpgraded, String> {
+    let data = app.state::<Data>();
+    let log = |line: String| append_log(&data.0.join("quiver.log"), &format!("shortcuts: {line}"));
+    let mut done = ShortcutsUpgraded::default();
+    let (mut apps, requests): (Vec<shortcut_upgrade::App>, Vec<&shortcut::ShortcutRequest>) = requests
+        .iter()
+        .filter_map(|r| {
+            let folder = install::plain_name(&r.folder).ok()?.to_string();
+            let dir = app_dir(&data, &r.folder, r.dir.clone()).ok();
+            Some((shortcut_upgrade::App { id: r.id.clone(), name: r.name.clone(), folder, dir, game: None }, r))
+        })
+        .unzip();
+    let desktop = shortcut::desktop_dir();
+    let account = steam::account().ok();
+    let list = account.as_ref().and_then(|(user, _)| steam::shortcuts_in(user)).unwrap_or_default();
+    let launchers = data.0.join("steam");
+    let on_desktop = desktop.as_deref().is_some_and(|d| shortcut_upgrade::any_on_desktop(d, &apps));
+    if !on_desktop && !shortcut_upgrade::any_in_steam(&list, &launchers) {
+        return Ok(done);
+    }
+    for (a, r) in apps.iter_mut().zip(&requests) {
+        a.game = target(&data, &r.folder, r.dir.clone(), &r.preferred, r.wine, r.program.clone(), &r.launch).ok();
+    }
+    if let Some(desktop) = desktop.as_deref().filter(|_| on_desktop) {
+        for a in &apps {
+            match shortcut_upgrade::upgrade_desktop(desktop, a) {
+                Ok(true) => {
+                    done.desktop += 1;
+                    log(format!("{}: the desktop shortcut starts it through Quiver now", a.id));
+                }
+                Ok(false) => {}
+                Err(e) => log(format!("{}: the desktop shortcut couldn't be changed: {e}", a.id)),
+            }
+        }
+    }
+    let mut changed = Vec::new();
+    for old in shortcut_upgrade::old_in_steam(&list, &launchers, &apps) {
+        let a = &apps[old.app];
+        match shortcut_upgrade::new_steam(&data.0, &old, a) {
+            Ok(s) => changed.push((a.id.clone(), s)),
+            Err(e) => log(format!("{}: the Steam shortcut couldn't be changed: {e}", a.id)),
+        }
+    }
+    if changed.is_empty() {
+        return Ok(done);
+    }
+    let ids = changed.iter().map(|(id, _)| id.as_str()).collect::<Vec<_>>().join(", ");
+    let shortcuts: Vec<steam::Shortcut> = changed.into_iter().map(|(_, s)| s).collect();
+    if !steam::running() {
+        steam::apply_all(&shortcuts).inspect_err(|e| log(format!("the Steam shortcuts of {ids} couldn't be changed: {e}")))?;
+        log(format!("the Steam shortcuts of {ids} start them through Quiver now"));
+        done.steam = shortcuts.len();
+        return Ok(done);
+    }
+    // A waiting copy Quiver started while Steam runs it would run under Steam: its Stop would end it, and on Linux it keeps
+    // Quiver showing as running (a Steam Deck in Game Mode, where Steam doesn't close anyway). It's done another time.
+    if steam_runs_us() {
+        return Ok(done);
+    }
+    // Steam writes its file as it closes, and its add can't change a shortcut: a waiting copy does it once Steam closes.
+    // One that's waiting already isn't joined by another each start.
+    let queued = data.0.join("steam-upgrade.json");
+    let waiting = std::fs::metadata(&queued).and_then(|m| m.modified()).is_ok_and(|at| at.elapsed().is_ok_and(|e| e < std::time::Duration::from_secs(86_400)));
+    if !waiting {
+        queue_steam_file(&queued, &shortcuts)?;
+        log(format!("the Steam shortcuts of {ids} will start them through Quiver once Steam closes"));
+    }
+    done.steam_later = shortcuts.len();
+    Ok(done)
 }
 
 /// Opens an installed app's folder in the file manager: the folder of an app
@@ -2741,6 +2839,7 @@ pub fn run() {
             set_window_position,
             create_shortcut,
             add_to_steam,
+            upgrade_shortcuts,
             shortcut_play::shortcut_requests,
             shortcut_play::shortcut_start,
             shortcut_play::shortcut_refuse,

@@ -521,6 +521,8 @@ export const native = {
   /** Resolves to what to tell the player. */
   createShortcut: (request: ShortcutRequest) => invoke<string>("create_shortcut", { request }),
   addToSteam: (request: ShortcutRequest) => invoke<string>("add_to_steam", { request }),
+  /** Changes the desktop and Steam shortcuts Quiver made for these apps before its shortcuts started games through it (shortcut_upgrade.rs). */
+  upgradeShortcuts: (requests: ShortcutRequest[]) => invoke<{ desktop: number; steam: number; steamLater: number }>("upgrade_shortcuts", { requests }),
   openUrl: (url: string) => invoke<void>("open_url", { url }),
   /** Android: puts the launcher behind the other apps, as Home does. */
   toBackground: () => invoke<void>("to_background"),
