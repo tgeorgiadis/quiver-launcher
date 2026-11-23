@@ -22,10 +22,20 @@ msgstr "（已更改）"
 msgid "{0, plural, one {# app for other platforms isn't shown.} other {# apps for other platforms aren't shown.}}"
 msgstr "{0, plural, one {其他平臺還有 # 個應用程式未顯示。} other {其他平臺還有 # 個應用程式未顯示。}}"
 
+#. placeholder {0}: changed.length
+#: ../../apps/launcher/src/browse-ticking.tsx
+msgid "{0, plural, one {# app hidden from Browse.} other {# apps hidden from Browse.}}"
+msgstr "{0, plural, other {已從“瀏覽”中隱藏 # 個應用程式。}}"
+
 #. placeholder {0}: ids.length
 #: ../../apps/launcher/src/library-ticking.tsx
 msgid "{0, plural, one {# app hidden from your library.} other {# apps hidden from your library.}}"
 msgstr "{0, plural, other {已從遊戲庫中隱藏 # 個應用程式。}}"
+
+#. placeholder {0}: addable.length
+#: ../../apps/launcher/src/browse-ticking.tsx
+msgid "{0, plural, one {# app is in your library.} other {# apps are in your library.}}"
+msgstr "{0, plural, other {# 個應用程式已在你的遊戲庫中。}}"
 
 #. placeholder {0}: still.apps.length
 #. placeholder {1}: still.from
@@ -38,6 +48,11 @@ msgstr "{0, plural, other {還有 # 個應用程式在 {2} 中。新的會裝到
 #: ../../apps/launcher/src/cache-page.tsx
 msgid "{0, plural, one {# app looked at} other {# apps looked at}}"
 msgstr "{0, plural, other {已查看 # 個應用程式}}"
+
+#. placeholder {0}: changed.length
+#: ../../apps/launcher/src/browse-ticking.tsx
+msgid "{0, plural, one {# app shows in Browse again.} other {# apps show in Browse again.}}"
+msgstr "{0, plural, other {# 個應用程式重新顯示在“瀏覽”中。}}"
 
 #. placeholder {0}: ids.length
 #: ../../apps/launcher/src/library-ticking.tsx
@@ -249,6 +264,7 @@ msgstr ""
 msgid "{apps, plural, one {# way to play} other {# ways to play}}"
 msgstr "{apps, plural, one {# 種遊玩方式} other {# 種遊玩方式}}"
 
+#: ../../apps/launcher/src/browse-ticking.tsx
 #: ../../apps/launcher/src/library-ticking.tsx
 msgid "{away, plural, one {(# not showing)} other {(# not showing)}}"
 msgstr "{away, plural, other {（# 個未顯示）}}"
@@ -318,6 +334,7 @@ msgstr "{count, plural, other {# 個討論有新留言}}"
 msgid "{count, plural, one {# orphaned file was removed.} other {# orphaned files were removed.}}"
 msgstr "{count, plural, other {已移除 # 個孤立檔案。}}"
 
+#: ../../apps/launcher/src/browse-ticking.tsx
 #: ../../apps/launcher/src/library-ticking.tsx
 msgid "{count, plural, one {# selected} other {# selected}}"
 msgstr "{count, plural, other {已選擇 # 個}}"
@@ -325,6 +342,10 @@ msgstr "{count, plural, other {已選擇 # 個}}"
 #: ../../apps/launcher/src/old-library.tsx
 msgid "{count, plural, one {Add # app} other {Add # apps}}"
 msgstr "{count, plural, one {新增 # 個應用程式} other {新增 # 個應用程式}}"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "{count, plural, one {Install # app to} other {Install # apps to}}"
+msgstr "{count, plural, other {將 # 個應用程式安裝到}}"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "{count, plural, one {It keeps the most. Its # copy ({largestSize}) is removed from your account. Its saves and backups on this computer stay.} other {It keeps the most. Its # copies ({largestSize}) are removed from your account. Its saves and backups on this computer stay.}}"
@@ -584,6 +605,7 @@ msgstr "{months, plural, one {# 個月前遊玩過} other {# 個月前遊玩過}
 msgid "{more, plural, one {and # more} other {and # more}}"
 msgstr "{more, plural, one {還有 # 個} other {還有 # 個}}"
 
+#: ../../apps/launcher/src/browse-ticking.tsx
 #: ../../apps/launcher/src/library-ticking.tsx
 msgid "{n, plural, one {# app selected} other {# apps selected}}"
 msgstr "{n, plural, other {已選擇 # 個應用程式}}"
@@ -593,6 +615,14 @@ msgstr "{n, plural, other {已選擇 # 個應用程式}}"
 #: ../../apps/launcher/src/tag-settings.tsx
 msgid "{n, plural, one {# app} other {# apps}}"
 msgstr "{n, plural, one {# 個應用程式} other {# 個應用程式}}"
+
+#: ../../apps/launcher/src/browse-ticking.tsx
+msgid "{n, plural, one {Add # to library} other {Add # to library}}"
+msgstr "{n, plural, other {將 # 個新增到遊戲庫}}"
+
+#: ../../apps/launcher/src/browse-ticking.tsx
+msgid "{n, plural, one {Install #} other {Install #}}"
+msgstr "{n, plural, other {安裝 # 個}}"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "{name} (this computer)"
@@ -950,6 +980,7 @@ msgstr "{years, plural, one {已有 # 年以上未釋出新版本} other {已有
 msgid "{years, plural, one {Played # yr ago} other {Played # yrs ago}}"
 msgstr "{years, plural, one {# 年前遊玩過} other {# 年前遊玩過}}"
 
+#: ../../apps/launcher/src/browse-ticking.tsx
 #: ../../apps/launcher/src/card-menu.tsx
 #: ../../apps/launcher/src/library-ticking.tsx
 msgid "+ New playlist…"
@@ -1192,6 +1223,11 @@ msgstr "為主機新增資料夾"
 msgid "Add folders…"
 msgstr "新增資料夾 →"
 
+#. Button over the apps selected in Browse: adds them to the library without installing them
+#: ../../apps/launcher/src/browse-ticking.tsx
+msgid "Add to library"
+msgstr "新增到遊戲庫"
+
 #: ../../apps/launcher/src/library.tsx
 msgid "Add to my library"
 msgstr "新增到我的遊戲庫"
@@ -1199,6 +1235,8 @@ msgstr "新增到我的遊戲庫"
 #. Menu item opening the playlists to add an app to
 #. Menu item opening the playlists to add an app to
 #. Menu item opening the playlists to add an app to
+#. Menu item opening the playlists to add an app to
+#: ../../apps/launcher/src/browse-ticking.tsx
 #: ../../apps/launcher/src/card-menu.tsx
 #: ../../apps/launcher/src/library-ticking.tsx
 #: ../../apps/launcher/src/library.tsx
@@ -1528,6 +1566,10 @@ msgstr "安裝在此處的應用程式始終會顯示。"
 #: ../../apps/launcher/src/recovery.tsx
 msgid "Apps installed on this computer stay in your library. A damaged file is kept beside the new one, so nothing is deleted."
 msgstr "安裝在此電腦上的應用程式會保留在你的遊戲庫中。損壞的檔案會保留在新檔案旁邊，不會刪除任何內容。"
+
+#: ../../apps/launcher/src/browse-ticking.tsx
+msgid "Apps put on a playlist are added to your library."
+msgstr "新增到播放清單的應用程式也會新增到你的遊戲庫。"
 
 #: ../../apps/launcher/src/library.tsx
 msgid "Apps Quiver downloads and updates, from the catalog or a repository"
@@ -2696,9 +2738,11 @@ msgid "Don't play yet"
 msgstr "暫不遊玩"
 
 #. Button: stops selecting apps in the library
+#. Button: stops selecting apps in the library
 #. Closes a dialog
 #. Closes the thanks after a problem was reported
 #: ../../apps/launcher/src/announcements-ui.tsx
+#: ../../apps/launcher/src/browse-ticking.tsx
 #: ../../apps/launcher/src/correction.tsx
 #: ../../apps/launcher/src/library-ticking.tsx
 #: ../../apps/launcher/src/library.tsx
@@ -2823,6 +2867,10 @@ msgstr ""
 msgid "Each backup is also sent to your account, which keeps the newest {keep} of each app. {used} of {limit} used."
 msgstr "每個備份也會傳送到你的帳號，帳號會為每個應用程式保留最新的 {keep} 個。已使用 {used}，共 {limit}。"
 
+#: ../../apps/launcher/src/App.tsx
+msgid "Each gets a folder of its own in there, and updates keep installing into it."
+msgstr "每個應用程式都會在該位置擁有自己的資料夾，後續更新也會安裝到其中。"
+
 #. Browse card detail: a chip on apps whose game files Quiver Launcher finds and puts in place
 #. Chip on apps whose game files Quiver Launcher finds and puts in place for the player
 #: ../../apps/launcher/src/App.tsx
@@ -2857,6 +2905,7 @@ msgid "Edit playlist"
 msgstr "編輯播放清單"
 
 #. Controller hint, and a button over the apps selected in the library: what can change on all of them at once
+#: ../../apps/launcher/src/browse-ticking.tsx
 #: ../../apps/launcher/src/library-ticking.tsx
 #: ../../apps/launcher/src/spatial.ts
 msgid "Edit selected"
@@ -3300,6 +3349,7 @@ msgid "Hide dismissed"
 msgstr "隱藏已忽略的專案"
 
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/browse-ticking.tsx
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Hide from Browse"
 msgstr "從“瀏覽”中隱藏"
@@ -3478,6 +3528,7 @@ msgstr "包含應用程式的預釋出版本"
 msgid "Include preview updates"
 msgstr "包含預覽版更新"
 
+#. Button over the apps selected in Browse: installs them
 #. Button that installs a mod
 #. Button that installs an app
 #. Button that installs an app
@@ -3488,6 +3539,7 @@ msgstr "包含預覽版更新"
 #. Installs an app
 #. Menu item that installs an app
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/browse-ticking.tsx
 #: ../../apps/launcher/src/card-menu.tsx
 #: ../../apps/launcher/src/detail.tsx
 #: ../../apps/launcher/src/library-tile.tsx
@@ -4600,6 +4652,7 @@ msgstr "新安裝"
 msgid "New name for {tag}"
 msgstr "{tag} 的新名稱"
 
+#: ../../apps/launcher/src/browse-ticking.tsx
 #: ../../apps/launcher/src/card-menu.tsx
 #: ../../apps/launcher/src/library-ticking.tsx
 #: ../../apps/launcher/src/library.tsx
@@ -5343,7 +5396,9 @@ msgid "Playlist name"
 msgstr "播放清單名稱"
 
 #. Button over the selected apps: puts them on playlists
+#. Button over the selected apps: puts them on playlists
 #. Heading over the player's playlists in the library's side panel
+#: ../../apps/launcher/src/browse-ticking.tsx
 #: ../../apps/launcher/src/detail.tsx
 #: ../../apps/launcher/src/library-ticking.tsx
 #: ../../apps/launcher/src/library.tsx
@@ -6327,16 +6382,20 @@ msgstr "檢視哪些應用程式"
 #. Controller hint: what Confirm does on any other control
 #. Controller hint: what Confirm does on any other control
 #. Menu item: selects an app in the library, to change several at once
+#. Menu item: selects an app in the library, to change several at once
 #: ../../apps/launcher/src/card-menu.tsx
 #: ../../apps/launcher/src/spatial.ts
 msgid "Select"
 msgstr "選擇"
 
 #. Selects every app the library shows
+#. Selects every app the library shows
+#: ../../apps/launcher/src/browse-ticking.tsx
 #: ../../apps/launcher/src/library-ticking.tsx
 msgid "Select all"
 msgstr "全選"
 
+#: ../../apps/launcher/src/browse-ticking.tsx
 #: ../../apps/launcher/src/library-ticking.tsx
 msgid "Selected apps"
 msgstr "所選應用程式"
@@ -6551,6 +6610,7 @@ msgid "Show hidden apps"
 msgstr "顯示隱藏的應用程式"
 
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/browse-ticking.tsx
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Show in Browse"
 msgstr "在“瀏覽”中顯示"
@@ -6896,6 +6956,7 @@ msgstr "不再保留在下載快取中"
 msgid "Stop looking in {folder} for {console}"
 msgstr "停止在 {folder} 中查詢 {console}"
 
+#: ../../apps/launcher/src/browse-ticking.tsx
 #: ../../apps/launcher/src/library-ticking.tsx
 msgid "Stop selecting"
 msgstr "停止選擇"
@@ -7323,6 +7384,14 @@ msgstr "這些存檔太大，無法使用雲端存檔。"
 msgid "They leave your library. Nothing is deleted."
 msgstr "它們會從遊戲庫中移除，不會刪除任何檔案。"
 
+#: ../../apps/launcher/src/browse-ticking.tsx
+msgid "They're all in your library already, or can't be installed here."
+msgstr "它們都已在你的遊戲庫中，或無法在此安裝。"
+
+#: ../../apps/launcher/src/browse-ticking.tsx
+msgid "They're all installed already, or can't be installed here."
+msgstr "它們都已安裝，或無法在此安裝。"
+
 #: ../../apps/launcher/src/account.tsx
 msgid "This account is suspended."
 msgstr "此帳戶已被暫停。"
@@ -7591,6 +7660,8 @@ msgid "Under a minute"
 msgstr "不到一分鐘"
 
 #. Button on the toast after hiding apps: shows them again, selected
+#. Button on the toast after hiding apps: shows them again, selected
+#: ../../apps/launcher/src/browse-ticking.tsx
 #: ../../apps/launcher/src/library-ticking.tsx
 msgid "Undo"
 msgstr "復原"
@@ -7657,6 +7728,7 @@ msgid "Unpin and install {version}"
 msgstr "取消固定並安裝 {version}"
 
 #. Controller hint: what Confirm does on an app selected in the library, taking it out of those selected
+#. Menu item: takes an app out of the apps selected in the library
 #. Menu item: takes an app out of the apps selected in the library
 #: ../../apps/launcher/src/card-menu.tsx
 #: ../../apps/launcher/src/spatial.ts

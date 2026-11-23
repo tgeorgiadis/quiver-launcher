@@ -362,6 +362,8 @@ type Launcher = {
   add: (entry: Entry) => void;
   /** Adds an app the player picked out, without downloading it, and says so: its card in Browse looks no different. */
   addToLibrary: (entry: Entry) => void;
+  /** Adds several at once (Browse's selected apps), saying nothing: the caller says how many. */
+  addAllToLibrary: (entries: Entry[]) => void;
   setUpdates: (id: string, updates: Install["updates"]) => void;
   /** Sets whether an installed app gets pre-releases; undefined goes back to the player's default. */
   setPrereleases: (id: string, prereleases: Install["prereleases"]) => void;
@@ -416,7 +418,8 @@ type Launcher = {
    * with, if any), or move it to; null closes the prompt.
    */
   placing: Placing | null;
-  askPlace: (entry: Entry | null, release?: Release, options?: GetOptions) => void;
+  /** `also`: more apps to install in the same place, chosen once for them all. */
+  askPlace: (entry: Entry | null, release?: Release, options?: GetOptions, also?: Entry[]) => void;
   /** The app whose folder the player is adding files to, from its menu; null closes the prompt. */
   addingFiles: Entry | null;
   askAddFiles: (entry: Entry | null) => void;
@@ -459,7 +462,7 @@ type Launcher = {
 export type GetOptions = { pin?: boolean; unverified?: boolean; blocked?: string; asset?: string; platform?: Os; to?: string; early?: boolean };
 
 /** An app whose folder the player is choosing, with what it was going to install. */
-export type Placing = { entry: Entry; release?: Release; options?: GetOptions };
+export type Placing = { entry: Entry; release?: Release; options?: GetOptions; also?: Entry[] };
 
 /** How far an app's move has got: bytes copied of its size, both 0 until it's known to be copying. */
 export type AppMove = { copied: number; size: number };
@@ -1685,7 +1688,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
   const [naming, askName] = useState<string | null>(null);
   const [managing, askManage] = useState<string | null>(null);
   const [placing, setPlacing] = useState<Placing | null>(null);
-  const askPlace = (entry: Entry | null, release?: Release, options?: GetOptions) => setPlacing(entry ? { entry, release, options } : null);
+  const askPlace = (entry: Entry | null, release?: Release, options?: GetOptions, also?: Entry[]) => setPlacing(entry ? { entry, release, options, ...(also?.length ? { also } : {}) } : null);
   const [addingFiles, askAddFiles] = useState<Entry | null>(null);
   const [changingVersion, changeVersion] = useState<Entry | null>(null);
   const [choosingProgram, chooseProgram] = useState<string | null>(null);
@@ -2812,6 +2815,14 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       add(entry);
       const name = entry.projectName;
       setNotice(t`${name} is in your library.`);
+    },
+    addAllToLibrary(entries) {
+      setCatalog((c) => ({ ...c, ...Object.fromEntries(entries.map((e) => [e.id, { ...c[e.id], ...e }])) }));
+      for (const entry of entries) {
+        if (library.some((i) => i.id === entry.id)) continue;
+        track("app_added", { kind: "catalog", slug: entry.slug });
+        add(entry);
+      }
     },
     setUpdates: (id, updates) => setInstalls((i) => (i[id] ? { ...i, [id]: { ...i[id], updates } } : i)),
     setPrereleases: (id, prereleases) =>

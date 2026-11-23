@@ -12,6 +12,7 @@ import { EntryCard } from "@quiverlauncher/ui";
 import { ALL_APPS, FeaturedCarousel, MORE_LIKE_THIS, SEE_ALL, SHELF_SIZE, SHELF_TITLES, Shelf, featuredDay, featuredMix, likeThis, runsWell } from "@quiverlauncher/ui/discover";
 import { availableOn, catalogOs, useLauncher } from "./store";
 import { browseShown } from "./browse-hidden";
+import { TickableCard } from "./browse-ticking";
 import { useBrowseCards } from "./library-view";
 import { consoleShelves, type ConsoleShelf } from "./console-shelves";
 
@@ -91,7 +92,7 @@ export function Discover({
   const consoleName = (tag: string) => (Object.hasOwn(consoleNames, tag) ? consoleNames[tag] : undefined);
   const looks = useBrowseCards();
   const card = (entry: Entry) => (
-    <EntryCard
+    <TickableCard
       key={entry.id}
       entry={withShownTags(entry)}
       {...looks.card(entry)}

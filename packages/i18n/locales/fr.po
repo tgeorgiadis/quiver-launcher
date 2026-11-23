@@ -22,10 +22,20 @@ msgstr "(modifiées)"
 msgid "{0, plural, one {# app for other platforms isn't shown.} other {# apps for other platforms aren't shown.}}"
 msgstr "{0, plural, one {# app pour d'autres plateformes n'est pas affichée.} other {# apps pour d'autres plateformes ne sont pas affichées.}}"
 
+#. placeholder {0}: changed.length
+#: ../../apps/launcher/src/browse-ticking.tsx
+msgid "{0, plural, one {# app hidden from Browse.} other {# apps hidden from Browse.}}"
+msgstr "{0, plural, one {# appli masquée de Parcourir.} other {# applis masquées de Parcourir.}}"
+
 #. placeholder {0}: ids.length
 #: ../../apps/launcher/src/library-ticking.tsx
 msgid "{0, plural, one {# app hidden from your library.} other {# apps hidden from your library.}}"
 msgstr "{0, plural, one {# appli masquée de ta bibliothèque.} other {# applis masquées de ta bibliothèque.}}"
+
+#. placeholder {0}: addable.length
+#: ../../apps/launcher/src/browse-ticking.tsx
+msgid "{0, plural, one {# app is in your library.} other {# apps are in your library.}}"
+msgstr "{0, plural, one {# appli est dans ta bibliothèque.} other {# applis sont dans ta bibliothèque.}}"
 
 #. placeholder {0}: still.apps.length
 #. placeholder {1}: still.from
@@ -38,6 +48,11 @@ msgstr "{0, plural, one {# appli est encore dans {1}. Les nouvelles vont dans le
 #: ../../apps/launcher/src/cache-page.tsx
 msgid "{0, plural, one {# app looked at} other {# apps looked at}}"
 msgstr "{0, plural, one {# app examinée} other {# apps examinées}}"
+
+#. placeholder {0}: changed.length
+#: ../../apps/launcher/src/browse-ticking.tsx
+msgid "{0, plural, one {# app shows in Browse again.} other {# apps show in Browse again.}}"
+msgstr "{0, plural, one {# appli s’affiche à nouveau dans Parcourir.} other {# applis s’affichent à nouveau dans Parcourir.}}"
 
 #. placeholder {0}: ids.length
 #: ../../apps/launcher/src/library-ticking.tsx
@@ -249,6 +264,7 @@ msgstr ""
 msgid "{apps, plural, one {# way to play} other {# ways to play}}"
 msgstr "{apps, plural, one {# façon de jouer} other {# façons de jouer}}"
 
+#: ../../apps/launcher/src/browse-ticking.tsx
 #: ../../apps/launcher/src/library-ticking.tsx
 msgid "{away, plural, one {(# not showing)} other {(# not showing)}}"
 msgstr "{away, plural, one {(# non affichée)} other {(# non affichées)}}"
@@ -318,6 +334,7 @@ msgstr "{count, plural, one {# discussion avec de nouveaux commentaires} other {
 msgid "{count, plural, one {# orphaned file was removed.} other {# orphaned files were removed.}}"
 msgstr "{count, plural, one {# fichier orphelin a été supprimé.} other {# fichiers orphelins ont été supprimés.}}"
 
+#: ../../apps/launcher/src/browse-ticking.tsx
 #: ../../apps/launcher/src/library-ticking.tsx
 msgid "{count, plural, one {# selected} other {# selected}}"
 msgstr "{count, plural, one {# sélectionnée} other {# sélectionnées}}"
@@ -325,6 +342,10 @@ msgstr "{count, plural, one {# sélectionnée} other {# sélectionnées}}"
 #: ../../apps/launcher/src/old-library.tsx
 msgid "{count, plural, one {Add # app} other {Add # apps}}"
 msgstr "{count, plural, one {Ajouter # app} other {Ajouter # apps}}"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "{count, plural, one {Install # app to} other {Install # apps to}}"
+msgstr "{count, plural, one {Installer # appli dans} other {Installer # applis dans}}"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "{count, plural, one {It keeps the most. Its # copy ({largestSize}) is removed from your account. Its saves and backups on this computer stay.} other {It keeps the most. Its # copies ({largestSize}) are removed from your account. Its saves and backups on this computer stay.}}"
@@ -584,6 +605,7 @@ msgstr "{months, plural, one {Joué il y a # mois} other {Joué il y a # mois}}"
 msgid "{more, plural, one {and # more} other {and # more}}"
 msgstr "{more, plural, one {et # autre} other {et # autres}}"
 
+#: ../../apps/launcher/src/browse-ticking.tsx
 #: ../../apps/launcher/src/library-ticking.tsx
 msgid "{n, plural, one {# app selected} other {# apps selected}}"
 msgstr "{n, plural, one {# appli sélectionnée} other {# applis sélectionnées}}"
@@ -593,6 +615,14 @@ msgstr "{n, plural, one {# appli sélectionnée} other {# applis sélectionnées
 #: ../../apps/launcher/src/tag-settings.tsx
 msgid "{n, plural, one {# app} other {# apps}}"
 msgstr "{n, plural, one {# app} other {# apps}}"
+
+#: ../../apps/launcher/src/browse-ticking.tsx
+msgid "{n, plural, one {Add # to library} other {Add # to library}}"
+msgstr "{n, plural, one {Ajouter # à la bibliothèque} other {Ajouter # à la bibliothèque}}"
+
+#: ../../apps/launcher/src/browse-ticking.tsx
+msgid "{n, plural, one {Install #} other {Install #}}"
+msgstr "{n, plural, one {Installer #} other {Installer #}}"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "{name} (this computer)"
@@ -950,6 +980,7 @@ msgstr "{years, plural, one {Aucune version depuis plus de # an} other {Aucune v
 msgid "{years, plural, one {Played # yr ago} other {Played # yrs ago}}"
 msgstr "{years, plural, one {Joué il y a # an} other {Joué il y a # ans}}"
 
+#: ../../apps/launcher/src/browse-ticking.tsx
 #: ../../apps/launcher/src/card-menu.tsx
 #: ../../apps/launcher/src/library-ticking.tsx
 msgid "+ New playlist…"
@@ -1192,6 +1223,11 @@ msgstr "Ajouter des dossiers pour une console"
 msgid "Add folders…"
 msgstr "Ajouter des dossiers…"
 
+#. Button over the apps selected in Browse: adds them to the library without installing them
+#: ../../apps/launcher/src/browse-ticking.tsx
+msgid "Add to library"
+msgstr "Ajouter à la bibliothèque"
+
 #: ../../apps/launcher/src/library.tsx
 msgid "Add to my library"
 msgstr "Ajouter à ma bibliothèque"
@@ -1199,6 +1235,8 @@ msgstr "Ajouter à ma bibliothèque"
 #. Menu item opening the playlists to add an app to
 #. Menu item opening the playlists to add an app to
 #. Menu item opening the playlists to add an app to
+#. Menu item opening the playlists to add an app to
+#: ../../apps/launcher/src/browse-ticking.tsx
 #: ../../apps/launcher/src/card-menu.tsx
 #: ../../apps/launcher/src/library-ticking.tsx
 #: ../../apps/launcher/src/library.tsx
@@ -1528,6 +1566,10 @@ msgstr "Les apps installées ici s'affichent toujours."
 #: ../../apps/launcher/src/recovery.tsx
 msgid "Apps installed on this computer stay in your library. A damaged file is kept beside the new one, so nothing is deleted."
 msgstr "Les apps installées sur cet ordinateur restent dans votre bibliothèque. Un fichier endommagé est conservé à côté du nouveau, donc rien n'est supprimé."
+
+#: ../../apps/launcher/src/browse-ticking.tsx
+msgid "Apps put on a playlist are added to your library."
+msgstr "Les applis ajoutées à une playlist sont ajoutées à ta bibliothèque."
 
 #: ../../apps/launcher/src/library.tsx
 msgid "Apps Quiver downloads and updates, from the catalog or a repository"
@@ -2696,9 +2738,11 @@ msgid "Don't play yet"
 msgstr "Ne pas jouer pour l'instant"
 
 #. Button: stops selecting apps in the library
+#. Button: stops selecting apps in the library
 #. Closes a dialog
 #. Closes the thanks after a problem was reported
 #: ../../apps/launcher/src/announcements-ui.tsx
+#: ../../apps/launcher/src/browse-ticking.tsx
 #: ../../apps/launcher/src/correction.tsx
 #: ../../apps/launcher/src/library-ticking.tsx
 #: ../../apps/launcher/src/library.tsx
@@ -2823,6 +2867,10 @@ msgstr ""
 msgid "Each backup is also sent to your account, which keeps the newest {keep} of each app. {used} of {limit} used."
 msgstr "Chaque sauvegarde est aussi envoyée à votre compte, qui conserve les {keep} plus récentes de chaque app. {used} sur {limit} utilisés."
 
+#: ../../apps/launcher/src/App.tsx
+msgid "Each gets a folder of its own in there, and updates keep installing into it."
+msgstr "Chacune y aura son propre dossier, et ses mises à jour continueront de s’y installer."
+
 #. Browse card detail: a chip on apps whose game files Quiver Launcher finds and puts in place
 #. Chip on apps whose game files Quiver Launcher finds and puts in place for the player
 #: ../../apps/launcher/src/App.tsx
@@ -2857,6 +2905,7 @@ msgid "Edit playlist"
 msgstr "Modifier la playlist"
 
 #. Controller hint, and a button over the apps selected in the library: what can change on all of them at once
+#: ../../apps/launcher/src/browse-ticking.tsx
 #: ../../apps/launcher/src/library-ticking.tsx
 #: ../../apps/launcher/src/spatial.ts
 msgid "Edit selected"
@@ -3300,6 +3349,7 @@ msgid "Hide dismissed"
 msgstr "Cacher les annonces masquées"
 
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/browse-ticking.tsx
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Hide from Browse"
 msgstr "Masquer de Parcourir"
@@ -3478,6 +3528,7 @@ msgstr "Inclure les versions préliminaires des apps"
 msgid "Include preview updates"
 msgstr "Inclure les mises à jour préliminaires"
 
+#. Button over the apps selected in Browse: installs them
 #. Button that installs a mod
 #. Button that installs an app
 #. Button that installs an app
@@ -3488,6 +3539,7 @@ msgstr "Inclure les mises à jour préliminaires"
 #. Installs an app
 #. Menu item that installs an app
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/browse-ticking.tsx
 #: ../../apps/launcher/src/card-menu.tsx
 #: ../../apps/launcher/src/detail.tsx
 #: ../../apps/launcher/src/library-tile.tsx
@@ -4600,6 +4652,7 @@ msgstr "Nouvelles installations"
 msgid "New name for {tag}"
 msgstr "Nouveau nom pour {tag}"
 
+#: ../../apps/launcher/src/browse-ticking.tsx
 #: ../../apps/launcher/src/card-menu.tsx
 #: ../../apps/launcher/src/library-ticking.tsx
 #: ../../apps/launcher/src/library.tsx
@@ -5343,7 +5396,9 @@ msgid "Playlist name"
 msgstr "Nom de la playlist"
 
 #. Button over the selected apps: puts them on playlists
+#. Button over the selected apps: puts them on playlists
 #. Heading over the player's playlists in the library's side panel
+#: ../../apps/launcher/src/browse-ticking.tsx
 #: ../../apps/launcher/src/detail.tsx
 #: ../../apps/launcher/src/library-ticking.tsx
 #: ../../apps/launcher/src/library.tsx
@@ -6327,16 +6382,20 @@ msgstr "Voir quelles apps"
 #. Controller hint: what Confirm does on any other control
 #. Controller hint: what Confirm does on any other control
 #. Menu item: selects an app in the library, to change several at once
+#. Menu item: selects an app in the library, to change several at once
 #: ../../apps/launcher/src/card-menu.tsx
 #: ../../apps/launcher/src/spatial.ts
 msgid "Select"
 msgstr "Sélectionner"
 
 #. Selects every app the library shows
+#. Selects every app the library shows
+#: ../../apps/launcher/src/browse-ticking.tsx
 #: ../../apps/launcher/src/library-ticking.tsx
 msgid "Select all"
 msgstr "Tout sélectionner"
 
+#: ../../apps/launcher/src/browse-ticking.tsx
 #: ../../apps/launcher/src/library-ticking.tsx
 msgid "Selected apps"
 msgstr "Applis sélectionnées"
@@ -6551,6 +6610,7 @@ msgid "Show hidden apps"
 msgstr "Afficher les apps masquées"
 
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/browse-ticking.tsx
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Show in Browse"
 msgstr "Afficher dans Parcourir"
@@ -6896,6 +6956,7 @@ msgstr "Ne plus conserver dans le cache de téléchargements"
 msgid "Stop looking in {folder} for {console}"
 msgstr "Ne plus chercher dans {folder} pour {console}"
 
+#: ../../apps/launcher/src/browse-ticking.tsx
 #: ../../apps/launcher/src/library-ticking.tsx
 msgid "Stop selecting"
 msgstr "Arrêter la sélection"
@@ -7323,6 +7384,14 @@ msgstr "Ces parties sont trop volumineuses pour le cloud."
 msgid "They leave your library. Nothing is deleted."
 msgstr "Elles quittent ta bibliothèque. Rien n'est supprimé."
 
+#: ../../apps/launcher/src/browse-ticking.tsx
+msgid "They're all in your library already, or can't be installed here."
+msgstr "Elles sont toutes déjà dans ta bibliothèque, ou ne peuvent pas être installées ici."
+
+#: ../../apps/launcher/src/browse-ticking.tsx
+msgid "They're all installed already, or can't be installed here."
+msgstr "Elles sont toutes déjà installées, ou ne peuvent pas être installées ici."
+
 #: ../../apps/launcher/src/account.tsx
 msgid "This account is suspended."
 msgstr "Ce compte est suspendu."
@@ -7591,6 +7660,8 @@ msgid "Under a minute"
 msgstr "Moins d'une minute"
 
 #. Button on the toast after hiding apps: shows them again, selected
+#. Button on the toast after hiding apps: shows them again, selected
+#: ../../apps/launcher/src/browse-ticking.tsx
 #: ../../apps/launcher/src/library-ticking.tsx
 msgid "Undo"
 msgstr "Annuler"
@@ -7657,6 +7728,7 @@ msgid "Unpin and install {version}"
 msgstr "Désépingler et installer {version}"
 
 #. Controller hint: what Confirm does on an app selected in the library, taking it out of those selected
+#. Menu item: takes an app out of the apps selected in the library
 #. Menu item: takes an app out of the apps selected in the library
 #: ../../apps/launcher/src/card-menu.tsx
 #: ../../apps/launcher/src/spatial.ts

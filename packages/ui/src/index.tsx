@@ -537,8 +537,11 @@ export function EntryCardContent({
   status,
   look = "box",
   details,
+  mark,
 }: {
   entry: CardEntry;
+  /** Over the cover's corner, such as the launcher's tick on a selected card. */
+  mark?: ReactNode;
   /** The cover, in place of the default `Artwork` of `boxOf(entry)` (a box card) or `coverOf(entry)` (a wide one). */
   artwork?: ReactNode;
   /** Copies of the default cover to try first, such as resized ones (`cardSources`). */
@@ -600,6 +603,7 @@ export function EntryCardContent({
       <>
         <span className="card-cover" title={cut ? entry.projectName : undefined}>
           {artwork ?? <BoxArt entry={entry} sources={coverSources} name={entry.projectName} />}
+          {mark}
           {badge ? <span className="cover-badge">{badge}</span> : fresh && newBadge}
           {/* The platforms in the corner the badge leaves, so the foot of the art is the chips' alone. */}
           {!shelf && os.length > 0 && (
@@ -635,6 +639,7 @@ export function EntryCardContent({
     <>
       <span className="card-cover" title={cut ? entry.projectName : undefined}>
         {artwork ?? <Artwork src={coverOf(entry)} sources={coverSources} name={entry.projectName} className={wide ? "cover-photo" : ""} />}
+        {mark}
         {badge ? <span className="cover-badge">{badge}</span> : fresh && newBadge}
         <span className="card-arrow">
           <ArrowUpRight size={17} />
@@ -701,8 +706,16 @@ export function EntryCard({
   status,
   look = "box",
   details,
+  tick,
+  ticked,
+  mark,
 }: {
   entry: CardEntry & { slug: string };
+  /** Selecting several cards (the launcher's): which apps this card is (`data-tick`), and whether it's selected. */
+  tick?: string;
+  ticked?: boolean;
+  /** Over the cover's corner while its page is selecting: the tick. The card says then whether it's selected (pressed). */
+  mark?: ReactNode;
   /** Box art (the default) or the wide art, with the catalog's details. */
   look?: CardLook;
   /** The details it shows (`EntryCardContent`); unset, all of them. */
@@ -725,9 +738,9 @@ export function EntryCard({
 }) {
   const consoleName = (tag: string) => (Object.hasOwn(consoleNames, tag) ? consoleNames[tag] : undefined);
   return (
-    <article className={["entry-card", look, className].filter(Boolean).join(" ")} data-slug={entry.slug}>
-      <button type="button" className="card-open" onClick={onOpen} aria-label={entry.projectName}>
-        <EntryCardContent entry={entry} artwork={cover} coverSources={coverSources} badge={badge} consoleName={consoleName} status={status} look={look} details={details} />
+    <article className={["entry-card", look, className].filter(Boolean).join(" ")} data-slug={entry.slug} data-tick={tick} data-ticked={ticked || undefined}>
+      <button type="button" className="card-open" onClick={onOpen} aria-label={entry.projectName} aria-pressed={mark ? Boolean(ticked) : undefined}>
+        <EntryCardContent entry={entry} artwork={cover} coverSources={coverSources} badge={badge} consoleName={consoleName} status={status} look={look} details={details} mark={mark} />
       </button>
       {action && <div className="card-action">{action}</div>}
     </article>

@@ -2576,6 +2576,17 @@ body:has(.tv-mode) .account-menu-name { display: block; }
 [data-ticking] .library-tile[data-tick] .card-open { cursor: pointer; }
 .library-tile[data-ticked] .card-cover { outline: 3px solid var(--accent); outline-offset: 3px; }
 .library-tile[data-ticked] .card-cover > :not(.tick-mark) { filter: brightness(0.8); }
+/*
+ * Browse's cards (browse-ticking.tsx): the same ring and tick, the tick in the corner its badge (In library, New)
+ * leaves, and none of the buttons over its art, nor the platforms and arrow under the tick.
+ */
+.entry-card:not(.library-tile) .tick-mark { left: auto; right: 8px; }
+[data-ticking] .entry-card:not(.library-tile)[data-tick] :is(.card-action, .cover-platforms, .card-arrow) { visibility: hidden; }
+[data-ticking] .entry-card:not(.library-tile)[data-tick] .card-open { cursor: pointer; }
+.entry-card:not(.library-tile)[data-ticked] .card-cover { outline: 3px solid var(--accent); outline-offset: 3px; }
+.entry-card:not(.library-tile)[data-ticked] .card-cover > :not(.tick-mark, .cover-badge) { filter: brightness(0.8); }
+/* A button greyed where none of those selected can (Add, Install). */
+.tick-bar .tool:disabled { opacity: 0.5; cursor: default; }
 /* A sidebar row: the tick over its icon's corner, the row tinted. */
 .sidebar-row .tick-mark { position: static; flex: none; width: 18px; height: 18px; border: 1.5px solid var(--line-strong); background: none; box-shadow: none; }
 .sidebar-row .tick-mark[data-ticked] { border-color: var(--accent); background: var(--accent); }
