@@ -149,6 +149,18 @@ export function sourceRequest(entry: Pick<Entry, "id" | "slug">, version: string
 }
 
 /**
+ * The apps a run found nothing more to fetch for, and at which release: the next runs of this launcher pass them by
+ * until the catalog lists a newer one, in place of asking for every app's releases every few hours. Every latest
+ * needs no memory where it keeps one file an app: the file kept says as much, across restarts too.
+ */
+const settled = new Map<string, { sign: string; files: boolean }>();
+/** Forgets which apps were up to date; for tests. */
+export const forgetSettled = () => settled.clear();
+/** What a settled app was settled for: a change to any of it has the app's releases read again. */
+const signOf = (cache: Cache, version: string) => [cache.dir, cache.mode, cache.allPlatforms, cache.sources, cache.limit, version].join("|");
+const plain = (version: string) => version.trim().replace(/^v/i, "");
+
+/**
  * One run: every file the cache should keep and doesn't, fetched while it fits. `stopped` ends it between files (the
  * file under way is stopped with cacheFetchCancel). Resolves to how it went.
  */
@@ -163,7 +175,9 @@ export async function runCacheFetch(cache: Cache, deps: FetchDeps, report: (s: F
   // What's kept now, as the run changes it: Every latest and Selected titles replace an app's older versions.
   let kept = status.entries;
   // The apps' versions whose source code is kept already.
-  const sources = new Set(status.entries.filter((f) => f.source).flatMap((f) => f.apps.map((o) => `${o.app}@${o.version}`)));
+  const sources = new Set(status.entries.filter((f) => f.source).flatMap((f) => f.apps.map((o) => `${o.app}@${plain(o.version)}`)));
+  // Every latest and Hoarder list the catalog afresh, so each app comes with its newest release as the site has it now.
+  const walks = cache.mode === "latest" || cache.mode === "hoarder";
   const installed = new Map((deps.installed?.() ?? []).map((i) => [i.id, i]));
   for await (const entry of appsOf(cache, deps, (n) => (state.ofApps = n), only)) {
     if (stopped()) break;
@@ -171,6 +185,24 @@ export async function runCacheFetch(cache: Cache, deps: FetchDeps, report: (s: F
     state.current = { name: entry.projectName };
     show();
     const install = installed.get(entry.id);
+    // The newest release the catalog lists for it ("" for none); unknown for a rolling release, whose files change
+    // under one version, and in the modes that go by what the launcher already knew of the app.
+    const newest = walks && !entry.verified?.rolling ? (entry.verified?.version ?? "") : undefined;
+    const sign = newest === undefined ? undefined : signOf(cache, newest);
+    let onDisk = false;
+    if (newest !== undefined) {
+      onDisk = !!newest && kept.some((f) => !f.source && f.apps.some((o) => o.app === entry.id && sameVersion(o.version, newest)));
+      const was = settled.get(entry.id);
+      const filesKept = (was !== undefined && was.sign === sign && (!was.files || !newest || onDisk)) || (cache.mode === "latest" && !cache.allPlatforms && onDisk);
+      const sourceKept = !cache.sources || !newest || sources.has(`${entry.id}@${plain(newest)}`);
+      // Nothing newer than what's kept: its releases needn't be asked for.
+      if (filesKept && sourceKept) {
+        if (!stopped()) await deps.keepReadme?.(entry).catch(() => {});
+        continue;
+      }
+    }
+    // Whether everything the app should have kept is, once this pass is through.
+    let done = true;
     let targets: CacheTarget[];
     // The release whose source code is kept: the installed one, else the newest.
     let latest: Release | undefined;
@@ -178,14 +210,14 @@ export async function runCacheFetch(cache: Cache, deps: FetchDeps, report: (s: F
       latest = install && (await releaseOf(deps, entry.slug, install.version).catch(() => undefined));
       targets = latest && install ? installedTargets(entry, latest, install, cache, deps.here) : [];
     } else {
-      const releases = await releasesOf(cache, deps, entry.slug).catch(() => []);
+      const releases = await releasesOf(cache, deps, entry.slug).catch(() => ((done = false), []));
       latest = releases[0];
       targets = cacheTargets(entry, releases, cache, deps.here);
     }
     // Its README, as the site has it now, for its page while the site can't be reached.
     if (!stopped()) await deps.keepReadme?.(entry).catch(() => {});
     // Keep source code: the release's, as its host archives its tag, unless it's kept already.
-    if (cache.sources && latest && !sources.has(`${entry.id}@${latest.version}`) && !stopped()) {
+    if (cache.sources && latest && !sources.has(`${entry.id}@${plain(latest.version)}`) && !stopped()) {
       const project = await deps.projectOf?.(entry.slug).catch(() => undefined);
       const archive = project && sourceArchive(project, latest.version);
       if (archive) {
@@ -196,7 +228,7 @@ export async function runCacheFetch(cache: Cache, deps: FetchDeps, report: (s: F
         try {
           await deps.native.cacheFetch(sourceRequest(entry, latest.version, archive, cache, deps.protect()));
           state.fetched++;
-          sources.add(`${entry.id}@${latest.version}`);
+          sources.add(`${entry.id}@${plain(latest.version)}`);
           note({ ...file, state: "kept", at: Date.now() });
         } catch (e) {
           if (e === "cancelled") {
@@ -204,12 +236,12 @@ export async function runCacheFetch(cache: Cache, deps: FetchDeps, report: (s: F
             break;
           }
           state.failed++;
+          done = false;
           note({ ...file, state: "failed", why: whyOf(e), at: Date.now() });
         }
       }
     }
-    if (!targets.length) continue;
-    const held = await deps.native.cacheHas(cache.dir, targets.map((t) => t.asset.checksum)).catch(() => targets.map(() => false));
+    const held = targets.length ? await deps.native.cacheHas(cache.dir, targets.map((t) => t.asset.checksum)).catch(() => targets.map(() => false)) : [];
     for (const [i, target] of targets.entries()) {
       if (stopped()) break;
       if (held[i]) continue;
@@ -218,6 +250,7 @@ export async function runCacheFetch(cache: Cache, deps: FetchDeps, report: (s: F
       const room = old.reduce((n, f) => n + f.size, 0);
       if (!fits(target.asset, used - room, cache.limit)) {
         state.noRoom++;
+        done = false;
         continue;
       }
       state.current = { name: entry.projectName, version: target.version, filename: target.asset.filename, received: 0, total: target.asset.size ?? null };
@@ -242,9 +275,13 @@ export async function runCacheFetch(cache: Cache, deps: FetchDeps, report: (s: F
           break;
         }
         state.failed++;
+        done = false;
         note({ ...file, state: "failed", why: whyOf(e), at: Date.now() });
       }
     }
+    if (sign !== undefined && done && !stopped())
+      // A file another app keeps already (the same checksum) isn't kept under this one: nothing of its own to find next time.
+      settled.set(entry.id, { sign, files: onDisk || targets.some((_, i) => !held[i]) });
   }
   state.running = false;
   state.current = undefined;
