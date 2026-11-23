@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 import type { LibraryItem } from "./store";
-import { applyServer, applyServerCollections, changesFrom, inCollection, joinAccount, pickedOutside, withoutApp, type Collection, type ServerItem } from "./sync";
+import { applyServer, applyServerCollections, changesFrom, inCollection, joinAccount, movedKey, pickedOutside, reordered, withoutApp, type Collection, type ServerItem } from "./sync";
 
 const item = (id: string, extra: Partial<LibraryItem> = {}): LibraryItem => ({ id, slug: id, addedAt: 1, ...extra });
 const server = (key: string, extra: Partial<ServerItem> = {}): ServerItem => ({
@@ -172,4 +172,30 @@ test("removing an app the player added takes it off their playlists, to save to 
   expect(theirs).toBe(followed);
   // Signed out: nothing to save.
   expect(withoutApp([list("guest", { apps: ["local:abc"] })], "local:abc")[0].pending).toBeUndefined();
+});
+
+test("moving a playlist puts it before another, or last", () => {
+  const keys = ["a", "b", "c", "d"];
+  expect(movedKey(keys, "c", "a")).toEqual(["c", "a", "b", "d"]);
+  expect(movedKey(keys, "a", "c")).toEqual(["b", "a", "c", "d"]);
+  expect(movedKey(keys, "b")).toEqual(["a", "c", "d", "b"]);
+  expect(movedKey(keys, "b", "b")).toEqual(keys);
+  expect(movedKey(keys, "b", "gone")).toEqual(keys);
+});
+
+test("reordering numbers the playlists and marks only the moved ones to save", () => {
+  const list = (key: string, order: number, extra: Partial<Collection> = {}): Collection => ({ key, name: key, tags: [], consoles: [], order, ...extra });
+  const a = list("a", 0, { account: "me" });
+  const gone = list("gone", 1, { removed: true, account: "me", pending: true });
+  const b = list("b", 1, { account: "me" });
+  const c = list("c", 1);
+  const [na, ngone, nb, nc] = reordered([a, gone, b, c], ["a", "c", "b"], "me");
+  expect(na).toBe(a);
+  expect(ngone).toBe(gone);
+  expect(nb).toEqual({ ...b, order: 2, pending: true });
+  // Ties (two at 1) are untied, and one never synced joins the account.
+  expect(nc).toBe(c);
+  expect(reordered([a, b, c], ["c", "a", "b"], "me").map((x) => [x.order, x.pending])).toEqual([[1, true], [2, true], [0, true]]);
+  // Signed out: nothing to save.
+  expect(reordered([list("x", 0), list("y", 1)], ["y", "x"]).map((x) => x.pending)).toEqual([undefined, undefined]);
 });

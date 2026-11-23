@@ -2703,3 +2703,18 @@ main:has(.tick-bar) { scroll-padding-bottom: 96px; }
 .release-files-preview li.left-out { color: var(--text-3); text-decoration: line-through; }
 .release-files-preview li.left-out svg { flex: none; }
 .release-files-preview .field-label { margin: 0; }
+
+/* Dragging a playlist to another place (library.tsx): a line where it lands, and the one dragged faded. */
+.playlist-tab[data-playlist], .panel-tab[data-playlist] { position: relative; }
+[data-playlist].dragged { opacity: 0.45; }
+[data-dragging], [data-dragging] * { cursor: grabbing !important; user-select: none; }
+.panel-tab.drop-before::before, .panel-tab.drop-after::after,
+.playlist-tab.drop-before::before, .playlist-tab.drop-after::after {
+  content: ""; position: absolute; border-radius: 2px; background: var(--accent); pointer-events: none;
+}
+.panel-tab.drop-before::before, .panel-tab.drop-after::after { left: 4px; right: 4px; height: 2px; }
+.panel-tab.drop-before::before { top: -2px; }
+.panel-tab.drop-after::after { bottom: -2px; }
+.playlist-tab.drop-before::before, .playlist-tab.drop-after::after { top: 4px; bottom: 4px; width: 2px; }
+.playlist-tab.drop-before::before { left: -3px; }
+.playlist-tab.drop-after::after { right: -3px; }
