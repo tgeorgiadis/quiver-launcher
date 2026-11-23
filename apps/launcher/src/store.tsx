@@ -17,7 +17,7 @@ import { cameAfter, fromSite, scanAsks, installedFile, insteadOf, newestUnblocke
 import { captureError, captureFailure, failureKind, Problem, reasonOf, reportStartupFailure, setTelemetryAppsDir, setTelemetryAppsFolders, telemetryChoice, track, type TelemetryContext } from "./telemetry";
 import { appsDueToday, appsOnComputer, librarySummary } from "./usage-summary";
 import { AccountProvider, useAccount } from "./account";
-import { applyServer, applyServerCollections, changesFrom, hasFilters, joinAccount, matches, newKey, syncableCustom, withoutApp, type Collection } from "./sync";
+import { applyServer, applyServerCollections, changesFrom, hasFilters, joinAccount, matches, newKey, reordered, syncableCustom, withoutApp, type Collection } from "./sync";
 import type { Platform } from "./platforms";
 import { setBindings, setScrolling, type Bindings } from "./spatial";
 import { musicForGame, setMusic } from "./music";
@@ -391,6 +391,8 @@ type Launcher = {
   collections: Collection[];
   /** Adds or changes a collection; `removed` deletes it. */
   saveCollection: (collection: Collection) => void;
+  /** Puts the playlists in this order, by key; the account gets the ones that moved in one save. */
+  reorderCollections: (keys: string[]) => void;
   /** Changes made here that the account doesn't have yet. */
   unsynced: number;
   /** Signs out, taking the library along except the apps installed on this computer, which stay until another account signs in. */
@@ -2796,6 +2798,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         return all.some((x) => x.key === c.key) ? all.flatMap((x) => (x.key === c.key ? keep : [x])) : [...all, ...keep];
       });
     },
+    reorderCollections: (keys) => setCollections((all) => reordered(all, keys, userId)),
     setTags: (id, tags) =>
       setLibrary((l) => l.map((i) => (i.id !== id ? i : { ...i, overrides: { ...i.overrides, tags: tags.length ? tags : undefined }, pending: i.account ? { ...i.pending, tags: true } : i.pending }))),
     renameTag: (from, to) => setLibrary((l) => retagged(l, from, to)),

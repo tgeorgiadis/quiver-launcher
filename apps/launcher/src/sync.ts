@@ -235,6 +235,30 @@ export const pickedOutside = (c: Pick<Collection, "apps"> | undefined, inLibrary
   (c?.apps ?? []).filter((id) => !inLibrary(id) && Boolean(catalog[id]) && !isOwn(id));
 
 /**
+ * `keys` (the player's playlists) with `key` moved to just before `before`, or to the end when that's undefined: what a
+ * drop or a Move up or down asks for.
+ */
+export function movedKey(keys: string[], key: string, before?: string): string[] {
+  const rest = keys.filter((k) => k !== key);
+  const at = before === undefined ? rest.length : rest.indexOf(before);
+  return at < 0 ? keys : [...rest.slice(0, at), key, ...rest.slice(at)];
+}
+
+/**
+ * The collections numbered in the order of `keys` (the playlists as the library shows them, 0 first). Only the ones
+ * whose place changed are new objects marked to save, so the account gets them in one save.
+ */
+export function reordered(collections: Collection[], keys: string[], account?: string): Collection[] {
+  const at = new Map(keys.map((k, i) => [k, i]));
+  return collections.map((c) => {
+    const order = at.get(c.key);
+    if (order === undefined || c.removed || c.order === order) return c;
+    const synced = c.account ?? account;
+    return { ...c, order, account: synced, pending: synced ? true : undefined };
+  });
+}
+
+/**
  * The playlists once an app the player added themselves leaves the library: it comes off each one it was picked
  * for, and isn't the icon of any. Only the playlists changed are new objects, to save to `account` when there is one.
  */

@@ -4439,9 +4439,24 @@ msgstr "Mover apps"
 msgid "Move apps into the default folder"
 msgstr "Mover os apps para a pasta padrão"
 
+#. Moves a playlist one place down the library's side panel
+#: ../../apps/launcher/src/library.tsx
+msgid "Move down"
+msgstr "Mover para baixo"
+
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Move into default"
 msgstr "Mover para a padrão"
+
+#. Moves a playlist tab one place left along the top of the library
+#: ../../apps/launcher/src/library.tsx
+msgid "Move left"
+msgstr "Mover para a esquerda"
+
+#. Moves a playlist tab one place right along the top of the library
+#: ../../apps/launcher/src/library.tsx
+msgid "Move right"
+msgstr "Mover para a direita"
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Move them now"
@@ -4451,6 +4466,11 @@ msgstr "Mover agora"
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Move to…"
 msgstr "Mover para…"
+
+#. Moves a playlist one place up the library's side panel
+#: ../../apps/launcher/src/library.tsx
+msgid "Move up"
+msgstr "Mover para cima"
 
 #. placeholder {0}: n - failed.length
 #: ../../apps/launcher/src/console-folders.tsx

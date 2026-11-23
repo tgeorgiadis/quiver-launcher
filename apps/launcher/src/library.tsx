@@ -7,9 +7,9 @@
  * layout (saved as "sidebar") shows the same library as a list down the left,
  * with the app picked in it open beside it.
  */
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent as KeyEvent, type ReactNode } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type DragEvent as ReactDragEvent, type KeyboardEvent as KeyEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { Check, ChevronDown, ChevronsDownUp, ChevronsUpDown, Clock, CloudDownload, Compass, Eye, EyeOff, HardDrive, LayoutGrid, Library, List, ListPlus, MoreHorizontal, PanelLeft, PanelTop, Play, Plus, Search, SlidersHorizontal, X } from "lucide-react";
+import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Check, ChevronDown, ChevronsDownUp, ChevronsUpDown, Clock, CloudDownload, Compass, Eye, EyeOff, HardDrive, LayoutGrid, Library, List, ListPlus, MoreHorizontal, PanelLeft, PanelTop, Play, Plus, Search, SlidersHorizontal, X } from "lucide-react";
 import { msg, plural, t } from "@lingui/core/macro";
 import { Plural, Trans } from "@lingui/react/macro";
 import type { MessageDescriptor } from "@lingui/core";
@@ -24,7 +24,7 @@ import { jumpLetters, letterOf } from "./letters";
 import { LetterIndex } from "./letter-index";
 import { versionLabel } from "./versions";
 import { useAccount } from "./account";
-import { hasFilters, inCollection, matches, newKey, pickedOutside, type AppFacts, type Collection } from "./sync";
+import { hasFilters, inCollection, matches, movedKey, newKey, pickedOutside, type AppFacts, type Collection } from "./sync";
 import { isLocal, isOwn } from "./custom";
 import { withPictures, type Pictures } from "./custom-art";
 import { LIBRARY_SORTS, compareApps, isLibrarySort, type LibrarySort } from "./sort";
@@ -114,7 +114,7 @@ export function LibraryPage({
   /** An app's page, beside the sidebar in the Sidebar layout. */
   page?: (entry: Entry) => ReactNode;
 }) {
-  const { client, config, library: all, catalog, installs, jobs, get, add, settings, setSettings, collections, saveCollection, consoles, consoleNames, cache } = useLauncher();
+  const { client, config, library: all, catalog, installs, jobs, get, add, settings, setSettings, collections, saveCollection, reorderCollections, consoles, consoleNames, cache } = useLauncher();
   const { view, groupBy, set: setView } = useLibraryView();
   // The cards' size, on the page (showCardScale), where View options' slider changes it as it moves. Up here, before
   // the sidebar's page returns early, so it's the same hooks either way.
@@ -157,15 +157,130 @@ export function LibraryPage({
   const panel = !sidebar && view.playlists === "side" && fits && !tv;
   // A right-click on the tabs, or the panel: a way to move them to the other place.
   const placeMenu = useRef<((x: number, y: number) => void) | null>(null);
-  const openPlaceMenu = (e: { preventDefault: () => void; clientX: number; clientY: number; currentTarget: Element }) => {
+  // The playlist it was opened on, which it can move up or down too.
+  const [menuOn, setMenuOn] = useState<string>();
+  const playlistKeys = collections.map((c) => c.key);
+  /** The playlist a tab or panel row is for, if it's one of the player's. */
+  const rowOf = (el: EventTarget | null) => {
+    const row = el instanceof Element ? el.closest<HTMLElement>("[data-playlist]") : null;
+    return row && collections.some((c) => c.key === row.dataset.tab) ? row : null;
+  };
+  const openPlaceMenu = (e: { preventDefault: () => void; clientX: number; clientY: number; currentTarget: Element; target: EventTarget | null }) => {
     e.preventDefault();
-    // The keyboard's Menu key fires it at no point: by the tabs instead.
+    const row = rowOf(e.target);
+    setMenuOn(row?.dataset.tab);
+    // The keyboard's Menu key fires it at no point: by the playlist, or the tabs, instead.
     if (e.clientX === 0 && e.clientY === 0) {
-      const r = e.currentTarget.getBoundingClientRect();
+      const r = (row ?? e.currentTarget).getBoundingClientRect();
       const s = zoom() / boxZoom();
       return placeMenu.current?.((r.left + 12) * s, (r.top + 12) * s);
     }
     placeMenu.current?.(e.clientX, e.clientY);
+  };
+  // The keyboard's Menu key or Shift+F10 on a playlist, or a controller's Options button (spatial.ts sends that key).
+  const placeMenuKey = (e: KeyEvent) => {
+    if (e.key !== "ContextMenu" && !(e.key === "F10" && e.shiftKey)) return;
+    const row = rowOf(e.target);
+    if (!row) return;
+    openPlaceMenu({ preventDefault: () => e.preventDefault(), clientX: 0, clientY: 0, currentTarget: row, target: row });
+  };
+  /** Moves a playlist one place up (-1) or down (1), as a menu's Move up and Move down do. */
+  const movePlaylist = (key: string, by: -1 | 1) => {
+    const i = playlistKeys.indexOf(key);
+    if (i < 0 || !playlistKeys[i + by]) return;
+    reorderCollections(movedKey(playlistKeys, key, playlistKeys[by < 0 ? i - 1 : i + 2]));
+    track("playlist_moved", { how: "menu" });
+  };
+  /** Move up and Move down (left and right along the top) for a playlist, leaving out the one it can't go. */
+  const moveItems = (key: string): [string, () => void, ReactNode][] => {
+    const i = playlistKeys.indexOf(key);
+    if (i < 0) return [];
+    return [
+      ...(i > 0
+        ? [[panel ? t({ message: "Move up", comment: "Moves a playlist one place up the library's side panel" }) : t({ message: "Move left", comment: "Moves a playlist tab one place left along the top of the library" }), () => movePlaylist(key, -1), panel ? <ArrowUp size={15} aria-hidden="true" /> : <ArrowLeft size={15} aria-hidden="true" />] as [string, () => void, ReactNode]]
+        : []),
+      ...(i < playlistKeys.length - 1
+        ? [[panel ? t({ message: "Move down", comment: "Moves a playlist one place down the library's side panel" }) : t({ message: "Move right", comment: "Moves a playlist tab one place right along the top of the library" }), () => movePlaylist(key, 1), panel ? <ArrowDown size={15} aria-hidden="true" /> : <ArrowRight size={15} aria-hidden="true" />] as [string, () => void, ReactNode]]
+        : []),
+    ];
+  };
+  // Dragging a playlist with the mouse, as in Quiver Launcher 3: the row it's over, and whether it goes after that one.
+  const [drag, setDrag] = useState<{ key: string; mark?: string; after: boolean }>();
+  const keysNow = useRef(playlistKeys);
+  keysNow.current = playlistKeys;
+  const startDrag = (e: ReactPointerEvent<HTMLElement>, key: string, axis: "x" | "y") => {
+    if (e.button !== 0 || e.pointerType === "touch") return;
+    const list = e.currentTarget.parentElement;
+    if (!list) return;
+    const [x0, y0] = [e.clientX, e.clientY];
+    let live = false;
+    let at: { mark?: string; after: boolean } = { after: false };
+    // The row the pointer is before, by the middle of each; past them all, after the last one.
+    const over = (ev: PointerEvent) => {
+      const s = zoom() / boxZoom();
+      const rows = [...list.querySelectorAll<HTMLElement>(":scope > [data-playlist]")];
+      for (const row of rows) {
+        const b = row.getBoundingClientRect();
+        const mid = axis === "y" ? (b.top + b.height / 2) * s : (b.left + b.width / 2) * s;
+        if ((axis === "y" ? ev.clientY : ev.clientX) < mid) return { mark: row.dataset.tab, after: false };
+      }
+      return { mark: rows.at(-1)?.dataset.tab, after: true };
+    };
+    const stop = () => {
+      window.removeEventListener("pointermove", move, true);
+      window.removeEventListener("pointerup", up, true);
+      window.removeEventListener("pointercancel", cancel, true);
+      window.removeEventListener("keydown", key_, true);
+      document.documentElement.removeAttribute("data-dragging");
+      setDrag(undefined);
+    };
+    const move = (ev: PointerEvent) => {
+      if (!live && Math.hypot(ev.clientX - x0, ev.clientY - y0) < 6) return;
+      if (!live) document.documentElement.setAttribute("data-dragging", "");
+      live = true;
+      at = over(ev);
+      setDrag({ key, ...at });
+    };
+    const up = () => {
+      stop();
+      if (!live || !at.mark) return;
+      // The click that ends the drag doesn't open the playlist too.
+      const swallow = (c: MouseEvent) => (c.preventDefault(), c.stopPropagation());
+      window.addEventListener("click", swallow, { capture: true, once: true });
+      setTimeout(() => window.removeEventListener("click", swallow, true));
+      const keys = keysNow.current;
+      // After the last tab shown: before the playlist after it, which may be among More's.
+      const before = at.after ? keys[keys.indexOf(at.mark) + 1] : at.mark;
+      const next = movedKey(keys, key, before);
+      if (next.join("\n") === keys.join("\n")) return;
+      reorderCollections(next);
+      track("playlist_moved", { how: "drag" });
+    };
+    const cancel = () => stop();
+    const key_ = (k: KeyboardEvent) => {
+      if (k.key !== "Escape" || !live) return;
+      k.preventDefault();
+      k.stopPropagation();
+      live = false;
+      stop();
+    };
+    window.addEventListener("pointermove", move, true);
+    window.addEventListener("pointerup", up, true);
+    window.addEventListener("pointercancel", cancel, true);
+    window.addEventListener("keydown", key_, true);
+  };
+  /** What a playlist's tab or panel row takes: dragging, its menu, and where a dragged one would land. */
+  const rowProps = (key: Tab, axis: "x" | "y") => {
+    if (!collections.some((c) => c.key === key)) return {};
+    const k = key as string;
+    const mark = drag && drag.key !== k && drag.mark === k ? (drag.after ? " drop-after" : " drop-before") : "";
+    return {
+      "data-playlist": "",
+      "data-menu": "",
+      onPointerDown: (e: ReactPointerEvent<HTMLElement>) => startDrag(e, k, axis),
+      onDragStart: (e: ReactDragEvent) => e.preventDefault(),
+      extra: `${drag?.key === k ? " dragged" : ""}${mark}`,
+    };
   };
   // The app open beside the sidebar; the first one until the player picks one.
   const [selected, setSelected] = useState<string>();
@@ -487,11 +602,13 @@ export function LibraryPage({
                 setTab(copy.key);
               },
             ],
+            ...moveItems(collection.key).map(([text, act]): [string, () => void] => [text, act]),
             [t({ message: "Remove", comment: "Removes a followed playlist from the library" }), () => (saveCollection({ ...collection, removed: true }), setTab("all"))],
           ]
         : [
             [t({ message: "Edit", comment: "Edits a playlist" }), () => setEditing(collection)],
             [collection.shared ? t`Shared playlist` : t({ message: "Share", comment: "Shares a playlist" }), () => setSharing(collection)],
+            ...moveItems(collection.key).map(([text, act]): [string, () => void] => [text, act]),
             [
               collection.shared ? t`Delete (stops sharing it)` : t({ message: "Delete", comment: "Deletes a playlist" }),
               () => {
@@ -783,17 +900,20 @@ export function LibraryPage({
         {resume && <ContinuePlaying entry={resume} played={installs[resume.id].lastPlayed!} onOpen={() => onOpen(resume)} action={action(resume)} />}
         <div ref={bar} className={`library-bar${stacked ? " stacked" : ""}${panel ? " with-panel" : ""}`}>
           {!stacked && !panel && (
-            <nav ref={tabRow} className="playlists" aria-label={t`Playlists`} onContextMenu={openPlaceMenu}>
-              {inRow.map(([key, name]) => (
-                <span key={key} className="playlist-tab" data-tab={key}>
-                  <button className={tab === key ? "active" : ""} aria-pressed={tab === key} onClick={() => setTab(key)}>
-                    <PlaylistIcon entry={iconOf(key)} />
-                    {name}
-                  </button>
-                  {/* The open playlist's menu: edit, share or delete it; a followed one is copied or removed. */}
-                  {tab === key && collection && playlistMenu}
-                </span>
-              ))}
+            <nav ref={tabRow} className="playlists" aria-label={t`Playlists`} onContextMenu={openPlaceMenu} onKeyDown={placeMenuKey}>
+              {inRow.map(([key, name]) => {
+                const { extra = "", ...row } = rowProps(key, "x");
+                return (
+                  <span key={key} className={`playlist-tab${extra}`} data-tab={key} {...row}>
+                    <button className={tab === key ? "active" : ""} aria-pressed={tab === key} onClick={() => setTab(key)}>
+                      <PlaylistIcon entry={iconOf(key)} />
+                      {name}
+                    </button>
+                    {/* The open playlist's menu: edit, share or delete it; a followed one is copied or removed. */}
+                    {tab === key && collection && playlistMenu}
+                  </span>
+                );
+              })}
               {/* The tabs that don't fit beside the search and the tools; the open one named on it, its menu beside it. */}
               {inMore.length > 0 && (
                 <span className="playlist-tab more-tabs">
@@ -980,17 +1100,20 @@ export function LibraryPage({
   );
   /** The tabs and playlists down the left: All, Updates and Hidden, then the player's playlists under their heading. */
   const builtIn = (key: Tab) => (key === "all" ? <Library size={15} /> : key === "updates" ? <CloudDownload size={15} /> : key === "hidden" ? <EyeOff size={15} /> : null);
-  const panelRow = ([key, name]: [Tab, string]) => (
-    <span key={key} className={`panel-tab${tab === key ? " active" : ""}`} data-tab={key}>
-      <button className={tab === key ? "active" : ""} aria-pressed={tab === key} onClick={() => setTab(key)} title={name}>
-        {builtIn(key) ?? (iconOf(key) ? <PlaylistIcon entry={iconOf(key)} /> : <List size={15} />)}
-        <span className="panel-tab-name">{name}</span>
-      </button>
-      {tab === key && collection && playlistMenu}
-    </span>
-  );
+  const panelRow = ([key, name]: [Tab, string]) => {
+    const { extra = "", ...row } = rowProps(key, "y");
+    return (
+      <span key={key} className={`panel-tab${tab === key ? " active" : ""}${extra}`} data-tab={key} {...row}>
+        <button className={tab === key ? "active" : ""} aria-pressed={tab === key} onClick={() => setTab(key)} title={name}>
+          {builtIn(key) ?? (iconOf(key) ? <PlaylistIcon entry={iconOf(key)} /> : <List size={15} />)}
+          <span className="panel-tab-name">{name}</span>
+        </button>
+        {tab === key && collection && playlistMenu}
+      </span>
+    );
+  };
   const playlistPanel = panel && (
-    <nav className="playlist-panel" aria-label={t`Playlists`} onContextMenu={openPlaceMenu}>
+    <nav className="playlist-panel" aria-label={t`Playlists`} onContextMenu={openPlaceMenu} onKeyDown={placeMenuKey}>
       <div className="panel-tabs">{tabs.filter(([key]) => !collections.some((c) => c.key === key)).map(panelRow)}</div>
       <div className="panel-heading">
         <span>
@@ -1022,10 +1145,19 @@ export function LibraryPage({
       {/* A right-click on the tabs or the panel: move them to the other place. */}
       <Popover label={t`Playlists position`} icon={null} role="menu" opener={placeMenu} bare>
         {(close) => (
-          <button role="menuitem" onClick={() => (close(), setView({ playlists: panel ? "top" : "side" }), track("playlists_moved", { to: panel ? "top" : "side", how: "menu" }))}>
-            {panel ? <PanelTop size={15} aria-hidden="true" /> : <PanelLeft size={15} aria-hidden="true" />}{" "}
-            {panel ? t({ message: "Show at top of library", comment: "Moves the library's playlists from the side panel to tabs along the top" }) : t({ message: "Show as side panel", comment: "Moves the library's playlist tabs to a panel down the left" })}
-          </button>
+          <>
+            {/* On a playlist: Move up and Move down, the way it can go. */}
+            {menuOn &&
+              moveItems(menuOn).map(([text, act, icon]) => (
+                <button key={text} role="menuitem" onClick={() => (close(), act())}>
+                  {icon} {text}
+                </button>
+              ))}
+            <button role="menuitem" onClick={() => (close(), setView({ playlists: panel ? "top" : "side" }), track("playlists_moved", { to: panel ? "top" : "side", how: "menu" }))}>
+              {panel ? <PanelTop size={15} aria-hidden="true" /> : <PanelLeft size={15} aria-hidden="true" />}{" "}
+              {panel ? t({ message: "Show at top of library", comment: "Moves the library's playlists from the side panel to tabs along the top" }) : t({ message: "Show as side panel", comment: "Moves the library's playlist tabs to a panel down the left" })}
+            </button>
+          </>
         )}
       </Popover>
       {dialogs}
