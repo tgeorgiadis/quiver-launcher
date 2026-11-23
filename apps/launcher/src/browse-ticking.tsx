@@ -7,7 +7,7 @@
  * Each goes to the account once for them all: the library's and the playlists' changes are saved together
  * (store.tsx), and hiding is a setting. Installing asks for each app's releases, as its own Install would.
  */
-import { useState, type ComponentProps, type ReactNode } from "react";
+import { createContext, useContext, useRef, useState, type ComponentProps, type ReactNode } from "react";
 import { Check, ChevronDown, Download, EyeOff, ListPlus, MoreHorizontal, Plus, X } from "lucide-react";
 import { plural, t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
@@ -21,12 +21,21 @@ import { tickState, withIds } from "./ticking";
 import { toggleHidden } from "./browse-hidden";
 import { track } from "./telemetry";
 
+/**
+ * The apps Browse's cards have shown, by id: the store's catalog keeps only the library's (store.tsx's `remember`),
+ * so what's selected and not in the library is found here.
+ */
+const Seen = createContext<Map<string, Entry> | null>(null);
+
 /** Around Browse's cards: its front page's shelves and its list. `shown`, the list's apps, which Select all selects. */
 export function BrowseTickArea({ shown, children }: { shown: readonly string[]; children: ReactNode }) {
+  const seen = useRef(new Map<string, Entry>()).current;
   return (
-    <SelectArea shown={shown} bar={(props) => <BrowseBar {...props} />}>
-      {children}
-    </SelectArea>
+    <Seen.Provider value={seen}>
+      <SelectArea shown={shown} bar={(props) => <BrowseBar {...props} />}>
+        {children}
+      </SelectArea>
+    </Seen.Provider>
   );
 }
 
@@ -34,6 +43,7 @@ export function BrowseTickArea({ shown, children }: { shown: readonly string[]; 
 export function TickableCard(props: ComponentProps<typeof EntryCard> & { entry: { id: string } }) {
   const id = props.entry.id;
   const { ticking, ticked, selectable } = useTicked([id]);
+  useContext(Seen)?.set(id, props.entry as Entry);
   if (!selectable) return <EntryCard {...props} />;
   return (
     <EntryCard
@@ -54,8 +64,12 @@ export function TickableCard(props: ComponentProps<typeof EntryCard> & { entry: 
 /** What the selected apps come to: those to add, to install, and how many are hidden from Browse. */
 function useSelected(ids: string[]) {
   const { config, library, installs, jobs, catalog, settings } = useLauncher();
-  // Those the catalog has sent: all of them, once their cards have shown.
-  const entries = ids.flatMap((id) => (catalog[id] ? [catalog[id] as Entry] : []));
+  const seen = useContext(Seen);
+  // As the store has them (a library app's, with what it found for here), else as their cards showed them.
+  const entries = ids.flatMap((id) => {
+    const entry = (catalog[id] as Entry | undefined) ?? seen?.get(id);
+    return entry ? [entry] : [];
+  });
   const inLibrary = new Set(library.map((i) => i.id));
   const busy = (id: string) => Boolean(jobs[id] && !("error" in jobs[id]));
   // As each card's own button: Add for one that can install here, then Install.
@@ -129,8 +143,8 @@ const installCount = (n: number, of: number) =>
  * (In library, a download's progress) or they leave Browse. Hiding's toast has Undo, which selects them again.
  */
 function useBrowseActions(ids: string[], onDone: () => void) {
-  const { settings, setSettings, setNotice, addAllToLibrary, catalog } = useLauncher();
-  const { addable, installable, allHidden } = useSelected(ids);
+  const { settings, setSettings, setNotice, addAllToLibrary } = useLauncher();
+  const { entries, addable, installable, allHidden } = useSelected(ids);
   const installAll = useInstallAll();
   const select = useTickSelect();
   const did = (action: string, apps: number) => track("browse_bulk_edit", { action, apps });
@@ -149,14 +163,15 @@ function useBrowseActions(ids: string[], onDone: () => void) {
     const before = settings.browseHidden;
     const hiddenNow = new Set(before?.map((h) => h.id));
     // Each by its slug too, as one card's Hide from Browse keeps it (browse-hidden.ts).
-    const changed = ids.filter((id) => hiddenNow.has(id) === allHidden && catalog[id]);
+    const slugs = new Map(entries.map((e) => [e.id, e.slug]));
+    const changed = ids.filter((id) => hiddenNow.has(id) === allHidden && slugs.has(id));
     let next = before ?? [];
-    for (const id of changed) next = toggleHidden(next, { id, slug: catalog[id].slug });
+    for (const id of changed) next = toggleHidden(next, { id, slug: slugs.get(id)! });
     setSettings((s) => ({ ...s, browseHidden: next.length ? next : undefined }));
     const undo = () => {
       setSettings((s) => {
         let back = s.browseHidden ?? [];
-        for (const id of changed) back = toggleHidden(back, { id, slug: catalog[id].slug });
+        for (const id of changed) back = toggleHidden(back, { id, slug: slugs.get(id)! });
         return { ...s, browseHidden: back.length ? back : undefined };
       });
       select?.(ids);
