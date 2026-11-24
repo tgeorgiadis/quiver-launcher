@@ -42,6 +42,7 @@ function GameFailed({ failure, entry, onClose }: { failure: GameFailure; entry: 
 
   const app = entry.projectName;
   const ref = appRef(entry.id, entry.slug);
+  const message = log ? ownMessage(failure, log) : null;
   const details = useMemo<ReportDetails>(() => {
     const os = config.steamDeck ? "Steam Deck" : (OS_NAMES as Record<string, string>)[config.os] ?? config.os;
     return {
@@ -50,11 +51,11 @@ function GameFailed({ failure, entry, onClose }: { failure: GameFailure; entry: 
       launcher: config.version,
       system: [os, config.osVersion, `(${config.arch})`].filter(Boolean).join(" "),
       wine: Boolean(install?.wine),
-      failure: { ...failure, line: failure.line && scrub(failure.line) },
+      // The app's own words, where it left some, and not the key prompt after them.
+      failure: { ...failure, line: message ? message.split("\n").at(-1)! : failure.line && scrub(failure.line) },
       log: log ?? "",
     };
-  }, [app, install?.version, install?.wine, config, failure, log]);
-  const message = log ? ownMessage(failure, log) : null;
+  }, [app, install?.version, install?.wine, config, failure, log, message]);
   // Only a catalog app's report is Quiver's to look at: one the player added is named to no one. And what the app
   // asked of the player isn't a fault for anyone to look into.
   const toQuiver = Boolean(ref.slug) && playerReportsAvailable() && !message;

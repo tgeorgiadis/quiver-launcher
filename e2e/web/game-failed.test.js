@@ -68,7 +68,11 @@ test("a game that asked for a key before closing shows its message, with no repo
     assert.equal(await dialog.locator("pre").textContent(), "Put your game's ISO beside PLAY.bat as game.iso.");
     assert.equal(await dialog.getByText(/stopped with an error/).count(), 0);
     assert.equal(await dialog.getByRole("button", { name: "Send report" }).count(), 0);
-    await dialog.getByRole("button", { name: "Copy details" }).waitFor();
+    // What's copied names the game's own line as its last message, not the key prompt.
+    await own.page.evaluate(() => (navigator.clipboard.writeText = (text) => ((window.__copied = text), Promise.resolve())));
+    await dialog.getByRole("button", { name: "Copy details" }).click();
+    await dialog.getByRole("button", { name: "Copied" }).waitFor();
+    assert.match(await own.page.evaluate(() => window.__copied), /- Last message: Put your game's ISO beside PLAY\.bat as game\.iso\.\n/);
     assert.deepEqual(own.errors, []);
   } finally {
     await own.close();
