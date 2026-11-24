@@ -62,6 +62,8 @@ const MAX_HELD_ERRORS = 20;
 /** Google Analytics' limit for one request. */
 const MAX_BATCH = 25;
 const SEND_AFTER_MS = 10_000;
+/** How long a report the player sends has to be taken before they're told it didn't go. */
+const SEND_REPORT_MS = 10_000;
 /** The longest time between events counted as using the launcher. */
 const MAX_ENGAGEMENT_MS = 30 * 60_000;
 /** Sentry's parts that report by themselves, whatever beforeSend says, or keep what the player did. */
@@ -406,6 +408,38 @@ export function captureError(error: unknown, properties?: Properties) {
 /** An uncaught error: Sentry's own handlers report it once it's running, so only those from before that come here. */
 export function captureUncaught(error: unknown) {
   if (!sentryRunning) captureError(error, { handled: "before_start" });
+}
+
+/** Whether a report the player sends themselves has somewhere to go: error reports are on, and go from this build. */
+export function playerReportsAvailable() {
+  return allowed() && Boolean((env().VITE_SENTRY_DSN as string | undefined)?.trim()) && context?.host === DEFAULT_HOST;
+}
+
+/**
+ * A report the player chose to send, of something that isn't the launcher failing (a game that crashed): `step`
+ * says what, and `group` what makes two of them the same. Whether it left.
+ */
+export async function sendPlayerReport(step: string, message: string, group: string[], properties: Properties) {
+  if (!playerReportsAvailable()) return false;
+  const sentry = await errors;
+  const client = sentry?.getClient();
+  if (!sentry || !client) return false;
+  // Sent only when Sentry answered that it took it: offline, or dropped on the way, the player is told it didn't go.
+  return new Promise<boolean>((resolve) => {
+    let id: string | undefined;
+    const done = (ok: boolean) => {
+      clearTimeout(timer);
+      stop();
+      resolve(ok);
+    };
+    const timer = setTimeout(() => done(false), SEND_REPORT_MS);
+    const stop = client.on("afterSendEvent", (event, response) => {
+      if (event.event_id !== id) return;
+      const status = response?.statusCode;
+      done(typeof status === "number" && status >= 200 && status < 300);
+    });
+    id = sentry.captureException(new Error(message), { tags: { failure: step, player_report: "1" }, extra: properties, fingerprint: ["failure", step, ...group] });
+  });
 }
 
 /**

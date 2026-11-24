@@ -229,6 +229,14 @@ msgstr "{active, plural, one {# downloading, {percent}%} other {# downloading, {
 msgid "{active, plural, one {# downloading} other {# downloading}}"
 msgstr "{active, plural, one {# downloading} other {# downloading}}"
 
+#: ../../apps/launcher/src/game-report-prompt.tsx
+msgid "{app} closed right after starting"
+msgstr "{app} closed right after starting"
+
+#: ../../apps/launcher/src/game-report-prompt.tsx
+msgid "{app} crashed"
+msgstr "{app} crashed"
+
 #: ../../apps/launcher/src/downloads.ts
 msgid "{app} didn't finish downloading."
 msgstr "{app} didn't finish downloading."
@@ -1081,6 +1089,10 @@ msgstr "A program on this computer"
 #: ../../apps/launcher/src/launch-options.tsx
 msgid "A quote isn't closed."
 msgstr "A quote isn't closed."
+
+#: ../../apps/launcher/src/game-report-prompt.tsx
+msgid "A report has the app and its version, your system, and the text above. Folder and user names are taken out."
+msgstr "A report has the app and its version, your system, and the text above. Folder and user names are taken out."
 
 #: ../../apps/launcher/src/custom-art.tsx
 msgid "A transparent PNG. For its Steam shortcut."
@@ -2282,6 +2294,7 @@ msgstr "Clear search"
 #. Window button: close Quiver's window
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/detail.tsx
+#: ../../apps/launcher/src/game-report-prompt.tsx
 #: ../../apps/launcher/src/mods.tsx
 #: ../../apps/launcher/src/own-copy-setup.tsx
 #: ../../apps/launcher/src/tag-settings.tsx
@@ -2414,6 +2427,7 @@ msgid "Controllers"
 msgstr "Controllers"
 
 #: ../../apps/launcher/src/downloads-page.tsx
+#: ../../apps/launcher/src/game-report-prompt.tsx
 msgid "Copied"
 msgstr "Copied"
 
@@ -2422,6 +2436,7 @@ msgid "Copied to your sync folder."
 msgstr "Copied to your sync folder."
 
 #: ../../apps/launcher/src/downloads-page.tsx
+#: ../../apps/launcher/src/game-report-prompt.tsx
 msgid "Copy details"
 msgstr "Copy details"
 
@@ -2520,6 +2535,10 @@ msgstr "Couldn't send it. Try again."
 #: ../../apps/launcher/src/discussions.tsx
 msgid "Couldn't send that. Try again."
 msgstr "Couldn't send that. Try again."
+
+#: ../../apps/launcher/src/game-report-prompt.tsx
+msgid "Couldn't send the report. Check your connection and try again."
+msgstr "Couldn't send the report. Check your connection and try again."
 
 #: ../../apps/launcher/src/cloud-saves-page.tsx
 msgid "Couldn't send them just now. Try again soon."
@@ -3797,6 +3816,10 @@ msgstr "Is for"
 msgid "It didn't run"
 msgstr "It didn't run"
 
+#: ../../apps/launcher/src/game-report-prompt.tsx
+msgid "It didn't say why."
+msgstr "It didn't say why."
+
 #: ../../apps/launcher/src/App.tsx
 msgid "It gets a folder of its own in there, and updates keep installing into it."
 msgstr "It gets a folder of its own in there, and updates keep installing into it."
@@ -3829,6 +3852,18 @@ msgstr "It starts <0>{executable}</0>. That file is outside the app's folder, so
 msgid "It starts where it is, and removing it from your library leaves it there."
 msgstr "It starts where it is, and removing it from your library leaves it there."
 
+#: ../../apps/launcher/src/game-report-prompt.tsx
+msgid "It stopped by itself while it was running."
+msgstr "It stopped by itself while it was running."
+
+#: ../../apps/launcher/src/game-report-prompt.tsx
+msgid "It stopped with an error (exit code {code}) before it got going."
+msgstr "It stopped with an error (exit code {code}) before it got going."
+
+#: ../../apps/launcher/src/game-report-prompt.tsx
+msgid "It stopped with an error before it got going."
+msgstr "It stopped with an error before it got going."
+
 #. placeholder {0}: file.accepted.map((d) => d.label).filter(Boolean).join(", ")
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "It takes: {0}"
@@ -3849,6 +3884,10 @@ msgstr "It's here now."
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Its author says it's still broken after the last fix."
 msgstr "Its author says it's still broken after the last fix."
+
+#: ../../apps/launcher/src/game-report-prompt.tsx
+msgid "Its developer can look into it if you report it."
+msgstr "Its developer can look into it if you report it."
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Its files go to the trash, and it leaves your library."
@@ -6107,6 +6146,14 @@ msgstr "Report"
 msgid "Report a problem"
 msgstr "Report a problem"
 
+#: ../../apps/launcher/src/game-report-prompt.tsx
+msgid "Report on {host}"
+msgstr "Report on {host}"
+
+#: ../../apps/launcher/src/game-report-prompt.tsx
+msgid "Report sent. Thanks."
+msgstr "Report sent. Thanks."
+
 #. The viewer already reported this post
 #: ../../apps/launcher/src/discussions.tsx
 msgid "Reported"
@@ -6449,6 +6496,14 @@ msgstr "Selected titles"
 msgid "Send"
 msgstr "Send"
 
+#: ../../apps/launcher/src/game-report-prompt.tsx
+msgid "Send a report so Quiver staff can look into it."
+msgstr "Send a report so Quiver staff can look into it."
+
+#: ../../apps/launcher/src/game-report-prompt.tsx
+msgid "Send report"
+msgstr "Send report"
+
 #: ../../apps/launcher/src/cloud-saves-page.tsx
 msgid "Send saves now"
 msgstr "Send saves now"
@@ -6462,6 +6517,7 @@ msgid "Send usage data"
 msgstr "Send usage data"
 
 #: ../../apps/launcher/src/correction.tsx
+#: ../../apps/launcher/src/game-report-prompt.tsx
 msgid "Sending…"
 msgstr "Sending…"
 
@@ -8168,6 +8224,10 @@ msgstr "Welcome to Quiver Launcher!"
 #: ../../apps/launcher/src/old-library.tsx
 msgid "What comes over"
 msgstr "What comes over"
+
+#: ../../apps/launcher/src/game-report-prompt.tsx
+msgid "What it said last"
+msgstr "What it said last"
 
 #: ../../apps/launcher/src/discussions.tsx
 msgid "What players are talking about across the catalog, and a place for everything else. Need help with Quiver Launcher? Ask on <0>Discord</0> or in <1>GitHub Issues</1>."

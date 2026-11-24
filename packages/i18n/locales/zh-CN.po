@@ -230,6 +230,14 @@ msgstr "{active, plural, one {正在下载 # 项，{percent}%} other {正在下�
 msgid "{active, plural, one {# downloading} other {# downloading}}"
 msgstr "{active, plural, one {正在下载 # 项} other {正在下载 # 项}}"
 
+#: ../../apps/launcher/src/game-report-prompt.tsx
+msgid "{app} closed right after starting"
+msgstr ""
+
+#: ../../apps/launcher/src/game-report-prompt.tsx
+msgid "{app} crashed"
+msgstr ""
+
 #: ../../apps/launcher/src/downloads.ts
 msgid "{app} didn't finish downloading."
 msgstr "{app} 未能完成下载。"
@@ -1082,6 +1090,10 @@ msgstr "此电脑上的程序"
 #: ../../apps/launcher/src/launch-options.tsx
 msgid "A quote isn't closed."
 msgstr "引号未闭合。"
+
+#: ../../apps/launcher/src/game-report-prompt.tsx
+msgid "A report has the app and its version, your system, and the text above. Folder and user names are taken out."
+msgstr ""
 
 #: ../../apps/launcher/src/custom-art.tsx
 msgid "A transparent PNG. For its Steam shortcut."
@@ -2283,6 +2295,7 @@ msgstr "清除搜索内容"
 #. Window button: close Quiver's window
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/detail.tsx
+#: ../../apps/launcher/src/game-report-prompt.tsx
 #: ../../apps/launcher/src/mods.tsx
 #: ../../apps/launcher/src/own-copy-setup.tsx
 #: ../../apps/launcher/src/tag-settings.tsx
@@ -2415,6 +2428,7 @@ msgid "Controllers"
 msgstr "手柄"
 
 #: ../../apps/launcher/src/downloads-page.tsx
+#: ../../apps/launcher/src/game-report-prompt.tsx
 msgid "Copied"
 msgstr "已复制"
 
@@ -2423,6 +2437,7 @@ msgid "Copied to your sync folder."
 msgstr ""
 
 #: ../../apps/launcher/src/downloads-page.tsx
+#: ../../apps/launcher/src/game-report-prompt.tsx
 msgid "Copy details"
 msgstr "复制详情"
 
@@ -2521,6 +2536,10 @@ msgstr "无法发送。请重试。"
 #: ../../apps/launcher/src/discussions.tsx
 msgid "Couldn't send that. Try again."
 msgstr "无法发送。请重试。"
+
+#: ../../apps/launcher/src/game-report-prompt.tsx
+msgid "Couldn't send the report. Check your connection and try again."
+msgstr ""
 
 #: ../../apps/launcher/src/cloud-saves-page.tsx
 msgid "Couldn't send them just now. Try again soon."
@@ -3798,6 +3817,10 @@ msgstr "适用于"
 msgid "It didn't run"
 msgstr "无法运行"
 
+#: ../../apps/launcher/src/game-report-prompt.tsx
+msgid "It didn't say why."
+msgstr ""
+
 #: ../../apps/launcher/src/App.tsx
 msgid "It gets a folder of its own in there, and updates keep installing into it."
 msgstr "它会在该位置拥有自己的文件夹，后续更新也会安装到此文件夹中。"
@@ -3830,6 +3853,18 @@ msgstr "它启动的是 <0>{executable}</0>。这个文件在应用文件夹之�
 msgid "It starts where it is, and removing it from your library leaves it there."
 msgstr "它会从当前位置启动；从游戏库中移除后，它仍会留在原处。"
 
+#: ../../apps/launcher/src/game-report-prompt.tsx
+msgid "It stopped by itself while it was running."
+msgstr ""
+
+#: ../../apps/launcher/src/game-report-prompt.tsx
+msgid "It stopped with an error (exit code {code}) before it got going."
+msgstr ""
+
+#: ../../apps/launcher/src/game-report-prompt.tsx
+msgid "It stopped with an error before it got going."
+msgstr ""
+
 #. placeholder {0}: file.accepted.map((d) => d.label).filter(Boolean).join(", ")
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "It takes: {0}"
@@ -3850,6 +3885,10 @@ msgstr "它现在已在这里。"
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Its author says it's still broken after the last fix."
 msgstr "作者表示上次修复后问题依旧。"
+
+#: ../../apps/launcher/src/game-report-prompt.tsx
+msgid "Its developer can look into it if you report it."
+msgstr ""
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Its files go to the trash, and it leaves your library."
@@ -6108,6 +6147,14 @@ msgstr "举报"
 msgid "Report a problem"
 msgstr "报告问题"
 
+#: ../../apps/launcher/src/game-report-prompt.tsx
+msgid "Report on {host}"
+msgstr ""
+
+#: ../../apps/launcher/src/game-report-prompt.tsx
+msgid "Report sent. Thanks."
+msgstr ""
+
 #. The viewer already reported this post
 #: ../../apps/launcher/src/discussions.tsx
 msgid "Reported"
@@ -6450,6 +6497,14 @@ msgstr "所选作品"
 msgid "Send"
 msgstr "发送"
 
+#: ../../apps/launcher/src/game-report-prompt.tsx
+msgid "Send a report so Quiver staff can look into it."
+msgstr ""
+
+#: ../../apps/launcher/src/game-report-prompt.tsx
+msgid "Send report"
+msgstr ""
+
 #: ../../apps/launcher/src/cloud-saves-page.tsx
 msgid "Send saves now"
 msgstr "立即发送存档"
@@ -6463,6 +6518,7 @@ msgid "Send usage data"
 msgstr "发送使用情况数据"
 
 #: ../../apps/launcher/src/correction.tsx
+#: ../../apps/launcher/src/game-report-prompt.tsx
 msgid "Sending…"
 msgstr "正在发送…"
 
@@ -8169,6 +8225,10 @@ msgstr "欢迎使用 Quiver Launcher！"
 #: ../../apps/launcher/src/old-library.tsx
 msgid "What comes over"
 msgstr "迁移的内容"
+
+#: ../../apps/launcher/src/game-report-prompt.tsx
+msgid "What it said last"
+msgstr ""
 
 #: ../../apps/launcher/src/discussions.tsx
 msgid "What players are talking about across the catalog, and a place for everything else. Need help with Quiver Launcher? Ask on <0>Discord</0> or in <1>GitHub Issues</1>."

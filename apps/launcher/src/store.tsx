@@ -10,6 +10,7 @@ import { msg, plural, t } from "@lingui/core/macro";
 import { ApiError, createClient, createGithub, createGitlab, createProviders, githubAsset, githubProvider, githubRepository, parseRepository, toRef, type Asset, type Client, type Console, type Entry, type Github, type Gitlab, type Os, type HistoryRelease, type Release, type ReleaseScan, type ReleaseStatus, type UnverifiedRelease, type Verified, type Withdrawn, type Providers, type RepositoryRef } from "@quiverlauncher/api";
 import type { HiddenApp } from "./browse-hidden";
 import { hideOnApp, shownTags, type HiddenTags } from "./catalog-tags";
+import type { GameFailure } from "./game-report";
 import { native, type Config, type Installed, type SaveBackup, type ShortcutPlay, type LaunchOptions, type MovingApp, type OldApp, type OldFilter, type Progress, type StateProblem, type V3Library, type WindowsRunner } from "./native";
 import { Recovery } from "./recovery";
 import { assetFilterFor, bestAssets, installable, installFormat, isMsi, pickedBefore, releaseFor, wantedFiles } from "./assets";
@@ -411,6 +412,9 @@ type Launcher = {
   /** The app whose folder the player is renaming; null closes the prompt. */
   renaming: Entry | null;
   askRename: (entry: Entry | null) => void;
+  /** The app that just closed with an error or crashed, for the dialog that offers to report it; null closes it. */
+  failed: GameFailure | null;
+  closeFailed: () => void;
   /** The library app the player is giving a name of their own (its id); null closes the prompt. */
   naming: string | null;
   askName: (id: string | null) => void;
@@ -1689,6 +1693,8 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
   const [questions, setQuestions] = useState<Asking[]>([]);
   const [confirming, confirmUninstall] = useState<Confirming | null>(null);
   const [renaming, askRename] = useState<Entry | null>(null);
+  const [failed, setFailed] = useState<GameFailure | null>(null);
+  const closeFailed = useCallback(() => setFailed(null), []);
   const [naming, askName] = useState<string | null>(null);
   const [managing, askManage] = useState<string | null>(null);
   const [placing, setPlacing] = useState<Placing | null>(null);
@@ -1915,6 +1921,15 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       // A Quiver a shortcut started quits once they're sent (shortcut_play.rs).
       if (via) void sent.finally(() => native.shortcutDone().catch(() => {}));
     });
+    // One that closed with an error right after starting, or crashed: its dialog offers to report it (game-report-prompt.tsx).
+    const failedOff = native.onAppFailed((failure) => {
+      const { catalog, installs } = forUsage.current;
+      const id = failure.id;
+      // Only an app there's a name and an install to show for: one that's gone since says nothing, now or later.
+      if (!id || !installs[id] || !catalog[id]) return;
+      track("app_failed", { ...playedRef(appRef(id, catalog[id].slug), installs[id].version), kind: failure.kind });
+      setFailed({ ...failure, at: Date.now() });
+    });
     // Once the catalog and the account have had time to come in, so its counts are of the library as it is.
     const counted = setTimeout(() => {
       if (!telemetryChoice().enabled) return;
@@ -1927,6 +1942,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     return () => {
       clearTimeout(counted);
       void closed.then((stop) => stop());
+      void failedOff.then((stop) => stop());
     };
   }, []);
   // On Android a player can remove an app in the system's settings, which Quiver isn't told about. Checked when Quiver
@@ -3338,6 +3354,8 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     },
     renaming,
     askRename,
+    failed,
+    closeFailed,
     naming,
     askName,
     managing,

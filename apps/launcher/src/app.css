@@ -199,6 +199,15 @@ button.danger { color: var(--danger); }
 .toast-action { flex: none; padding: 6px 12px; border-radius: 7px; color: var(--accent); font-weight: 600; }
 .toast-action:hover, .toast-action:focus-visible { background: var(--button-hover); }
 .notice-prompt { display: grid; gap: 16px; }
+.detail.choose.game-failed { width: min(600px, 100%); }
+.game-failed-body { display: grid; gap: 12px; }
+.game-failed-body h2 { display: flex; align-items: center; gap: 8px; margin: 0; }
+.game-failed-body h2 svg { flex: none; color: var(--danger); }
+.game-failed-body p { margin: 0; }
+.game-failed-log summary { cursor: pointer; font-size: 13px; color: var(--muted); }
+.game-failed-log pre { max-height: 220px; margin: 8px 0 0; padding: 12px; overflow: auto; border: 1px solid var(--line); border-radius: 8px; background: var(--field); font-size: 12px; white-space: pre-wrap; overflow-wrap: anywhere; user-select: text; }
+.game-failed-sent { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; }
+.game-failed-body .row { flex-wrap: wrap; }
 /* On a narrow screen the buttons go under the text rather than squeezing it to a word a line. */
 .banner { flex-wrap: wrap; }
 .banner p { flex: 1 1 220px; }
