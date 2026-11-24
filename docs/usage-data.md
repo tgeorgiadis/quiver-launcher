@@ -22,7 +22,7 @@ The launcher sends named events only (`apps/launcher/src/telemetry.ts`):
   whether that shortcut had to start Quiver), and how a shortcut's game ended: it quit, Steam's Stop or Exit Game ended
   it, or Exit Game's two seconds handed its saves to another Quiver to send. Apps players add are named only by kind. Installs cancelled and
   at what stage; failed installs and launches, why, and what kind of failure; an app that closed with an error right
-  after starting or crashed (`app_failed`: which of the two), and that you reported it and to whom
+  after starting or crashed (`app_failed`: which of the two), and that you sent a report of it
   (`app_failure_reported`); an app's folder renamed and the apps
   folder moved; an app's menu opened and its videos played, and several apps changed at once from the library (what was changed and how many apps, not which).
 - **Mods:** the mods screen opened, and mods installed, updated, uninstalled or failing to install: the catalog app's
@@ -67,8 +67,8 @@ report goes to Sentry like the error reports above, and has the app's slug and v
 code or the kind of crash), whether it ran through Wine or Proton, and the end of what the app wrote as it ran (at
 most 6,000 characters), with paths, folders and the computer's user name removed like everything else. The app's own
 output is kept on this computer in `game-logs/` in Quiver's data folder, one file per app, started again each time
-the app starts, and whenever it passes 8 MB while Quiver is running. Report on GitHub (or the app's own host) opens a new issue for the app's
-developer in your browser with the same text filled in, for you to read and send yourself: Quiver sends nothing there.
+the app starts, and whenever it passes 8 MB while Quiver is running. Copy details puts the
+same text on your clipboard and sends nothing.
 
 Events go to quiverlauncher.com (the website's `worker/launcherUsage.ts`), which keeps the secret Google Analytics
 needs and passes them on with your country, so Google doesn't get your IP address. Error reports go directly to

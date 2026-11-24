@@ -1,15 +1,14 @@
 /**
  * An app the launcher started closed with an error right after starting, or crashed: says so, shows what the app
- * last wrote, and offers to report it. A catalog app's report goes to Quiver (with error reports on) and can be
- * taken to the app's developer; an app the player added goes only to its own repository.
+ * last wrote, and for a catalog app offers to send Quiver a report (with error reports on). Nothing goes to the app's
+ * developer from here: Quiver staff pass on what's theirs to fix. The player can copy the details for themselves.
  */
 import { useEffect, useMemo, useState } from "react";
-import { Check, CircleCheck, Copy, ExternalLink, Send, TriangleAlert } from "lucide-react";
+import { Check, CircleCheck, Copy, Send, TriangleAlert } from "lucide-react";
 import { t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import { OS_NAMES } from "@quiverlauncher/ui";
-import { providerName, useAppDetail } from "./detail";
-import { codeText, endOf, failureLine, issueUrl, reportText, type GameFailure, type ReportDetails } from "./game-report";
+import { codeText, endOf, failureLine, reportText, type GameFailure, type ReportDetails } from "./game-report";
 import { Dialog } from "./library";
 import { native } from "./native";
 import { appRef, useLauncher, type CatalogEntry } from "./store";
@@ -25,7 +24,6 @@ export function GameFailedPrompt() {
 
 function GameFailed({ failure, entry, onClose }: { failure: GameFailure; entry: CatalogEntry; onClose: () => void }) {
   const { config, installs } = useLauncher();
-  const { source } = useAppDetail(entry);
   const install = installs[entry.id];
   const [log, setLog] = useState<string | null>(null);
   const [sent, setSent] = useState<"sending" | "sent" | "failed" | null>(null);
@@ -57,7 +55,6 @@ function GameFailed({ failure, entry, onClose }: { failure: GameFailure; entry: 
   // Only a catalog app's report is Quiver's to look at: one the player added is named to no one.
   const toQuiver = Boolean(ref.slug) && playerReportsAvailable();
   const code = failure.code === null ? null : codeText(failure.code, config.os);
-  const host = source ? providerName(source.provider, source.host) : null;
 
   const send = () => {
     setSent("sending");
@@ -73,13 +70,8 @@ function GameFailed({ failure, entry, onClose }: { failure: GameFailure; entry: 
       log: details.log,
     }).then((ok) => {
       setSent(ok ? "sent" : "failed");
-      if (ok) track("app_failure_reported", { ...ref, to: "quiver" });
+      if (ok) track("app_failure_reported", ref);
     });
-  };
-  const toDeveloper = () => {
-    if (!source) return;
-    track("app_failure_reported", { ...ref, to: "developer" });
-    void native.openUrl(issueUrl(source, details, config.os));
   };
   const copy = () =>
     void navigator.clipboard?.writeText(reportText(details, config.os)).then(
@@ -103,11 +95,7 @@ function GameFailed({ failure, entry, onClose }: { failure: GameFailure; entry: 
           ) : (
             <Trans>It stopped with an error before it got going.</Trans>
           )}{" "}
-          {toQuiver ? (
-            <Trans>Send a report so Quiver staff can look into it.</Trans>
-          ) : source ? (
-            <Trans>Its developer can look into it if you report it.</Trans>
-          ) : null}
+          {toQuiver && <Trans>Send a report so Quiver staff can look into it.</Trans>}
         </p>
         {log ? (
           <details className="game-failed-log" open>
@@ -123,7 +111,7 @@ function GameFailed({ failure, entry, onClose }: { failure: GameFailure; entry: 
             </p>
           )
         )}
-        {(toQuiver || source) && (
+        {toQuiver && (
           <p className="muted">
             <Trans>A report has the app and its version, your system, and the text above. Folder and user names are taken out.</Trans>
           </p>
@@ -142,11 +130,6 @@ function GameFailed({ failure, entry, onClose }: { failure: GameFailure; entry: 
           {toQuiver && sent !== "sent" && (
             <button className="primary" autoFocus disabled={sent === "sending" || log === null} onClick={send}>
               <Send size={15} aria-hidden="true" /> {sent === "sending" ? <Trans>Sending…</Trans> : <Trans>Send report</Trans>}
-            </button>
-          )}
-          {source && host && (
-            <button type="button" className={toQuiver ? undefined : "primary"} disabled={log === null} onClick={toDeveloper}>
-              <ExternalLink size={15} aria-hidden="true" /> <Trans>Report on {host}</Trans>
             </button>
           )}
           <button type="button" disabled={log === null} onClick={copy}>

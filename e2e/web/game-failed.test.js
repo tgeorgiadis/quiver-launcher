@@ -1,6 +1,6 @@
 /**
  * A game that closes with an error right after starting, or crashes: Quiver says so, shows what the game said last,
- * and offers to report it.
+ * and offers to send Quiver a report where error reports are on.
  */
 import { test } from "node:test";
 import assert from "node:assert/strict";
@@ -21,7 +21,7 @@ async function open() {
 const id = Object.keys(installed.installs)[0];
 const folder = installed.installs[id].folder;
 
-test("a game that closes with an error right after starting is said, with what it said and a report for its developer", async () => {
+test("a game that closes with an error right after starting is said, with what it said", async () => {
   const own = await open();
   try {
     await own.emit("app-failed", { id, folder, kind: "early", code: 2, what: null, line: "usage: port ROM" });
@@ -29,15 +29,11 @@ test("a game that closes with an error right after starting is said, with what i
     await dialog.waitFor();
     await dialog.getByText("It stopped with an error (exit code 2) before it got going.").waitFor();
     assert.equal(await dialog.locator("pre").textContent(), LOG);
-    // No error reports from a test build: nothing goes to Quiver, so its developer's is the one to press.
+    // No error reports from a test build, so nothing to send; and nothing ever goes to the app's developer from here.
     assert.equal(await dialog.getByRole("button", { name: "Send report" }).count(), 0);
-    await dialog.getByRole("button", { name: "Report on GitHub" }).click();
-    const opened = await own.page.evaluate(() => window.__calls.filter((c) => c.cmd === "open_url").map((c) => c.args.url));
-    assert.equal(opened.length, 1);
-    const url = new URL(opened[0]);
-    assert.match(url.pathname, /\/issues\/new$/);
-    assert.equal(url.searchParams.get("title"), `Closed right after starting (exit code 2) (${installed.installs[id].version})`);
-    assert.match(url.searchParams.get("body"), /usage: port ROM\n```$/);
+    assert.equal(await dialog.getByRole("button", { name: /Report on/ }).count(), 0);
+    await dialog.getByRole("button", { name: "Copy details" }).waitFor();
+    assert.equal(await own.page.evaluate(() => window.__calls.filter((c) => c.cmd === "open_url").length), 0);
     await dialog.getByRole("button", { name: "Close" }).click();
     await dialog.waitFor({ state: "detached" });
     assert.deepEqual(own.errors, []);

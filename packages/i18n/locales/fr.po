@@ -3886,10 +3886,6 @@ msgstr "Elle est ici maintenant."
 msgid "Its author says it's still broken after the last fix."
 msgstr "Son auteur indique que le problème persiste après le dernier correctif."
 
-#: ../../apps/launcher/src/game-report-prompt.tsx
-msgid "Its developer can look into it if you report it."
-msgstr ""
-
 #: ../../apps/launcher/src/App.tsx
 msgid "Its files go to the trash, and it leaves your library."
 msgstr "Ses fichiers vont à la corbeille, et elle quitte votre bibliothèque."
@@ -6146,10 +6142,6 @@ msgstr "Signaler"
 #: ../../apps/launcher/src/correction.tsx
 msgid "Report a problem"
 msgstr "Signaler un problème"
-
-#: ../../apps/launcher/src/game-report-prompt.tsx
-msgid "Report on {host}"
-msgstr ""
 
 #: ../../apps/launcher/src/game-report-prompt.tsx
 msgid "Report sent. Thanks."
