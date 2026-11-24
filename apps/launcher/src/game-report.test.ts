@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import { codeText, endOf, failureLine, reportText, type GameFailure, type ReportDetails } from "./game-report";
+import { codeText, endOf, failureLine, ownMessage, reportText, type GameFailure, type ReportDetails } from "./game-report";
 
 const early: GameFailure = { id: "port", folder: "Test Port", kind: "early", code: 2, what: null, line: "usage: port ROM" };
 const crashed: GameFailure = { id: "port", folder: "Test Port", kind: "crashed", code: -1073741819, what: "access violation", line: null };
@@ -56,4 +56,14 @@ test("a report says the app, what happened, the system and what the game said", 
 test("with no room for any of the output, none of it is put in", () => {
   expect(endOf("one\ntwo", 0)).toBe("");
   expect(reportText(details(early), "linux", 0)).not.toContain("```");
+});
+
+test("an app that waited for a key before closing had a message for the player", () => {
+  const asked = "Drag your game's ISO onto PLAY.bat.\r\nOr put it beside this launcher as game.iso.\r\nPress any key to continue . . . \r\n";
+  expect(ownMessage(early, asked)).toBe("Drag your game's ISO onto PLAY.bat.\nOr put it beside this launcher as game.iso.");
+  expect(ownMessage(early, "Put the ROM beside the program.\nPress Enter to exit")).toBe("Put the ROM beside the program.");
+  // An error with nothing waiting for the player, a wait with nothing said, and a crash are still failures.
+  expect(ownMessage(early, "Loading\nusage: port ROM")).toBeNull();
+  expect(ownMessage(early, "Press any key to continue . . .")).toBeNull();
+  expect(ownMessage(crashed, asked)).toBeNull();
 });

@@ -10,12 +10,12 @@ import { installed } from "./controller.js";
 const LOG = "Loading assets\nusage: port ROM";
 
 /** The app with the game's log as the Rust side would read it. */
-async function open() {
+async function open(log = LOG) {
   const own = await openApp({ state: installed });
   await own.page.evaluate((log) => {
     const { invoke } = window.__TAURI_INTERNALS__;
     window.__TAURI_INTERNALS__.invoke = (cmd, args) => (cmd === "game_log" ? Promise.resolve(log) : invoke(cmd, args));
-  }, LOG);
+  }, log);
   return own;
 }
 const id = Object.keys(installed.installs)[0];
@@ -52,6 +52,23 @@ test("a crash is said as one, and a game that isn't in the library says nothing"
     const dialog = own.page.getByRole("dialog", { name: "Test Port crashed" });
     await dialog.waitFor();
     await dialog.getByText("It stopped by itself while it was running.").waitFor();
+    assert.deepEqual(own.errors, []);
+  } finally {
+    await own.close();
+  }
+});
+
+test("a game that asked for a key before closing shows its message, with no report to send", async () => {
+  const own = await open("Put your game's ISO beside PLAY.bat as game.iso.\r\nPress any key to continue . . . \r\n");
+  try {
+    await own.emit("app-failed", { id, folder, kind: "early", code: 1, what: null, line: "Press any key to continue . . ." });
+    const dialog = own.page.getByRole("dialog", { name: "Test Port closed with a message" });
+    await dialog.waitFor();
+    await dialog.getByText("It closed right after starting. This is what it said:").waitFor();
+    assert.equal(await dialog.locator("pre").textContent(), "Put your game's ISO beside PLAY.bat as game.iso.");
+    assert.equal(await dialog.getByText(/stopped with an error/).count(), 0);
+    assert.equal(await dialog.getByRole("button", { name: "Send report" }).count(), 0);
+    await dialog.getByRole("button", { name: "Copy details" }).waitFor();
     assert.deepEqual(own.errors, []);
   } finally {
     await own.close();

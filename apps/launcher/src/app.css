@@ -205,7 +205,8 @@ button.danger { color: var(--danger); }
 .game-failed-body h2 svg { flex: none; color: var(--danger); }
 .game-failed-body p { margin: 0; }
 .game-failed-log summary { cursor: pointer; font-size: 13px; color: var(--muted); }
-.game-failed-log pre { max-height: 220px; margin: 8px 0 0; padding: 12px; overflow: auto; border: 1px solid var(--line); border-radius: 8px; background: var(--field); font-size: 12px; white-space: pre-wrap; overflow-wrap: anywhere; user-select: text; }
+.game-failed-log pre, .game-failed-message { max-height: 220px; margin: 8px 0 0; padding: 12px; overflow: auto; border: 1px solid var(--line); border-radius: 8px; background: var(--field); font-size: 12px; white-space: pre-wrap; overflow-wrap: anywhere; user-select: text; }
+.game-failed-body .game-failed-message { margin: 0; font-size: 13px; }
 .game-failed-sent { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; }
 .game-failed-body .row { flex-wrap: wrap; }
 /* On a narrow screen the buttons go under the text rather than squeezing it to a word a line. */

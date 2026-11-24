@@ -64,6 +64,22 @@ export function endOf(log: string, max = LOG_IN_REPORT) {
   return line >= 0 && line < cut.length - 1 ? cut.slice(line + 1) : cut;
 }
 
+/** What a script prints when it waits for a key before closing (Windows' `pause`, or a script's own line). */
+const KEY_PROMPT = /^press (any key|a key|enter|return)\b/i;
+
+/**
+ * What the app had to tell the player, or null. An app that closes right after starting but first waits for a key
+ * meant its output to be read: a script asking for the game's files, say. The launcher gives a game no keyboard, so
+ * the wait ends at once and the window is gone before anyone sees it. That's the player's to act on, not a fault to
+ * report, so the dialog leads with the message and offers no report.
+ */
+export function ownMessage(failure: GameFailure, log: string) {
+  if (failure.kind !== "early") return null;
+  const lines = log.trimEnd().split(/\r?\n/);
+  if (!KEY_PROMPT.test((lines.pop() ?? "").trim())) return null;
+  return lines.join("\n").trim() || null;
+}
+
 /** The report as text, in English as its readers are Quiver staff or an app's developer: for the player to copy. */
 export function reportText({ name, version, launcher, system, wine, failure, log }: ReportDetails, os: Os, logMax = LOG_IN_REPORT) {
   const lines = [

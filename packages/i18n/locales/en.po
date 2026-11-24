@@ -234,6 +234,10 @@ msgid "{app} closed right after starting"
 msgstr "{app} closed right after starting"
 
 #: ../../apps/launcher/src/game-report-prompt.tsx
+msgid "{app} closed with a message"
+msgstr "{app} closed with a message"
+
+#: ../../apps/launcher/src/game-report-prompt.tsx
 msgid "{app} crashed"
 msgstr "{app} crashed"
 
@@ -3811,6 +3815,10 @@ msgstr "Interface size"
 #: ../../apps/launcher/src/App.tsx
 msgid "Is for"
 msgstr "Is for"
+
+#: ../../apps/launcher/src/game-report-prompt.tsx
+msgid "It closed right after starting. This is what it said:"
+msgstr "It closed right after starting. This is what it said:"
 
 #: ../../apps/launcher/src/feedback.tsx
 msgid "It didn't run"

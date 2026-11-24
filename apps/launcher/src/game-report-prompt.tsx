@@ -2,13 +2,15 @@
  * An app the launcher started closed with an error right after starting, or crashed: says so, shows what the app
  * last wrote, and for a catalog app offers to send Quiver a report (with error reports on). Nothing goes to the app's
  * developer from here: Quiver staff pass on what's theirs to fix. The player can copy the details for themselves.
+ * An app that closed after asking for a key had a message for the player (game-report.ts's ownMessage): that's
+ * shown as the app's own words, with no report to send.
  */
 import { useEffect, useMemo, useState } from "react";
 import { Check, CircleCheck, Copy, Send, TriangleAlert } from "lucide-react";
 import { t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import { OS_NAMES } from "@quiverlauncher/ui";
-import { codeText, endOf, failureLine, reportText, type GameFailure, type ReportDetails } from "./game-report";
+import { codeText, endOf, failureLine, ownMessage, reportText, type GameFailure, type ReportDetails } from "./game-report";
 import { Dialog } from "./library";
 import { native } from "./native";
 import { appRef, useLauncher, type CatalogEntry } from "./store";
@@ -52,8 +54,10 @@ function GameFailed({ failure, entry, onClose }: { failure: GameFailure; entry: 
       log: log ?? "",
     };
   }, [app, install?.version, install?.wine, config, failure, log]);
-  // Only a catalog app's report is Quiver's to look at: one the player added is named to no one.
-  const toQuiver = Boolean(ref.slug) && playerReportsAvailable();
+  const message = log ? ownMessage(failure, log) : null;
+  // Only a catalog app's report is Quiver's to look at: one the player added is named to no one. And what the app
+  // asked of the player isn't a fault for anyone to look into.
+  const toQuiver = Boolean(ref.slug) && playerReportsAvailable() && !message;
   const code = failure.code === null ? null : codeText(failure.code, config.os);
 
   const send = () => {
@@ -80,36 +84,49 @@ function GameFailed({ failure, entry, onClose }: { failure: GameFailure; entry: 
       () => {},
     );
 
-  const title = failure.kind === "crashed" ? t`${app} crashed` : t`${app} closed right after starting`;
+  const title = message ? t`${app} closed with a message` : failure.kind === "crashed" ? t`${app} crashed` : t`${app} closed right after starting`;
   return (
     <Dialog label={title} className="game-failed" onClose={onClose}>
       <div className="detail-body game-failed-body">
         <h2>
           <TriangleAlert size={18} aria-hidden="true" /> {title}
         </h2>
-        <p>
-          {failure.kind === "crashed" ? (
-            <Trans>It stopped by itself while it was running.</Trans>
-          ) : code ? (
-            <Trans>It stopped with an error (exit code {code}) before it got going.</Trans>
-          ) : (
-            <Trans>It stopped with an error before it got going.</Trans>
-          )}{" "}
-          {toQuiver && <Trans>Send a report so Quiver staff can look into it.</Trans>}
-        </p>
-        {log ? (
-          <details className="game-failed-log" open>
-            <summary>
-              <Trans>What it said last</Trans>
-            </summary>
-            <pre tabIndex={0}>{log}</pre>
-          </details>
-        ) : (
-          log === "" && (
-            <p className="muted">
-              <Trans>It didn&apos;t say why.</Trans>
+        {message ? (
+          <>
+            <p>
+              <Trans>It closed right after starting. This is what it said:</Trans>
             </p>
-          )
+            <pre className="game-failed-message" tabIndex={0}>
+              {message}
+            </pre>
+          </>
+        ) : (
+          <>
+            <p>
+              {failure.kind === "crashed" ? (
+                <Trans>It stopped by itself while it was running.</Trans>
+              ) : code ? (
+                <Trans>It stopped with an error (exit code {code}) before it got going.</Trans>
+              ) : (
+                <Trans>It stopped with an error before it got going.</Trans>
+              )}{" "}
+              {toQuiver && <Trans>Send a report so Quiver staff can look into it.</Trans>}
+            </p>
+            {log ? (
+              <details className="game-failed-log" open>
+                <summary>
+                  <Trans>What it said last</Trans>
+                </summary>
+                <pre tabIndex={0}>{log}</pre>
+              </details>
+            ) : (
+              log === "" && (
+                <p className="muted">
+                  <Trans>It didn&apos;t say why.</Trans>
+                </p>
+              )
+            )}
+          </>
         )}
         {toQuiver && (
           <p className="muted">
