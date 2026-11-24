@@ -1,0 +1,67 @@
+name: Report a bug
+description: Something in Quiver Launcher doesn't work the way it should.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time. One bug per issue, so each can be fixed and closed by itself.
+
+        If a game itself crashes or runs badly once it has started, its developer is the one who can fix it: use the link to the app's repository on its page in Quiver. Report it here when Quiver can't install, update, set up or start it.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What you did, what you expected, and what Quiver did. Steps we can follow help most.
+      placeholder: |
+        1. Open Library and press Play on …
+        2. …
+        I expected … but …
+    validations:
+      required: true
+  - type: input
+    id: app
+    attributes:
+      label: Which app?
+      description: The app it happened with, if it's about one. The name as Quiver shows it, or its link on quiverlauncher.com.
+  - type: input
+    id: version
+    attributes:
+      label: Quiver Launcher version
+      description: Settings shows it.
+      placeholder: 4.0.0-beta.9
+    validations:
+      required: true
+  - type: dropdown
+    id: system
+    attributes:
+      label: System
+      options:
+        - Windows
+        - Linux
+        - Steam Deck (or another handheld running SteamOS)
+        - macOS
+        - Android
+    validations:
+      required: true
+  - type: input
+    id: package
+    attributes:
+      label: How Quiver was installed
+      description: Installer, portable zip, Flatpak, AppImage, deb, rpm, dmg or apk. On Linux, the distribution too.
+      placeholder: Flatpak on Bazzite 42
+  - type: textarea
+    id: log
+    attributes:
+      label: Log and screenshots
+      description: Drag in a screenshot or a short video. Paste any error Quiver showed. Take out anything personal, such as your user name in a folder's path.
+      render: text
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before you send it
+      options:
+        - label: I'm on the newest version of Quiver Launcher, or the bug is still in it.
+          required: true
+        - label: I looked through the open issues and didn't find this one.
+          required: true

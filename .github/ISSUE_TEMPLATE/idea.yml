@@ -1,0 +1,39 @@
+name: Suggest an idea
+description: A feature or a change that would make Quiver Launcher better.
+labels: [idea]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        One idea per issue, so each can be talked about and built by itself.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to do?
+      description: What you wanted to do in Quiver and couldn't, or what takes more steps than it should. The problem helps more than the solution.
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would you like Quiver to do?
+      description: How you picture it working. A sketch or a screenshot from somewhere else is welcome.
+    validations:
+      required: true
+  - type: dropdown
+    id: where
+    attributes:
+      label: Where does it matter most?
+      multiple: true
+      options:
+        - Windows
+        - Linux
+        - Steam Deck or TV mode
+        - macOS
+        - Android
+        - Everywhere
+  - type: textarea
+    id: more
+    attributes:
+      label: Anything else?
+      description: What you do today instead, or who else it would help.

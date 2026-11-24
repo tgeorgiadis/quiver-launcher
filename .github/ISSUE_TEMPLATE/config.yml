@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: A game is missing, or its page is wrong
+    url: https://quiverlauncher.com/submit
+    about: Submit an app to the catalog on quiverlauncher.com, or send a correction from its page.
+  - name: Ask a question
+    url: https://discord.gg/5XRThpWHGk
+    about: Not sure it's a bug? Ask on Discord first.
