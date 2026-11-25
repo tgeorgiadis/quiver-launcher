@@ -21,7 +21,9 @@ The launcher sends named events only (`apps/launcher/src/telemetry.ts`):
   by slug, and when launched or closed, the version, whether Play or a desktop or Steam shortcut started it (and
   whether that shortcut had to start Quiver), and how a shortcut's game ended: it quit, Steam's Stop or Exit Game ended
   it, or Exit Game's two seconds handed its saves to another Quiver to send. Apps players add are named only by kind. Installs cancelled and
-  at what stage; failed installs and launches, why, and what kind of failure; an app's folder renamed and the apps
+  at what stage; failed installs and launches, why, and what kind of failure; an app that closed with an error right
+  after starting or crashed (`app_failed`: which of the two), and that you sent a report of it
+  (`app_failure_reported`); an app's folder renamed and the apps
   folder moved; an app's menu opened and its videos played, and several apps changed at once from the library (what was changed and how many apps, not which).
 - **Mods:** the mods screen opened, and mods installed, updated, uninstalled or failing to install: the catalog app's
   slug, the mod's id at its source, and the source.
@@ -58,6 +60,15 @@ reported, such as no connection, a service that's down, a full disk, or a messag
 Errors from before the launcher knows your choice wait in memory until it does. If it can't start far enough to find
 out (or opens on the library recovery screen), they're sent only if usage data was allowed the last time it ran and you
 haven't turned it off on this computer since, so a change made on your account meanwhile counts from its next full start.
+
+When an app closes with an error right after starting, or crashes, Quiver says so and offers to report it. Nothing
+is sent unless you press Send report, and the button is only there for a catalog app while usage data is on. The
+report goes to Sentry like the error reports above, and has the app's slug and version, what happened (the exit
+code or the kind of crash), whether it ran through Wine or Proton, and the end of what the app wrote as it ran (at
+most 6,000 characters), with paths, folders and the computer's user name removed like everything else. The app's own
+output is kept on this computer in `game-logs/` in Quiver's data folder, one file per app, started again each time
+the app starts, and whenever it passes 8 MB while Quiver is running. Copy details puts the
+same text on your clipboard and sends nothing.
 
 Events go to quiverlauncher.com (the website's `worker/launcherUsage.ts`), which keeps the secret Google Analytics
 needs and passes them on with your country, so Google doesn't get your IP address. Error reports go directly to

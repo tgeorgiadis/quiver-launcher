@@ -2,7 +2,22 @@ import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { msg } from "@lingui/core/macro";
 import type { TelemetryContext } from "./telemetry";
 
-const sentry = vi.hoisted(() => ({ init: vi.fn(), captureException: vi.fn() }));
+/** What Sentry's server answers a sent event with; undefined when it never got there. */
+let answer: number | undefined = 200;
+const sentry = vi.hoisted(() => {
+  const listeners = new Set<(event: { event_id: string }, response?: { statusCode?: number }) => void>();
+  return {
+    init: vi.fn(),
+    captureException: vi.fn(),
+    listeners,
+    getClient: () => ({
+      on: (_hook: string, listener: (event: { event_id: string }, response?: { statusCode?: number }) => void) => {
+        listeners.add(listener);
+        return () => listeners.delete(listener);
+      },
+    }),
+  };
+});
 vi.mock("@sentry/browser", () => sentry);
 
 const HOST = "https://quiverlauncher.com";
@@ -659,4 +674,38 @@ test("every apps folder is taken out of what's sent, not only the default", asyn
   const out = telemetry.scrub("couldn't start /gamesdrive/My Apps/zelda/run");
   expect(out).not.toContain("gamesdrive");
   expect(out).not.toContain("My Apps");
+});
+
+test("a report the player sends goes with what groups it, counts as sent only when Sentry took it, and goes nowhere while usage data is off", async () => {
+  const telemetry = await started();
+  // As Sentry's client does: an id at once, and what the server said once it has.
+  sentry.captureException.mockImplementation(() => {
+    queueMicrotask(() => sentry.listeners.forEach((l) => (l({ event_id: "other" }, { statusCode: 200 }), l({ event_id: "abc" }, answer === undefined ? {} : { statusCode: answer }))));
+    return "abc";
+  });
+  expect(telemetry.playerReportsAvailable()).toBe(true);
+  answer = 200;
+  expect(await telemetry.sendPlayerReport("game_exit", "test-port: Crashed", ["test-port", "Crashed"], { slug: "test-port", log: "boom" })).toBe(true);
+  const [error, scope] = sentry.captureException.mock.calls.at(-1)!;
+  expect((error as Error).message).toBe("test-port: Crashed");
+  expect(scope).toEqual({ tags: { failure: "game_exit", player_report: "1" }, extra: { slug: "test-port", log: "boom" }, fingerprint: ["failure", "game_exit", "test-port", "Crashed"] });
+  expect(sentry.listeners.size).toBe(0);
+
+  // Offline (no answer at all), or refused.
+  answer = undefined;
+  expect(await telemetry.sendPlayerReport("game_exit", "test-port: Crashed", ["test-port"], {})).toBe(false);
+  answer = 429;
+  expect(await telemetry.sendPlayerReport("game_exit", "test-port: Crashed", ["test-port"], {})).toBe(false);
+
+  sentry.captureException.mockClear();
+  telemetry.setTelemetryEnabled(false);
+  expect(telemetry.playerReportsAvailable()).toBe(false);
+  expect(await telemetry.sendPlayerReport("game_exit", "test-port: Crashed", ["test-port"], {})).toBe(false);
+  expect(sentry.captureException).not.toHaveBeenCalled();
+});
+
+test("a report the player sends has nowhere to go from a build that points somewhere else", async () => {
+  const telemetry = await started({ host: "http://127.0.0.1:9" });
+  expect(telemetry.playerReportsAvailable()).toBe(false);
+  expect(await telemetry.sendPlayerReport("game_exit", "x", [], {})).toBe(false);
 });

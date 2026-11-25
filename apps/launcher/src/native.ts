@@ -4,6 +4,7 @@ import { listen } from "@tauri-apps/api/event";
 import { currentMonitor, getCurrentWindow } from "@tauri-apps/api/window";
 import type { GitlabLimit, ModSettings, ModSource, Os, Readme, SetupFile } from "@quiverlauncher/api";
 import { noteFailure } from "./command-failures";
+import type { GameFailure } from "./game-report";
 import type { CacheUse } from "./cache";
 
 /** Tauri's, remembering which command failed; the error is the same one, for those who check what it says. */
@@ -368,6 +369,10 @@ export const native = {
   setDiscordPresence: (enabled: boolean, texts: { idle: string; button: string }) => invoke<void>("set_discord_presence", { enabled, texts }),
   /** An app started with an id has closed, after running this long; one a shortcut started says how it ended. */
   onAppClosed: (handler: (p: Closed) => void) => listen<Closed>("app-closed", (e) => handler(e.payload)),
+  /** An app the launcher started closed with an error right after starting, or crashed (game_log.rs). */
+  onAppFailed: (handler: (p: GameFailure) => void) => listen<GameFailure>("app-failed", (e) => handler(e.payload)),
+  /** The end of what an app (by its id) last wrote as it ran, for a report of it; empty when it wrote nothing. */
+  gameLog: (app: string) => invoke<string>("game_log", { app }),
   /** The shortcuts waiting for this Quiver to start their app: for a page that's only now ready. */
   shortcutRequests: () => invoke<ShortcutPlay[]>("shortcut_requests"),
   /** A shortcut asks this Quiver to start an app. */

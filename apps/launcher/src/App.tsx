@@ -33,6 +33,7 @@ import { managesCatalog, useAccount, type CatalogDefaults } from "./account";
 import { native } from "./native";
 import { sizeLabel } from "./downloads";
 import { correctionClient } from "./corrections";
+import { GameFailedPrompt } from "./game-report-prompt";
 import { isCustom, isLocal, isOwn } from "./custom";
 import { ArtFields, artValues, artValuesOk, fromArtValues } from "./custom-art";
 import { AddApp, ChangeGame, LinkToCatalog } from "./own";
@@ -410,6 +411,7 @@ export function App() {
       <UnverifiedPrompt />
       <UninstallPrompt />
       <RenameFolderPrompt />
+      <GameFailedPrompt />
       <RenamePrompt />
       <PlaceAppPrompt />
       <AddFilesPrompt />

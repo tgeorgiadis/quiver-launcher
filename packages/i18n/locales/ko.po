@@ -230,6 +230,18 @@ msgstr "{active, plural, other {#개 다운로드 중, {percent}%}}"
 msgid "{active, plural, one {# downloading} other {# downloading}}"
 msgstr "{active, plural, other {#개 다운로드 중}}"
 
+#: ../../apps/launcher/src/game-report-prompt.tsx
+msgid "{app} closed right after starting"
+msgstr ""
+
+#: ../../apps/launcher/src/game-report-prompt.tsx
+msgid "{app} closed with a message"
+msgstr ""
+
+#: ../../apps/launcher/src/game-report-prompt.tsx
+msgid "{app} crashed"
+msgstr ""
+
 #: ../../apps/launcher/src/downloads.ts
 msgid "{app} didn't finish downloading."
 msgstr "{app} 다운로드를 완료하지 못했어요."
@@ -1082,6 +1094,10 @@ msgstr "이 컴퓨터의 프로그램"
 #: ../../apps/launcher/src/launch-options.tsx
 msgid "A quote isn't closed."
 msgstr "따옴표가 닫히지 않았어요."
+
+#: ../../apps/launcher/src/game-report-prompt.tsx
+msgid "A report has the app and its version, your system, and the text above. Folder and user names are taken out."
+msgstr ""
 
 #: ../../apps/launcher/src/custom-art.tsx
 msgid "A transparent PNG. For its Steam shortcut."
@@ -2283,6 +2299,7 @@ msgstr "검색어 지우기"
 #. Window button: close Quiver's window
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/detail.tsx
+#: ../../apps/launcher/src/game-report-prompt.tsx
 #: ../../apps/launcher/src/mods.tsx
 #: ../../apps/launcher/src/own-copy-setup.tsx
 #: ../../apps/launcher/src/tag-settings.tsx
@@ -2415,6 +2432,7 @@ msgid "Controllers"
 msgstr "컨트롤러"
 
 #: ../../apps/launcher/src/downloads-page.tsx
+#: ../../apps/launcher/src/game-report-prompt.tsx
 msgid "Copied"
 msgstr "복사됨"
 
@@ -2423,6 +2441,7 @@ msgid "Copied to your sync folder."
 msgstr ""
 
 #: ../../apps/launcher/src/downloads-page.tsx
+#: ../../apps/launcher/src/game-report-prompt.tsx
 msgid "Copy details"
 msgstr "세부 정보 복사"
 
@@ -2521,6 +2540,10 @@ msgstr "보내지 못했어요. 다시 시도하세요."
 #: ../../apps/launcher/src/discussions.tsx
 msgid "Couldn't send that. Try again."
 msgstr "보내지 못했어요. 다시 시도하세요."
+
+#: ../../apps/launcher/src/game-report-prompt.tsx
+msgid "Couldn't send the report. Check your connection and try again."
+msgstr ""
 
 #: ../../apps/launcher/src/cloud-saves-page.tsx
 msgid "Couldn't send them just now. Try again soon."
@@ -3794,9 +3817,17 @@ msgstr "인터페이스 크기"
 msgid "Is for"
 msgstr "대상 시스템"
 
+#: ../../apps/launcher/src/game-report-prompt.tsx
+msgid "It closed right after starting. This is what it said:"
+msgstr ""
+
 #: ../../apps/launcher/src/feedback.tsx
 msgid "It didn't run"
 msgstr "실행되지 않았어요"
+
+#: ../../apps/launcher/src/game-report-prompt.tsx
+msgid "It didn't say why."
+msgstr ""
 
 #: ../../apps/launcher/src/App.tsx
 msgid "It gets a folder of its own in there, and updates keep installing into it."
@@ -3829,6 +3860,18 @@ msgstr "<0>{executable}</0>을(를) 실행합니다. 이 파일은 앱 폴더 �
 #: ../../apps/launcher/src/own.tsx
 msgid "It starts where it is, and removing it from your library leaves it there."
 msgstr "현재 위치에서 실행되며, 라이브러리에서 제거해도 그대로 남아 있어요."
+
+#: ../../apps/launcher/src/game-report-prompt.tsx
+msgid "It stopped by itself while it was running."
+msgstr ""
+
+#: ../../apps/launcher/src/game-report-prompt.tsx
+msgid "It stopped with an error (exit code {code}) before it got going."
+msgstr ""
+
+#: ../../apps/launcher/src/game-report-prompt.tsx
+msgid "It stopped with an error before it got going."
+msgstr ""
 
 #. placeholder {0}: file.accepted.map((d) => d.label).filter(Boolean).join(", ")
 #: ../../apps/launcher/src/own-copy-setup.tsx
@@ -6108,6 +6151,10 @@ msgstr "신고"
 msgid "Report a problem"
 msgstr "문제 신고"
 
+#: ../../apps/launcher/src/game-report-prompt.tsx
+msgid "Report sent. Thanks."
+msgstr ""
+
 #. The viewer already reported this post
 #: ../../apps/launcher/src/discussions.tsx
 msgid "Reported"
@@ -6450,6 +6497,14 @@ msgstr "고른 타이틀"
 msgid "Send"
 msgstr "보내기"
 
+#: ../../apps/launcher/src/game-report-prompt.tsx
+msgid "Send a report so Quiver staff can look into it."
+msgstr ""
+
+#: ../../apps/launcher/src/game-report-prompt.tsx
+msgid "Send report"
+msgstr ""
+
 #: ../../apps/launcher/src/cloud-saves-page.tsx
 msgid "Send saves now"
 msgstr "지금 세이브 보내기"
@@ -6463,6 +6518,7 @@ msgid "Send usage data"
 msgstr "사용 데이터 보내기"
 
 #: ../../apps/launcher/src/correction.tsx
+#: ../../apps/launcher/src/game-report-prompt.tsx
 msgid "Sending…"
 msgstr "보내는 중…"
 
@@ -8169,6 +8225,10 @@ msgstr "Quiver Launcher에 오신 것을 환영해요!"
 #: ../../apps/launcher/src/old-library.tsx
 msgid "What comes over"
 msgstr "가져오는 항목"
+
+#: ../../apps/launcher/src/game-report-prompt.tsx
+msgid "What it said last"
+msgstr ""
 
 #: ../../apps/launcher/src/discussions.tsx
 msgid "What players are talking about across the catalog, and a place for everything else. Need help with Quiver Launcher? Ask on <0>Discord</0> or in <1>GitHub Issues</1>."

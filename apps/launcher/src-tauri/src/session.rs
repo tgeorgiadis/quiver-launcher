@@ -10,7 +10,7 @@
 //! A game with no way to quit can be closed from the controller (gamepad.rs:
 //! hold the buttons chosen in Settings, Start + Select at first): it and everything it started are asked to quit, then forced.
 use std::path::{Path, PathBuf};
-use std::process::Child;
+use std::process::{Child, ExitStatus};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::Mutex;
 use std::time::{Duration, Instant};
@@ -45,10 +45,25 @@ pub enum Started {
     Elsewhere(crate::Waiting),
 }
 
-/// Called with each game the launcher starts; `ended` is told how long it ran, a launcher's hand-over included, or
-/// nothing when it couldn't be waited on. `dir` is the game's folder, given only when it's the app's own (lib.rs
-/// `start`): without it only the game's process and what it started are the game's.
-pub fn track(game: Started, dir: Option<PathBuf>, ended: impl FnOnce(Option<u64>) + Send + 'static) {
+/// How a game's session went, for `track`'s `ended`.
+pub struct Ended {
+    /// How long it ran, a launcher's hand-over included; nothing when it couldn't be waited on.
+    pub seconds: Option<u64>,
+    /// How the game's own process ended (one Windows started for it: only that it did).
+    pub status: Option<ExitStatus>,
+    /// It ended within a few seconds and handed over to nothing: closed right after starting.
+    pub early: bool,
+    /// The player closed it from the controller (`close_game`): however it ended, it didn't fail.
+    pub closed_here: bool,
+}
+
+/// The session `close_game` last closed.
+static CLOSED_HERE: AtomicU64 = AtomicU64::new(0);
+
+/// Called with each game the launcher starts; `ended` is told how it went (`Ended`). `dir` is the game's folder,
+/// given only when it's the app's own (lib.rs `start`): without it only the game's process and what it started are
+/// the game's.
+pub fn track(game: Started, dir: Option<PathBuf>, ended: impl FnOnce(Ended) + Send + 'static) {
     let session = LATEST.fetch_add(1, Ordering::SeqCst) + 1;
     // A second early, as process start times are in whole seconds.
     let since = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map_or(0, |d| d.as_secs()).saturating_sub(1);
@@ -61,20 +76,31 @@ pub fn track(game: Started, dir: Option<PathBuf>, ended: impl FnOnce(Option<u64>
         .name("game-session".into())
         .spawn(move || {
             let started = Instant::now();
-            let closed = match game {
-                Started::Child(mut child) => child.wait().is_ok(),
-                Started::Elsewhere(wait) => wait(),
+            let status = match game {
+                Started::Child(mut child) => child.wait().ok(),
+                // Windows started it: whether it ended, not how.
+                Started::Elsewhere(wait) => wait().then(ExitStatus::default),
             };
-            if let Some(dir) = dir.as_deref().filter(|_| started.elapsed() < STUB_TIME) {
+            let quick = started.elapsed() < STUB_TIME;
+            let mut handed_over = false;
+            if let Some(dir) = dir.as_deref().filter(|_| quick) {
                 let mut system = System::new();
                 while game_running(&mut system, dir, since) {
+                    handed_over = true;
                     std::thread::sleep(POLL);
                 }
             }
             if LATEST.load(Ordering::SeqCst) == session {
                 PLAYING.lock().unwrap().take_if(|(s, _, _, _)| *s == session);
             }
-            ended(closed.then(|| started.elapsed().as_secs()));
+            ended(Ended {
+                seconds: status.map(|_| started.elapsed().as_secs()),
+                status,
+                // Only where a hand-over could be seen: without its own folder, a stub that started the game can't be told
+                // from a game that failed.
+                early: quick && !handed_over && dir.is_some(),
+                closed_here: CLOSED_HERE.load(Ordering::SeqCst) == session,
+            });
         })
         .ok();
 }
@@ -101,7 +127,8 @@ pub fn close_buttons() -> Vec<String> {
 /// Closes the game being played and everything it started (in the background);
 /// false when none is.
 pub fn close_game(log: &Path) -> bool {
-    let Some((_, pid, dir, since)) = PLAYING.lock().unwrap().clone() else { return false };
+    let Some((session, pid, dir, since)) = PLAYING.lock().unwrap().clone() else { return false };
+    CLOSED_HERE.store(session, Ordering::SeqCst);
     let log = log.to_path_buf();
     std::thread::Builder::new()
         .name("close-game".into())

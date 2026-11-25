@@ -9,6 +9,7 @@ mod discord;
 #[cfg(windows)]
 mod elevate;
 mod flatpak;
+mod game_log;
 mod gamepad;
 mod host;
 mod install;
@@ -626,13 +627,18 @@ fn start(
     let wine = program == Path::new("wine");
     let mut command = host::command(&program);
     command.args(&args).envs(env).current_dir(&target.dir);
+    // Its output, in a log of its own (game-logs/), so a game that fails can say why (game_log.rs). A file rather
+    // than a pipe: the game outlives the launcher, and a pipe would close under it.
+    // Named for the app, and not started again under one that's already running.
+    let already = id.as_ref().is_some_and(|id| app.state::<Running>().has(id));
+    let log = game_log::GameLog::new(&data.0, id.as_deref().unwrap_or(folder), !already);
     let spawned: std::io::Result<session::Started> = sandbox::check(&program)
         .and_then(|_| {
             sandbox::game(command)
                 // The game outlives the launcher's console; it shouldn't hold it open.
                 .stdin(std::process::Stdio::null())
-                .stdout(std::process::Stdio::null())
-                .stderr(std::process::Stdio::null())
+                .stdout(log.stdio())
+                .stderr(log.stdio())
                 .spawn()
         })
         .map(session::Started::Child);
@@ -658,13 +664,19 @@ fn start(
             // Its folder tells the game's other processes apart only when it's the app's own: a program elsewhere may sit
             // in a folder others share (/usr/bin, say), whose every program would count as the game.
             let own = app_folder.as_ref().is_some_and(|f| session::inside(&target.exe, f)).then(|| target.dir.clone());
-            session::track(game, own, move |seconds| {
+            let folder = folder.to_string();
+            session::track(game, own, move |ended| {
+                // It closed with an error right after starting, or crashed: the page offers to report it. Not a second
+                // copy of an app already running, whose output is mixed with the first's.
+                if let Some(failure) = game_log::failure(&ended, id.clone(), &folder, &log).filter(|_| !already) {
+                    let _ = app.emit("app-failed", failure);
+                }
                 let Some(id) = id else { return };
                 app.state::<Running>().closed(&id);
                 if shown {
                     app.state::<discord::Presence>().closed(&id);
                 }
-                if let Some(seconds) = seconds {
+                if let Some(seconds) = ended.seconds {
                     let _ = app.emit("app-closed", Played { id, seconds });
                 }
             });
@@ -2771,6 +2783,9 @@ pub fn run() {
             app.manage(shortcut_play::Host::default());
             #[cfg(desktop)]
             shortcut_play::listen(app.handle(), &dir, for_shortcut);
+            // The games' own logs, kept from growing without end (game_log.rs).
+            #[cfg(desktop)]
+            game_log::keep_small(&dir);
             app.manage(Data(dir, std::sync::Mutex::new(apps)));
             app.manage(Snapshotted(Default::default()));
             app.manage(gamepad::Pads::default());
@@ -2794,6 +2809,7 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             session::close_combo,
+            game_log::game_log,
             config,
             pc_specs,
             cancel_install,
