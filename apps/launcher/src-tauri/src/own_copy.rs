@@ -320,9 +320,23 @@ fn relative(destination: &str) -> Result<PathBuf, String> {
 }
 
 /// Whether a part of a destination is a plain file name on every system: none of the characters a command line or
-/// Windows reads as more than a name, and no space or dot at its end (which Windows drops).
+/// Windows reads as more than a name, no space or dot at its end (which Windows drops), and none of Windows's device
+/// names (CON, NUL, COM1, and those with any extension: "nul.z64" is the device too). Anything else is a name on
+/// Windows, Linux, macOS and Android, "+", brackets and other languages included. The website checks the same.
 fn plain(part: &str) -> bool {
-    !part.chars().any(|c| c.is_control() || "<>\"|?*%&^!`$;".contains(c)) && !part.ends_with([' ', '.']) && !part.starts_with(' ')
+    !part.chars().any(|c| c.is_control() || "<>\"|?*%&^!`$;".contains(c))
+        && !part.ends_with([' ', '.'])
+        && !part.starts_with(' ')
+        && !device_name(part)
+}
+
+fn device_name(part: &str) -> bool {
+    let stem = part.split('.').next().unwrap_or(part).to_ascii_uppercase();
+    matches!(stem.as_str(), "CON" | "PRN" | "AUX" | "NUL")
+        || ((stem.starts_with("COM") || stem.starts_with("LPT"))
+            && stem.len() > 3
+            && stem[3..].chars().count() == 1
+            && stem[3..].chars().all(|c| c.is_ascii_digit() || "¹²³".contains(c)))
 }
 
 /// The home folder games see: in the Flatpak, the host's (games start outside the sandbox), not the sandbox's.
@@ -847,9 +861,14 @@ mod tests {
     #[test]
     fn refuses_places_outside_its_roots() {
         let app = Path::new("/apps/game");
-        for bad in ["../x.z64", "/etc/x", "a\\b.z64", "C:/x.z64", "a//b", "a/b/c/d/e.z64", "x\"&calc&\"", "a%PATH%", "a|b", "rom.z64 ", "rom."] {
+        for bad in ["../x.z64", "/etc/x", "a\\b.z64", "C:/x.z64", "a//b", "a/b/c/d/e.z64", "x\"&calc&\"", "a%PATH%", "a|b", "rom.z64 ", "rom.", "a:b.z64", "CON.z64", "nul/rom.z64", "com1.iso", "LPT9", "COM¹"] {
             let file = SetupFile { destination: Some(bad.into()), ..Default::default() };
             assert!(target(&file, app, false).is_err(), "{bad}");
+        }
+        // Names as dumps are named: "+", brackets, apostrophes, other languages, and names that only start like a device's.
+        for good in ["Doubutsu no Mori e+ (Japan) (Rev 1).ciso", "roms/Zelda, The [v1.0].z64", "Kirby's (USA) #1 @ v1.1.nes", "どうぶつの森e+.ciso", "console.z64", "COM10.iso"] {
+            let file = SetupFile { destination: Some(good.into()), ..Default::default() };
+            assert!(target(&file, app, false).unwrap().unwrap().ends_with(good), "{good}");
         }
         let data = SetupFile { destination: Some("Game/rom.z64".into()), root: Some("localData".into()), ..Default::default() };
         assert!(target(&data, app, true).unwrap_err().contains("Wine or Proton"));
