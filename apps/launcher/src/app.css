@@ -209,6 +209,14 @@ button.danger { color: var(--danger); }
 .game-failed-body .game-failed-message { margin: 0; font-size: 13px; }
 .game-failed-sent { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; }
 .game-failed-body .row { flex-wrap: wrap; }
+/* The port's own setup step before Play (port-prepare.tsx). */
+.port-prepare-body { display: grid; gap: 12px; }
+.port-prepare-body h2 { display: flex; align-items: center; gap: 8px; margin: 0; }
+.port-prepare-body h2 svg { flex: none; }
+.port-prepare-body p { margin: 0; }
+.port-prepare-step { color: var(--muted); font-size: 13px; overflow-wrap: anywhere; }
+.port-prepare-lines { max-height: 220px; margin: 0; padding: 12px; overflow: auto; border: 1px solid var(--line); border-radius: 8px; background: var(--field); font-size: 12px; white-space: pre-wrap; overflow-wrap: anywhere; user-select: text; }
+.port-prepare-body .row { flex-wrap: wrap; }
 /* On a narrow screen the buttons go under the text rather than squeezing it to a word a line. */
 .banner { flex-wrap: wrap; }
 .banner p { flex: 1 1 220px; }

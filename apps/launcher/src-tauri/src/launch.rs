@@ -27,6 +27,10 @@ pub struct LaunchOptions {
     /// The port's own setup file as the catalog has it (port_setup.rs), for an app whose folder doesn't hold one.
     #[serde(default)]
     pub setup_file: Option<String>,
+    /// Only the program, as for the port's own setup step (port_prepare.rs): none of what its setup file starts the
+    /// game with.
+    #[serde(skip)]
+    pub plain: bool,
 }
 
 /// One copy of the game, and how the game is told where it is.
@@ -42,7 +46,15 @@ pub struct LaunchCopy {
     /// Or this environment variable holds it.
     #[serde(default)]
     pub env: Option<String>,
+    /// Or (as well) the port's own setup file names it `{input:<this>}`, for its setup step and settings file.
+    #[serde(default)]
+    pub port_input: Option<String>,
     pub path: String,
+}
+
+/// The copies the port's own setup file names, by its names for them.
+pub fn port_inputs(copies: &[LaunchCopy]) -> std::collections::BTreeMap<String, PathBuf> {
+    copies.iter().filter_map(|c| Some((c.port_input.clone()?, PathBuf::from(&c.path)))).filter(|(_, p)| !p.as_os_str().is_empty()).collect()
 }
 
 /// Flags and variables the catalog may give a game a copy's path in; never ones the system, Wine or Quiver reads.

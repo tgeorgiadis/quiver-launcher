@@ -34,6 +34,7 @@ import { native } from "./native";
 import { sizeLabel } from "./downloads";
 import { correctionClient } from "./corrections";
 import { GameFailedPrompt } from "./game-report-prompt";
+import { PortPreparePrompt } from "./port-prepare";
 import { isCustom, isLocal, isOwn } from "./custom";
 import { ArtFields, artValues, artValuesOk, fromArtValues } from "./custom-art";
 import { AddApp, ChangeGame, LinkToCatalog } from "./own";
@@ -413,6 +414,7 @@ export function App() {
       <ChangeVersion />
       <ProgramPrompt />
       <SavesConflictPrompt />
+      <PortPreparePrompt />
       <SavesPlacesPrompt />
       <SavesFullPrompt onFreeUp={() => open({ kind: "settings", section: "cloud" })} />
       <OwnCopyPrompt />

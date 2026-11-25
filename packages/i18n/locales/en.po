@@ -663,6 +663,10 @@ msgstr "{name} box art"
 msgid "{name} changed after {release} finished its 48-hour wait, and the new file hasn't been out for 48 hours yet. It installs the file Quiver saw, and refuses one that changed since."
 msgstr "{name} changed after {release} finished its 48-hour wait, and the new file hasn't been out for 48 hours yet. It installs the file Quiver saw, and refuses one that changed since."
 
+#: ../../apps/launcher/src/port-prepare.tsx
+msgid "{name} couldn't be set up"
+msgstr "{name} couldn't be set up"
+
 #: ../../apps/launcher/src/library-view.tsx
 msgid "{name} icon"
 msgstr "{name} icon"
@@ -2274,6 +2278,7 @@ msgstr "Clear search"
 #: ../../apps/launcher/src/game-report-prompt.tsx
 #: ../../apps/launcher/src/mods.tsx
 #: ../../apps/launcher/src/own-copy-setup.tsx
+#: ../../apps/launcher/src/port-prepare.tsx
 #: ../../apps/launcher/src/tag-settings.tsx
 #: ../../apps/launcher/src/window-bar.tsx
 msgid "Close"
@@ -2406,12 +2411,17 @@ msgstr "Controllers"
 
 #: ../../apps/launcher/src/downloads-page.tsx
 #: ../../apps/launcher/src/game-report-prompt.tsx
+#: ../../apps/launcher/src/port-prepare.tsx
 msgid "Copied"
 msgstr "Copied"
 
 #: ../../apps/launcher/src/saves-tab.tsx
 msgid "Copied to your sync folder."
 msgstr "Copied to your sync folder."
+
+#: ../../apps/launcher/src/port-prepare.tsx
+msgid "Copy"
+msgstr "Copy"
 
 #: ../../apps/launcher/src/downloads-page.tsx
 #: ../../apps/launcher/src/game-report-prompt.tsx
@@ -3912,6 +3922,26 @@ msgstr "Its files have each been out for 48 hours, which gives time to spot and 
 msgid "Its newest available version was withdrawn: choose a version"
 msgstr "Its newest available version was withdrawn: choose a version"
 
+#: ../../apps/launcher/src/port-prepare.tsx
+msgid "Its own setup step is making what it needs before it can start: {label}. It runs again after each update, and the game starts once it's done."
+msgstr "Its own setup step is making what it needs before it can start: {label}. It runs again after each update, and the game starts once it's done."
+
+#: ../../apps/launcher/src/port-prepare.tsx
+msgid "Its own setup step is making what it needs before it can start. It runs again after each update, and the game starts once it's done."
+msgstr "Its own setup step is making what it needs before it can start. It runs again after each update, and the game starts once it's done."
+
+#: ../../apps/launcher/src/port-prepare.tsx
+msgid "Its setup step printed nothing for an hour, so Quiver stopped it."
+msgstr "Its setup step printed nothing for an hour, so Quiver stopped it."
+
+#: ../../apps/launcher/src/port-prepare.tsx
+msgid "Its setup step stopped before it finished."
+msgstr "Its setup step stopped before it finished."
+
+#: ../../apps/launcher/src/port-prepare.tsx
+msgid "Its setup step stopped with code {code}."
+msgstr "Its setup step stopped with code {code}."
+
 #. Installs the mod alone, without the ones it needs
 #: ../../apps/launcher/src/mods.tsx
 msgid "Just {mod}"
@@ -5236,6 +5266,10 @@ msgstr "Open app"
 #: ../../apps/launcher/src/sync-folder-page.tsx
 msgid "Open folder"
 msgstr "Open folder"
+
+#: ../../apps/launcher/src/port-prepare.tsx
+msgid "Open full log"
+msgstr "Open full log"
 
 #: ../../apps/launcher/src/library.tsx
 msgid "Open it"
@@ -6605,6 +6639,14 @@ msgstr "Set up your copy"
 msgid "Set up your copy for {name}"
 msgstr "Set up your copy for {name}"
 
+#: ../../apps/launcher/src/port-prepare.tsx
+msgid "Setting up"
+msgstr "Setting up"
+
+#: ../../apps/launcher/src/port-prepare.tsx
+msgid "Setting up {name}"
+msgstr "Setting up {name}"
+
 #. Tab of an app's page: the game's own settings, from its setup file
 #. Tab of an app's page: the game's own settings, from its setup file
 #: ../../apps/launcher/src/App.tsx
@@ -7102,6 +7144,7 @@ msgstr "still scanning its files."
 #. Stops the download cache's current download
 #: ../../apps/launcher/src/cache-page.tsx
 #: ../../apps/launcher/src/downloads-page.tsx
+#: ../../apps/launcher/src/port-prepare.tsx
 msgid "Stop"
 msgstr "Stop"
 
@@ -7414,6 +7457,10 @@ msgstr "The folder with Quiver Launcher 3's program in it. For a portable copy, 
 msgid "The game asks for it when it starts. Quiver can check yours first."
 msgstr "The game asks for it when it starts. Quiver can check yours first."
 
+#: ../../apps/launcher/src/port-prepare.tsx
+msgid "The game's developer can tell what went wrong from these lines. Copy them to send with your question."
+msgstr "The game's developer can tell what went wrong from these lines. Copy them to send with your question."
+
 #: ../../apps/launcher/src/sync-folder-page.tsx
 msgid "the newest 5 of each app are kept"
 msgstr "the newest 5 of each app are kept"
@@ -7521,6 +7568,10 @@ msgstr "There are no releases yet. Check the upstream project for downloads."
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "There's already a file where {name} reads it."
 msgstr "There's already a file where {name} reads it."
+
+#: ../../apps/launcher/src/port-prepare.tsx
+msgid "There's no log of its setup step."
+msgstr "There's no log of its setup step."
 
 #: ../../apps/launcher/src/saves-tab.tsx
 msgid "These are my saves"
@@ -7797,6 +7848,7 @@ msgstr "Trusted creator"
 #: ../../apps/launcher/src/card-menu.tsx
 #: ../../apps/launcher/src/downloads-page.tsx
 #: ../../apps/launcher/src/game.tsx
+#: ../../apps/launcher/src/port-prepare.tsx
 #: ../../apps/launcher/src/update.tsx
 msgid "Try again"
 msgstr "Try again"
@@ -8470,6 +8522,10 @@ msgstr "Withdrawn"
 #: ../../apps/launcher/src/detail.tsx
 msgid "Withdrawn:"
 msgstr "Withdrawn:"
+
+#: ../../apps/launcher/src/port-prepare.tsx
+msgid "Working…"
+msgstr "Working…"
 
 #: ../../apps/launcher/src/discussions.tsx
 msgid "Yes, delete"

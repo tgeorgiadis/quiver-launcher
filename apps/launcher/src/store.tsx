@@ -11,7 +11,7 @@ import { ApiError, createClient, createGithub, createGitlab, createProviders, gi
 import type { HiddenApp } from "./browse-hidden";
 import { hideOnApp, shownTags, type HiddenTags } from "./catalog-tags";
 import type { GameFailure } from "./game-report";
-import { native, type Config, type Installed, type SaveBackup, type ShortcutPlay, type LaunchOptions, type MovingApp, type OldApp, type OldFilter, type Progress, type StateProblem, type V3Library, type WindowsRunner } from "./native";
+import { native, type Config, type Installed, type PrepareFailed, type PrepareProgress, type SaveBackup, type ShortcutPlay, type LaunchOptions, type MovingApp, type OldApp, type OldFilter, type Progress, type StateProblem, type V3Library, type WindowsRunner } from "./native";
 import { Recovery } from "./recovery";
 import { assetFilterFor, bestAssets, installable, installFormat, isMsi, pickedBefore, releaseFor, wantedFiles } from "./assets";
 import { cameAfter, fromSite, scanAsks, installedFile, insteadOf, newestUnblocked, sameChecksum, unverifiedFile, versionLabel, withdrawnAsBlocked } from "./versions";
@@ -239,6 +239,22 @@ type InstallOptions = { app?: CustomApp; pin?: boolean; unverified?: boolean; bl
  */
 export type NoticeOptions = { stays?: boolean; action?: { label: string; act: () => void } };
 
+/** The port's own setup step for an app, as Play runs it before the game (port_prepare.rs). */
+export type Preparing = {
+  id: string;
+  name: string;
+  /** What it makes, as the port says. */
+  label: string | null;
+  progress: PrepareProgress | null;
+  failed: PrepareFailed | null;
+  /** Runs it again, after it failed. */
+  retry: () => void;
+  /** Stops it while it runs. */
+  stop: () => void;
+  /** Closes it, after it failed: the game doesn't start. */
+  close: () => void;
+};
+
 type Launcher = {
   config: Config;
   client: Client;
@@ -277,6 +293,8 @@ type Launcher = {
   confirming: Confirming | null;
   /** Asks the player before uninstalling (or uninstalling and removing) an app; null closes the prompt. */
   confirmUninstall: (confirming: Confirming | null) => void;
+  /** The port's own setup step, running before Play starts the game (port-prepare.tsx), or how it failed. */
+  preparing: Preparing | null;
   /** An app's saves here and in the account both changed: Play asks which to keep, and `answer` is called with it (null: neither, don't start). */
   savesConflict: (Conflict & { answer: (keep: "cloud" | "here" | null) => void }) | null;
   /** A backup the player asked to restore names folders this computer hasn't kept that app's saves in: they're shown, and `answer` is called with whether to go ahead (App.tsx's SavesPlacesPrompt). */
@@ -1704,6 +1722,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
   const [changingVersion, changeVersion] = useState<Entry | null>(null);
   const [choosingProgram, chooseProgram] = useState<string | null>(null);
   const [savesConflict, setSavesConflict] = useState<Launcher["savesConflict"]>(null);
+  const [preparing, setPreparing] = useState<Preparing | null>(null);
   const [savesPlaces, setSavesPlaces] = useState<Launcher["savesPlaces"]>(null);
   const [savesFull, setSavesFull] = useState<string | null>(null);
   const [settingUpCopy, setUpCopy] = useState<Launcher["settingUpCopy"]>(null);
@@ -1922,6 +1941,8 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       // A Quiver a shortcut started quits once they're sent (shortcut_play.rs).
       if (via) void sent.finally(() => native.shortcutDone().catch(() => {}));
     });
+    // How far a port's own setup step has got.
+    const prepareOff = native.onPortPrepareProgress((progress) => setPreparing((p) => (p && p.id === progress.id && !p.failed ? { ...p, progress } : p)));
     // One that closed with an error right after starting, or crashed: its dialog offers to report it (game-report-prompt.tsx).
     const failedOff = native.onAppFailed((failure) => {
       const { catalog, installs } = forUsage.current;
@@ -1944,6 +1965,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       clearTimeout(counted);
       void closed.then((stop) => stop());
       void failedOff.then((stop) => stop());
+      void prepareOff.then((stop) => stop());
     };
   }, []);
   // On Android a player can remove an app in the system's settings, which Quiver isn't told about. Checked when Quiver
@@ -3014,6 +3036,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     choosingProgram,
     chooseProgram,
     savesConflict,
+    preparing,
     savesPlaces,
     confirmSavePlaces: (name) => (places) => new Promise((resolve) => setSavesPlaces({ name, places, answer: (ok) => (setSavesPlaces(null), resolve(ok)) })),
     savesFull,
@@ -3133,6 +3156,29 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       // What the port's own setup file starts its program with, for a catalog app whose folder holds none (port-setup.ts).
       const setupFile = entry?.slug && config.os !== "android" && config.os !== "ios" ? await setupFileText(client, entry.slug) : undefined;
       const starting = setupFile ? { ...launch, setupFile } : launch;
+      // The port's own setup step first, when it hasn't run for this release or these copies (port_prepare.rs), in a
+      // window a shortcut's Quiver shows for it. It failing, or the player stopping it, starts nothing.
+      const prepare = config.os !== "android" && config.os !== "ios" ? await native.portPrepareNeeded(install.folder, install.dir, starting).catch(() => null) : null;
+      if (prepare) {
+        if (shortcut?.hidden) await native.shortcutWindow(true).catch(() => {});
+        const done = await new Promise<boolean>((resolve) => {
+          const attempt = () => {
+            setPreparing({ id, name, label: prepare.label, progress: null, failed: null, retry: attempt, stop: () => void native.portPrepareStop(id).catch(() => {}), close: () => (setPreparing(null), resolve(false)) });
+            native.portPrepare(id, install.folder, install.dir, patterns, Boolean(install.wine), starting).then(
+              () => (setPreparing(null), resolve(true)),
+              (e: unknown) => {
+                const failed: PrepareFailed = e && typeof e === "object" && "lines" in e ? (e as PrepareFailed) : { code: null, lines: [], stuck: false, stopped: false, hint: null, problem: String(e) };
+                track("port_prepare_failed", { ...ref, ...(failed.code !== null ? { code: failed.code } : {}), stuck: failed.stuck, stopped: failed.stopped, started: failed.problem === null });
+                if (failed.stopped) return void (setPreparing(null), resolve(false));
+                setPreparing((p) => (p && p.id === id ? { ...p, failed } : p));
+              },
+            );
+          };
+          attempt();
+        });
+        if (!done) return refuse();
+        track("port_prepared", ref);
+      }
       // From a shortcut, the shortcut starts it, so Steam ties its overlay, controls and Stop to the game; a window a
       // shortcut's Quiver showed for a question goes, so the game is in front.
       if (shortcut?.hidden) await native.shortcutWindow(false).catch(() => {});
