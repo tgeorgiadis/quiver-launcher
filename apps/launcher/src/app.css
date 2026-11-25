@@ -521,6 +521,14 @@ main.app-main { padding: 0 0 40px; }
 .computer-panel { gap: 0; }
 .app-content > .computer-panel { width: min(760px, 100%); align-self: center; }
 .computer-panel > h3 { margin-bottom: 4px; }
+/* A port's own settings (port-settings.tsx): a column of labelled rows, as the Manage tab's. */
+.app-content > .port-settings { width: min(760px, 100%); align-self: center; gap: 14px; }
+.port-settings-group { margin: 12px 0 0; padding-top: 12px; border-top: 1px solid var(--line); font-size: 14px; }
+.port-setting-off { opacity: 0.6; }
+.port-slider { display: flex; align-items: center; gap: 12px; }
+.port-slider > input { flex: 1; }
+.port-slider > output { min-width: 4ch; text-align: end; font-variant-numeric: tabular-nums; }
+.port-settings-advanced { align-self: flex-start; }
 .panel-group { display: flex; flex-direction: column; gap: 8px; padding: 16px 0; border-bottom: 1px solid var(--line); }
 .panel-group:last-child { padding-bottom: 0; border-bottom: 0; }
 .panel-group:not(:has(> :not(h4))) { display: none; }

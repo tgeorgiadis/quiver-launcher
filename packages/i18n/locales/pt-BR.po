@@ -3205,6 +3205,10 @@ msgstr "Cópias de jogos"
 msgid "Game not found"
 msgstr "Jogo não encontrado"
 
+#: ../../apps/launcher/src/port-settings.tsx
+msgid "Game's own"
+msgstr ""
+
 #. A kind of video
 #: ../../apps/launcher/src/media.tsx
 msgid "Gameplay"
@@ -3348,6 +3352,10 @@ msgstr "Oculto na sua biblioteca"
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Hide"
 msgstr "Ocultar"
+
+#: ../../apps/launcher/src/port-settings.tsx
+msgid "Hide advanced options"
+msgstr ""
 
 #. Button: hide every catalog tag on every app
 #: ../../apps/launcher/src/tag-settings.tsx
@@ -5064,6 +5072,10 @@ msgstr "Ainda não jogado"
 msgid "Not rated yet"
 msgstr "Ainda sem avaliações"
 
+#: ../../apps/launcher/src/port-settings.tsx
+msgid "Not set"
+msgstr ""
+
 #. On PC specs only the app's developer and the player who shared them can see
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Not shown to other players"
@@ -5188,6 +5200,16 @@ msgstr "Um card para cada jogo"
 #: ../../apps/launcher/src/library.tsx
 msgid "Only hidden apps"
 msgstr "Só apps ocultos"
+
+#. placeholder {0}: s.needs[0]
+#. placeholder {1}: s.needs[1]
+#: ../../apps/launcher/src/port-settings.tsx
+msgid "Only used when {0} is {1}."
+msgstr ""
+
+#: ../../apps/launcher/src/port-settings.tsx
+msgid "Only used with another setting changed."
+msgstr ""
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Only your library shows this name. Its folder keeps the name it has."
@@ -5680,6 +5702,10 @@ msgstr "O Quiver não conseguiu abrir esse arquivo de música. Ele pode ter sido
 #: ../../apps/launcher/src/recovery.tsx
 msgid "Quiver couldn't open your library"
 msgstr "O Quiver não conseguiu abrir sua biblioteca"
+
+#: ../../apps/launcher/src/port-settings.tsx
+msgid "Quiver couldn't read {path}, so the settings kept there aren't shown."
+msgstr ""
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Quiver couldn't show that picture. It may have been moved or deleted."
@@ -6577,7 +6603,10 @@ msgstr "Configurar sua cópia"
 msgid "Set up your copy for {name}"
 msgstr "Configure sua cópia para {name}"
 
+#. Tab of an app's page: the game's own settings, from its setup file
+#. Tab of an app's page: the game's own settings, from its setup file
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/port-settings.tsx
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Settings"
 msgstr "Configurações"
@@ -6655,6 +6684,10 @@ msgstr "Mostrar um aviso quando houver atualizações"
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Show a picture of your own behind the library's grid. The List layout doesn't show it."
 msgstr "Mostre uma imagem sua atrás da grade da biblioteca. O layout Lista não a mostra."
+
+#: ../../apps/launcher/src/port-settings.tsx
+msgid "Show advanced options"
+msgstr ""
 
 #: ../../apps/launcher/src/announcements-ui.tsx
 msgid "Show again"
@@ -6912,6 +6945,11 @@ msgstr "Alguém compartilhou uma playlist? Cole o link para adicioná-la à sua 
 #: ../../apps/launcher/src/discussions.tsx
 msgid "Something else"
 msgstr "Outra coisa"
+
+#. placeholder {0}: s.other
+#: ../../apps/launcher/src/port-settings.tsx
+msgid "Something else ({0})"
+msgstr ""
 
 #. Label of the library's sort order
 #. Label of the library's sort order
@@ -7459,6 +7497,10 @@ msgstr ""
 
 #: ../../apps/launcher/src/saves-tab.tsx
 msgid "These are my saves"
+msgstr ""
+
+#: ../../apps/launcher/src/port-settings.tsx
+msgid "These are the game's own settings, as its developer lists them. Changes go into its settings file straight away, and changes you make in the game show here once it closes."
 msgstr ""
 
 #: ../../apps/launcher/src/saves-tab.tsx
@@ -8105,6 +8147,10 @@ msgstr "Usar a barra de título do sistema (em vez dos botões de janela do pró
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Use this folder"
 msgstr "Usar esta pasta"
+
+#: ../../apps/launcher/src/port-settings.tsx
+msgid "Used when you press Play."
+msgstr ""
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Username"

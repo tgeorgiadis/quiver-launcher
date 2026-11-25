@@ -3204,6 +3204,10 @@ msgstr "Game copies"
 msgid "Game not found"
 msgstr "Game not found"
 
+#: ../../apps/launcher/src/port-settings.tsx
+msgid "Game's own"
+msgstr "Game's own"
+
 #. A kind of video
 #: ../../apps/launcher/src/media.tsx
 msgid "Gameplay"
@@ -3347,6 +3351,10 @@ msgstr "Hidden from your library"
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Hide"
 msgstr "Hide"
+
+#: ../../apps/launcher/src/port-settings.tsx
+msgid "Hide advanced options"
+msgstr "Hide advanced options"
 
 #. Button: hide every catalog tag on every app
 #: ../../apps/launcher/src/tag-settings.tsx
@@ -5063,6 +5071,10 @@ msgstr "Not played yet"
 msgid "Not rated yet"
 msgstr "Not rated yet"
 
+#: ../../apps/launcher/src/port-settings.tsx
+msgid "Not set"
+msgstr "Not set"
+
 #. On PC specs only the app's developer and the player who shared them can see
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Not shown to other players"
@@ -5187,6 +5199,16 @@ msgstr "One card for each game"
 #: ../../apps/launcher/src/library.tsx
 msgid "Only hidden apps"
 msgstr "Only hidden apps"
+
+#. placeholder {0}: s.needs[0]
+#. placeholder {1}: s.needs[1]
+#: ../../apps/launcher/src/port-settings.tsx
+msgid "Only used when {0} is {1}."
+msgstr "Only used when {0} is {1}."
+
+#: ../../apps/launcher/src/port-settings.tsx
+msgid "Only used with another setting changed."
+msgstr "Only used with another setting changed."
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Only your library shows this name. Its folder keeps the name it has."
@@ -5679,6 +5701,10 @@ msgstr "Quiver couldn't open that music file. It may have been moved or deleted.
 #: ../../apps/launcher/src/recovery.tsx
 msgid "Quiver couldn't open your library"
 msgstr "Quiver couldn't open your library"
+
+#: ../../apps/launcher/src/port-settings.tsx
+msgid "Quiver couldn't read {path}, so the settings kept there aren't shown."
+msgstr "Quiver couldn't read {path}, so the settings kept there aren't shown."
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Quiver couldn't show that picture. It may have been moved or deleted."
@@ -6576,7 +6602,10 @@ msgstr "Set up your copy"
 msgid "Set up your copy for {name}"
 msgstr "Set up your copy for {name}"
 
+#. Tab of an app's page: the game's own settings, from its setup file
+#. Tab of an app's page: the game's own settings, from its setup file
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/port-settings.tsx
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Settings"
 msgstr "Settings"
@@ -6654,6 +6683,10 @@ msgstr "Show a banner when updates are ready"
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Show a picture of your own behind the library's grid. The List layout doesn't show it."
 msgstr "Show a picture of your own behind the library's grid. The List layout doesn't show it."
+
+#: ../../apps/launcher/src/port-settings.tsx
+msgid "Show advanced options"
+msgstr "Show advanced options"
 
 #: ../../apps/launcher/src/announcements-ui.tsx
 msgid "Show again"
@@ -6911,6 +6944,11 @@ msgstr "Someone shared a playlist? Paste its link to add it to your library. It 
 #: ../../apps/launcher/src/discussions.tsx
 msgid "Something else"
 msgstr "Something else"
+
+#. placeholder {0}: s.other
+#: ../../apps/launcher/src/port-settings.tsx
+msgid "Something else ({0})"
+msgstr "Something else ({0})"
 
 #. Label of the library's sort order
 #. Label of the library's sort order
@@ -7459,6 +7497,10 @@ msgstr "There's already a file where {name} reads it."
 #: ../../apps/launcher/src/saves-tab.tsx
 msgid "These are my saves"
 msgstr "These are my saves"
+
+#: ../../apps/launcher/src/port-settings.tsx
+msgid "These are the game's own settings, as its developer lists them. Changes go into its settings file straight away, and changes you make in the game show here once it closes."
+msgstr "These are the game's own settings, as its developer lists them. Changes go into its settings file straight away, and changes you make in the game show here once it closes."
 
 #: ../../apps/launcher/src/saves-tab.tsx
 msgid "These are the saves on this computer now."
@@ -8104,6 +8146,10 @@ msgstr "Use the system's title bar (instead of Quiver's own window buttons)"
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Use this folder"
 msgstr "Use this folder"
+
+#: ../../apps/launcher/src/port-settings.tsx
+msgid "Used when you press Play."
+msgstr "Used when you press Play."
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Username"

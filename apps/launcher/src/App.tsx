@@ -1,5 +1,5 @@
 import { startTransition, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { ArrowLeft, ArrowUp, BookOpen, Save, ChevronDown, Cloud, CircleArrowDown, CircleCheck, CirclePlay, CircleUser, Compass, Disc3, Download, Eye, EyeOff, FolderInput, FolderOpen, FolderPen, FolderSearch, FolderSync, History, Info, MessagesSquare, LayoutGrid, Library, LogOut, PanelLeft, Mail, PackagePlus, Pencil, Pin, Play, Plus, Search, SettingsIcon, RefreshCw, RotateCcw, ShieldAlert, ShieldCheck, ShieldX, SlidersHorizontal, Smile, Trash2, TriangleAlert, Tv, Wrench, X } from "lucide-react";
+import { ArrowLeft, ArrowUp, BookOpen, Save, ChevronDown, Cloud, CircleArrowDown, CircleCheck, CirclePlay, CircleUser, Compass, Disc3, Download, Eye, EyeOff, FolderInput, FolderOpen, FolderPen, FolderSearch, FolderSync, History, Info, MessagesSquare, LayoutGrid, Library, LogOut, PanelLeft, Mail, PackagePlus, Pencil, Pin, Play, Plus, Search, Settings2, SettingsIcon, RefreshCw, RotateCcw, ShieldAlert, ShieldCheck, ShieldX, SlidersHorizontal, Smile, Trash2, TriangleAlert, Tv, Wrench, X } from "lucide-react";
 import type { AppQuery, Asset, Entry, GameMatch, Os, Page, ProjectType } from "@quiverlauncher/api";
 import { msg, plural, t } from "@lingui/core/macro";
 import { Plural, Trans } from "@lingui/react/macro";
@@ -52,6 +52,7 @@ import { Setup, showsSetup } from "./setup";
 import { savesChanged, savesOf, savesOn } from "./saves";
 import type { CloudUsage } from "./cloud-saves";
 import { SavesTab } from "./saves-tab";
+import { PortSettingsTab, usePortSettings } from "./port-settings";
 import { FilePicker } from "./file-picker";
 import { BrowseMenu, fileName } from "./card-menu";
 import { browseShown, hiddenMatches, toggleHidden, type HiddenView } from "./browse-hidden";
@@ -1238,7 +1239,7 @@ function Action({ entry, apart, reasonElsewhere }: { entry: Entry; apart?: boole
  * library's sidebar it has no way back, and shows the player's own play.
  */
 /** Each tab of an app's page's icon: outlined and grey, filled in the accent while it's open (app.css). */
-const TAB_ICONS = { overview: Info, media: CirclePlay, releases: CircleArrowDown, feedback: Smile, discussions: MessagesSquare, computer: SlidersHorizontal, saves: Save };
+const TAB_ICONS = { overview: Info, media: CirclePlay, releases: CircleArrowDown, feedback: Smile, discussions: MessagesSquare, computer: SlidersHorizontal, saves: Save, settings: Settings2 };
 /** A tab of an app's page: which, its name, and a count beside it. */
 type PageTab = readonly [keyof typeof TAB_ICONS, string, string | undefined];
 
@@ -1283,7 +1284,7 @@ function AppPage({
   const releases = useReleases(entry, site);
   const { own, refresh } = useOwnFeedback(entry, site);
   const { user } = useAccount();
-  const [tab, setTab] = useState<"overview" | "media" | "releases" | "feedback" | "discussions" | "computer" | "saves">(
+  const [tab, setTab] = useState<"overview" | "media" | "releases" | "feedback" | "discussions" | "computer" | "saves" | "settings">(
     at && "releases" in at ? "releases" : at && "feedback" in at ? "feedback" : at && "discussions" in at ? "discussions" : "overview",
   );
   // Another tab: its content keeps the last one's height until it has come (nothing loading in it, and no longer
@@ -1348,9 +1349,12 @@ function AppPage({
   const overviewTab: PageTab = ["overview", t({ message: "Overview", comment: "Tab of an app's page" }), undefined];
   const computerTab: PageTab = ["computer", t({ message: "Manage", comment: "Tab of an app's page: its shortcuts, setup and place in the library" }), undefined];
   const savesTab: PageTab[] = install && savesOn(config.os) ? [["saves", t({ message: "Saves", comment: "Tab of an installed app's page: its save backups" }), undefined]] : [];
+  // The game's own settings, where its setup file lists some (port-settings.tsx).
+  const portSettings = usePortSettings(entry, install);
+  const settingsTab: PageTab[] = portSettings.view ? [["settings", t({ message: "Settings", comment: "Tab of an app's page: the game's own settings, from its setup file" }), undefined]] : [];
   // One the player added has no site page, so only its README and what this computer has of it, each a tab as a
   // catalog app's are; a local app has no README, so no tabs.
-  const ownTabs: PageTab[] = [...(isLocal(entry.id) ? [] : [overviewTab]), ...(item || install ? [computerTab] : []), ...savesTab];
+  const ownTabs: PageTab[] = [...(isLocal(entry.id) ? [] : [overviewTab]), ...(item || install ? [computerTab] : []), ...settingsTab, ...savesTab];
   const siteTabs: PageTab[] = [
     overviewTab,
     ...(media.length ? [["media", t({ message: "Media", comment: "Tab of an app's page, with its videos" }), String(media.length)] as const] : []),
@@ -1358,6 +1362,7 @@ function AppPage({
     ["feedback", t`Player feedback`, String(said)],
     ["discussions", t({ message: "Discussions", comment: "Tab on an app's page: players' threads about it" }), threads === undefined ? undefined : threads >= 100 ? "100+" : String(threads)],
     ...(item || install ? [computerTab] : []),
+    ...settingsTab,
     ...savesTab,
   ];
   const tabs = site ? siteTabs : ownTabs.length > 1 ? ownTabs : [];
@@ -1783,6 +1788,7 @@ function AppPage({
           {tab === "media" && <MediaTab videos={media} slug={entry.slug} />}
           {tab === "releases" && <ReleasesTab entry={entry} detail={detail} history={history} checking={checking} openVersion={at && "releases" in at ? at.releases : undefined} />}
           {(tabs.length ? tab === "computer" : true) && computer}
+          {tab === "settings" && settingsTab.length > 0 && <PortSettingsTab entry={entry} state={portSettings} />}
           {tab === "saves" && savesTab.length > 0 && <SavesTab entry={entry} />}
           {tab === "discussions" && <DiscussionsTab entryId={entry.id} />}
           {tab === "feedback" && (

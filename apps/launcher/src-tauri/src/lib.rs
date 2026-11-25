@@ -19,6 +19,7 @@ mod mods;
 mod move_journal;
 mod msi;
 mod own_copy;
+mod port_config;
 mod port_setup;
 mod picker;
 mod provider_http;
@@ -539,7 +540,7 @@ fn target(data: &Data, folder: &str, dir: Option<String>, preferred: &[String], 
     let windows_paths = OS == "linux" && (program != exe || steam_proton);
     let (mut copy_args, mut copy_env) = launch::copy_words(copies, windows_paths);
     // Then what the port's own setup file starts its program with (port_setup.rs).
-    if let Some(words) = app_folder.as_deref().and_then(|d| port_setup::read(d, setup_file).and_then(|m| port_setup::start_words(&m, d, &exe, windows_paths))) {
+    if let Some(words) = app_folder.as_deref().and_then(|d| port_setup::read(d, setup_file).and_then(|m| port_setup::start_words(&m, d, &exe, windows_paths, &port_config::picks(&data.0, d)))) {
         copy_args.extend(words.args);
         copy_env.extend(words.env);
     }
@@ -632,6 +633,13 @@ fn start(
     // Named for the app, and not started again under one that's already running.
     let already = id.as_ref().is_some_and(|id| app.state::<Running>().has(id));
     let log = game_log::GameLog::new(&data.0, id.as_deref().unwrap_or(folder), !already);
+    // The values the port's own setup file asks for in its settings files (port_config.rs), before it reads them. Not
+    // under a copy already running, which may be writing them itself.
+    if let Some(d) = app_folder.as_deref().filter(|_| !already) {
+        if let Some(m) = port_setup::read(d, launch.setup_file.as_deref()).filter(|m| port_setup::starts(m, d, &target.exe)) {
+            port_config::at_start(&m, d, OS == "linux" && (target.program != target.exe || target.steam_proton));
+        }
+    }
     let spawned: std::io::Result<session::Started> = sandbox::check(&program)
         .and_then(|_| {
             sandbox::game(command)
@@ -2003,6 +2011,27 @@ async fn place_copy(app: tauri::AppHandle, folder: String, dir: Option<String>, 
     .map_err(|e| e.to_string())?
 }
 
+/// What the Settings tab shows for a port whose own setup file has settings (port_config.rs): None when it has none
+/// Quiver can show. `setup_file` is the catalog's copy of the file, for an app folder without one.
+#[tauri::command]
+async fn port_settings(data: State<'_, Data>, folder: String, dir: Option<String>, wine: bool, setup_file: Option<String>) -> Result<Option<port_config::View>, String> {
+    let app = app_dir(&data, &folder, dir)?;
+    let Some(m) = port_setup::read(&app, setup_file.as_deref()) else { return Ok(None) };
+    Ok(port_config::view(&m, &app, wine, &port_config::picks(&data.0, &app)))
+}
+
+/// The player changed a setting on the Settings tab: written to the port's settings file, or kept for Play's
+/// command line. What the tab shows after it.
+#[tauri::command]
+async fn set_port_setting(data: State<'_, Data>, folder: String, dir: Option<String>, wine: bool, setup_file: Option<String>, id: String, pick: port_config::Pick) -> Result<Option<port_config::View>, String> {
+    let app = app_dir(&data, &folder, dir)?;
+    let m = port_setup::read(&app, setup_file.as_deref()).ok_or("This app's setup file is gone.")?;
+    let mut picks = port_config::picks(&data.0, &app);
+    port_config::set(&m, &app, wine, &mut picks, &id, pick)?;
+    port_config::save_picks(&data.0, &app, picks.clone())?;
+    Ok(port_config::view(&m, &app, wine, &picks))
+}
+
 /// Whether the player's copy is still where the app reads it.
 #[tauri::command]
 fn copy_present(data: State<'_, Data>, folder: String, dir: Option<String>, wine: bool, file: own_copy::SetupFile, path: String) -> bool {
@@ -2941,6 +2970,8 @@ pub fn run() {
             check_copy,
             place_copy,
             copy_present,
+            port_settings,
+            set_port_setting,
             copy_in_place,
             android_app_gone,
             file_kinds,

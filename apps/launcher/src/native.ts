@@ -628,5 +628,40 @@ export const native = {
   copyInPlace: (folder: string, dir: string | undefined, wine: boolean, file: SetupFile) => invoke<string | null>("copy_in_place", { folder, dir, wine, file }),
   copyPresent: (folder: string, dir: string | undefined, wine: boolean, file: SetupFile, path: string) =>
     invoke<boolean>("copy_present", { folder, dir, wine, file, path }),
+  /** What a port's Settings tab shows, from its own setup file (port_config.rs); null when it has nothing to show. */
+  portSettings: (folder: string, dir: string | undefined, wine: boolean, setupFile: string | undefined) =>
+    invoke<PortSettings | null>("port_settings", { folder, dir, wine, setupFile }),
+  /** Changes one of a port's settings; what the tab shows after. */
+  setPortSetting: (folder: string, dir: string | undefined, wine: boolean, setupFile: string | undefined, id: string, pick: PortPick) =>
+    invoke<PortSettings | null>("set_port_setting", { folder, dir, wine, setupFile, id, pick }),
   onCopyProgress: (handler: (p: CopyProgress) => void) => listen<CopyProgress>("copy-progress", (e) => handler(e.payload)),
+};
+
+/** A port setting's new value: a choice by its place in the list, or a slider's number. */
+export type PortPick = { choice: number } | { value: number };
+
+/** One row of a port's Settings tab (port_config.rs's Shown). */
+export type PortSetting = {
+  id: string;
+  label: string;
+  help: string | null;
+  group: string | null;
+  advanced: boolean;
+  /** False while the setting only applies to another value of some other setting: shown greyed out. */
+  enabled: boolean;
+  /** The other setting and choice it's used with, as [label, choice], when the file says. */
+  needs: [string, string] | null;
+  /** Passed on the command line at Play, not written to a file. */
+  commandLine: boolean;
+  choices: string[] | null;
+  chosen: number | null;
+  /** What the file has, when it's none of the choices. */
+  other: string | null;
+  slider: { min: number; max: number; step: number; value: number | null; text: string | null } | null;
+};
+
+export type PortSettings = {
+  settings: PortSetting[];
+  /** Settings files that couldn't be read: their settings aren't shown. */
+  unreadable: string[];
 };
