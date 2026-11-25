@@ -144,7 +144,7 @@ export function Setup({ onClose, onSignIn }: { onClose: (brought: boolean) => vo
 }
 
 /**
- * The first step: a word from Quiver's developer on what Quiver Launcher 4 is to someone who knows 3 (rebuilt, the
+ * The first step: a word from the Quiver team on what Quiver Launcher 4 is to someone who knows 3 (rebuilt, the
  * same things and some more, some of it in new places), then what the setup is, and the language.
  */
 function Welcome() {
@@ -154,7 +154,7 @@ function Welcome() {
         <Trans>Quiver Launcher is one place to find, install, update and play the games and apps people release on GitHub, GitLab, Codeberg and other sites, such as modern ports (source ports and recompilations) and fan projects.</Trans>
       </p>
       <p>
-        <Trans>Quiver Launcher 4 has been rebuilt from the ground up. I've tried to make sure it does everything Quiver Launcher 3 did, with some extras:</Trans>
+        <Trans>Quiver Launcher 4 has been rebuilt from the ground up. We've tried to make sure it does everything Quiver Launcher 3 did, with some extras:</Trans>
       </p>
       <FeatureTour />
       <p>

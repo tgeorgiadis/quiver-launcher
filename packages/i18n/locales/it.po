@@ -5773,8 +5773,8 @@ msgid "Quiver Launcher 3's folder"
 msgstr "Cartella di Quiver Launcher 3"
 
 #: ../../apps/launcher/src/setup.tsx
-msgid "Quiver Launcher 4 has been rebuilt from the ground up. I've tried to make sure it does everything Quiver Launcher 3 did, with some extras:"
-msgstr "Quiver Launcher 4 è stato ricostruito da zero. Ho cercato di fargli fare tutto ciò che faceva Quiver Launcher 3, con qualche extra:"
+msgid "Quiver Launcher 4 has been rebuilt from the ground up. We've tried to make sure it does everything Quiver Launcher 3 did, with some extras:"
+msgstr "Quiver Launcher 4 è stato ricostruito da zero. Abbiamo cercato di fargli fare tutto ciò che faceva Quiver Launcher 3, con qualche extra:"
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Quiver Launcher 4's folder"

@@ -5773,8 +5773,8 @@ msgid "Quiver Launcher 3's folder"
 msgstr "Quiver Launcher 3 的資料夾"
 
 #: ../../apps/launcher/src/setup.tsx
-msgid "Quiver Launcher 4 has been rebuilt from the ground up. I've tried to make sure it does everything Quiver Launcher 3 did, with some extras:"
-msgstr "Quiver Launcher 4 是從頭重新打造的。我盡力讓它能做到 Quiver Launcher 3 能做的一切，並增加了一些新功能："
+msgid "Quiver Launcher 4 has been rebuilt from the ground up. We've tried to make sure it does everything Quiver Launcher 3 did, with some extras:"
+msgstr "Quiver Launcher 4 是從頭重新打造的。我們盡力讓它能做到 Quiver Launcher 3 能做的一切，並增加了一些新功能："
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Quiver Launcher 4's folder"
