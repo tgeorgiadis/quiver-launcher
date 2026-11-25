@@ -35,11 +35,12 @@ const showMoreBelow = (below) =>
     const area = document.querySelector(".shell > main");
     area.scrollTop += document.querySelector(".more").getBoundingClientRect().top - area.getBoundingClientRect().bottom - below;
     [...document.querySelectorAll(".discover ~ * article .card-open")].at(-1).focus({ preventScroll: true });
+    return Math.round(document.querySelector(".more").getBoundingClientRect().top - area.getBoundingClientRect().bottom);
   }, below);
 
 test("the next page is asked for before Show more is on the screen", async () => {
   const asked = nextPages();
-  await showMoreBelow(1000);
+  assert.ok((await showMoreBelow(1000)) > 900, "the page scrolled to there, well past the 600 pixels it loads ahead");
   await page.waitForTimeout(500);
   assert.equal(nextPages(), asked, "not while the end is far off");
   await showMoreBelow(300);
@@ -57,7 +58,7 @@ test("asking for the next page doesn't hold the stick's scrolling up", async () 
     await route.continue();
   });
   // Far enough from the end that the stick scrolls a while before the next page is asked for.
-  await showMoreBelow(1000);
+  assert.ok((await showMoreBelow(1000)) > 900, "the page scrolled to there, well past the 600 pixels it loads ahead");
   await page.waitForTimeout(500);
   // How the page keeps up: a message to itself, sent again as each arrives, gets through between whatever else it
   // does. One render of the whole page (the shelves, every card so far) from when the next page is asked for to the
