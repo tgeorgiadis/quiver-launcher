@@ -71,7 +71,7 @@ type View =
   | { kind: "app"; entry: Entry; at?: PageAt }
   | { kind: "game"; game: GameLink }
   | { kind: "downloads" }
-  | { kind: "settings"; section?: "library" | "copies" | "cloud" | "updates" }
+  | { kind: "settings"; section?: "library" | "copies" | "cloud" | "updates"; anchor?: "v3" }
   | { kind: "community" }
   | { kind: "discussion"; id: string };
 const viewKey = (v: View) => (v.kind === "app" ? `app:${v.entry.id}` : v.kind === "game" ? `game:${v.game.slug}` : v.kind === "discussion" ? `discussion:${v.id}` : v.kind);
@@ -333,7 +333,7 @@ export function App() {
                 ) : view.kind === "downloads" ? (
                   <DownloadsPage back={backFrom(i)} onBack={goBack} onOpen={openApp} action={downloadAction} />
                 ) : view.kind === "settings" ? (
-                  <SettingsPage back={backFrom(i)} onBack={goBack} onRunSetup={() => setSettingUp(true)} onOpen={openApp} start={view.section} />
+                  <SettingsPage back={backFrom(i)} onBack={goBack} onRunSetup={() => setSettingUp(true)} onOpen={openApp} start={view.section} anchor={view.anchor} />
                 ) : view.kind === "community" ? (
                   <CommunityPage back={backFrom(i)} onBack={goBack} />
                 ) : view.kind === "discussion" ? (
@@ -359,14 +359,8 @@ export function App() {
             <UpdateBanner />
             {/* The updates waiting: the library's to offer, not Browse's; in TV mode, the Downloads button's count says so. */}
             {strip && tab === "library" && !tv && <DownloadsStrip onOpen={openDownloads} active={false} />}
-            {/* Finishing an import shows the library, under whatever page is open. */}
-            <OldLibrary
-              onDone={() => {
-                setTab("library");
-                // Back from the page shows the library from its top, not where Browse was scrolled.
-                covered.current[0] = { y: 0, focus: null };
-              }}
-            />
+            {/* Bringing over Quiver Launcher 3: Settings has what comes and the choices it takes. */}
+            <OldLibrary onOpen={() => open({ kind: "settings", section: "library", anchor: "v3" })} />
             {/* Once, for a player set up before Game copies: where their ROMs and disc images are. */}
             <GameCopiesNotice onOpen={() => open({ kind: "settings", section: "copies" })} />
             {/* Once, for a player set up before there was a choice: how apps update. */}

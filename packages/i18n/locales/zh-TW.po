@@ -303,16 +303,8 @@ msgid "{count, plural, one {# app hidden} other {# apps hidden}}"
 msgstr "{count, plural, one {隱藏了 # 個應用程式} other {隱藏了 # 個應用程式}}"
 
 #: ../../apps/launcher/src/old-library.tsx
-msgid "{count, plural, one {# app, already installed.} other {# apps, all already installed.}}"
-msgstr "{count, plural, one {# 個應用程式已安裝。} other {# 個應用程式均已安裝。}}"
-
-#: ../../apps/launcher/src/old-library.tsx
 msgid "{count, plural, one {# app, already installed} other {# apps, all already installed}}"
 msgstr "{count, plural, other {# 個應用程式，均已安裝}}"
-
-#: ../../apps/launcher/src/old-library.tsx
-msgid "{count, plural, one {# app, not installed yet. If you already installed it somewhere else, show Quiver the folder.} other {# apps, none installed yet. If you already installed them somewhere else, show Quiver the folder.}}"
-msgstr "{count, plural, one {# 個應用程式尚未安裝。如果你已在其他位置安裝，請向 Quiver 指定其資料夾。} other {# 個應用程式均尚未安裝。如果你已在其他位置安裝，請向 Quiver 指定它們的資料夾。}}"
 
 #: ../../apps/launcher/src/old-library.tsx
 msgid "{count, plural, one {# app, not installed yet} other {# apps, none installed yet}}"
@@ -321,10 +313,6 @@ msgstr "{count, plural, other {# 個應用程式，尚未安裝}}"
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "{count, plural, one {# app} other {# apps}}"
 msgstr "{count, plural, other {# 個應用程式}}"
-
-#: ../../apps/launcher/src/old-library.tsx
-msgid "{count, plural, one {# app} other {# apps}}, {installed, plural, one {# already installed.} other {# already installed.}}"
-msgstr "{count, plural, one {# 個應用程式} other {# 個應用程式}}，{installed, plural, one {其中 # 個已安裝。} other {其中 # 個已安裝。}}"
 
 #: ../../apps/launcher/src/old-library.tsx
 msgid "{count, plural, one {# app} other {# apps}}, {installed, plural, one {# already installed} other {# already installed}}"
@@ -354,6 +342,10 @@ msgstr "{count, plural, other {已選擇 # 個}}"
 #: ../../apps/launcher/src/old-library.tsx
 msgid "{count, plural, one {Add # app} other {Add # apps}}"
 msgstr "{count, plural, one {新增 # 個應用程式} other {新增 # 個應用程式}}"
+
+#: ../../apps/launcher/src/old-library.tsx
+msgid "{count, plural, one {Bring your app over from Quiver Launcher 3?} other {Bring your # apps over from Quiver Launcher 3?}}"
+msgstr "{count, plural, other {要從 Quiver Launcher 3 匯入你的 # 個應用程式嗎？}}"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "{count, plural, one {Install # app to} other {Install # apps to}}"
@@ -635,6 +627,10 @@ msgstr "{n, plural, other {將 # 個新增到遊戲庫}}"
 #: ../../apps/launcher/src/browse-ticking.tsx
 msgid "{n, plural, one {Install #} other {Install #}}"
 msgstr "{n, plural, other {安裝 # 個}}"
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "{n} of {total}"
+msgstr "第 {n} 頁，共 {total} 頁"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "{name} (this computer)"
@@ -1011,34 +1007,6 @@ msgstr "<0>*</0> 代表任意文字，<1>?</1> 代表一個字元，需符合整
 msgid "<0>/…/</0> is a regular expression: <1>/^game-(win|linux)/</1>"
 msgstr "<0>/…/</0> 是正規表示式：<1>/^game-(win|linux)/</1>"
 
-#: ../../apps/launcher/src/setup.tsx
-msgid "<0>Easy setup:</0> for apps that support it, you only provide your ROM or disc image, which Quiver finds in the folders you set up"
-msgstr "<0>輕鬆設定：</0>對於支援此功能的應用程式，你只需提供 ROM 或光碟映像，Quiver 會在你設定的資料夾中找到它"
-
-#: ../../apps/launcher/src/setup.tsx
-msgid "<0>Language support:</0> ten languages to choose from"
-msgstr "<0>語言支援：</0>十種語言可選"
-
-#: ../../apps/launcher/src/setup.tsx
-msgid "<0>Shared playlists:</0> share your playlists, and add other people's that stay synced"
-msgstr "<0>共享播放清單：</0>分享你的播放清單，也可以加入別人的播放清單並保持同步"
-
-#: ../../apps/launcher/src/setup.tsx
-msgid "<0>Sign in</0> with the same account as the website, to sync your library (apps and playlists), share feedback and report issues without leaving Quiver"
-msgstr "使用與網站相同的帳號<0>登入</0>，即可同步遊戲庫（應用程式和播放清單），並直接在 Quiver 中提供意見和回報問題"
-
-#: ../../apps/launcher/src/setup.tsx
-msgid "<0>Simpler protection:</0> get updates right away, or wait 48 hours in case a release is harmful, which gives the Quiver team time to withdraw it"
-msgstr "<0>更簡單的保護：</0>立即取得更新，或等待 48 小時以防某個版本有害，讓 Quiver 團隊有時間撤回它"
-
-#: ../../apps/launcher/src/setup.tsx
-msgid "<0>TV mode:</0> a full-screen launcher for a controller"
-msgstr "<0>電視模式：</0>用控制器操作的全螢幕啟動器"
-
-#: ../../apps/launcher/src/setup.tsx
-msgid "<0>Two library views:</0> List, inspired by Steam, and Grid, with a range of options for box art, covers, icons and what each app shows, and your playlists along the top or in a side panel"
-msgstr "<0>兩種遊戲庫檢視：</0>受 Steam 啟發的清單，以及格狀排列，提供多種選項來顯示盒裝封面、封面、圖示和每個應用程式顯示的內容；播放清單可放在頂部或側邊面板"
-
 #: ../../apps/launcher/src/custom-art.tsx
 msgid "A cover's address follows your account. The other pictures, and any from a file, stay on this computer."
 msgstr "封面圖片的地址與你的帳戶繫結。其他圖片以及從檔案新增的圖片僅儲存在此電腦上。"
@@ -1062,6 +1030,10 @@ msgstr "Quiver 儲存的檔案已丟失。"
 #: ../../apps/launcher/src/own.tsx
 msgid "A folder you fill yourself"
 msgstr "由你自行填充的資料夾"
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "A full-screen launcher made for playing with a controller from the couch."
+msgstr "專為在沙發上用控制器遊玩而設計的全螢幕啟動器。"
 
 #: ../../apps/launcher/src/correction.tsx
 msgid "A maintainer looked at the problem you reported on {sent} and left the page as it is."
@@ -1781,7 +1753,6 @@ msgstr "封面圖"
 msgid "Box art address"
 msgstr "封面圖地址"
 
-#: ../../apps/launcher/src/old-library.tsx
 #: ../../apps/launcher/src/setup.tsx
 msgid "Bring your apps over from Quiver Launcher 3?"
 msgstr "要將你的應用程式從 Quiver Launcher 3 轉移過來嗎？"
@@ -1916,7 +1887,9 @@ msgstr "卡片大小"
 msgid "Card style"
 msgstr "卡片樣式"
 
+#. What a screen reader calls the setup's slides of new features
 #. What the featured apps across the top of Browse are, for screen readers
+#: ../../apps/launcher/src/setup.tsx
 #: ../ui/src/discover.tsx
 msgid "carousel"
 msgstr "輪播圖"
@@ -2328,6 +2301,7 @@ msgstr "關閉到系統托盤（Quiver Launcher 會繼續執行並更新應用�
 #: ../../apps/launcher/src/cloud-saves-page.tsx
 #: ../../apps/launcher/src/saves-tab.tsx
 #: ../../apps/launcher/src/settings-page.tsx
+#: ../../apps/launcher/src/setup.tsx
 msgid "Cloud saves"
 msgstr "雲端存檔"
 
@@ -2899,6 +2873,7 @@ msgstr "每個應用程式都會在該位置擁有自己的資料夾，後續更
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/browse-cards.ts
 #: ../../apps/launcher/src/correction.tsx
+#: ../../apps/launcher/src/setup.tsx
 #: ../ui/src/index.tsx
 msgid "Easy setup"
 msgstr "輕鬆設定"
@@ -3102,6 +3077,10 @@ msgstr "適用於包含多個主機遊戲的資料夾。"
 msgid "For an app the catalog doesn't have. It's yours alone; to add one for everyone, suggest it on quiverlauncher.com."
 msgstr "適用於目錄中沒有的應用程式。此應用程式僅供你自己使用；若要為所有人新增應用程式，請在 quiverlauncher.com 上提交建議。"
 
+#: ../../apps/launcher/src/setup.tsx
+msgid "For apps that support it, you only provide your ROM or disc image, and Quiver finds it in the folders you set up."
+msgstr "對於支援此功能的應用程式，你只需提供 ROM 或光碟映像，Quiver 會在你設定的資料夾中找到它。"
+
 #: ../../apps/launcher/src/cache.ts
 msgid "For archiving only. Every version of every app can need terabytes of storage and a very long time to download."
 msgstr "僅供封存。每個應用程式的每個版本可能需要數 TB 的儲存空間和很長的下載時間。"
@@ -3224,6 +3203,10 @@ msgstr "常規"
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Get Quiver Launcher"
 msgstr "獲取 Quiver Launcher"
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "Get updates right away, or wait 48 hours in case a release is harmful, which gives the Quiver team time to withdraw it."
+msgstr "立即取得更新，或等待 48 小時以防某個版本有害，讓 Quiver 團隊有時間撤回它。"
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Getting ready…"
@@ -4208,6 +4191,10 @@ msgstr "清單"
 msgid "List width"
 msgstr "清單寬度"
 
+#: ../../apps/launcher/src/setup.tsx
+msgid "List, inspired by Steam, and Grid, with box art, covers or icons, and your playlists along the top or in a side panel."
+msgstr "受 Steam 啟發的清單，以及顯示盒裝封面、封面或圖示的格狀排列；播放清單可放在頂部或側邊面板。"
+
 #: ../../apps/launcher/src/discussions.tsx
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Load more"
@@ -4763,6 +4750,10 @@ msgstr "立即更新到最新版本"
 msgid "Next"
 msgstr "下一步"
 
+#: ../../apps/launcher/src/setup.tsx
+msgid "Next feature"
+msgstr "下一個功能"
+
 #: ../ui/src/discover.tsx
 msgid "Next featured app"
 msgstr "下一個精選應用程式"
@@ -5174,7 +5165,6 @@ msgstr "提供它們"
 
 #. Accept the usage data notice
 #: ../../apps/launcher/src/App.tsx
-#: ../../apps/launcher/src/old-library.tsx
 #: ../../apps/launcher/src/telemetry-ui.tsx
 msgid "OK"
 msgstr "確定"
@@ -5246,6 +5236,11 @@ msgstr "開啟 Quiver Launcher"
 #: ../../apps/launcher/src/cloud-saves-page.tsx
 msgid "Open save folder"
 msgstr "開啟存檔資料夾"
+
+#. Banner button that opens Settings where a Quiver Launcher 3 library is brought over
+#: ../../apps/launcher/src/old-library.tsx
+msgid "Open Settings"
+msgstr "開啟設定"
 
 #: ../../apps/launcher/src/saves-tab.tsx
 msgid "Open the folder to check. If the app saves somewhere else, choose that folder."
@@ -5572,6 +5567,10 @@ msgstr "按下要使用的按鍵，或按 Esc 取消。"
 msgid "Preview"
 msgstr "預覽"
 
+#: ../../apps/launcher/src/setup.tsx
+msgid "Previous feature"
+msgstr "上一個功能"
+
 #: ../ui/src/discover.tsx
 msgid "Previous featured app"
 msgstr "上一個精選應用程式"
@@ -5837,6 +5836,10 @@ msgstr "Quiver 需要目錄才能知道它們的系統。連上網路後請再�
 #: ../../apps/launcher/src/saves-tab.tsx
 msgid "Quiver saw the app save here."
 msgstr "Quiver 發現應用程式在此處存檔。"
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "Quiver speaks ten languages. Choose yours below."
+msgstr "Quiver 支援十種語言。請在下方選擇你的語言。"
 
 #. Tag after the name of someone who runs Quiver
 #: ../../apps/launcher/src/discussions.tsx
@@ -6620,6 +6623,10 @@ msgstr "分享反饋 →"
 msgid "Share how it ran"
 msgstr "分享執行體驗"
 
+#: ../../apps/launcher/src/setup.tsx
+msgid "Share your playlists, and add other people's that stay synced."
+msgstr "分享你的播放清單，也可以加入別人的播放清單並保持同步。"
+
 #: ../../apps/launcher/src/library.tsx
 msgid "Shared playlist"
 msgstr "共享播放清單"
@@ -6627,6 +6634,10 @@ msgstr "共享播放清單"
 #: ../../apps/launcher/src/library.tsx
 msgid "Shared playlist link"
 msgstr "共享播放清單連結"
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "Shared playlists"
+msgstr "共享播放清單"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Shortcuts"
@@ -6819,6 +6830,10 @@ msgstr "側邊面板"
 msgid "Sign in"
 msgstr "登入"
 
+#: ../../apps/launcher/src/setup.tsx
+msgid "Sign in and sync"
+msgstr "登入並同步"
+
 #: ../../apps/launcher/src/cloud-saves-page.tsx
 #: ../../apps/launcher/src/saves-tab.tsx
 msgid "Sign in to keep your saves with your Quiver account, so they follow you to another computer."
@@ -6869,6 +6884,10 @@ msgid "Signed out. Apps installed on this computer stay in your library; sign in
 msgstr "已登出。此電腦上安裝的應用程式仍會保留在你的遊戲庫中；登入後即可檢視其他內容。"
 
 #: ../../apps/launcher/src/setup.tsx
+msgid "Simpler protection"
+msgstr "更簡單的保護"
+
+#: ../../apps/launcher/src/setup.tsx
 msgid "Skip setup"
 msgstr "跳過設定"
 
@@ -6876,6 +6895,11 @@ msgstr "跳過設定"
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Skip this update"
 msgstr "跳過此次更新"
+
+#. What a screen reader calls one of the setup's slides of new features
+#: ../../apps/launcher/src/setup.tsx
+msgid "slide"
+msgstr "投影片"
 
 #. Library card size
 #: ../../apps/launcher/src/view.ts
@@ -7180,6 +7204,10 @@ msgstr "告訴 Quiver 你把遊戲副本存放在哪裡，Quiver 會為你查詢
 #: ../../apps/launcher/src/App.tsx
 msgid "Tell the maintainers which file is for which system"
 msgstr "告訴維護者哪個檔案適用於哪個系統"
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "Ten languages"
+msgstr "十種語言"
 
 #. The platform the player tried the app on
 #: ../../apps/launcher/src/feedback.tsx
@@ -7744,12 +7772,17 @@ msgstr "為 {largestName} 關閉雲端存檔"
 #. Setting: the launcher's larger, full-screen look for a controller
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/settings-page.tsx
+#: ../../apps/launcher/src/setup.tsx
 msgid "TV mode"
 msgstr "電視模式"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "TV mode: for a controller, the couch and a Steam Deck"
 msgstr "電視模式：適用於遊戲控制器、沙發和 Steam Deck"
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "Two library views"
+msgstr "兩種遊戲庫檢視"
 
 #. Controller hint: what Confirm does on a text field
 #: ../../apps/launcher/src/spatial.ts
@@ -8089,6 +8122,10 @@ msgstr "使用目錄中的名稱"
 #: ../../apps/launcher/src/App.tsx
 msgid "Use the catalog's name and artwork"
 msgstr "使用目錄中的名稱和插畫"
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "Use the same account as the website to sync your apps and playlists, share feedback and report issues without leaving Quiver."
+msgstr "使用與網站相同的帳號同步你的應用程式和播放清單，並直接在 Quiver 中提供意見和回報問題。"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Use the saves in my sync folder"
@@ -8598,6 +8635,10 @@ msgstr "你在 Quiver Launcher 3 中的應用程式已加入遊戲庫"
 msgid "Your save backups go here from now on, after you play."
 msgstr ""
 
+#: ../../apps/launcher/src/setup.tsx
+msgid "Your saves are backed up each time you play, and when you sign in they follow you to your other computers."
+msgstr "每次遊玩後都會備份你的存檔，登入後存檔會跟著你到其他電腦上。"
+
 #: ../../apps/launcher/src/store.tsx
 msgid "Your saves from {device} were put in place from your sync folder. The saves that were here are backed up."
 msgstr ""
@@ -8611,7 +8652,3 @@ msgstr "已換上來自 {device} 的存檔。原本在這裡的存檔已備份�
 #: ../../apps/launcher/src/tag-settings.tsx
 msgid "Your tags"
 msgstr "你的標籤"
-
-#: ../../apps/launcher/src/old-library.tsx
-msgid "Your tags, filters and hidden apps will be imported too."
-msgstr "你的標籤、篩選條件和隱藏的應用程式也會一併匯入。"

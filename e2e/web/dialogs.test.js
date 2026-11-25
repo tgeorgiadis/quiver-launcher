@@ -200,11 +200,11 @@ test("the first start's Quiver Launcher 3 step says what comes over, then offers
   try {
     const { page } = first;
     const setup = page.getByRole("dialog", { name: "Set up Quiver Launcher" });
-    await setup.getByRole("button", { name: "Next" }).click();
+    await setup.getByRole("button", { name: "Next", exact: true }).click();
     // Where apps install comes first, with the one folder: the rest of Settings' apps folders isn't here.
     await setup.getByRole("heading", { name: "Where apps install" }).waitFor();
     assert.equal(await setup.getByText("Ask where to install each app").count(), 0);
-    await setup.getByRole("button", { name: "Next" }).click();
+    await setup.getByRole("button", { name: "Next", exact: true }).click();
     await setup.getByRole("heading", { name: "Bring your apps over from Quiver Launcher 3?" }).waitFor();
     const brings = await setup.getByRole("list", { name: "What comes over" }).innerText();
     assert.match(brings, /3 apps, 1 already installed/);
@@ -230,6 +230,36 @@ test("the first start's Quiver Launcher 3 step says what comes over, then offers
     await setup.getByRole("button", { name: /Keep them there for now/ }).waitFor();
     await setup.getByRole("button", { name: /Move them now/ }).click();
     await setup.getByText(/Moved 1 app into Quiver's apps folder/).waitFor();
+    assert.deepEqual(first.errors, []);
+  } finally {
+    await first.close();
+  }
+});
+
+test("the welcome's new features are slides: arrows and dots pick one, and they move on by themselves until one's picked", async () => {
+  const first = await openApp({ state: { settings: { setupDone: false } } });
+  try {
+    const { page } = first;
+    const tour = page.getByRole("region", { name: "New in Quiver Launcher 4" });
+    const shown = () => tour.locator(".tour-slide[data-shown] h3").innerText();
+    await tour.waitFor();
+    assert.equal(await shown(), "Cloud saves");
+    assert.equal(await tour.locator(".tour-slide").count(), 8);
+    // Only the one shown is read out, and only its controls are reachable.
+    assert.equal(await tour.locator('.tour-slide:not([aria-hidden="true"])').count(), 1);
+    await first.until(async () => (await shown()) !== "Cloud saves", 9000);
+    assert.equal(await shown(), "Sign in and sync", "the next on its own after a while");
+    await tour.getByRole("button", { name: "Previous feature" }).click();
+    assert.equal(await shown(), "Cloud saves");
+    await tour.getByRole("button", { name: "Previous feature" }).click();
+    assert.equal(await shown(), "Ten languages", "round from the first to the last");
+    await tour.getByRole("button", { name: "TV mode" }).click();
+    assert.equal(await shown(), "TV mode");
+    assert.equal(await tour.getByRole("button", { name: "TV mode" }).getAttribute("aria-current"), "true");
+    await page.mouse.move(0, 0);
+    await page.getByRole("dialog", { name: "Set up Quiver Launcher" }).getByRole("button", { name: "Next", exact: true }).focus();
+    await pause(7000);
+    assert.equal(await shown(), "TV mode", "picked, it stays");
     assert.deepEqual(first.errors, []);
   } finally {
     await first.close();

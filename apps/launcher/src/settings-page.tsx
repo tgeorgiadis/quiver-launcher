@@ -77,6 +77,7 @@ export function SettingsPage({
   onRunSetup,
   onOpen,
   start,
+  anchor,
 }: {
   back: string;
   onBack: () => void;
@@ -84,6 +85,8 @@ export function SettingsPage({
   /** An app's page, from the download cache's selected titles. */
   onOpen: (entry: Entry) => void;
   start?: Section;
+  /** A part of the section to show: "v3", bringing over a Quiver Launcher 3 library (the library's banner). */
+  anchor?: "v3";
 }) {
   const sideBySide = useSideBySide();
   const { config } = useLauncher();
@@ -147,7 +150,7 @@ export function SettingsPage({
             {section === "general" ? (
               <GeneralSettings onRunSetup={onRunSetup} />
             ) : section === "library" ? (
-              <LibrarySettings />
+              <LibrarySettings v3={anchor === "v3"} />
             ) : section === "apps" ? (
               <>
                 <AppsFolder />
@@ -360,7 +363,7 @@ export function LanguageSetting() {
 }
 
 /** How the library looks, as in its View menu, and Browse's cards; which platforms' apps it shows, the player's tags, importing a Quiver Launcher 3 one, and restoring a backup. */
-function LibrarySettings() {
+function LibrarySettings({ v3 }: { v3?: boolean }) {
   const { config } = useLauncher();
   return (
     <>
@@ -379,7 +382,7 @@ function LibrarySettings() {
         <PlatformChoice />
       </section>
       <TagSettings />
-      <FindOldLibrary />
+      <FindOldLibrary shown={v3} />
       <section className="settings-section" aria-label={t`Restore from backup`}>
         <h3>
           <Trans>Restore from backup</Trans>

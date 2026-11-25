@@ -9,7 +9,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
-import { Check } from "lucide-react";
+import { Bug, ChevronLeft, ChevronRight, CircleCheck, Clock3, Cloud, Disc3, Download, FolderSearch, Gamepad2, Languages, Laptop, ListVideo, Maximize, MessageSquare, Monitor, RefreshCw, Save, Share2, ShieldCheck, Sofa, Sparkles, Tv, UserRound, Users, type LucideIcon } from "lucide-react";
 import { useLauncher, type Settings } from "./store";
 import { useAccount } from "./account";
 import { AppsFolder, LanguageSetting, MoveOldApps } from "./settings-page";
@@ -148,29 +148,6 @@ export function Setup({ onClose, onSignIn }: { onClose: (brought: boolean) => vo
  * same things and some more, some of it in new places), then what the setup is, and the language.
  */
 function Welcome() {
-  const extras = [
-    <Trans>
-      <strong>Sign in</strong> with the same account as the website, to sync your library (apps and playlists), share feedback and report issues without leaving Quiver
-    </Trans>,
-    <Trans>
-      <strong>Easy setup:</strong> for apps that support it, you only provide your ROM or disc image, which Quiver finds in the folders you set up
-    </Trans>,
-    <Trans>
-      <strong>Simpler protection:</strong> get updates right away, or wait 48 hours in case a release is harmful, which gives the Quiver team time to withdraw it
-    </Trans>,
-    <Trans>
-      <strong>Two library views:</strong> List, inspired by Steam, and Grid, with a range of options for box art, covers, icons and what each app shows, and your playlists along the top or in a side panel
-    </Trans>,
-    <Trans>
-      <strong>TV mode:</strong> a full-screen launcher for a controller
-    </Trans>,
-    <Trans>
-      <strong>Shared playlists:</strong> share your playlists, and add other people's that stay synced
-    </Trans>,
-    <Trans>
-      <strong>Language support:</strong> ten languages to choose from
-    </Trans>,
-  ];
   return (
     <>
       <p>
@@ -179,13 +156,7 @@ function Welcome() {
       <p>
         <Trans>Quiver Launcher 4 has been rebuilt from the ground up. I've tried to make sure it does everything Quiver Launcher 3 did, with some extras:</Trans>
       </p>
-      <ul className="old-library-brings setup-extras" aria-label={t`New in Quiver Launcher 4`}>
-        {extras.map((extra, i) => (
-          <li key={i}>
-            <Check size={15} aria-hidden="true" /> <span>{extra}</span>
-          </li>
-        ))}
-      </ul>
+      <FeatureTour />
       <p>
         <Trans>Some things look and work differently now. Take a moment to find your way around.</Trans>
       </p>
@@ -194,6 +165,166 @@ function Welcome() {
       </p>
       <LanguageSetting />
     </>
+  );
+}
+
+type Feature = { key: string; title: string; text: string; art: ReactNode };
+
+/** A picture for a feature: its icon large, with smaller ones round it for what it does. */
+const art = (Main: LucideIcon, around: LucideIcon[]) => (
+  <>
+    <span className="tour-main">
+      <Main size={46} strokeWidth={1.6} />
+    </span>
+    {around.map((Icon, i) => (
+      <span key={i} className={`tour-around tour-around-${i}`}>
+        <Icon size={20} />
+      </span>
+    ))}
+  </>
+);
+
+/** What's new in Quiver Launcher 4, a slide at a time, each with a picture. */
+function features(): Feature[] {
+  return [
+    { key: "cloud", title: t`Cloud saves`, text: t`Your saves are backed up each time you play, and when you sign in they follow you to your other computers.`, art: art(Cloud, [Save, Laptop, Monitor]) },
+    { key: "account", title: t`Sign in and sync`, text: t`Use the same account as the website to sync your apps and playlists, share feedback and report issues without leaving Quiver.`, art: art(UserRound, [RefreshCw, MessageSquare, Bug]) },
+    { key: "easy", title: t`Easy setup`, text: t`For apps that support it, you only provide your ROM or disc image, and Quiver finds it in the folders you set up.`, art: art(Disc3, [FolderSearch, Sparkles, CircleCheck]) },
+    {
+      key: "protection",
+      title: t`Simpler protection`,
+      text: t`Get updates right away, or wait 48 hours in case a release is harmful, which gives the Quiver team time to withdraw it.`,
+      art: (
+        <>
+          {art(ShieldCheck, [Download, Users])}
+          <span className="tour-hours" aria-hidden="true">
+            <Clock3 size={14} /> 48h
+          </span>
+        </>
+      ),
+    },
+    {
+      key: "views",
+      title: t`Two library views`,
+      text: t`List, inspired by Steam, and Grid, with box art, covers or icons, and your playlists along the top or in a side panel.`,
+      art: (
+        <>
+          <span className="tour-list">
+            {[0, 1, 2, 3].map((i) => (
+              <span key={i}>
+                <i />
+                <b />
+              </span>
+            ))}
+          </span>
+          <span className="tour-grid">
+            {[0, 1, 2, 3, 4, 5].map((i) => (
+              <i key={i} />
+            ))}
+          </span>
+        </>
+      ),
+    },
+    { key: "tv", title: t`TV mode`, text: t`A full-screen launcher made for playing with a controller from the couch.`, art: art(Tv, [Gamepad2, Sofa, Maximize]) },
+    { key: "playlists", title: t`Shared playlists`, text: t`Share your playlists, and add other people's that stay synced.`, art: art(ListVideo, [Share2, Users, RefreshCw]) },
+    {
+      key: "languages",
+      title: t`Ten languages`,
+      text: t`Quiver speaks ten languages. Choose yours below.`,
+      art: (
+        <>
+          {art(Languages, [])}
+          {/* Each in itself, so no translation. */}
+          {["Deutsch", "Français", "한국어", "Español", "中文", "Русский"].map((name, i) => (
+            <span key={name} className={`tour-word tour-word-${i}`} lang={["de", "fr", "ko", "es", "zh", "ru"][i]}>
+              {name}
+            </span>
+          ))}
+        </>
+      ),
+    },
+  ];
+}
+
+/** How long a slide shows before the next, while nobody's looking at it or has picked one. */
+const TOUR_STEP = 6000;
+
+/**
+ * Quiver Launcher 4's new features as slides: a picture, a name and a line each, one at a time. Moves on by itself until
+ * the player picks one (an arrow, a dot or a swipe), and holds while the pointer or the focus is on it; not at all for a
+ * player who'd rather have less motion. Every slide is laid in the same place, so the tallest sets the height and
+ * nothing below jumps.
+ */
+function FeatureTour() {
+  const slides = features();
+  const total = slides.length;
+  const [at, setAt] = useState(0);
+  const [picked, setPicked] = useState(false);
+  const [held, setHeld] = useState(false);
+  const still = useRef(window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false);
+  const go = (i: number) => {
+    setPicked(true);
+    setAt((i + total) % total);
+  };
+  useEffect(() => {
+    if (picked || held || still.current) return;
+    const timer = window.setTimeout(() => setAt((i) => (i + 1) % total), TOUR_STEP);
+    return () => window.clearTimeout(timer);
+  }, [at, picked, held, total]);
+  const swipe = useRef<number | null>(null);
+  const n = at + 1;
+  return (
+    <section
+      className="tour"
+      aria-roledescription={t({ message: "carousel", comment: "What a screen reader calls the setup's slides of new features" })}
+      aria-label={t`New in Quiver Launcher 4`}
+      onPointerEnter={(e) => e.pointerType === "mouse" && setHeld(true)}
+      onPointerLeave={() => setHeld(false)}
+      onFocus={() => setHeld(true)}
+      onBlur={(e) => !e.currentTarget.contains(e.relatedTarget as Node | null) && setHeld(false)}
+      onPointerDown={(e) => (swipe.current = e.clientX)}
+      onPointerUp={(e) => {
+        const from = swipe.current;
+        swipe.current = null;
+        if (from === null || Math.abs(e.clientX - from) < 40) return;
+        go(at + (e.clientX < from ? 1 : -1));
+      }}
+    >
+      <div className="tour-slides" aria-live={picked ? "polite" : "off"}>
+        {slides.map((slide, i) => (
+          <div
+            key={slide.key}
+            className="tour-slide"
+            data-feature={slide.key}
+            data-shown={i === at || undefined}
+            role="group"
+            aria-roledescription={t({ message: "slide", comment: "What a screen reader calls one of the setup's slides of new features" })}
+            aria-label={t`${n} of ${total}`}
+            aria-hidden={i !== at || undefined}
+            inert={i !== at || undefined}
+          >
+            <div className="tour-art" aria-hidden="true">
+              {slide.art}
+            </div>
+            <h3>{slide.title}</h3>
+            <p>{slide.text}</p>
+          </div>
+        ))}
+      </div>
+      <div className="tour-nav">
+        <button className="icon" aria-label={t`Previous feature`} title={t`Previous feature`} onClick={() => go(at - 1)}>
+          <ChevronLeft size={18} />
+        </button>
+        <div className="tour-dots">
+          {slides.map((slide, i) => (
+            <button key={slide.key} className="tour-dot" aria-label={slide.title} title={slide.title} aria-current={i === at || undefined} onClick={() => go(i)} />
+          ))}
+        </div>
+        <button className="icon" aria-label={t`Next feature`} title={t`Next feature`} onClick={() => go(at + 1)}>
+          <ChevronRight size={18} />
+        </button>
+      </div>
+    </section>
   );
 }
 
