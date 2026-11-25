@@ -18,6 +18,7 @@ mod mods;
 mod move_journal;
 mod msi;
 mod own_copy;
+mod port_setup;
 mod picker;
 mod provider_http;
 #[cfg_attr(target_os = "android", allow(dead_code))]
@@ -447,6 +448,7 @@ fn present_app_dir(data: &Data, folder: &str, dir: Option<String>) -> Result<Pat
 /// What starts an installed app: its program, or Wine (on Linux) or `open` (a macOS .app) with it.
 /// `program` is one the player picked: exactly that file, never a guess.
 fn target(data: &Data, folder: &str, dir: Option<String>, preferred: &[String], wine: bool, program: Option<String>, options: &launch::LaunchOptions) -> Result<shortcut::Target, String> {
+    let app_folder = app_dir(data, folder, dir.clone()).ok();
     let (exe, wine) = match (&options.executable, program) {
         // The program the player chose in Launch options.
         // A full path is one anywhere, such as a game an installer in the app's folder put on another drive: it starts
@@ -529,10 +531,17 @@ fn target(data: &Data, folder: &str, dir: Option<String>, preferred: &[String], 
         None => (exe.clone(), vec![], false),
     };
     let copies = &options.copies;
+    let setup_file = options.setup_file.as_deref();
     let mut options = launch::parse(options.command.as_deref().unwrap_or_default())?;
     // The player's own copies of the game, as the catalog says to give them (own_copy.rs), before their own options.
     // Through Wine or Proton (Quiver's or Steam's), the game reads a Windows path.
-    let (copy_args, copy_env) = launch::copy_words(copies, OS == "linux" && (program != exe || steam_proton));
+    let windows_paths = OS == "linux" && (program != exe || steam_proton);
+    let (mut copy_args, mut copy_env) = launch::copy_words(copies, windows_paths);
+    // Then what the port's own setup file starts its program with (port_setup.rs).
+    if let Some(words) = app_folder.as_deref().and_then(|d| port_setup::read(d, setup_file).and_then(|m| port_setup::start_words(&m, d, &exe, windows_paths))) {
+        copy_args.extend(words.args);
+        copy_env.extend(words.env);
+    }
     options.after.splice(0..0, copy_args);
     options.env.splice(0..0, copy_env);
     // `open` keeps the arguments it's given for itself unless they follow --args.

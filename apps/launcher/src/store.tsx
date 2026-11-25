@@ -26,6 +26,7 @@ import { artFile, artFiles, isArtAddress, type ArtSlot, type Pictures } from "./
 import { followTheme, type Theme } from "./theme";
 import type { LibraryView } from "./view";
 import { nearestInterfaceSize, pageZoom } from "./zoom";
+import { setupFileText } from "./port-setup";
 import { copiesNeeded, launchCopies } from "./own-copy";
 import { reportSaveLocations, reportSaveWarning, savesChanged, savesOf, savesOn } from "./saves";
 import { reportMissedPrograms, startPatterns } from "./start-programs";
@@ -3113,12 +3114,15 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       if (savesOn(config.os)) await native.savesWatch(savesOf(id, { ...install, program }, catalog[id])).catch(() => {});
       // The catalog's programs as they are now: a fix to them reaches this app without an update.
       const patterns = program || launch?.executable ? install.executables : startPatterns(install, entry, config.os);
+      // What the port's own setup file starts its program with, for a catalog app whose folder holds none (port-setup.ts).
+      const setupFile = entry?.slug && config.os !== "android" && config.os !== "ios" ? await setupFileText(client, entry.slug) : undefined;
+      const starting = setupFile ? { ...launch, setupFile } : launch;
       // From a shortcut, the shortcut starts it, so Steam ties its overlay, controls and Stop to the game; a window a
       // shortcut's Quiver showed for a question goes, so the game is in front.
       if (shortcut?.hidden) await native.shortcutWindow(false).catch(() => {});
       const started = shortcut
-        ? native.shortcutStart(shortcut.request, id, install.folder, install.dir, patterns, Boolean(install.wine), program, launch, presence)
-        : native.launch(id, install.folder, install.dir, patterns, Boolean(install.wine), program, launch, presence);
+        ? native.shortcutStart(shortcut.request, id, install.folder, install.dir, patterns, Boolean(install.wine), program, starting, presence)
+        : native.launch(id, install.folder, install.dir, patterns, Boolean(install.wine), program, starting, presence);
       await started.then(
         () => {
           musicForGame();
