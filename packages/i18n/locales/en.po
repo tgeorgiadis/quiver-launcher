@@ -5796,8 +5796,8 @@ msgid "Quiver Launcher hit a problem"
 msgstr "Quiver Launcher hit a problem"
 
 #: ../../apps/launcher/src/setup.tsx
-msgid "Quiver Launcher is one place to find, install, update and play the games and apps people release on GitHub and GitLab, such as modern ports (source ports and recompilations) and fan projects."
-msgstr "Quiver Launcher is one place to find, install, update and play the games and apps people release on GitHub and GitLab, such as modern ports (source ports and recompilations) and fan projects."
+msgid "Quiver Launcher is one place to find, install, update and play the games and apps people release on GitHub, GitLab, Codeberg and other sites, such as modern ports (source ports and recompilations) and fan projects."
+msgstr "Quiver Launcher is one place to find, install, update and play the games and apps people release on GitHub, GitLab, Codeberg and other sites, such as modern ports (source ports and recompilations) and fan projects."
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/detail.tsx
