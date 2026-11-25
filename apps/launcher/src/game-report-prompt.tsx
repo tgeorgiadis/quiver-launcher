@@ -3,7 +3,7 @@
  * last wrote, and for a catalog app offers to send Quiver a report (with error reports on). Nothing goes to the app's
  * developer from here: Quiver staff pass on what's theirs to fix. The player can copy the details for themselves.
  * An app that closed after asking for a key had a message for the player (game-report.ts's ownMessage): that's
- * shown as the app's own words, with no report to send.
+ * shown as the app's own words, with no report to send. So is what the app's setup file says about the code it closed with.
  */
 import { useEffect, useMemo, useState } from "react";
 import { Check, CircleCheck, Copy, Send, TriangleAlert } from "lucide-react";
@@ -42,7 +42,9 @@ function GameFailed({ failure, entry, onClose }: { failure: GameFailure; entry: 
 
   const app = entry.projectName;
   const ref = appRef(entry.id, entry.slug);
-  const message = log ? ownMessage(failure, log) : null;
+  // What the app's setup file says about the code it closed with, or what it printed before waiting for a key.
+  const explained = failure.kind === "message" ? failure.line : null;
+  const message = explained ?? (log ? ownMessage(failure, log) : null);
   const details = useMemo<ReportDetails>(() => {
     const os = config.steamDeck ? "Steam Deck" : (OS_NAMES as Record<string, string>)[config.os] ?? config.os;
     return {
@@ -95,7 +97,15 @@ function GameFailed({ failure, entry, onClose }: { failure: GameFailure; entry: 
         {message ? (
           <>
             <p>
-              <Trans>It closed right after starting. This is what it said:</Trans>
+              {explained ? (
+                code ? (
+                  <Trans>It closed with exit code {code}, which its developer explains like this:</Trans>
+                ) : (
+                  <Trans>It closed, and its developer explains why like this:</Trans>
+                )
+              ) : (
+                <Trans>It closed right after starting. This is what it said:</Trans>
+              )}
             </p>
             <pre className="game-failed-message" tabIndex={0}>
               {message}

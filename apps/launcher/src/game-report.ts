@@ -11,8 +11,11 @@ export type GameFailure = {
   id: string | null;
   /** The install's folder name. */
   folder: string;
-  /** It closed with an error right after starting, or the system ended it. */
-  kind: "early" | "crashed";
+  /**
+   * It closed with an error right after starting, the system ended it, or it closed with a code its setup file
+   * explains (port_setup.rs): then `line` is what the file says about that code.
+   */
+  kind: "early" | "crashed" | "message";
   /** What it closed with: its exit code, or on Windows the crash's status. */
   code: number | null;
   /** What kind of crash, in a few plain English words. */
@@ -51,6 +54,7 @@ export function codeText(code: number, os: Os) {
 /** What happened, in one English line: what groups the same failure together. */
 export function failureLine(failure: GameFailure, os: Os) {
   const code = failure.code === null ? null : codeText(failure.code, os);
+  if (failure.kind === "message") return `Closed with a message${code ? ` (exit code ${code})` : ""}`;
   if (failure.kind === "crashed") return `Crashed${failure.what ? `: ${failure.what}` : ""}${code ? ` (${code})` : ""}`;
   return `Closed right after starting${code ? ` (exit code ${code})` : ""}`;
 }

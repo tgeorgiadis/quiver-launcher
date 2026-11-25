@@ -3820,6 +3820,14 @@ msgstr "Is for"
 msgid "It closed right after starting. This is what it said:"
 msgstr "It closed right after starting. This is what it said:"
 
+#: ../../apps/launcher/src/game-report-prompt.tsx
+msgid "It closed with exit code {code}, which its developer explains like this:"
+msgstr "It closed with exit code {code}, which its developer explains like this:"
+
+#: ../../apps/launcher/src/game-report-prompt.tsx
+msgid "It closed, and its developer explains why like this:"
+msgstr "It closed, and its developer explains why like this:"
+
 #: ../../apps/launcher/src/feedback.tsx
 msgid "It didn't run"
 msgstr "It didn't run"
