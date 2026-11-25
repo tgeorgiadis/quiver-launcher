@@ -236,3 +236,25 @@ test("A on a dropdown on a page opens its options, and B closes them without goi
   assert.equal(await where(), "page: Settings", "and the page stays");
   assert.match(await reach.focused(app), /^select /);
 });
+
+test("the Quiver Launcher 3 banner is a line, and its button opens Settings on bringing the library over", async () => {
+  const root = "/home/player/Downloads/QuiverLauncher3";
+  const v3Library = { folder: root, apps: [{ name: "Test Port", provider: "github", repository: "quiver/test-port", dir: `${root}/Apps/TestPort` }, { name: "Other Port", provider: "github", repository: "quiver/other-port" }] };
+  const s2 = await openApp({ state: { settings: { setupDone: true, launched: true }, v3Library } });
+  try {
+    const { page: p } = s2;
+    const banner = p.locator(".old-library-notice");
+    assert.equal(await banner.locator("p").innerText(), "Bring your 2 apps over from Quiver Launcher 3?");
+    assert.equal(await banner.getByRole("button").count(), 2, "Open Settings and Not now, nothing more");
+    await banner.getByRole("button", { name: "Open Settings" }).click();
+    const section = p.getByRole("region", { name: "Quiver Launcher 3" });
+    await section.getByText(`Found in ${root}. This comes over:`).waitFor();
+    await s2.until(() => p.evaluate(() => document.activeElement?.textContent === "Add 2 apps"));
+    assert.equal(await p.locator(".old-library-notice").count(), 0, "answered: the banner's gone");
+    await section.getByRole("button", { name: "Add 2 apps" }).click();
+    await section.getByText(/Your apps are in your library/).waitFor();
+    assert.deepEqual(s2.errors, []);
+  } finally {
+    await s2.close();
+  }
+});

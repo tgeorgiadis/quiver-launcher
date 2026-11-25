@@ -5,7 +5,7 @@
  * played from where 3.x put them.
  */
 import { useEffect, useRef, useState } from "react";
-import { ArchiveRestore, Check, FolderInput, LoaderCircle, X } from "lucide-react";
+import { ArchiveRestore, Check, FolderInput, LoaderCircle, SettingsIcon, X } from "lucide-react";
 import { plural, t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import { bringsAlong, useLauncher } from "./store";
@@ -58,24 +58,6 @@ const installedIn = (library: V3Library) => library.apps.filter((a) => a.dir).le
  * not being found isn't a sign of it, as most of those were never installed; an app's own page can locate one that was.
  */
 const looksMoved = (library: V3Library) => library.apps.some((a) => !a.dir) && (Boolean(library.moved) || !installedIn(library));
-
-/** What's in a library and what becomes of it: how many apps, how many are installed, and what else is imported. */
-function offer(library: V3Library) {
-  const count = library.apps.length;
-  const installed = installedIn(library);
-  const missing = count - installed;
-  const { tagged, filters, hidden } = bringsAlong(library);
-  const parts = [
-    !installed
-      ? t`${plural(count, { one: "# app, not installed yet. If you already installed it somewhere else, show Quiver the folder.", other: "# apps, none installed yet. If you already installed them somewhere else, show Quiver the folder." })}`
-      : !missing
-        ? t`${plural(count, { one: "# app, already installed.", other: "# apps, all already installed." })}`
-        : t`${plural(count, { one: "# app", other: "# apps" })}, ${plural(installed, { one: "# already installed.", other: "# already installed." })}`,
-    installed > 0 && looksMoved(library) && t`${plural(missing, { one: "If you moved the other one, show Quiver the folder.", other: "If you moved the others, show Quiver the folder." })}`,
-    (tagged > 0 || filters > 0 || hidden > 0) && t`Your tags, filters and hidden apps will be imported too.`,
-  ];
-  return parts.filter(Boolean).join(" ");
-}
 
 /**
  * What comes over from a library, a line each, before it's imported: its apps and how many are installed, then each
@@ -192,31 +174,14 @@ function ChooseFolder({ library, onClick }: { library: V3Library; onClick: () =>
 }
 
 /**
- * Offers to import the Quiver Launcher 3 library the launcher found by
- * itself, once: Not now, here or in the setup, leaves it to Settings. A choice
- * of folder only shows when its installs look to have moved. Until it's
- * answered, a first run that found none asks whether there's one to find, such
- * as a portable copy's.
+ * Offers, once, the Quiver Launcher 3 library the launcher found by itself, in a line: `onOpen` opens Settings where
+ * it's brought over (FindOldLibrary), with what comes and the choices it takes. Not now leaves it to Settings too.
+ * Until it's answered, a first run that found none asks whether there's one to find, such as a portable copy's.
  */
-export function OldLibrary({ onDone }: { onDone: () => void }) {
+export function OldLibrary({ onOpen }: { onOpen: () => void }) {
   const { oldLibrary, oldInstalls, answerOldInstalls, config, settings, setSettings } = useLauncher();
-  const { state, start, reset, pictures } = useImport(() => onDone());
-  // One the player pointed at from here.
-  const [picked, setPicked] = useState<V3Library | null>(null);
-  const library = picked ?? oldLibrary;
-  const { choose, problem } = useFolderChoice(library, setPicked);
-  const notNow = () => setSettings((s) => ({ ...s, oldLibraryNoticeSeen: true }));
-  if (Array.isArray(state)) {
-    return state.length ? (
-      <div className="banner" role="status">
-        <p>{notImported(state)}</p>
-        <button onClick={reset}>
-          <Trans>OK</Trans>
-        </button>
-      </div>
-    ) : null;
-  }
-  if (!library && oldInstalls) {
+  const answer = () => setSettings((s) => ({ ...s, oldLibraryNoticeSeen: true }));
+  if (!oldLibrary && oldInstalls) {
     const count = Object.keys(oldInstalls).length;
     return (
       <div className="banner old-library-notice" role="status" aria-label="Quiver Launcher 3">
@@ -231,46 +196,23 @@ export function OldLibrary({ onDone }: { onDone: () => void }) {
       </div>
     );
   }
-  if (!library) {
-    // Quiver Launcher 3 was only ever on computers.
-    if (settings.oldLibraryNoticeSeen || config.os === "android" || config.os === "ios") return null;
-    return (
-      <div className="banner old-library-notice" role="status" aria-label="Quiver Launcher 3">
-        <ArchiveRestore size={18} aria-hidden="true" />
-        <p>{problem ?? t`Coming from Quiver Launcher 3? Show Quiver where its folder is, and your apps will appear here.`}</p>
-        <button className="primary" onClick={choose}>
-          <FolderInput size={15} aria-hidden="true" /> <Trans>Choose my Quiver Launcher 3 folder…</Trans>
-        </button>
-        <button onClick={notNow}>
-          <Trans>Not now</Trans>
-        </button>
-      </div>
-    );
-  }
-  // Starting an import answers it too, so its progress still shows here.
-  if (settings.oldLibraryNoticeSeen && !importing(state)) return null;
+  // Quiver Launcher 3 was only ever on computers.
+  if (oldLibrary === undefined || settings.oldLibraryNoticeSeen || config.os === "android" || config.os === "ios") return null;
+  const count = oldLibrary?.apps.length ?? 0;
   return (
-    <div className="banner old-library-notice">
+    <div className="banner old-library-notice" role="status" aria-label="Quiver Launcher 3">
       <ArchiveRestore size={18} aria-hidden="true" />
       <p>
-        <strong className="old-library-question">{t`Bring your apps over from Quiver Launcher 3?`}</strong>
-        {offer(library)}
-        {problem && <span className="old-library-folder">{problem}</span>}
+        {oldLibrary
+          ? t`${plural(count, { one: "Bring your app over from Quiver Launcher 3?", other: "Bring your # apps over from Quiver Launcher 3?" })}`
+          : t`Coming from Quiver Launcher 3? Show Quiver where its folder is, and your apps will appear here.`}
       </p>
-      {pictures(library, true)}
-      {importing(state) ? (
-        <Importing {...state} />
-      ) : (
-        <>
-          <button className="primary" onClick={() => start(library)}>
-            {importLabel(library.apps.length)}
-          </button>
-          {looksMoved(library) && <ChooseFolder library={library} onClick={choose} />}
-          <button onClick={notNow}>
-            <Trans>Not now</Trans>
-          </button>
-        </>
-      )}
+      <button className="primary" onClick={() => (answer(), onOpen())}>
+        <SettingsIcon size={15} aria-hidden="true" /> <Trans comment="Banner button that opens Settings where a Quiver Launcher 3 library is brought over">Open Settings</Trans>
+      </button>
+      <button onClick={answer}>
+        <Trans>Not now</Trans>
+      </button>
     </div>
   );
 }
@@ -280,21 +222,30 @@ export function OldLibrary({ onDone }: { onDone: () => void }) {
  * portable copy's, or one the player said Not now to: the player points at its
  * folder, sees what's in it and imports it, all in Settings.
  */
-export function FindOldLibrary() {
+export function FindOldLibrary({ shown }: { shown?: boolean }) {
   const { oldLibrary } = useLauncher();
   const { state, start, reset, pictures } = useImport();
-  const [library, setLibrary] = useState<V3Library | null>(null);
+  // One the player pointed at, else the one the launcher found by itself (until it's brought over).
+  const [picked, setPicked] = useState<V3Library | null>(null);
+  const library = picked ?? oldLibrary ?? null;
   const { choose, problem } = useFolderChoice(
     library,
     (found) => {
       reset();
-      setLibrary(found);
+      setPicked(found);
     },
     oldLibrary?.folder,
   );
   const done = Array.isArray(state);
+  // From the library's banner: this section, in view, its main button focused.
+  const section = useRef<HTMLElement>(null);
+  useEffect(() => {
+    if (!shown) return;
+    section.current?.scrollIntoView({ block: "start" });
+    section.current?.querySelector<HTMLElement>("button.primary, button")?.focus({ preventScroll: true });
+  }, [shown]);
   return (
-    <section className="settings-section" aria-label={t`Quiver Launcher 3`}>
+    <section ref={section} className="settings-section" aria-label={t`Quiver Launcher 3`}>
       <h3>
         <Trans>Coming from Quiver Launcher 3?</Trans>
       </h3>

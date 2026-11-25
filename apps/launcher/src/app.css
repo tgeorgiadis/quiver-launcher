@@ -746,9 +746,63 @@ main.app-main { padding: 0 0 40px; }
 .old-library-brings li { display: flex; align-items: flex-start; gap: 6px; }
 .old-library-brings svg { flex: none; margin-top: 2px; color: var(--accent); }
 .old-library-brings li.muted svg { color: var(--muted); }
-/* The welcome's list of what's new (setup.tsx): each line's lead is strong, and a long line wraps under its own text. */
-.setup-extras { gap: 6px; }
-.setup-extras strong { color: var(--strong); }
+/*
+ * The welcome's slides of what's new (setup.tsx's FeatureTour): a picture beside a name and a line, then arrows round
+ * dots. Every slide sits in the same cell, so the tallest sets the height; the one shown fades and slides in.
+ */
+.tour { display: grid; gap: 10px; padding: 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--raised); touch-action: pan-y; user-select: none; }
+.tour-slides { display: grid; }
+.tour-slide { grid-area: 1 / 1; display: grid; grid-template-columns: 210px minmax(0, 1fr); grid-template-rows: auto 1fr; column-gap: 18px; row-gap: 6px; align-content: start; opacity: 0; visibility: hidden; transform: translateX(14px); transition: opacity 0.35s ease, transform 0.35s ease, visibility 0s linear 0.35s; }
+.tour-slide[data-shown] { opacity: 1; visibility: visible; transform: none; transition: opacity 0.35s ease, transform 0.35s ease; }
+.tour-slide h3 { align-self: end; margin: 0; color: var(--strong); font-size: 19px; }
+.tour-slide p { margin: 0; color: var(--text-2); line-height: 1.5; }
+.tour-art { grid-row: 1 / 3; position: relative; height: 150px; overflow: hidden; border-radius: 12px; color: #fff; background: linear-gradient(135deg, var(--tour-a), var(--tour-b)); }
+.tour-art::before { content: ""; position: absolute; inset: 0; background: radial-gradient(circle at 30% 20%, #ffffff40, transparent 55%), radial-gradient(circle at 80% 110%, #00000030, transparent 60%); }
+.tour-main { position: absolute; left: 50%; top: 50%; display: grid; place-items: center; width: 84px; height: 84px; border-radius: 50%; background: #ffffff26; box-shadow: 0 0 0 10px #ffffff12, 0 10px 30px #0003; transform: translate(-50%, -50%); }
+.tour-around { position: absolute; display: grid; place-items: center; width: 38px; height: 38px; border-radius: 11px; background: #ffffff2e; box-shadow: 0 6px 16px #0002; backdrop-filter: blur(2px); }
+.tour-around-0 { left: 14px; top: 14px; transform: rotate(-8deg); }
+.tour-around-1 { right: 14px; top: 22px; transform: rotate(7deg); }
+.tour-around-2 { right: 26px; bottom: 14px; transform: rotate(-5deg); }
+.tour-hours { position: absolute; left: 16px; bottom: 16px; display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 99px; background: #ffffff; color: #0f172a; font-size: 12px; font-weight: 700; }
+.tour-word { position: absolute; padding: 2px 8px; border-radius: 99px; background: #ffffff2e; font-size: 11px; font-weight: 600; white-space: nowrap; }
+.tour-word-0 { left: 10px; top: 14px; }
+.tour-word-1 { right: 10px; top: 20px; }
+.tour-word-2 { left: 14px; top: 62px; }
+.tour-word-3 { right: 8px; top: 92px; }
+.tour-word-4 { left: 26px; bottom: 14px; }
+.tour-word-5 { right: 40px; bottom: 8px; }
+.tour-slide[data-feature="languages"] .tour-main { width: 70px; height: 70px; }
+/* Two library views: a list's rows beside a grid's cards. */
+.tour-list, .tour-grid { position: absolute; top: 22px; bottom: 22px; display: grid; gap: 6px; padding: 8px; border-radius: 9px; background: #ffffff26; box-shadow: 0 8px 22px #0003; }
+.tour-list { left: 14px; width: 78px; grid-auto-rows: 1fr; }
+.tour-list span { display: flex; align-items: center; gap: 5px; }
+.tour-list i { flex: none; width: 12px; height: 12px; border-radius: 3px; background: #fff; }
+.tour-list b { flex: 1; height: 5px; border-radius: 3px; background: #ffffffa0; }
+.tour-grid { right: 14px; width: 92px; grid-template-columns: repeat(3, 1fr); }
+.tour-grid i { border-radius: 4px; background: #ffffffc0; }
+.tour-grid i:nth-child(odd) { background: #ffffff80; }
+/* A colour each, the same in light and dark: the pictures are white on it. */
+.tour-slide[data-feature="cloud"] { --tour-a: #0ea5e9; --tour-b: #4f46e5; }
+.tour-slide[data-feature="account"] { --tour-a: #8b5cf6; --tour-b: #db2777; }
+.tour-slide[data-feature="easy"] { --tour-a: #10b981; --tour-b: #0e7490; }
+.tour-slide[data-feature="protection"] { --tour-a: #f59e0b; --tour-b: #dc2626; }
+.tour-slide[data-feature="views"] { --tour-a: #06b6d4; --tour-b: #2563eb; }
+.tour-slide[data-feature="tv"] { --tour-a: #6366f1; --tour-b: #1e1b4b; }
+.tour-slide[data-feature="playlists"] { --tour-a: #ec4899; --tour-b: #f97316; }
+.tour-slide[data-feature="languages"] { --tour-a: #14b8a6; --tour-b: #7c3aed; }
+.tour-nav { display: flex; align-items: center; justify-content: center; gap: 10px; }
+.tour-nav > button.icon { display: grid; place-items: center; width: 32px; height: 32px; padding: 0; border-radius: 50%; }
+.tour-dots { display: flex; flex-wrap: wrap; justify-content: center; gap: 2px; }
+/* A dot is a 24-pixel target, its dot drawn small inside. */
+.tour .tour-dot { position: relative; width: 24px; height: 24px; padding: 0; border-radius: 50%; background: none; box-shadow: none; }
+.tour .tour-dot::after { content: ""; position: absolute; left: 50%; top: 50%; width: 8px; height: 8px; border-radius: 99px; background: var(--line-strong); transform: translate(-50%, -50%); transition: width 0.25s ease, background 0.25s ease; }
+.tour .tour-dot:hover::after { background: var(--muted); }
+.tour .tour-dot[aria-current]::after { width: 20px; background: var(--accent); }
+@media (max-width: 560px) {
+  .tour-slide { grid-template-columns: minmax(0, 1fr); }
+  .tour-art { grid-row: auto; height: 130px; margin-bottom: 6px; }
+}
+@media (prefers-reduced-motion: reduce) { .tour-slide, .tour-slide[data-shown], .tour .tour-dot::after { transition: none; transform: none; } }
 /* The welcome's own questions, under a line that sets them off from the word on what's new. */
 .setup .setup-questions { margin-top: 4px; padding-top: 16px; border-top: 1px solid var(--line); }
 .old-library-apps { display: grid; gap: 6px; max-height: 220px; overflow: auto; margin: 0; padding: 0; list-style: none; }

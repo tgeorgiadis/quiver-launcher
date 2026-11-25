@@ -303,16 +303,8 @@ msgid "{count, plural, one {# app hidden} other {# apps hidden}}"
 msgstr "{count, plural, one {# app oculta} other {# apps ocultas}}"
 
 #: ../../apps/launcher/src/old-library.tsx
-msgid "{count, plural, one {# app, already installed.} other {# apps, all already installed.}}"
-msgstr "{count, plural, one {# app, ya instalada.} other {# apps, todas ya instaladas.}}"
-
-#: ../../apps/launcher/src/old-library.tsx
 msgid "{count, plural, one {# app, already installed} other {# apps, all already installed}}"
 msgstr "{count, plural, one {# app, ya instalada} other {# apps, todas ya instaladas}}"
-
-#: ../../apps/launcher/src/old-library.tsx
-msgid "{count, plural, one {# app, not installed yet. If you already installed it somewhere else, show Quiver the folder.} other {# apps, none installed yet. If you already installed them somewhere else, show Quiver the folder.}}"
-msgstr "{count, plural, one {# app, aún sin instalar. Si ya la instalaste en otro lugar, muéstrale a Quiver la carpeta.} other {# apps, ninguna instalada aún. Si ya las instalaste en otro lugar, muéstrale a Quiver la carpeta.}}"
 
 #: ../../apps/launcher/src/old-library.tsx
 msgid "{count, plural, one {# app, not installed yet} other {# apps, none installed yet}}"
@@ -321,10 +313,6 @@ msgstr "{count, plural, one {# app, aún no instalada} other {# apps, ninguna in
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "{count, plural, one {# app} other {# apps}}"
 msgstr "{count, plural, one {# app} other {# apps}}"
-
-#: ../../apps/launcher/src/old-library.tsx
-msgid "{count, plural, one {# app} other {# apps}}, {installed, plural, one {# already installed.} other {# already installed.}}"
-msgstr "{count, plural, one {# app} other {# apps}}, {installed, plural, one {# ya instalada.} other {# ya instaladas.}}"
 
 #: ../../apps/launcher/src/old-library.tsx
 msgid "{count, plural, one {# app} other {# apps}}, {installed, plural, one {# already installed} other {# already installed}}"
@@ -354,6 +342,10 @@ msgstr "{count, plural, one {# seleccionada} other {# seleccionadas}}"
 #: ../../apps/launcher/src/old-library.tsx
 msgid "{count, plural, one {Add # app} other {Add # apps}}"
 msgstr "{count, plural, one {Agregar # app} other {Agregar # apps}}"
+
+#: ../../apps/launcher/src/old-library.tsx
+msgid "{count, plural, one {Bring your app over from Quiver Launcher 3?} other {Bring your # apps over from Quiver Launcher 3?}}"
+msgstr "{count, plural, one {¿Traer tu app de Quiver Launcher 3?} other {¿Traer tus # apps de Quiver Launcher 3?}}"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "{count, plural, one {Install # app to} other {Install # apps to}}"
@@ -635,6 +627,10 @@ msgstr "{n, plural, one {Agregar # a la biblioteca} other {Agregar # a la biblio
 #: ../../apps/launcher/src/browse-ticking.tsx
 msgid "{n, plural, one {Install #} other {Install #}}"
 msgstr "{n, plural, one {Instalar #} other {Instalar #}}"
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "{n} of {total}"
+msgstr "{n} de {total}"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "{name} (this computer)"
@@ -1011,34 +1007,6 @@ msgstr "<0>*</0> es cualquier texto y <1>?</1> un carácter, sobre el nombre com
 msgid "<0>/…/</0> is a regular expression: <1>/^game-(win|linux)/</1>"
 msgstr "<0>/…/</0> es una expresión regular: <1>/^game-(win|linux)/</1>"
 
-#: ../../apps/launcher/src/setup.tsx
-msgid "<0>Easy setup:</0> for apps that support it, you only provide your ROM or disc image, which Quiver finds in the folders you set up"
-msgstr "<0>Configuración fácil:</0> en las apps que la admiten, solo aportas tu ROM o imagen de disco, que Quiver encuentra en las carpetas que configures"
-
-#: ../../apps/launcher/src/setup.tsx
-msgid "<0>Language support:</0> ten languages to choose from"
-msgstr "<0>Soporte de idiomas:</0> diez idiomas para elegir"
-
-#: ../../apps/launcher/src/setup.tsx
-msgid "<0>Shared playlists:</0> share your playlists, and add other people's that stay synced"
-msgstr "<0>Playlists compartidas:</0> comparte tus playlists y agrega las de otras personas, que se mantienen sincronizadas"
-
-#: ../../apps/launcher/src/setup.tsx
-msgid "<0>Sign in</0> with the same account as the website, to sync your library (apps and playlists), share feedback and report issues without leaving Quiver"
-msgstr "<0>Inicia sesión</0> con la misma cuenta del sitio web para sincronizar tu biblioteca (apps y playlists), enviar comentarios y reportar problemas sin salir de Quiver"
-
-#: ../../apps/launcher/src/setup.tsx
-msgid "<0>Simpler protection:</0> get updates right away, or wait 48 hours in case a release is harmful, which gives the Quiver team time to withdraw it"
-msgstr "<0>Protección más simple:</0> recibe las actualizaciones de inmediato, o espera 48 horas por si una versión es dañina, lo que le da tiempo al equipo de Quiver para retirarla"
-
-#: ../../apps/launcher/src/setup.tsx
-msgid "<0>TV mode:</0> a full-screen launcher for a controller"
-msgstr "<0>Modo TV:</0> un launcher a pantalla completa para el control"
-
-#: ../../apps/launcher/src/setup.tsx
-msgid "<0>Two library views:</0> List, inspired by Steam, and Grid, with a range of options for box art, covers, icons and what each app shows, and your playlists along the top or in a side panel"
-msgstr "<0>Dos vistas de la biblioteca:</0> Lista, inspirada en Steam, y Cuadrícula, con varias opciones para carátulas, portadas, íconos y lo que muestra cada app, y tus playlists arriba o en un panel lateral"
-
 #: ../../apps/launcher/src/custom-art.tsx
 msgid "A cover's address follows your account. The other pictures, and any from a file, stay on this computer."
 msgstr "La dirección de una portada sigue a tu cuenta. Las demás imágenes, y las que vengan de un archivo, se quedan en esta computadora."
@@ -1062,6 +1030,10 @@ msgstr "Falta un archivo que guarda Quiver."
 #: ../../apps/launcher/src/own.tsx
 msgid "A folder you fill yourself"
 msgstr "Una carpeta que llenas tú"
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "A full-screen launcher made for playing with a controller from the couch."
+msgstr "Un launcher a pantalla completa hecho para jugar con el control desde el sofá."
 
 #: ../../apps/launcher/src/correction.tsx
 msgid "A maintainer looked at the problem you reported on {sent} and left the page as it is."
@@ -1781,7 +1753,6 @@ msgstr "Arte de la caja"
 msgid "Box art address"
 msgstr "Dirección del arte de la caja"
 
-#: ../../apps/launcher/src/old-library.tsx
 #: ../../apps/launcher/src/setup.tsx
 msgid "Bring your apps over from Quiver Launcher 3?"
 msgstr "¿Traes tus apps de Quiver Launcher 3?"
@@ -1916,7 +1887,9 @@ msgstr "Tamaño de las tarjetas"
 msgid "Card style"
 msgstr "Estilo de tarjeta"
 
+#. What a screen reader calls the setup's slides of new features
 #. What the featured apps across the top of Browse are, for screen readers
+#: ../../apps/launcher/src/setup.tsx
 #: ../ui/src/discover.tsx
 msgid "carousel"
 msgstr "carrusel"
@@ -2328,6 +2301,7 @@ msgstr "Cerrar a la bandeja del sistema (Quiver Launcher sigue abierto y actuali
 #: ../../apps/launcher/src/cloud-saves-page.tsx
 #: ../../apps/launcher/src/saves-tab.tsx
 #: ../../apps/launcher/src/settings-page.tsx
+#: ../../apps/launcher/src/setup.tsx
 msgid "Cloud saves"
 msgstr "Partidas en la nube"
 
@@ -2899,6 +2873,7 @@ msgstr "Cada una tendrá su propia carpeta ahí, y las actualizaciones se seguir
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/browse-cards.ts
 #: ../../apps/launcher/src/correction.tsx
+#: ../../apps/launcher/src/setup.tsx
 #: ../ui/src/index.tsx
 msgid "Easy setup"
 msgstr "Configuración fácil"
@@ -3102,6 +3077,10 @@ msgstr "Para una carpeta con juegos de muchas consolas."
 msgid "For an app the catalog doesn't have. It's yours alone; to add one for everyone, suggest it on quiverlauncher.com."
 msgstr "Para una app que el catálogo no tiene. Es solo tuya; para agregar una para todos, sugiérela en quiverlauncher.com."
 
+#: ../../apps/launcher/src/setup.tsx
+msgid "For apps that support it, you only provide your ROM or disc image, and Quiver finds it in the folders you set up."
+msgstr "En las apps que lo admiten, solo aportas tu ROM o imagen de disco, y Quiver la encuentra en las carpetas que configures."
+
 #: ../../apps/launcher/src/cache.ts
 msgid "For archiving only. Every version of every app can need terabytes of storage and a very long time to download."
 msgstr "Solo para archivar. Cada versión de cada app puede necesitar terabytes de almacenamiento y mucho tiempo para descargarse."
@@ -3224,6 +3203,10 @@ msgstr "General"
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Get Quiver Launcher"
 msgstr "Obtener Quiver Launcher"
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "Get updates right away, or wait 48 hours in case a release is harmful, which gives the Quiver team time to withdraw it."
+msgstr "Recibe las actualizaciones de inmediato, o espera 48 horas por si una versión es dañina, lo que le da tiempo al equipo de Quiver para retirarla."
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Getting ready…"
@@ -4208,6 +4191,10 @@ msgstr "Lista"
 msgid "List width"
 msgstr "Ancho de la lista"
 
+#: ../../apps/launcher/src/setup.tsx
+msgid "List, inspired by Steam, and Grid, with box art, covers or icons, and your playlists along the top or in a side panel."
+msgstr "Lista, inspirada en Steam, y Cuadrícula, con carátulas, portadas o íconos, y tus playlists arriba o en un panel lateral."
+
 #: ../../apps/launcher/src/discussions.tsx
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Load more"
@@ -4763,6 +4750,10 @@ msgstr "La más nueva de inmediato"
 msgid "Next"
 msgstr "Siguiente"
 
+#: ../../apps/launcher/src/setup.tsx
+msgid "Next feature"
+msgstr "Función siguiente"
+
 #: ../ui/src/discover.tsx
 msgid "Next featured app"
 msgstr "Siguiente app destacada"
@@ -5174,7 +5165,6 @@ msgstr "Ofrecerlas"
 
 #. Accept the usage data notice
 #: ../../apps/launcher/src/App.tsx
-#: ../../apps/launcher/src/old-library.tsx
 #: ../../apps/launcher/src/telemetry-ui.tsx
 msgid "OK"
 msgstr "OK"
@@ -5246,6 +5236,11 @@ msgstr "Abrir Quiver Launcher"
 #: ../../apps/launcher/src/cloud-saves-page.tsx
 msgid "Open save folder"
 msgstr "Abrir carpeta de partidas guardadas"
+
+#. Banner button that opens Settings where a Quiver Launcher 3 library is brought over
+#: ../../apps/launcher/src/old-library.tsx
+msgid "Open Settings"
+msgstr "Abrir Configuración"
 
 #: ../../apps/launcher/src/saves-tab.tsx
 msgid "Open the folder to check. If the app saves somewhere else, choose that folder."
@@ -5572,6 +5567,10 @@ msgstr "Presiona lo que quieras usar, o Esc para cancelar."
 msgid "Preview"
 msgstr "Vista previa"
 
+#: ../../apps/launcher/src/setup.tsx
+msgid "Previous feature"
+msgstr "Función anterior"
+
 #: ../ui/src/discover.tsx
 msgid "Previous featured app"
 msgstr "App destacada anterior"
@@ -5774,8 +5773,8 @@ msgid "Quiver Launcher 3's folder"
 msgstr "Carpeta de Quiver Launcher 3"
 
 #: ../../apps/launcher/src/setup.tsx
-msgid "Quiver Launcher 4 has been rebuilt from the ground up. I've tried to make sure it does everything Quiver Launcher 3 did, with some extras:"
-msgstr "Quiver Launcher 4 se reconstruyó desde cero. Intenté que haga todo lo que hacía Quiver Launcher 3, con algunos extras:"
+msgid "Quiver Launcher 4 has been rebuilt from the ground up. We've tried to make sure it does everything Quiver Launcher 3 did, with some extras:"
+msgstr "Quiver Launcher 4 se reconstruyó desde cero. Intentamos que haga todo lo que hacía Quiver Launcher 3, con algunos extras:"
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Quiver Launcher 4's folder"
@@ -5798,8 +5797,8 @@ msgid "Quiver Launcher hit a problem"
 msgstr "Quiver Launcher tuvo un problema"
 
 #: ../../apps/launcher/src/setup.tsx
-msgid "Quiver Launcher is one place to find, install, update and play the games and apps people release on GitHub and GitLab, such as modern ports (source ports and recompilations) and fan projects."
-msgstr "Quiver Launcher es un solo lugar para encontrar, instalar, actualizar y jugar los juegos y apps que la gente publica en GitHub y GitLab, como ports modernos (source ports y recompilaciones) y proyectos de fans."
+msgid "Quiver Launcher is one place to find, install, update and play the games and apps people release on GitHub, GitLab, Codeberg and other sites, such as modern ports (source ports and recompilations) and fan projects."
+msgstr "Quiver Launcher es un solo lugar para encontrar, instalar, actualizar y jugar los juegos y apps que la gente publica en GitHub, GitLab, Codeberg y otros sitios, como ports modernos (source ports y recompilaciones) y proyectos de fans."
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/detail.tsx
@@ -5837,6 +5836,10 @@ msgstr "Quiver necesita el catálogo para saber su sistema. Vuelve a intentarlo 
 #: ../../apps/launcher/src/saves-tab.tsx
 msgid "Quiver saw the app save here."
 msgstr "Quiver vio que la app guarda aquí."
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "Quiver speaks ten languages. Choose yours below."
+msgstr "Quiver habla diez idiomas. Elige el tuyo abajo."
 
 #. Tag after the name of someone who runs Quiver
 #: ../../apps/launcher/src/discussions.tsx
@@ -6620,6 +6623,10 @@ msgstr "Compartir opiniones…"
 msgid "Share how it ran"
 msgstr "Compartir cómo funcionó"
 
+#: ../../apps/launcher/src/setup.tsx
+msgid "Share your playlists, and add other people's that stay synced."
+msgstr "Comparte tus playlists y agrega las de otras personas, que se mantienen sincronizadas."
+
 #: ../../apps/launcher/src/library.tsx
 msgid "Shared playlist"
 msgstr "Playlist compartida"
@@ -6627,6 +6634,10 @@ msgstr "Playlist compartida"
 #: ../../apps/launcher/src/library.tsx
 msgid "Shared playlist link"
 msgstr "Enlace de la playlist compartida"
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "Shared playlists"
+msgstr "Playlists compartidas"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Shortcuts"
@@ -6819,6 +6830,10 @@ msgstr "Panel lateral"
 msgid "Sign in"
 msgstr "Iniciar sesión"
 
+#: ../../apps/launcher/src/setup.tsx
+msgid "Sign in and sync"
+msgstr "Inicia sesión y sincroniza"
+
 #: ../../apps/launcher/src/cloud-saves-page.tsx
 #: ../../apps/launcher/src/saves-tab.tsx
 msgid "Sign in to keep your saves with your Quiver account, so they follow you to another computer."
@@ -6869,6 +6884,10 @@ msgid "Signed out. Apps installed on this computer stay in your library; sign in
 msgstr "Sesión cerrada. Las apps instaladas en esta computadora se quedan en tu biblioteca; inicia sesión para ver el resto."
 
 #: ../../apps/launcher/src/setup.tsx
+msgid "Simpler protection"
+msgstr "Protección más simple"
+
+#: ../../apps/launcher/src/setup.tsx
 msgid "Skip setup"
 msgstr "Omitir la configuración inicial"
 
@@ -6876,6 +6895,11 @@ msgstr "Omitir la configuración inicial"
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Skip this update"
 msgstr "Omitir esta actualización"
+
+#. What a screen reader calls one of the setup's slides of new features
+#: ../../apps/launcher/src/setup.tsx
+msgid "slide"
+msgstr "diapositiva"
 
 #. Library card size
 #: ../../apps/launcher/src/view.ts
@@ -7180,6 +7204,10 @@ msgstr "Dile a Quiver dónde guardas tus copias de juegos, y encontrará esta y 
 #: ../../apps/launcher/src/App.tsx
 msgid "Tell the maintainers which file is for which system"
 msgstr "Decirles a los mantenedores qué archivo es para qué sistema"
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "Ten languages"
+msgstr "Diez idiomas"
 
 #. The platform the player tried the app on
 #: ../../apps/launcher/src/feedback.tsx
@@ -7744,12 +7772,17 @@ msgstr "Desactivar las partidas en la nube para {largestName}"
 #. Setting: the launcher's larger, full-screen look for a controller
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/settings-page.tsx
+#: ../../apps/launcher/src/setup.tsx
 msgid "TV mode"
 msgstr "Modo TV"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "TV mode: for a controller, the couch and a Steam Deck"
 msgstr "Modo TV: para un control, el sofá y una Steam Deck"
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "Two library views"
+msgstr "Dos vistas de la biblioteca"
 
 #. Controller hint: what Confirm does on a text field
 #: ../../apps/launcher/src/spatial.ts
@@ -8089,6 +8122,10 @@ msgstr "Usar el nombre del catálogo"
 #: ../../apps/launcher/src/App.tsx
 msgid "Use the catalog's name and artwork"
 msgstr "Usar el nombre y el arte del catálogo"
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "Use the same account as the website to sync your apps and playlists, share feedback and report issues without leaving Quiver."
+msgstr "Usa la misma cuenta del sitio web para sincronizar tus apps y playlists, enviar comentarios y reportar problemas sin salir de Quiver."
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Use the saves in my sync folder"
@@ -8598,6 +8635,10 @@ msgstr "Tus apps de Quiver Launcher 3 están en tu biblioteca"
 msgid "Your save backups go here from now on, after you play."
 msgstr ""
 
+#: ../../apps/launcher/src/setup.tsx
+msgid "Your saves are backed up each time you play, and when you sign in they follow you to your other computers."
+msgstr "Tus partidas guardadas se respaldan cada vez que juegas y, cuando inicias sesión, te siguen a tus otras computadoras."
+
 #: ../../apps/launcher/src/store.tsx
 msgid "Your saves from {device} were put in place from your sync folder. The saves that were here are backed up."
 msgstr ""
@@ -8611,7 +8652,3 @@ msgstr "Se colocaron tus partidas de {device}. Las que estaban aquí quedaron re
 #: ../../apps/launcher/src/tag-settings.tsx
 msgid "Your tags"
 msgstr "Tus etiquetas"
-
-#: ../../apps/launcher/src/old-library.tsx
-msgid "Your tags, filters and hidden apps will be imported too."
-msgstr "También se importarán tus etiquetas, filtros y apps ocultas."
