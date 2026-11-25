@@ -3184,6 +3184,10 @@ msgstr "游戏副本"
 msgid "Game not found"
 msgstr "未找到游戏"
 
+#: ../../apps/launcher/src/port-settings.tsx
+msgid "Game's own"
+msgstr ""
+
 #. A kind of video
 #: ../../apps/launcher/src/media.tsx
 msgid "Gameplay"
@@ -3331,6 +3335,10 @@ msgstr "已从你的游戏库中隐藏"
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Hide"
 msgstr "隐藏"
+
+#: ../../apps/launcher/src/port-settings.tsx
+msgid "Hide advanced options"
+msgstr ""
 
 #. Button: hide every catalog tag on every app
 #: ../../apps/launcher/src/tag-settings.tsx
@@ -5055,6 +5063,10 @@ msgstr "尚未游玩"
 msgid "Not rated yet"
 msgstr "尚未评分"
 
+#: ../../apps/launcher/src/port-settings.tsx
+msgid "Not set"
+msgstr ""
+
 #. On PC specs only the app's developer and the player who shared them can see
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Not shown to other players"
@@ -5178,6 +5190,16 @@ msgstr "每个游戏显示一张卡片"
 #: ../../apps/launcher/src/library.tsx
 msgid "Only hidden apps"
 msgstr "仅显示隐藏的应用"
+
+#. placeholder {0}: s.needs[0]
+#. placeholder {1}: s.needs[1]
+#: ../../apps/launcher/src/port-settings.tsx
+msgid "Only used when {0} is {1}."
+msgstr ""
+
+#: ../../apps/launcher/src/port-settings.tsx
+msgid "Only used with another setting changed."
+msgstr ""
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Only your library shows this name. Its folder keeps the name it has."
@@ -5679,6 +5701,10 @@ msgstr "Quiver 无法打开此音乐文件。它可能已被移动或删除。"
 #: ../../apps/launcher/src/recovery.tsx
 msgid "Quiver couldn't open your library"
 msgstr "Quiver 无法打开你的游戏库"
+
+#: ../../apps/launcher/src/port-settings.tsx
+msgid "Quiver couldn't read {path}, so the settings kept there aren't shown."
+msgstr ""
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Quiver couldn't show that picture. It may have been moved or deleted."
@@ -6580,7 +6606,10 @@ msgstr "设置你的副本"
 msgid "Set up your copy for {name}"
 msgstr "为 {name} 设置你的副本"
 
+#. Tab of an app's page: the game's own settings, from its setup file
+#. Tab of an app's page: the game's own settings, from its setup file
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/port-settings.tsx
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Settings"
 msgstr "设置"
@@ -6666,6 +6695,10 @@ msgstr "有更新时显示横幅"
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Show a picture of your own behind the library's grid. The List layout doesn't show it."
 msgstr "显示一张你自己的图片作为游戏库网格背景。“列表”布局不会显示此图片。"
+
+#: ../../apps/launcher/src/port-settings.tsx
+msgid "Show advanced options"
+msgstr ""
 
 #: ../../apps/launcher/src/announcements-ui.tsx
 msgid "Show again"
@@ -6936,6 +6969,11 @@ msgstr "有人分享了播放列表？粘贴链接即可将其添加到你的游
 #: ../../apps/launcher/src/discussions.tsx
 msgid "Something else"
 msgstr "其他"
+
+#. placeholder {0}: s.other
+#: ../../apps/launcher/src/port-settings.tsx
+msgid "Something else ({0})"
+msgstr ""
 
 #. Label of the library's sort order
 #. Label of the library's sort order
@@ -7487,6 +7525,10 @@ msgstr ""
 
 #: ../../apps/launcher/src/saves-tab.tsx
 msgid "These are my saves"
+msgstr ""
+
+#: ../../apps/launcher/src/port-settings.tsx
+msgid "These are the game's own settings, as its developer lists them. Changes go into its settings file straight away, and changes you make in the game show here once it closes."
 msgstr ""
 
 #: ../../apps/launcher/src/saves-tab.tsx
@@ -8142,6 +8184,10 @@ msgstr "使用系统标题栏（而不是 Quiver 自带的窗口按钮）"
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Use this folder"
 msgstr "使用此文件夹"
+
+#: ../../apps/launcher/src/port-settings.tsx
+msgid "Used when you press Play."
+msgstr ""
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Username"

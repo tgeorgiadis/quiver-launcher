@@ -3184,6 +3184,10 @@ msgstr "게임 사본"
 msgid "Game not found"
 msgstr "게임을 찾을 수 없음"
 
+#: ../../apps/launcher/src/port-settings.tsx
+msgid "Game's own"
+msgstr ""
+
 #. A kind of video
 #: ../../apps/launcher/src/media.tsx
 msgid "Gameplay"
@@ -3331,6 +3335,10 @@ msgstr "라이브러리에서 숨김"
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Hide"
 msgstr "숨기기"
+
+#: ../../apps/launcher/src/port-settings.tsx
+msgid "Hide advanced options"
+msgstr ""
 
 #. Button: hide every catalog tag on every app
 #: ../../apps/launcher/src/tag-settings.tsx
@@ -5055,6 +5063,10 @@ msgstr "아직 플레이 안 함"
 msgid "Not rated yet"
 msgstr "아직 평가 없음"
 
+#: ../../apps/launcher/src/port-settings.tsx
+msgid "Not set"
+msgstr ""
+
 #. On PC specs only the app's developer and the player who shared them can see
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Not shown to other players"
@@ -5178,6 +5190,16 @@ msgstr "게임마다 카드 하나"
 #: ../../apps/launcher/src/library.tsx
 msgid "Only hidden apps"
 msgstr "숨긴 앱만 보기"
+
+#. placeholder {0}: s.needs[0]
+#. placeholder {1}: s.needs[1]
+#: ../../apps/launcher/src/port-settings.tsx
+msgid "Only used when {0} is {1}."
+msgstr ""
+
+#: ../../apps/launcher/src/port-settings.tsx
+msgid "Only used with another setting changed."
+msgstr ""
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Only your library shows this name. Its folder keeps the name it has."
@@ -5679,6 +5701,10 @@ msgstr "Quiver에서 이 음악 파일을 열 수 없습니다. 파일이 이동
 #: ../../apps/launcher/src/recovery.tsx
 msgid "Quiver couldn't open your library"
 msgstr "Quiver가 라이브러리를 열지 못했어요"
+
+#: ../../apps/launcher/src/port-settings.tsx
+msgid "Quiver couldn't read {path}, so the settings kept there aren't shown."
+msgstr ""
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Quiver couldn't show that picture. It may have been moved or deleted."
@@ -6580,7 +6606,10 @@ msgstr "사본 설정"
 msgid "Set up your copy for {name}"
 msgstr "{name} 사본 설정"
 
+#. Tab of an app's page: the game's own settings, from its setup file
+#. Tab of an app's page: the game's own settings, from its setup file
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/port-settings.tsx
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Settings"
 msgstr "설정"
@@ -6666,6 +6695,10 @@ msgstr "업데이트가 준비되면 배너 표시"
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Show a picture of your own behind the library's grid. The List layout doesn't show it."
 msgstr "라이브러리 그리드 뒤에 원하는 이미지를 표시합니다. 목록 레이아웃에서는 표시되지 않습니다."
+
+#: ../../apps/launcher/src/port-settings.tsx
+msgid "Show advanced options"
+msgstr ""
 
 #: ../../apps/launcher/src/announcements-ui.tsx
 msgid "Show again"
@@ -6936,6 +6969,11 @@ msgstr "누군가 재생 목록을 공유했나요? 링크를 붙여 넣어 라�
 #: ../../apps/launcher/src/discussions.tsx
 msgid "Something else"
 msgstr "기타"
+
+#. placeholder {0}: s.other
+#: ../../apps/launcher/src/port-settings.tsx
+msgid "Something else ({0})"
+msgstr ""
 
 #. Label of the library's sort order
 #. Label of the library's sort order
@@ -7487,6 +7525,10 @@ msgstr ""
 
 #: ../../apps/launcher/src/saves-tab.tsx
 msgid "These are my saves"
+msgstr ""
+
+#: ../../apps/launcher/src/port-settings.tsx
+msgid "These are the game's own settings, as its developer lists them. Changes go into its settings file straight away, and changes you make in the game show here once it closes."
 msgstr ""
 
 #: ../../apps/launcher/src/saves-tab.tsx
@@ -8142,6 +8184,10 @@ msgstr "시스템 제목 표시줄 사용(Quiver 자체 창 버튼 대신)"
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Use this folder"
 msgstr "이 폴더 사용"
+
+#: ../../apps/launcher/src/port-settings.tsx
+msgid "Used when you press Play."
+msgstr ""
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Username"

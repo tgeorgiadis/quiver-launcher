@@ -23,6 +23,14 @@ pub struct Manifest {
     /// Exit codes (written as text) and what each means: a message for the player, or "ok" for a normal close.
     #[serde(default)]
     exit_codes: BTreeMap<String, String>,
+    /// Its settings files, what the player can change in them, and their groups (port_config.rs), as written: read
+    /// there one entry at a time, so one Quiver can't use doesn't cost the port its start words.
+    #[serde(default)]
+    pub config: serde_json::Value,
+    #[serde(default)]
+    pub settings: serde_json::Value,
+    #[serde(default)]
+    pub groups: serde_json::Value,
 }
 
 #[derive(Deserialize, Default, Debug)]
@@ -69,7 +77,7 @@ pub struct Words {
 
 /// Whether `exe` is one of the programs the file starts: by its path in the app's folder, or its name. An AppImage
 /// is renamed by downloads and updates, so any AppImage stands for one the file names.
-fn starts(m: &Manifest, app_dir: &Path, exe: &Path) -> bool {
+pub fn starts(m: &Manifest, app_dir: &Path, exe: &Path) -> bool {
     let relative = exe.strip_prefix(app_dir).ok().map(|p| p.to_string_lossy().replace('\\', "/").to_lowercase());
     let name = exe.file_name().map(|n| n.to_string_lossy().to_lowercase()).unwrap_or_default();
     let appimage = name.ends_with(".appimage");
@@ -92,7 +100,7 @@ fn for_game(path: &Path, windows: bool) -> String {
 
 /// The system's folders the file's places name, on this computer. None through Wine or Proton, whose Windows
 /// folders are inside the prefix: an argument naming one is left out there.
-fn place(name: &str, windows: bool) -> Option<PathBuf> {
+pub fn place(name: &str, windows: bool) -> Option<PathBuf> {
     if windows {
         return None;
     }
@@ -107,7 +115,7 @@ fn place(name: &str, windows: bool) -> Option<PathBuf> {
 }
 
 /// `text` with its places filled in; None when it names one Quiver can't give (a player's copy, or a place unknown).
-fn fill(text: &str, app_dir: &Path, windows: bool) -> Option<String> {
+pub fn fill(text: &str, app_dir: &Path, windows: bool) -> Option<String> {
     let mut out = String::new();
     let mut rest = text;
     while let Some(open) = rest.find('{') {
@@ -128,13 +136,13 @@ fn fill(text: &str, app_dir: &Path, windows: bool) -> Option<String> {
 }
 
 /// An argument that carries a player's copy: `{input:game}`, the older `{game}`, or one joined to its flag.
-fn carries_copy(arg: &str) -> bool {
+pub fn carries_copy(arg: &str) -> bool {
     arg.contains("{input:") || arg.contains("{game}")
 }
 
 /// The words for `exe`, when it's one of the programs the file starts (a settings tool the player picked isn't).
 /// `windows`: it runs through Wine or Proton. Makes the `{data}` folder, which the port may expect to be there.
-pub fn start_words(m: &Manifest, app_dir: &Path, exe: &Path, windows: bool) -> Option<Words> {
+pub fn start_words(m: &Manifest, app_dir: &Path, exe: &Path, windows: bool, picks: &crate::port_config::Picks) -> Option<Words> {
     if !starts(m, app_dir, exe) {
         return None;
     }
@@ -150,6 +158,8 @@ pub fn start_words(m: &Manifest, app_dir: &Path, exe: &Path, windows: bool) -> O
             args.push(filled);
         }
     }
+    // Then the command-line settings the player picked on the Settings tab.
+    args.extend(crate::port_config::picked_args(m, app_dir, windows, picks));
     let mut env: Vec<(String, String)> = m
         .start
         .env
@@ -228,7 +238,7 @@ mod tests {
                 "args":["--no-update-check","--iso","{input:game}","--dlc1={input:dlc1}","--data","{data}","{game}","--odd={nope}"],
                 "env":{"GAME_HOME":"{install}/home","GAME_ISO":"{input:game}","PATH":"x"}}}"#,
         );
-        let words = start_words(&m, app, &app.join("bin/Game.exe"), false).unwrap();
+        let words = start_words(&m, app, &app.join("bin/Game.exe"), false, &Default::default()).unwrap();
         let data = app.join(DATA).to_string_lossy().into_owned();
         assert_eq!(words.args, vec!["--no-update-check".to_string(), "--data".into(), data.clone()]);
         assert_eq!(
@@ -242,8 +252,8 @@ mod tests {
         );
         assert!(app.join(DATA).is_dir());
         // By name anywhere in the folder, and not for another program.
-        assert!(start_words(&m, app, &app.join("game"), false).is_some());
-        assert!(start_words(&m, app, &app.join("Settings.exe"), false).is_none());
+        assert!(start_words(&m, app, &app.join("game"), false, &Default::default()).is_some());
+        assert!(start_words(&m, app, &app.join("Settings.exe"), false, &Default::default()).is_none());
     }
 
     #[test]
@@ -263,11 +273,11 @@ mod tests {
     fn any_appimage_stands_for_the_one_named_and_wine_gets_windows_paths() {
         let m = manifest(r#"{"format":1,"start":{"program":["Game-x86_64.AppImage"],"args":["--data={data}","--docs={documents}"]}}"#);
         let app = Path::new("/games/Game");
-        let words = start_words(&m, app, &app.join("Game-1.2-x86_64.AppImage"), false);
+        let words = start_words(&m, app, &app.join("Game-1.2-x86_64.AppImage"), false, &Default::default());
         assert!(words.is_some());
         let m = manifest(r#"{"format":1,"start":{"program":["Game.exe"],"args":["--data={data}","--docs={documents}"]}}"#);
         let dir = tempfile::tempdir().unwrap();
-        let words = start_words(&m, dir.path(), &dir.path().join("Game.exe"), true).unwrap();
+        let words = start_words(&m, dir.path(), &dir.path().join("Game.exe"), true, &Default::default()).unwrap();
         let expected = format!("--data=Z:{}", dir.path().join(DATA).to_string_lossy().replace('/', "\\"));
         if cfg!(unix) {
             assert_eq!(words.args, vec![expected]);
