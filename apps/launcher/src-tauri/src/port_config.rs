@@ -621,9 +621,31 @@ fn open_all(m: &Manifest, app_dir: &Path, wine: bool, unreadable: &mut Vec<Strin
     docs
 }
 
-/// A key's value in a setting's file, or the game's own default for it.
-fn current(doc: Option<&Doc>, s: &Setting, key: &str) -> Option<String> {
-    doc.and_then(|d| d.get(key)).or_else(|| s.defaults.get(key).cloned())
+/// Whether a setting writes `key` in its file.
+fn writes(s: &Setting, key: &str) -> bool {
+    match &s.kind {
+        Kind::Choices(choices) => !s.command_line() && choices.iter().any(|c| c.set.contains_key(key)),
+        Kind::Slider(sl) => !s.command_line() && sl.key.as_deref() == Some(key),
+    }
+}
+
+/// A key's value as the game will read it: what its file has; for a file not there yet, what Play writes into it
+/// first (`new`); else the game's own default, as the setting that writes the key says it (another setting's
+/// `defaults` can't speak for it), or failing that `s`'s own.
+fn current(file: Option<&(Config, Doc)>, s: &Setting, all: &[Setting], key: &str) -> Option<String> {
+    let (config, doc) = match file {
+        Some((c, d)) => (Some(c), Some(d)),
+        None => (None, None),
+    };
+    if let Some(v) = doc.and_then(|d| d.get(key)) {
+        return Some(v);
+    }
+    if let Some(v) = doc.filter(|d| !d.existed).and_then(|_| config?.new.get(key).cloned()) {
+        return Some(v);
+    }
+    let input = if s.command_line() { "main" } else { s.input.as_str() };
+    let owner = if writes(s, key) { Some(s) } else { all.iter().find(|o| o.input == input && writes(o, key)) };
+    owner.and_then(|o| o.defaults.get(key)).or_else(|| s.defaults.get(key)).cloned()
 }
 
 /// The other setting and its choice that make `s` apply, for the player: the first of its `when` keys another
@@ -642,10 +664,10 @@ fn shown(s: &Setting, all: &[Setting], docs: &BTreeMap<String, (Config, Doc)>, p
         None
     } else {
         // A setting in a file Quiver can't reach isn't shown.
-        Some(&docs.get(&s.input)?.1)
+        Some(docs.get(&s.input)?)
     };
-    let when_doc = doc.or_else(|| docs.get("main").map(|(_, d)| d));
-    let enabled = s.when.iter().all(|(k, v)| current(when_doc, s, k).is_some_and(|now| same(&now, v)));
+    let when_doc = doc.or_else(|| docs.get("main"));
+    let enabled = s.when.iter().all(|(k, v)| current(when_doc, s, all, k).is_some_and(|now| same(&now, v)));
     let mut out = Shown {
         id: s.id.clone(),
         label: s.label.clone(),
@@ -672,12 +694,12 @@ fn shown(s: &Setting, all: &[Setting], docs: &BTreeMap<String, (Config, Doc)>, p
                 // The first choice whose keys all match; one that writes nothing stands for "anything else".
                 out.chosen = choices
                     .iter()
-                    .position(|c| !c.set.is_empty() && c.set.iter().all(|(k, v)| current(doc, s, k).is_some_and(|now| same(&now, v))))
+                    .position(|c| !c.set.is_empty() && c.set.iter().all(|(k, v)| current(doc, s, all, k).is_some_and(|now| same(&now, v))))
                     .or_else(|| choices.iter().position(|c| c.set.is_empty()));
                 if out.chosen.is_none() {
                     // What the file has instead, for the keys the choices write.
                     let keys: Vec<&String> = choices.iter().flat_map(|c| c.set.keys()).collect::<std::collections::BTreeSet<_>>().into_iter().collect();
-                    let said: Vec<String> = keys.iter().filter_map(|k| current(doc, s, k)).map(|v| v.trim_matches('"').to_string()).collect();
+                    let said: Vec<String> = keys.iter().filter_map(|k| current(doc, s, all, k)).map(|v| v.trim_matches('"').to_string()).collect();
                     out.other = (!said.is_empty()).then(|| said.join(", "));
                 }
             }
@@ -689,7 +711,7 @@ fn shown(s: &Setting, all: &[Setting], docs: &BTreeMap<String, (Config, Doc)>, p
                     _ => (None, None),
                 }
             } else {
-                let written = sl.key.as_deref().and_then(|k| current(doc, s, k));
+                let written = sl.key.as_deref().and_then(|k| current(doc, s, all, k));
                 let number = written.as_deref().and_then(|w| w.trim().trim_matches(['"', '\'']).parse::<f64>().ok()).filter(|v| v.is_finite());
                 (number, written.map(|w| w.trim_matches('"').to_string()))
             };
@@ -905,7 +927,7 @@ mod tests {
             { "id": "fullscreen", "label": "Fullscreen", "group": "Video",
               "choices": [{ "label": "Off", "set": { "Video/fullscreen": "0" } }, { "label": "On", "set": { "Video/fullscreen": "1" } }],
               "defaults": { "Video/fullscreen": "1" } },
-            { "id": "size", "label": "Window size", "when": { "Video/fullscreen": "0" },
+            { "id": "size", "label": "Window size", "when": { "Video/fullscreen": "0" }, "defaults": { "Video/fullscreen": "0" },
               "choices": [{ "label": "720p", "set": { "Video/w": "1280", "Video/h": "720" } }, { "label": "1080p", "set": { "Video/w": "1920", "Video/h": "1080" } }] },
             { "id": "sens", "label": "Sensitivity", "slider": { "key": "Input/sens", "min": 0.1, "max": 5, "step": 0.05, "format": "%.2f" }, "defaults": { "Input/sens": "1.0" } },
             { "id": "log", "label": "Log", "in": "args", "group": "Debug",
@@ -927,7 +949,7 @@ mod tests {
         assert_eq!(ids, ["fullscreen", "size", "sens", "log", "fov"], "bindings, broken and unplaced settings are left out");
         let by = |id: &str| v.settings.iter().find(|s| s.id == id).unwrap();
         assert_eq!(by("fullscreen").chosen, Some(1), "from its defaults while the file isn't there");
-        assert!(!by("size").enabled, "only while fullscreen is off");
+        assert!(!by("size").enabled, "only while fullscreen is off, as Fullscreen's own default says, not Window size's");
         assert_eq!(by("size").needs, Some(("Fullscreen".into(), "Off".into())));
         assert_eq!(by("size").chosen, None);
         assert_eq!(by("sens").slider.as_ref().unwrap().value, Some(1.0));
