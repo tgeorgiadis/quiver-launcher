@@ -571,9 +571,13 @@ function BrowsePage({
   /** The catalog's first page, or the one after `cursor`; `fresh` (Refresh) asks the site again rather than the webview's cache. */
   function load(cursor?: string | null, fresh = false) {
     const request = ++latest.current;
-    setLoading(true);
-    setRefreshing(fresh);
-    setError(null);
+    // The spinner too between frames: at once, it was a render of the whole page, the front page's shelves and every
+    // card loaded so far, that held a scrolling stick still each time the next page was asked for (issue 542).
+    startTransition(() => {
+      setLoading(true);
+      setRefreshing(fresh);
+      setError(null);
+    });
     client
       // A search orders by relevance.
       .apps({ ...filters, platforms, search: query, sort: searching ? undefined : filters.sort, cursor, fresh })
@@ -970,8 +974,10 @@ function ShowMore({ onMore }: { onMore: () => void }) {
   const more = useRef(onMore);
   more.current = onMore;
   useEffect(() => {
-    // Hidden under a page, it isn't near the screen.
-    const near = new IntersectionObserver(([seen]) => seen.isIntersecting && more.current(), { rootMargin: "0px 0px 600px 0px" });
+    // Hidden under a page, it isn't near the screen. Near the part of the page that scrolls, which is what the margin
+    // is round: round the window, the page's own edge cut it off, so the next page was asked for only once Show more
+    // was on the screen, and a stick scrolling down stopped at it each time till it came (issue 542).
+    const near = new IntersectionObserver(([seen]) => seen.isIntersecting && more.current(), { root: pageArea(), rootMargin: "0px 0px 600px 0px" });
     near.observe(ref.current!);
     return () => near.disconnect();
   }, []);

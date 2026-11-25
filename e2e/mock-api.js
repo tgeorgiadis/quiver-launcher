@@ -828,6 +828,8 @@ export async function startMockApi({ pageSize = Infinity } = {}) {
     setReleases: (slug, list) => (listedReleases[slug] = list),
     /** Changes a catalog app as the site has it (its tags, say). */
     setEntry: (slug, changes) => Object.assign(entries.find((e) => e.slug === slug), changes),
+    /** Adds apps to the catalog: `count` of them, named "App 1" on, each with `overrides(i)`. */
+    addApps: (count, overrides = () => ({})) => entries.push(...Array.from({ length: count }, (_, i) => entry(`app-${i + 1}`, `App ${i + 1}`, overrides(i)))),
     /** Publishes a new verified release of every app. */
     release: (next) => (version = next),
     /** Quiver Launcher's releases, for updates, and the key they're signed with. */
