@@ -86,6 +86,7 @@ pub struct Failure {
     /// The install's folder name, as the page knows it.
     folder: String,
     /// "early": it closed with an error right after starting. "crashed": the system ended it, whenever that was.
+    /// "message": it closed with an exit code its own setup file explains, in `line`.
     kind: &'static str,
     /// What it closed with: its exit code, or on Windows the crash's status.
     code: Option<i32>,
@@ -116,6 +117,20 @@ pub fn failure(ended: &crate::session::Ended, id: Option<String>, folder: &str, 
         Problem::Crashed(what, code) => ("crashed", code, Some(what)),
     };
     Some(Failure { id, folder: folder.to_string(), kind, code, what, line })
+}
+
+/// A game that closed with an exit code its own setup file explains (port_setup.rs): its message, shown as the
+/// game's words with no report to send; or nothing, for a code it says is a normal close. None when the file says
+/// nothing of it, and for a game the player closed from the controller.
+pub fn explained(ended: &crate::session::Ended, id: Option<String>, folder: &str, said: impl FnOnce(i32) -> Option<crate::port_setup::Exit>) -> Option<Option<Failure>> {
+    if ended.closed_here {
+        return None;
+    }
+    let code = ended.status?.code()?;
+    Some(match said(code)? {
+        crate::port_setup::Exit::Ok => None,
+        crate::port_setup::Exit::Message(text) => Some(Failure { id, folder: folder.to_string(), kind: "message", code: Some(code), what: None, line: Some(text) }),
+    })
 }
 
 /// What went wrong, if anything: `early` is an exit within the stub time with nothing left running. Signals that
@@ -279,6 +294,26 @@ mod tests {
         let quit = Ended { seconds: Some(40), status: Some(ExitStatus::from_raw(0)), early: false, closed_here: false };
         assert_eq!(failure(&quit, None, "Test Port", &log), None);
         assert_eq!(tail(&path_for(data.path(), "entry_test-port"), TAIL), "Loading\nusage: port ROM\n");
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn a_code_the_setup_file_explains_is_its_message_or_a_normal_close() {
+        use crate::port_setup::Exit;
+        use std::os::unix::process::ExitStatusExt;
+        let ended = |code: i32, closed_here| Ended { seconds: Some(1), status: Some(ExitStatus::from_raw(code << 8)), early: true, closed_here };
+        let said = |code: i32| match code {
+            3 => Some(Exit::Message("Put your ROM in the game's folder.".into())),
+            4 => Some(Exit::Ok),
+            _ => None,
+        };
+        assert_eq!(
+            explained(&ended(3, false), Some("app".into()), "Port", said),
+            Some(Some(Failure { id: Some("app".into()), folder: "Port".into(), kind: "message", code: Some(3), what: None, line: Some("Put your ROM in the game's folder.".into()) }))
+        );
+        assert_eq!(explained(&ended(4, false), None, "Port", said), Some(None));
+        assert_eq!(explained(&ended(2, false), None, "Port", said), None);
+        assert_eq!(explained(&ended(3, true), None, "Port", said), None);
     }
 
     #[test]

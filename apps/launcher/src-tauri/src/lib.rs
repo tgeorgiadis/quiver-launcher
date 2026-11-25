@@ -665,10 +665,19 @@ fn start(
             // in a folder others share (/usr/bin, say), whose every program would count as the game.
             let own = app_folder.as_ref().is_some_and(|f| session::inside(&target.exe, f)).then(|| target.dir.clone());
             let folder = folder.to_string();
+            // What the port's own setup file says its exit codes mean (port_setup.rs).
+            let manifest = app_folder.as_deref().and_then(|d| port_setup::read(d, launch.setup_file.as_deref()).map(|m| (m, d.to_path_buf())));
+            let exe = target.exe.clone();
             session::track(game, own, move |ended| {
-                // It closed with an error right after starting, or crashed: the page offers to report it. Not a second
-                // copy of an app already running, whose output is mixed with the first's.
-                if let Some(failure) = game_log::failure(&ended, id.clone(), &folder, &log).filter(|_| !already) {
+                // A code the port explains: its message, or nothing for a normal close. Otherwise, it closed with an
+                // error right after starting, or crashed: the page offers to report it. Not a second copy of an app
+                // already running, whose output is mixed with the first's.
+                let explained = manifest.as_ref().and_then(|(m, dir)| game_log::explained(&ended, id.clone(), &folder, |code| port_setup::exit(m, dir, &exe, code)));
+                let failure = match explained {
+                    Some(said) => said,
+                    None => game_log::failure(&ended, id.clone(), &folder, &log),
+                };
+                if let Some(failure) = failure.filter(|_| !already) {
                     let _ = app.emit("app-failed", failure);
                 }
                 let Some(id) = id else { return };

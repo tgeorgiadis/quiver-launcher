@@ -20,6 +20,9 @@ pub struct Manifest {
     format: Option<u32>,
     #[serde(default)]
     start: Start,
+    /// Exit codes (written as text) and what each means: a message for the player, or "ok" for a normal close.
+    #[serde(default)]
+    exit_codes: BTreeMap<String, String>,
 }
 
 #[derive(Deserialize, Default, Debug)]
@@ -163,6 +166,38 @@ pub fn start_words(m: &Manifest, app_dir: &Path, exe: &Path, windows: bool) -> O
     Some(Words { args, env })
 }
 
+/// What the port says about closing with an exit code.
+#[derive(Debug, PartialEq)]
+pub enum Exit {
+    /// How it closes when it's quit normally: nothing went wrong.
+    Ok,
+    /// Its message for the player.
+    Message(String),
+}
+
+/// The file's word on `code`, when `exe` is one of its programs. A key matches the code as it is or, for a Windows
+/// status, as the unsigned number it's often written as ("3221225477" for -1073741819).
+pub fn exit(m: &Manifest, app_dir: &Path, exe: &Path, code: i32) -> Option<Exit> {
+    if !starts(m, app_dir, exe) {
+        return None;
+    }
+    let said = m.exit_codes.iter().find(|(key, _)| {
+        let key = key.trim();
+        let parsed = match key.strip_prefix("0x").or_else(|| key.strip_prefix("0X")) {
+            Some(hex) => i64::from_str_radix(hex, 16).ok(),
+            None => key.parse::<i64>().ok(),
+        };
+        parsed.is_some_and(|k| k == code as i64 || k == code as u32 as i64)
+    })?;
+    let text = said.1.trim();
+    if text.eq_ignore_ascii_case("ok") {
+        return Some(Exit::Ok);
+    }
+    // A message, not a document: kept to what a dialog shows.
+    let text: String = text.chars().take(600).collect();
+    (!text.is_empty()).then_some(Exit::Message(text))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -209,6 +244,19 @@ mod tests {
         // By name anywhere in the folder, and not for another program.
         assert!(start_words(&m, app, &app.join("game"), false).is_some());
         assert!(start_words(&m, app, &app.join("Settings.exe"), false).is_none());
+    }
+
+    #[test]
+    fn exit_codes_say_ok_or_a_message_for_the_files_programs_only() {
+        let m = manifest(r#"{"format":1,"start":{"program":["Game.exe"]},"exit_codes":{"65":"Pick your USA copy again.","1":"ok","3221225477":"Update your graphics driver.","0x2":"Two."}}"#);
+        let app = Path::new("/games/Game");
+        let exe = app.join("Game.exe");
+        assert_eq!(exit(&m, app, &exe, 65), Some(Exit::Message("Pick your USA copy again.".into())));
+        assert_eq!(exit(&m, app, &exe, 1), Some(Exit::Ok));
+        assert_eq!(exit(&m, app, &exe, -1073741819), Some(Exit::Message("Update your graphics driver.".into())));
+        assert_eq!(exit(&m, app, &exe, 2), Some(Exit::Message("Two.".into())));
+        assert_eq!(exit(&m, app, &exe, 3), None);
+        assert_eq!(exit(&m, app, &app.join("Tool.exe"), 65), None);
     }
 
     #[test]

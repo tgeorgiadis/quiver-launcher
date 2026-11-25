@@ -23,6 +23,7 @@ test("what happened is one line that's the same for the same failure", () => {
   expect(failureLine(early, "linux")).toBe("Closed right after starting (exit code 2)");
   expect(failureLine(crashed, "windows")).toBe("Crashed: access violation (0xC0000005)");
   expect(failureLine({ ...crashed, code: null, what: "segmentation fault" }, "linux")).toBe("Crashed: segmentation fault");
+  expect(failureLine({ ...early, kind: "message", code: 3, line: "Put your ROM in the game's folder." }, "linux")).toBe("Closed with a message (exit code 3)");
 });
 
 test("a long output keeps its end, from the start of a line", () => {

@@ -78,3 +78,19 @@ test("a game that asked for a key before closing shows its message, with no repo
     await own.close();
   }
 });
+
+test("an exit code the app's setup file explains is shown as its developer's words, with no report", async () => {
+  const own = await open();
+  try {
+    const said = "Put your ROM in the game's folder, then start it again.";
+    await own.emit("app-failed", { id, folder, kind: "message", code: 3, what: null, line: said });
+    const dialog = own.page.getByRole("dialog", { name: "Test Port closed with a message" });
+    await dialog.waitFor();
+    await dialog.getByText("It closed with exit code 3, which its developer explains like this:").waitFor();
+    assert.equal(await dialog.locator("pre").first().textContent(), said);
+    assert.equal(await dialog.getByRole("button", { name: "Send report" }).count(), 0);
+    assert.deepEqual(own.errors, []);
+  } finally {
+    await own.close();
+  }
+});
