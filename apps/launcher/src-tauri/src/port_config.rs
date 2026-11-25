@@ -204,7 +204,7 @@ fn settings(m: &Manifest) -> Vec<Setting> {
 
 /// A place the file names, as a path on this computer: `{install}` and `{data}` in the app's folder, the player's
 /// own folders where Quiver knows them. None for one it can't name, or a path that climbs out with "..".
-fn host_path(text: &str, app_dir: &Path, wine: bool) -> Option<PathBuf> {
+pub fn host_path(text: &str, app_dir: &Path, wine: bool) -> Option<PathBuf> {
     let mut out = String::new();
     let mut rest = text;
     while let Some(open) = rest.find('{') {

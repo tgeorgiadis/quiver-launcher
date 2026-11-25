@@ -31,6 +31,21 @@ pub struct Manifest {
     pub settings: serde_json::Value,
     #[serde(default)]
     pub groups: serde_json::Value,
+    /// The port's own setup step, run before the first start (from the player's copy, mostly): Quiver doesn't run
+    /// it yet, so `ready` tells whether it has been.
+    #[serde(default)]
+    prepare: serde_json::Value,
+}
+
+/// Whether the port is ready to start as a launcher starts it: it has no setup step of its own, or the files its
+/// step leaves (`prepare.done`) are all there. A port told it's in a launcher may leave out its own window, where
+/// it would run that step itself, and start from a build that was never made.
+fn ready(m: &Manifest, app_dir: &Path, windows: bool) -> bool {
+    if m.prepare.is_null() {
+        return true;
+    }
+    let done: Vec<&str> = m.prepare.get("done").and_then(|d| d.as_array()).map(|d| d.iter().filter_map(|p| p.as_str()).collect()).unwrap_or_default();
+    !done.is_empty() && done.iter().all(|p| crate::port_config::host_path(p, app_dir, windows).is_some_and(|p| p.exists()))
 }
 
 #[derive(Deserialize, Default, Debug)]
@@ -167,12 +182,15 @@ pub fn start_words(m: &Manifest, app_dir: &Path, exe: &Path, windows: bool, pick
         .filter(|(name, value)| crate::launch::env_ok(name) && !carries_copy(value))
         .filter_map(|(name, value)| fill(value, app_dir, windows).map(|v| (name.clone(), v)))
         .collect();
-    // Ports that ship the file look for these, to leave out their own launcher window and updater.
+    // Ports that ship the file look for these, to leave out their own launcher window and updater. Not for one whose
+    // own setup step hasn't run: its window is where the player runs it.
     let data = app_dir.join(DATA);
     let _ = std::fs::create_dir_all(&data);
-    env.push(("RECOMPLAUNCHER".into(), "1".into()));
-    env.push(("RECOMPLAUNCHER_DATA".into(), for_game(&data, windows)));
-    env.push(("RECOMPLAUNCHER_MODE".into(), "desktop".into()));
+    if ready(m, app_dir, windows) {
+        env.push(("RECOMPLAUNCHER".into(), "1".into()));
+        env.push(("RECOMPLAUNCHER_DATA".into(), for_game(&data, windows)));
+        env.push(("RECOMPLAUNCHER_MODE".into(), "desktop".into()));
+    }
     Some(Words { args, env })
 }
 
@@ -254,6 +272,23 @@ mod tests {
         // By name anywhere in the folder, and not for another program.
         assert!(start_words(&m, app, &app.join("game"), false, &Default::default()).is_some());
         assert!(start_words(&m, app, &app.join("Settings.exe"), false, &Default::default()).is_none());
+    }
+
+    #[test]
+    fn a_port_whose_own_setup_step_hasnt_run_isnt_told_its_in_a_launcher() {
+        let dir = tempfile::tempdir().unwrap();
+        let app = dir.path();
+        let told = |json: &str| {
+            let m = manifest(json);
+            start_words(&m, app, &app.join("game.exe"), false, &Default::default()).unwrap().env.iter().any(|(k, _)| k == "RECOMPLAUNCHER")
+        };
+        assert!(told(r#"{"format":1,"start":{"program":["game.exe"]}}"#));
+        assert!(!told(r#"{"format":1,"start":{"program":["game.exe"]},"prepare":{"program":["game.exe"],"args":["--prepare","{input:game}"]}}"#));
+        let built = r#"{"format":1,"start":{"program":["game.exe"]},"prepare":{"program":["game.exe"],"done":["{install}/build/game.pak"]}}"#;
+        assert!(!told(built));
+        std::fs::create_dir_all(app.join("build")).unwrap();
+        std::fs::write(app.join("build/game.pak"), "").unwrap();
+        assert!(told(built));
     }
 
     #[test]
