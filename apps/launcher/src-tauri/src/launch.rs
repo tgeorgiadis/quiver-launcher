@@ -24,6 +24,9 @@ pub struct LaunchOptions {
     /// catalog says (own_copy.rs): before the player's own launch options.
     #[serde(default)]
     pub copies: Vec<LaunchCopy>,
+    /// The port's own setup file as the catalog has it (port_setup.rs), for an app whose folder doesn't hold one.
+    #[serde(default)]
+    pub setup_file: Option<String>,
 }
 
 /// One copy of the game, and how the game is told where it is.
@@ -47,7 +50,7 @@ fn flag_ok(flag: &str) -> bool {
     let name = flag.trim_end_matches('=').trim_start_matches('-');
     flag.starts_with('-') && flag.len() <= 43 && !name.is_empty() && name.chars().all(|c| c.is_ascii_alphanumeric() || "_.-".contains(c))
 }
-fn env_ok(name: &str) -> bool {
+pub fn env_ok(name: &str) -> bool {
     const RESERVED: [&str; 16] = ["PATH", "HOME", "USER", "SHELL", "TEMP", "TMP", "TMPDIR", "PWD", "LANG", "DISPLAY", "SYSTEMROOT", "WINDIR", "COMSPEC", "APPDATA", "LOCALAPPDATA", "USERPROFILE"];
     const PREFIXES: [&str; 7] = ["XDG_", "LD_", "DYLD_", "WINE", "PROTON_", "STEAM_", "QUIVER_"];
     name.len() >= 2

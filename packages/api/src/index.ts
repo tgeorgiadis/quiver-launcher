@@ -71,7 +71,15 @@ export type SetupFile = {
   extensions?: string[];
   /** Any one of them is a copy it takes. Empty: no dump is published, so any copy of the right kind is taken. */
   accepted: SetupDump[];
+  /**
+   * Known good dumps by CRC32 (and size), as a port's own setup file lists them. A match verifies the copy; no match
+   * doesn't refuse it. Sites from before it leave it out.
+   */
+  crc32?: { value: string; size?: number; label?: string }[];
 };
+
+/** The setup file a port's repository keeps for other launchers (format 1 JSON), as the site last read it. */
+export type PortSetupFile = { text: string; changedAt: number };
 
 /** A site to get mods from: "thunderstore" or "gamebanana" (the site keeps any it was given; the launcher skips ones it has no provider for). */
 export type ModSource = { provider: string; sourceUrl: string };
@@ -529,6 +537,8 @@ export type Client = {
   facets(): Promise<Facets>;
   /** Null when the site has no README for the app. */
   readme(slug: string): Promise<Readme | null>;
+  /** Null when the app's repository has no setup file for other launchers, or the site doesn't serve them yet. */
+  setupFile(slug: string): Promise<PortSetupFile | null>;
   releaseStatus(cursor?: string | null): Promise<Page<ReleaseStatus>>;
   /**
    * Approved releases, newest first: the first is what a player gets. Pre-releases newer than the newest main release
@@ -681,6 +691,7 @@ export function createClient(base: string = DEFAULT_API, options: ClientOptions 
     },
     facets: () => get<Facets>("/facets"),
     readme: (slug: string) => get<Readme>(`${app(slug)}/readme`).catch(notFound<Readme>),
+    setupFile: (slug: string) => get<PortSetupFile>(`${app(slug)}/setup-file`).catch(notFound<PortSetupFile>),
     releaseStatus: (cursor?: string | null) =>
       get<Page<ReleaseStatus>>(`/release-status?limit=100${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`),
     releases: (slug: string, limit = 5, cursor?: string | null, prereleases?: boolean) =>

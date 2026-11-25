@@ -172,6 +172,8 @@ export type LaunchOptions = {
   programs?: string[];
   /** The player's copies of the game that it's told about as an argument or environment variable (own-copy.ts); never saved. */
   copies?: LaunchCopy[];
+  /** The port's own setup file as the catalog has it (port-setup.ts), for what it starts its program with; never saved. */
+  setupFile?: string;
 };
 /** One of the player's copies, and how the game is told where it is: after `flag`, on its own (`positional`), or in `env`. */
 export type LaunchCopy = { flag?: string; positional?: boolean; env?: string; path: string };

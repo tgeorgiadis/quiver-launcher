@@ -42,6 +42,20 @@ pub struct SetupFile {
     pub extensions: Vec<String>,
     #[serde(default)]
     pub accepted: Vec<Dump>,
+    /// Known good dumps by CRC32, from a port's own setup file. A match verifies the copy; no match doesn't refuse
+    /// it, as these list one file of a game kept as several (a .cue sheet's .bin) and its kind decides.
+    #[serde(default)]
+    pub crc32: Vec<CrcDump>,
+}
+
+/// A known good dump by CRC32 (lowercase hex) and, when the list gives it, its size.
+#[derive(Deserialize, Clone, Debug)]
+pub struct CrcDump {
+    pub value: String,
+    #[serde(default)]
+    pub size: Option<u64>,
+    #[serde(default)]
+    pub label: Option<String>,
 }
 
 /// A dump the app takes: its hash, as No-Intro, Redump or the app's own list gives it.
@@ -136,6 +150,7 @@ fn unreadable(at: u64, e: io::Error) -> String {
 /// The copy's hashes: as it is, and (for an N64 ROM not in big-endian order) as No-Intro lists it.
 struct Hashes {
     size: u64,
+    crc32: u32,
     sha1: String,
     sha256: String,
     big: Option<(String, String)>,
@@ -150,6 +165,9 @@ impl Hashes {
         };
         *own == value || big.is_some_and(|b| *b == value)
     }
+    fn matches_crc(&self, dump: &CrcDump) -> bool {
+        u32::from_str_radix(&dump.value, 16).is_ok_and(|v| v == self.crc32) && dump.size.is_none_or(|s| s == self.size)
+    }
 }
 
 fn hash(path: &Path, n64: bool, progress: &dyn Fn(u64, u64)) -> Result<Hashes, String> {
@@ -157,6 +175,7 @@ fn hash(path: &Path, n64: bool, progress: &dyn Fn(u64, u64)) -> Result<Hashes, S
     let total = f.metadata().map(|m| m.len()).unwrap_or(0);
     let mut buf = vec![0u8; PIECE];
     let (mut s1, mut s256) = (Sha1::new(), Sha256::new());
+    let mut crc = crc32fast::Hasher::new();
     let (mut b1, mut b256) = (Sha1::new(), Sha256::new());
     let mut order = None;
     let mut read = 0u64;
@@ -169,6 +188,7 @@ fn hash(path: &Path, n64: bool, progress: &dyn Fn(u64, u64)) -> Result<Hashes, S
         let piece = &mut buf[..n];
         s1.update(&*piece);
         s256.update(&*piece);
+        crc.update(&*piece);
         if n64 {
             if read == 0 {
                 order = Order::of(piece).filter(|o| *o != Order::Big);
@@ -188,6 +208,7 @@ fn hash(path: &Path, n64: bool, progress: &dyn Fn(u64, u64)) -> Result<Hashes, S
     progress(read, total);
     Ok(Hashes {
         size: read,
+        crc32: crc.finalize(),
         sha1: hex::encode(s1.finalize()),
         sha256: hex::encode(s256.finalize()),
         big: order.map(|_| (hex::encode(b1.finalize()), hex::encode(b256.finalize()))),
@@ -286,8 +307,18 @@ pub fn check(file: &SetupFile, path: &Path, progress: &dyn Fn(u64, u64)) -> Chec
     if size == 0 {
         return problem("That file is empty.");
     }
+    // Only CRC32 dumps: read through only when one is this size, and taken either way.
     if file.accepted.is_empty() {
-        return Checked { ok: true, size, ..Default::default() };
+        let might = file.crc32.iter().any(|d| d.size.is_none_or(|s| s == size));
+        if !might {
+            return Checked { ok: true, size, ..Default::default() };
+        }
+        let hashes = match hash(path, file.n64(), progress) {
+            Ok(h) => h,
+            Err(e) => return problem(e),
+        };
+        let dump = file.crc32.iter().find(|d| hashes.matches_crc(d));
+        return Checked { ok: true, verified: dump.is_some(), dump: dump.and_then(|d| d.label.clone()), size: hashes.size, sha1: None, problem: None };
     }
     let hashes = match hash(path, file.n64(), progress) {
         Ok(h) => h,
@@ -726,6 +757,30 @@ mod tests {
         }
     }
     fn none(_: u64, _: u64) {}
+
+    #[test]
+    fn crc32_dumps_verify_a_copy_but_never_refuse_one() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("game.iso");
+        std::fs::write(&path, b"a disc image").unwrap();
+        let crc = format!("{:08x}", crc32fast::hash(b"a disc image"));
+        let file = |value: &str, size: Option<u64>| SetupFile {
+            id: "game".into(),
+            label: "Game".into(),
+            flag: Some("--iso".into()),
+            extensions: vec!["iso".into()],
+            crc32: vec![CrcDump { value: value.into(), size, label: Some("Game (USA)".into()) }],
+            ..Default::default()
+        };
+        let found = check(&file(&crc, Some(12)), &path, &none);
+        assert!(found.ok && found.verified);
+        assert_eq!(found.dump.as_deref(), Some("Game (USA)"));
+        // Another dump, or another size (not even read through): taken, not verified.
+        let other = check(&file("00000000", None), &path, &none);
+        assert!(other.ok && !other.verified && other.problem.is_none());
+        let sized = check(&file(&crc, Some(99)), &path, &none);
+        assert!(sized.ok && !sized.verified);
+    }
 
     #[test]
     fn byte_orders_become_big_endian() {
