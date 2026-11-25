@@ -563,6 +563,8 @@ function BrowsePage({
   const searching = Boolean(query.trim());
   // Only the newest request's answer is shown: an older one can arrive after it.
   const latest = useRef(0);
+  // The cursor of the page on its way, if one is.
+  const asking = useRef<string | null>(null);
 
   // The platforms to ask the catalog for: "here" as catalogOs has it, which on Linux is every one (its apps and
   // Windows' run there), narrowed to what runs here once they come (`runs`).
@@ -570,15 +572,29 @@ function BrowsePage({
   const platforms = askedOs?.some((p) => !p) ? undefined : [...new Set(askedOs as Os[])];
   /** The catalog's first page, or the one after `cursor`; `fresh` (Refresh) asks the site again rather than the webview's cache. */
   function load(cursor?: string | null, fresh = false) {
+    // A page already on its way isn't asked for again, while its spinner is still to show.
+    if (cursor && asking.current === cursor) return;
+    asking.current = cursor ?? null;
     const request = ++latest.current;
-    setLoading(true);
-    setRefreshing(fresh);
-    setError(null);
+    const start = () => {
+      setLoading(true);
+      setRefreshing(fresh);
+      setError(null);
+    };
+    // The next page's spinner between frames: at once, it was a render of the whole page, the front page's shelves and
+    // every card so far, that held a scrolling stick still each time (issue 542). A new search or filter's at once, so
+    // what's left of the last one's list (its Show more) goes with it.
+    if (cursor) startTransition(start);
+    else start();
+    const done = () => {
+      if (asking.current === cursor) asking.current = null;
+    };
     client
       // A search orders by relevance.
       .apps({ ...filters, platforms, search: query, sort: searching ? undefined : filters.sort, cursor, fresh })
       .then((page) => {
         if (request !== latest.current) return;
+        done();
         remember(page.items);
         const mine = new Set(libraryNow.current.map((i) => i.id));
         const left = page.items.filter((e) => mine.has(e.id)).map((e) => e.id);
@@ -593,6 +609,7 @@ function BrowsePage({
       })
       .catch(() => {
         if (request !== latest.current) return;
+        done();
         setError(t`Couldn't reach quiverlauncher.com. Check your connection and try again.`);
         setLoading(false);
         setRefreshing(false);
@@ -970,8 +987,10 @@ function ShowMore({ onMore }: { onMore: () => void }) {
   const more = useRef(onMore);
   more.current = onMore;
   useEffect(() => {
-    // Hidden under a page, it isn't near the screen.
-    const near = new IntersectionObserver(([seen]) => seen.isIntersecting && more.current(), { rootMargin: "0px 0px 600px 0px" });
+    // Hidden under a page, it isn't near the screen. Near the part of the page that scrolls, which is what the margin
+    // is round: round the window, the page's own edge cut it off, so the next page was asked for only once Show more
+    // was on the screen, and a stick scrolling down stopped at it each time till it came (issue 542).
+    const near = new IntersectionObserver(([seen]) => seen.isIntersecting && more.current(), { root: pageArea(), rootMargin: "0px 0px 600px 0px" });
     near.observe(ref.current!);
     return () => near.disconnect();
   }, []);
