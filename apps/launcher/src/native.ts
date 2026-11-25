@@ -177,7 +177,24 @@ export type LaunchOptions = {
   setupFile?: string;
 };
 /** One of the player's copies, and how the game is told where it is: after `flag`, on its own (`positional`), or in `env`. */
-export type LaunchCopy = { flag?: string; positional?: boolean; env?: string; path: string };
+export type LaunchCopy = { flag?: string; positional?: boolean; env?: string; portInput?: string; path: string };
+/** The port's own setup step (port_prepare.rs), when Play runs it first: what it makes, as the port says. */
+export type PrepareAsk = { label: string | null };
+/** How far the setup step has got: 0 to 1 when it said, and what it's doing. */
+export type PrepareProgress = { id: string; fraction: number | null; text: string };
+/** Why the setup step didn't finish. */
+export type PrepareFailed = {
+  code: number | null;
+  /** The last lines it printed. */
+  lines: string[];
+  /** It printed nothing for an hour. */
+  stuck: boolean;
+  /** The player stopped it. */
+  stopped: boolean;
+  hint: string | null;
+  /** It never started: why. */
+  problem: string | null;
+};
 /** What checking the player's copy found (own_copy.rs). */
 export type CheckedCopy = {
   ok: boolean;
@@ -365,6 +382,15 @@ export const native = {
   /** Starts an app; `id` names it in `onAppClosed` once it closes. `presence` is what Discord shows the player playing while it runs. */
   launch: (id: string | undefined, folder: string, dir: string | undefined, preferred: string[], wine: boolean, program?: string, launch?: LaunchOptions, presence?: DiscordGame) =>
     invoke<void>("launch", { id, folder, dir, preferred, wine, program, launch, presence }),
+  /** The port's own setup step, when Play should run it before the game (port_prepare.rs). */
+  portPrepareNeeded: (folder: string, dir: string | undefined, launch: LaunchOptions) => invoke<PrepareAsk | null>("port_prepare_needed", { folder, dir, launch }),
+  /** Runs it, as Play would run the game; fails with a PrepareFailed. */
+  portPrepare: (id: string, folder: string, dir: string | undefined, preferred: string[], wine: boolean, launch: LaunchOptions) =>
+    invoke<void>("port_prepare", { id, folder, dir, preferred, wine, launch }),
+  portPrepareStop: (id: string) => invoke<void>("port_prepare_stop", { id }),
+  onPortPrepareProgress: (handler: (p: PrepareProgress) => void) => listen<PrepareProgress>("port-prepare-progress", (e) => handler(e.payload)),
+  /** Opens all the setup step printed on its last run. */
+  openSetupLog: (id: string) => invoke<void>("open_setup_log", { id }),
   /** Discord's Rich Presence on or off (discord.rs), with its words in the player's language. */
   setDiscordPresence: (enabled: boolean, texts: { idle: string; button: string }) => invoke<void>("set_discord_presence", { enabled, texts }),
   /** An app started with an id has closed, after running this long; one a shortcut started says how it ended. */

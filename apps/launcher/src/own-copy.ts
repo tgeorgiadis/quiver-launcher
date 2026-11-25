@@ -8,7 +8,7 @@ import type { Install } from "./store";
 
 /** Whether the launcher gets the copy to the app itself: puts it somewhere, or tells the app where it is. */
 export const delivered = (file: SetupFile) =>
-  file.destination !== undefined || file.flag !== undefined || file.positional === true || file.env !== undefined;
+  file.destination !== undefined || file.flag !== undefined || file.positional === true || file.env !== undefined || file.portInput !== undefined;
 
 /**
  * The catalog's setup files for this app on this computer. None on Android and iOS, which keep an app's files to
@@ -28,18 +28,20 @@ export function copiesNeeded(entry: Pick<Entry, "launcher"> | undefined, install
 
 /**
  * What Play passes the game: each copy it's told about on the command line (after a flag, or on its own) or in its
- * environment, where it is now. A flag wins over `positional`.
+ * environment, or that the port's own setup step and settings file take by its name (`portInput`), where it is now.
+ * A flag wins over `positional`.
  */
 export function launchCopies(entry: Pick<Entry, "launcher"> | undefined, install: Pick<Install, "copies"> | undefined): LaunchCopy[] {
   const out: LaunchCopy[] = [];
   for (const file of entry?.launcher?.setupFiles ?? []) {
     const copy = install?.copies?.[file.id];
     const positional = file.positional === true && !file.flag;
-    if (!copy || copy.yours || (!file.flag && !positional && !file.env)) continue;
+    if (!copy || copy.yours || (!file.flag && !positional && !file.env && !file.portInput)) continue;
     out.push({
       ...(file.flag ? { flag: file.flag } : {}),
       ...(positional ? { positional: true } : {}),
       ...(file.env ? { env: file.env } : {}),
+      ...(file.portInput ? { portInput: file.portInput } : {}),
       path: copy.placed ?? copy.path,
     });
   }

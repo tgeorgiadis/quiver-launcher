@@ -46,6 +46,8 @@ struct Config {
     ensure: BTreeMap<String, String>,
     always: BTreeMap<String, String>,
     new: BTreeMap<String, String>,
+    /// The key that holds the path to the player's copy of the game, written at every start.
+    game_path: Option<String>,
 }
 
 #[derive(Debug)]
@@ -140,6 +142,7 @@ fn configs(m: &Manifest) -> Vec<Config> {
                 ensure: values(c.get("ensure")),
                 always: values(c.get("always")),
                 new: values(c.get("new")),
+                game_path: text(c, "game_path"),
             })
         })
         .collect()
@@ -204,7 +207,7 @@ fn settings(m: &Manifest) -> Vec<Setting> {
 
 /// A place the file names, as a path on this computer: `{install}` and `{data}` in the app's folder, the player's
 /// own folders where Quiver knows them. None for one it can't name, or a path that climbs out with "..".
-fn host_path(text: &str, app_dir: &Path, wine: bool) -> Option<PathBuf> {
+pub fn host_path(text: &str, app_dir: &Path, wine: bool) -> Option<PathBuf> {
     let mut out = String::new();
     let mut rest = text;
     while let Some(open) = rest.find('{') {
@@ -783,8 +786,9 @@ pub fn picked_args(m: &Manifest, app_dir: &Path, windows: bool, picks: &Picks) -
 }
 
 /// Before the port starts: its settings files get the values it asks for, `new` in a file not there yet, `ensure`
-/// where a key is missing or empty, `always` every time. A file that can't be read is left alone.
-pub fn at_start(m: &Manifest, app_dir: &Path, wine: bool) {
+/// where a key is missing or empty, `always` every time, and `game_path` the player's copy of the game (`game`, where
+/// it is on this computer) when they gave one. A file that can't be read is left alone.
+pub fn at_start(m: &Manifest, app_dir: &Path, wine: bool, game: Option<&Path>) {
     let mut unreadable = Vec::new();
     for (_, (c, mut doc)) in open_all(m, app_dir, wine, &mut unreadable) {
         if !doc.existed {
@@ -799,6 +803,12 @@ pub fn at_start(m: &Manifest, app_dir: &Path, wine: bool) {
         }
         for (k, v) in &c.always {
             doc.set(k, &value_for_game(v, app_dir, wine));
+        }
+        if let (Some(k), Some(game)) = (&c.game_path, game) {
+            let path = port_setup::for_game(game, wine);
+            // A string in TOML and JSON; as it is in INI.
+            let value = if c.format == Format::Ini { path } else { serde_json::to_string(&path).unwrap_or_default() };
+            doc.set(k, &value);
         }
         let _ = doc.save();
     }
@@ -990,16 +1000,31 @@ mod tests {
         let app = dir.path();
         let m = manifest(PORT);
         std::fs::write(app.join("portable.txt"), "").unwrap();
-        at_start(&m, app, false);
+        at_start(&m, app, false, None);
         assert_eq!(std::fs::read_to_string(app.join("portable.ini")).unwrap(), "[Video]\nvsync = 1\nscale = 1\n\n[Launcher]\nskip = true\n");
         std::fs::write(app.join("portable.ini"), "[Video]\nvsync=0\nscale=\n").unwrap();
-        at_start(&m, app, false);
+        at_start(&m, app, false, None);
         assert_eq!(std::fs::read_to_string(app.join("portable.ini")).unwrap(), "[Video]\nvsync=0\nscale=1\n\n[Launcher]\nskip=true\n");
         // A file that can't be read is left alone, and named.
         std::fs::write(app.join("portable.ini"), [0xff, 0xfe, 0x00]).unwrap();
-        at_start(&m, app, false);
+        at_start(&m, app, false, None);
         assert_eq!(std::fs::read(app.join("portable.ini")).unwrap(), [0xff, 0xfe, 0x00]);
         assert_eq!(view(&m, app, false, &Picks::new()).unwrap().unreadable.len(), 1);
+    }
+
+    #[test]
+    fn at_start_writes_the_players_copy_where_the_file_says_as_the_game_reads_it() {
+        let dir = tempfile::tempdir().unwrap();
+        let app = dir.path();
+        let m = manifest(r#"{"format":1,"config":[{"format":"ini","file":"{install}/game.ini","game_path":"rom/path"},{"id":"t","format":"toml","file":"{install}/game.toml","game_path":"game_data_root"}]}"#);
+        at_start(&m, app, false, None);
+        assert!(!std::fs::read_to_string(app.join("game.ini")).unwrap_or_default().contains("path"));
+        at_start(&m, app, false, Some(Path::new("/roms/game.iso")));
+        assert_eq!(std::fs::read_to_string(app.join("game.ini")).unwrap(), "[rom]\npath = /roms/game.iso\n");
+        assert_eq!(std::fs::read_to_string(app.join("game.toml")).unwrap(), "game_data_root = \"/roms/game.iso\"\n");
+        at_start(&m, app, true, Some(Path::new("/roms/other.iso")));
+        assert_eq!(std::fs::read_to_string(app.join("game.ini")).unwrap(), "[rom]\npath = Z:\\roms\\other.iso\n");
+        assert_eq!(std::fs::read_to_string(app.join("game.toml")).unwrap(), "game_data_root = \"Z:\\\\roms\\\\other.iso\"\n");
     }
 
     #[test]

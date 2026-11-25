@@ -31,6 +31,24 @@ pub struct Manifest {
     pub settings: serde_json::Value,
     #[serde(default)]
     pub groups: serde_json::Value,
+    /// The port's own setup step, run before the first start (from the player's copy, mostly): port_prepare.rs.
+    #[serde(default)]
+    pub prepare: serde_json::Value,
+}
+
+/// Whether the port is ready to start as a launcher starts it: it has no setup step of its own, or the files its
+/// step leaves (`prepare.done`) are all there, or (with none listed) Quiver ran the step for this release (`ran`,
+/// port_prepare.rs). A port told it's in a launcher may leave out its own window, where it would run that step
+/// itself, and start from a build that was never made.
+fn ready(m: &Manifest, app_dir: &Path, windows: bool, ran: bool) -> bool {
+    if m.prepare.is_null() {
+        return true;
+    }
+    let done = crate::port_prepare::done(m);
+    if done.is_empty() {
+        return ran;
+    }
+    done.iter().all(|p| crate::port_config::host_path(p, app_dir, windows).is_some_and(|p| p.exists()))
 }
 
 #[derive(Deserialize, Default, Debug)]
@@ -89,7 +107,7 @@ pub fn starts(m: &Manifest, app_dir: &Path, exe: &Path) -> bool {
 }
 
 /// A path for the game: through Wine or Proton, as Windows names a Linux path.
-fn for_game(path: &Path, windows: bool) -> String {
+pub fn for_game(path: &Path, windows: bool) -> String {
     let text = path.to_string_lossy().into_owned();
     if windows && text.starts_with('/') {
         format!("Z:{}", text.replace('/', "\\"))
@@ -142,7 +160,7 @@ pub fn carries_copy(arg: &str) -> bool {
 
 /// The words for `exe`, when it's one of the programs the file starts (a settings tool the player picked isn't).
 /// `windows`: it runs through Wine or Proton. Makes the `{data}` folder, which the port may expect to be there.
-pub fn start_words(m: &Manifest, app_dir: &Path, exe: &Path, windows: bool, picks: &crate::port_config::Picks) -> Option<Words> {
+pub fn start_words(m: &Manifest, app_dir: &Path, exe: &Path, windows: bool, picks: &crate::port_config::Picks, ran: bool) -> Option<Words> {
     if !starts(m, app_dir, exe) {
         return None;
     }
@@ -167,12 +185,15 @@ pub fn start_words(m: &Manifest, app_dir: &Path, exe: &Path, windows: bool, pick
         .filter(|(name, value)| crate::launch::env_ok(name) && !carries_copy(value))
         .filter_map(|(name, value)| fill(value, app_dir, windows).map(|v| (name.clone(), v)))
         .collect();
-    // Ports that ship the file look for these, to leave out their own launcher window and updater.
+    // Ports that ship the file look for these, to leave out their own launcher window and updater. Not for one whose
+    // own setup step hasn't run: its window is where the player runs it.
     let data = app_dir.join(DATA);
     let _ = std::fs::create_dir_all(&data);
-    env.push(("RECOMPLAUNCHER".into(), "1".into()));
-    env.push(("RECOMPLAUNCHER_DATA".into(), for_game(&data, windows)));
-    env.push(("RECOMPLAUNCHER_MODE".into(), "desktop".into()));
+    if ready(m, app_dir, windows, ran) {
+        env.push(("RECOMPLAUNCHER".into(), "1".into()));
+        env.push(("RECOMPLAUNCHER_DATA".into(), for_game(&data, windows)));
+        env.push(("RECOMPLAUNCHER_MODE".into(), "desktop".into()));
+    }
     Some(Words { args, env })
 }
 
@@ -238,7 +259,7 @@ mod tests {
                 "args":["--no-update-check","--iso","{input:game}","--dlc1={input:dlc1}","--data","{data}","{game}","--odd={nope}"],
                 "env":{"GAME_HOME":"{install}/home","GAME_ISO":"{input:game}","PATH":"x"}}}"#,
         );
-        let words = start_words(&m, app, &app.join("bin/Game.exe"), false, &Default::default()).unwrap();
+        let words = start_words(&m, app, &app.join("bin/Game.exe"), false, &Default::default(), false).unwrap();
         let data = app.join(DATA).to_string_lossy().into_owned();
         assert_eq!(words.args, vec!["--no-update-check".to_string(), "--data".into(), data.clone()]);
         assert_eq!(
@@ -252,8 +273,28 @@ mod tests {
         );
         assert!(app.join(DATA).is_dir());
         // By name anywhere in the folder, and not for another program.
-        assert!(start_words(&m, app, &app.join("game"), false, &Default::default()).is_some());
-        assert!(start_words(&m, app, &app.join("Settings.exe"), false, &Default::default()).is_none());
+        assert!(start_words(&m, app, &app.join("game"), false, &Default::default(), false).is_some());
+        assert!(start_words(&m, app, &app.join("Settings.exe"), false, &Default::default(), false).is_none());
+    }
+
+    #[test]
+    fn a_port_whose_own_setup_step_hasnt_run_isnt_told_its_in_a_launcher() {
+        let dir = tempfile::tempdir().unwrap();
+        let app = dir.path();
+        let told = |json: &str| {
+            let m = manifest(json);
+            start_words(&m, app, &app.join("game.exe"), false, &Default::default(), false).unwrap().env.iter().any(|(k, _)| k == "RECOMPLAUNCHER")
+        };
+        assert!(told(r#"{"format":1,"start":{"program":["game.exe"]}}"#));
+        assert!(!told(r#"{"format":1,"start":{"program":["game.exe"]},"prepare":{"program":["game.exe"],"args":["--prepare","{input:game}"]}}"#));
+        let built = r#"{"format":1,"start":{"program":["game.exe"]},"prepare":{"program":["game.exe"],"done":["{install}/build/game.pak"]}}"#;
+        assert!(!told(built));
+        // With no files listed, once Quiver ran it for this release.
+        let ran = start_words(&manifest(r#"{"format":1,"start":{"program":["game.exe"]},"prepare":{"program":["game.exe"]}}"#), app, &app.join("game.exe"), false, &Default::default(), true).unwrap();
+        assert!(ran.env.iter().any(|(k, _)| k == "RECOMPLAUNCHER"));
+        std::fs::create_dir_all(app.join("build")).unwrap();
+        std::fs::write(app.join("build/game.pak"), "").unwrap();
+        assert!(told(built));
     }
 
     #[test]
@@ -273,11 +314,11 @@ mod tests {
     fn any_appimage_stands_for_the_one_named_and_wine_gets_windows_paths() {
         let m = manifest(r#"{"format":1,"start":{"program":["Game-x86_64.AppImage"],"args":["--data={data}","--docs={documents}"]}}"#);
         let app = Path::new("/games/Game");
-        let words = start_words(&m, app, &app.join("Game-1.2-x86_64.AppImage"), false, &Default::default());
+        let words = start_words(&m, app, &app.join("Game-1.2-x86_64.AppImage"), false, &Default::default(), false);
         assert!(words.is_some());
         let m = manifest(r#"{"format":1,"start":{"program":["Game.exe"],"args":["--data={data}","--docs={documents}"]}}"#);
         let dir = tempfile::tempdir().unwrap();
-        let words = start_words(&m, dir.path(), &dir.path().join("Game.exe"), true, &Default::default()).unwrap();
+        let words = start_words(&m, dir.path(), &dir.path().join("Game.exe"), true, &Default::default(), false).unwrap();
         let expected = format!("--data=Z:{}", dir.path().join(DATA).to_string_lossy().replace('/', "\\"));
         if cfg!(unix) {
             assert_eq!(words.args, vec![expected]);

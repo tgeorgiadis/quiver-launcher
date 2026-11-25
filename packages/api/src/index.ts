@@ -65,6 +65,12 @@ export type SetupFile = {
    */
   positional?: boolean;
   env?: string;
+  /**
+   * The port's own name for it in its setup file (`{input:<name>}`): the launcher hands its path to the port's own
+   * setup step and settings file. Sites from before it leave it out; launchers from before it don't ask for a copy
+   * given only this way.
+   */
+  portInput?: string;
   /** For a folder: names it holds, to tell it's the right one. */
   contains?: string[];
   /** Without a dot. */

@@ -27,6 +27,11 @@ fn logs_dir(data_dir: &Path) -> PathBuf {
     data_dir.join("game-logs")
 }
 
+/// Where the port's own setup step (port_prepare.rs) writes all it prints, for the player to open.
+pub fn setup_path(data_dir: &Path, app: &str) -> PathBuf {
+    path_for(data_dir, &format!("{app} setup"))
+}
+
 /// An app's log: named for its id (its install's folder, for one started without an id), with nothing a file's name
 /// can't have. The id rather than the folder, which two apps the player added can share.
 fn path_for(data_dir: &Path, app: &str) -> PathBuf {

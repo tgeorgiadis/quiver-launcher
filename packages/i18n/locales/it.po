@@ -664,6 +664,10 @@ msgstr "Copertina della confezione di {name}"
 msgid "{name} changed after {release} finished its 48-hour wait, and the new file hasn't been out for 48 hours yet. It installs the file Quiver saw, and refuses one that changed since."
 msgstr "{name} è cambiato dopo che {release} ha terminato la sua attesa di 48 ore, e il nuovo file non è ancora disponibile da 48 ore. Viene installato il file che Quiver ha visto, e uno cambiato da allora viene rifiutato."
 
+#: ../../apps/launcher/src/port-prepare.tsx
+msgid "{name} couldn't be set up"
+msgstr ""
+
 #: ../../apps/launcher/src/library-view.tsx
 msgid "{name} icon"
 msgstr "Icona di {name}"
@@ -2275,6 +2279,7 @@ msgstr "Cancella ricerca"
 #: ../../apps/launcher/src/game-report-prompt.tsx
 #: ../../apps/launcher/src/mods.tsx
 #: ../../apps/launcher/src/own-copy-setup.tsx
+#: ../../apps/launcher/src/port-prepare.tsx
 #: ../../apps/launcher/src/tag-settings.tsx
 #: ../../apps/launcher/src/window-bar.tsx
 msgid "Close"
@@ -2407,11 +2412,16 @@ msgstr "Controller"
 
 #: ../../apps/launcher/src/downloads-page.tsx
 #: ../../apps/launcher/src/game-report-prompt.tsx
+#: ../../apps/launcher/src/port-prepare.tsx
 msgid "Copied"
 msgstr "Copiato"
 
 #: ../../apps/launcher/src/saves-tab.tsx
 msgid "Copied to your sync folder."
+msgstr ""
+
+#: ../../apps/launcher/src/port-prepare.tsx
+msgid "Copy"
 msgstr ""
 
 #: ../../apps/launcher/src/downloads-page.tsx
@@ -3913,6 +3923,26 @@ msgstr "Ciascuno dei suoi file è disponibile da 48 ore, il che dà il tempo di 
 msgid "Its newest available version was withdrawn: choose a version"
 msgstr "La sua versione disponibile più recente è stata ritirata: scegli una versione"
 
+#: ../../apps/launcher/src/port-prepare.tsx
+msgid "Its own setup step is making what it needs before it can start: {label}. It runs again after each update, and the game starts once it's done."
+msgstr ""
+
+#: ../../apps/launcher/src/port-prepare.tsx
+msgid "Its own setup step is making what it needs before it can start. It runs again after each update, and the game starts once it's done."
+msgstr ""
+
+#: ../../apps/launcher/src/port-prepare.tsx
+msgid "Its setup step printed nothing for an hour, so Quiver stopped it."
+msgstr ""
+
+#: ../../apps/launcher/src/port-prepare.tsx
+msgid "Its setup step stopped before it finished."
+msgstr ""
+
+#: ../../apps/launcher/src/port-prepare.tsx
+msgid "Its setup step stopped with code {code}."
+msgstr ""
+
 #. Installs the mod alone, without the ones it needs
 #: ../../apps/launcher/src/mods.tsx
 msgid "Just {mod}"
@@ -5237,6 +5267,10 @@ msgstr "Apri app"
 #: ../../apps/launcher/src/sync-folder-page.tsx
 msgid "Open folder"
 msgstr "Apri cartella"
+
+#: ../../apps/launcher/src/port-prepare.tsx
+msgid "Open full log"
+msgstr ""
 
 #: ../../apps/launcher/src/library.tsx
 msgid "Open it"
@@ -6606,6 +6640,14 @@ msgstr "Configura la tua copia"
 msgid "Set up your copy for {name}"
 msgstr "Configura la tua copia per {name}"
 
+#: ../../apps/launcher/src/port-prepare.tsx
+msgid "Setting up"
+msgstr ""
+
+#: ../../apps/launcher/src/port-prepare.tsx
+msgid "Setting up {name}"
+msgstr ""
+
 #. Tab of an app's page: the game's own settings, from its setup file
 #. Tab of an app's page: the game's own settings, from its setup file
 #: ../../apps/launcher/src/App.tsx
@@ -7103,6 +7145,7 @@ msgstr "sta ancora analizzando i suoi file."
 #. Stops the download cache's current download
 #: ../../apps/launcher/src/cache-page.tsx
 #: ../../apps/launcher/src/downloads-page.tsx
+#: ../../apps/launcher/src/port-prepare.tsx
 msgid "Stop"
 msgstr "Interrompi"
 
@@ -7415,6 +7458,10 @@ msgstr "La cartella in cui si trova il programma di Quiver Launcher 3. Per una c
 msgid "The game asks for it when it starts. Quiver can check yours first."
 msgstr "Il gioco la chiede all'avvio. Quiver può controllare la tua prima."
 
+#: ../../apps/launcher/src/port-prepare.tsx
+msgid "The game's developer can tell what went wrong from these lines. Copy them to send with your question."
+msgstr ""
+
 #: ../../apps/launcher/src/sync-folder-page.tsx
 msgid "the newest 5 of each app are kept"
 msgstr ""
@@ -7521,6 +7568,10 @@ msgstr "Non ci sono ancora versioni. Cerca i download nel progetto originale."
 
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "There's already a file where {name} reads it."
+msgstr ""
+
+#: ../../apps/launcher/src/port-prepare.tsx
+msgid "There's no log of its setup step."
 msgstr ""
 
 #: ../../apps/launcher/src/saves-tab.tsx
@@ -7798,6 +7849,7 @@ msgstr "Creatore affidabile"
 #: ../../apps/launcher/src/card-menu.tsx
 #: ../../apps/launcher/src/downloads-page.tsx
 #: ../../apps/launcher/src/game.tsx
+#: ../../apps/launcher/src/port-prepare.tsx
 #: ../../apps/launcher/src/update.tsx
 msgid "Try again"
 msgstr "Riprova"
@@ -8471,6 +8523,10 @@ msgstr "Ritirata"
 #: ../../apps/launcher/src/detail.tsx
 msgid "Withdrawn:"
 msgstr "Ritirata:"
+
+#: ../../apps/launcher/src/port-prepare.tsx
+msgid "Working…"
+msgstr ""
 
 #: ../../apps/launcher/src/discussions.tsx
 msgid "Yes, delete"

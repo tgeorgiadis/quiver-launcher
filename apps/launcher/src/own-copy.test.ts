@@ -142,6 +142,17 @@ describe("own copy", () => {
     expect(launchCopies(entry({ ...iso, positional: true }), install)).toEqual([{ flag: "--iso", path: "/g.iso" }]);
   });
 
+  it("asks for a copy only the port's own setup step or settings file takes, and passes it by the port's name", () => {
+    const ported: SetupFile = { id: "game", label: "Game", portInput: "game", extensions: ["iso"], accepted: [] };
+    expect(delivered(ported)).toBe(true);
+    expect(copiesNeeded(entry(ported), {}, "linux").map((f) => f.id)).toEqual(["game"]);
+    const install = { copies: { game: { path: "/roms/g.iso", at: 1 }, iso: { path: "/g.iso", at: 1 } } };
+    expect(launchCopies(entry(ported, { ...iso, portInput: "disc" }), install)).toEqual([
+      { portInput: "game", path: "/roms/g.iso" },
+      { flag: "--iso", portInput: "disc", path: "/g.iso" },
+    ]);
+  });
+
   it("says sizes plainly", () => {
     expect(sizeText(500)).toBe("1 KB");
     expect(sizeText(32 * 1024 * 1024)).toBe("32 MB");

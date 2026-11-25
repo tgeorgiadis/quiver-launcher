@@ -20,6 +20,7 @@ mod move_journal;
 mod msi;
 mod own_copy;
 mod port_config;
+mod port_prepare;
 mod port_setup;
 mod picker;
 mod provider_http;
@@ -534,13 +535,19 @@ fn target(data: &Data, folder: &str, dir: Option<String>, preferred: &[String], 
     };
     let copies = &options.copies;
     let setup_file = options.setup_file.as_deref();
+    let plain = options.plain;
     let mut options = launch::parse(options.command.as_deref().unwrap_or_default())?;
     // The player's own copies of the game, as the catalog says to give them (own_copy.rs), before their own options.
     // Through Wine or Proton (Quiver's or Steam's), the game reads a Windows path.
     let windows_paths = OS == "linux" && (program != exe || steam_proton);
     let (mut copy_args, mut copy_env) = launch::copy_words(copies, windows_paths);
     // Then what the port's own setup file starts its program with (port_setup.rs).
-    if let Some(words) = app_folder.as_deref().and_then(|d| port_setup::read(d, setup_file).and_then(|m| port_setup::start_words(&m, d, &exe, windows_paths, &port_config::picks(&data.0, d)))) {
+    let words = app_folder.as_deref().filter(|_| !plain).and_then(|d| {
+        let m = port_setup::read(d, setup_file)?;
+        let ran = port_prepare::ran(&data.0, &m, d);
+        port_setup::start_words(&m, d, &exe, windows_paths, &port_config::picks(&data.0, d), ran)
+    });
+    if let Some(words) = words {
         copy_args.extend(words.args);
         copy_env.extend(words.env);
     }
@@ -637,7 +644,8 @@ fn start(
     // under a copy already running, which may be writing them itself.
     if let Some(d) = app_folder.as_deref().filter(|_| !already) {
         if let Some(m) = port_setup::read(d, launch.setup_file.as_deref()).filter(|m| port_setup::starts(m, d, &target.exe)) {
-            port_config::at_start(&m, d, OS == "linux" && (target.program != target.exe || target.steam_proton));
+            let game = launch::port_inputs(&launch.copies).remove("game");
+            port_config::at_start(&m, d, OS == "linux" && (target.program != target.exe || target.steam_proton), game.as_deref());
         }
     }
     let spawned: std::io::Result<session::Started> = sandbox::check(&program)
@@ -2011,6 +2019,112 @@ async fn place_copy(app: tauri::AppHandle, folder: String, dir: Option<String>, 
     .map_err(|e| e.to_string())?
 }
 
+/// The port's own setup step, when Play should run it first (port_prepare.rs): what it makes, for the player.
+#[derive(Serialize)]
+struct PrepareAsk {
+    label: Option<String>,
+}
+
+#[tauri::command]
+async fn port_prepare_needed(data: State<'_, Data>, folder: String, dir: Option<String>, launch: launch::LaunchOptions) -> Result<Option<PrepareAsk>, String> {
+    let Ok(app_dir) = present_app_dir(&data, &folder, dir) else { return Ok(None) };
+    let Some(m) = port_setup::read(&app_dir, launch.setup_file.as_deref()) else { return Ok(None) };
+    Ok(port_prepare::needed(&data.0, &m, &app_dir, &launch::port_inputs(&launch.copies)).map(|step| PrepareAsk { label: step.label }))
+}
+
+/// Setup steps running, by app id: set to stop one.
+#[derive(Default)]
+struct Preparing(std::sync::Mutex<std::collections::HashMap<String, std::sync::Arc<std::sync::atomic::AtomicBool>>>);
+
+#[derive(Clone, Serialize)]
+struct PrepareProgress {
+    id: String,
+    fraction: Option<f64>,
+    text: String,
+}
+
+/// Runs the port's own setup step, as Play runs the game (the same Wine or Proton on Linux), and tells the page how
+/// far it has got ("port-prepare-progress"). Recorded once it works, so it doesn't run again for this release.
+#[tauri::command]
+#[allow(clippy::too_many_arguments)]
+async fn port_prepare(app: tauri::AppHandle, data: State<'_, Data>, preparing: State<'_, Preparing>, id: String, folder: String, dir: Option<String>, preferred: Vec<String>, wine: bool, launch: launch::LaunchOptions) -> Result<(), port_prepare::Failed> {
+    let problem = |text: String| port_prepare::Failed::problem(text);
+    let app_dir = present_app_dir(&data, &folder, dir.clone()).map_err(problem)?;
+    let m = port_setup::read(&app_dir, launch.setup_file.as_deref()).ok_or_else(|| problem("This app's setup file is gone.".into()))?;
+    let step = port_prepare::step(&m).ok_or_else(|| problem("This app has no setup step.".into()))?;
+    let exe = port_prepare::program(&step, &app_dir, wine).ok_or_else(|| problem("Couldn't find the program for its setup step in the app's folder.".into()))?;
+    if apps_folder::free_space(&app_dir).is_some_and(|free| free < port_prepare::MIN_FREE) {
+        return Err(problem("Its setup step needs at least 1 GB free on the drive the app is on. Free some up, then press Play again.".into()));
+    }
+    // Only the program, run as Play runs the game, without the game's own start words or the player's options.
+    let only = launch::LaunchOptions { executable: Some(exe.to_string_lossy().into_owned()), runner: launch.runner.clone(), windows_runner: launch.windows_runner.clone(), plain: true, ..Default::default() };
+    let target = target(&data, &folder, dir, &preferred, wine, None, &only).map_err(problem)?;
+    let windows = OS == "linux" && (target.program != target.exe || target.steam_proton);
+    let inputs = launch::port_inputs(&launch.copies);
+    let (program, mut args, mut env) = target.command();
+    let (step_args, step_env) = port_prepare::words(&step, &app_dir, &inputs, windows);
+    args.extend(step_args);
+    let ported = app_dir.join(port_setup::DATA);
+    let _ = std::fs::create_dir_all(&ported);
+    let temp = app_dir.join(port_prepare::TEMP);
+    let _ = std::fs::remove_dir_all(&temp);
+    std::fs::create_dir_all(&temp).map_err(|e| problem(format!("Couldn't make a temp folder for its setup step: {e}")))?;
+    let temp_text = port_setup::for_game(&temp, windows);
+    env.extend([("TMPDIR", temp_text.clone()), ("TEMP", temp_text.clone()), ("TMP", temp_text)].map(|(k, v)| (k.to_string(), v)));
+    env.extend([("RECOMPLAUNCHER".to_string(), "1".to_string()), ("RECOMPLAUNCHER_DATA".to_string(), port_setup::for_game(&ported, windows))]);
+    env.extend(step_env);
+    sandbox::check(&program).map_err(|e| problem(match e.kind() {
+        std::io::ErrorKind::NotFound if program == Path::new("wine") => "Wine isn't installed. Install it, or choose a Proton under Run with, in Settings or the app's launch options.".to_string(),
+        _ => format!("Couldn't start its setup step: {e}"),
+    }))?;
+    let mut command = host::command(&program);
+    command.args(&args).envs(env).current_dir(&target.dir);
+    let command = sandbox::game(command);
+    let stop = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+    {
+        let mut running = preparing.0.lock().unwrap();
+        if running.contains_key(&id) {
+            return Err(problem("Its setup step is already running.".into()));
+        }
+        running.insert(id.clone(), stop.clone());
+    }
+    let log = game_log::setup_path(&data.0, &id);
+    let data_dir = data.0.clone();
+    let (emit_app, emit_id) = (app.clone(), id.clone());
+    let result = tauri::async_runtime::spawn_blocking(move || {
+        let result = port_prepare::run(command, &log, &stop, |p| {
+            let _ = emit_app.emit("port-prepare-progress", PrepareProgress { id: emit_id.clone(), fraction: p.fraction, text: p.text });
+        });
+        let _ = std::fs::remove_dir_all(&temp);
+        if result.is_ok() {
+            port_prepare::record(&data_dir, &m, &app_dir, &inputs);
+        }
+        result
+    })
+    .await
+    .unwrap_or_else(|e| Err(port_prepare::Failed::problem(e.to_string())));
+    preparing.0.lock().unwrap().remove(&id);
+    result
+}
+
+/// Stops the app's setup step, if it's running.
+#[tauri::command]
+fn port_prepare_stop(preparing: State<'_, Preparing>, id: String) {
+    if let Some(stop) = preparing.0.lock().unwrap().get(&id) {
+        stop.store(true, std::sync::atomic::Ordering::Relaxed);
+    }
+}
+
+/// Opens all the app's setup step printed on its last run.
+#[tauri::command]
+fn open_setup_log(data: State<'_, Data>, id: String) -> Result<(), String> {
+    let path = game_log::setup_path(&data.0, &id);
+    if !path.is_file() {
+        return Err("There's no log of its setup step.".into());
+    }
+    open::that_detached(&path).map_err(|e| e.to_string())
+}
+
 /// What the Settings tab shows for a port whose own setup file has settings (port_config.rs): None when it has none
 /// Quiver can show. `setup_file` is the catalog's copy of the file, for an app folder without one.
 #[tauri::command]
@@ -2830,6 +2944,7 @@ pub fn run() {
             app.manage(Installing::default());
             app.manage(CacheFetching::default());
             app.manage(Running::default());
+            app.manage(Preparing::default());
             app.manage(Watching::default());
             app.manage(discord::Presence::new());
             #[cfg(target_os = "android")]
@@ -2966,6 +3081,10 @@ pub fn run() {
             list_programs,
             found_program,
             find_copies,
+            port_prepare_needed,
+            port_prepare,
+            port_prepare_stop,
+            open_setup_log,
             pick_copy,
             check_copy,
             place_copy,
