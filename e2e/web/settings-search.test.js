@@ -19,7 +19,8 @@ const shown = (page) =>
         .map((g) => [g.dataset.section, [...g.querySelectorAll("label.toggle, .ql-field-label, h3")].filter((e) => e.checkVisibility()).map((e) => e.textContent.trim())]),
     ),
   );
-const nav = (page) => page.locator(".settings-nav button").allInnerTexts();
+// Trimmed: WebKit's innerText ends a button's with a line break.
+const nav = async (page) => (await page.locator(".settings-nav button").allInnerTexts()).map((t) => t.trim());
 
 async function settings(options) {
   const s = await openApp(options);
