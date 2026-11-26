@@ -5,7 +5,7 @@
  * overrides); names, artwork and files always come from the catalog. The
  * last catalog data seen is cached so the library shows instantly offline.
  */
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type Dispatch, type ReactNode, type SetStateAction } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore, type Dispatch, type ReactNode, type SetStateAction } from "react";
 import { msg, plural, t } from "@lingui/core/macro";
 import { ApiError, createClient, createGithub, createGitlab, createProviders, githubAsset, githubProvider, githubRepository, parseRepository, toRef, type Asset, type Client, type Console, type Entry, type Github, type Gitlab, type Os, type HistoryRelease, type Release, type ReleaseScan, type ReleaseStatus, type UnverifiedRelease, type Verified, type Withdrawn, type Providers, type RepositoryRef } from "@quiverlauncher/api";
 import type { HiddenApp } from "./browse-hidden";
@@ -37,6 +37,7 @@ import { activate, pick, type Language } from "@quiverlauncher/i18n";
 import { providerFetch } from "./provider-fetch";
 import { cacheOf, cachedReleases, cacheUse, protectedFiles, sameVersion, type CacheSettings } from "./cache";
 import { requestCache } from "./cache-signal";
+import { DOWNLOADS_AT_ONCE, downloadSlots } from "./download-slots";
 
 /** The language the launcher shows in: the one picked in Settings, or else the system's nearest. */
 export const languageOf = (settings: Settings): Language => settings.language ?? pick(navigator.languages);
@@ -898,6 +899,44 @@ const LauncherNow = createContext<{ readonly current: Launcher } | null>(null);
  */
 export const useLauncherNow = () => useContext(LauncherNow)!;
 
+/**
+ * Each download's latest progress, kept apart from the launcher's `jobs`, which change only as a download starts,
+ * moves on to installing or ends. Progress comes several times a second; put in `jobs`, each one drew the whole
+ * launcher again (every page, card and menu), which kept the window too busy to answer the player while downloading.
+ * Only what shows a download's bytes (useJob, useJobs) draws again as they come.
+ */
+const progressNow = new Map<string, Progress>();
+const progressHeard = new Set<() => void>();
+let progressCount = 0;
+const hearProgress = (heard: () => void) => (progressHeard.add(heard), () => void progressHeard.delete(heard));
+function noteProgress(p: Progress) {
+  progressNow.set(p.id, p);
+  progressCount++;
+  progressHeard.forEach((heard) => heard());
+}
+/** A download starting over: its last one's bytes aren't this one's. */
+const forgetProgress = (id: string) => void (progressNow.delete(id) && progressCount++);
+/** Whether progress `p` is the same stage of the job as `job`: only its bytes differ. */
+const sameStage = (job: Job | undefined, p: Progress) =>
+  Boolean(job && !("error" in job) && job.phase === p.phase && Boolean(job.setup) === Boolean(p.setup) && (job.total ?? null) === (p.total ?? null));
+const withProgress = (job: Job | undefined): Job | undefined => {
+  const now = job && !("error" in job) ? progressNow.get(job.id) : undefined;
+  return now && job && sameStage(job, now) ? { ...job, received: now.received } : job;
+};
+/** An app's job, with its download's bytes so far: draws again as they come, for that app only. */
+export function useJob(id: string): Job | undefined {
+  const { jobs } = useLauncher();
+  useSyncExternalStore(hearProgress, () => progressNow.get(id));
+  return withProgress(jobs[id]);
+}
+/** Every job, with each download's bytes so far: for what sums them up (Downloads, its button and line). */
+export function useJobs(): Record<string, Job> {
+  const { jobs } = useLauncher();
+  const count = useSyncExternalStore(hearProgress, () => progressCount);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  return useMemo(() => Object.fromEntries(Object.entries(jobs).map(([id, job]) => [id, withProgress(job)!])), [jobs, count]);
+}
+
 /** How long a release waits before Quiver offers it: the time there is to withdraw a harmful one. */
 export const RELEASE_WAIT = 48 * 3_600_000;
 /** Whether a release came out so lately that its 48-hour wait is why Quiver doesn't offer it yet. */
@@ -1446,6 +1485,8 @@ export type Settings = {
    * updates through its setup either way.
    */
   runSetupPrograms?: boolean;
+  /** How many downloads run at once (download-slots.ts); unset: DOWNLOADS_AT_ONCE. */
+  downloadsAtOnce?: number;
   /** Every new install asks where it goes first (Install to…), whichever button started it. */
   askWhereToInstall?: boolean;
   /** New installs go in a folder for their console inside the apps folder (`groupFolder`). */
@@ -1679,6 +1720,12 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     [],
   );
   const [jobs, setJobs] = useState<Record<string, Job>>({});
+  const jobsNow = useRef(jobs);
+  jobsNow.current = jobs;
+  // Downloads past the setting's number wait their turn (download-slots.ts).
+  const atOnce = useRef(DOWNLOADS_AT_ONCE);
+  const slots = useRef<ReturnType<typeof downloadSlots>>(null!);
+  slots.current ??= downloadSlots(() => atOnce.current);
   const [appMoves, setAppMoves] = useState<Record<string, AppMove>>({});
   // The apps moving and installing this moment, kept as they change rather than as of a render: one mustn't start
   // while the other is under way, even when both start together (an automatic update during Sort into console folders).
@@ -1773,7 +1820,11 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       Promise.all([native.findV3Library().catch(() => null), native.v3AppsFolders().catch(() => [])])
         .then(([old, folders]) => setInstalls((i) => markedInApps(i, old?.apps ?? [], folders)))
         .catch(() => {});
-    const off = native.onProgress((p) => setJobs((j) => ({ ...j, [p.id]: p })));
+    // Its bytes alone go to what shows them (useJob); `jobs` changes as the download moves on a stage.
+    const off = native.onProgress((p) => {
+      noteProgress(p);
+      if (!sameStage(jobsNow.current[p.id], p)) setJobs((j) => (sameStage(j[p.id], p) ? j : { ...j, [p.id]: p }));
+    });
     const closed = native.onAppClosed(({ id, seconds }) => setInstalls((i) => (i[id] ? { ...i, [id]: { ...i[id], playTime: (i[id].playTime ?? 0) + seconds } } : i)));
     return () => void [off, closed].forEach((o) => o.then((stop) => stop()));
   }, [saved]);
@@ -1789,6 +1840,11 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
   usePersist("catalog", rawCatalog);
   const [settings, setSettings] = useState(saved.settings);
   usePersist("settings", settings);
+  const downloadsAtOnce = settings.downloadsAtOnce ?? DOWNLOADS_AT_ONCE;
+  useEffect(() => {
+    atOnce.current = downloadsAtOnce;
+    slots.current.changed();
+  }, [downloadsAtOnce]);
   // Each app's verified release as the player chose: the newest pre-release for an app that gets them. What was looked
   // up early for the other choice is left out, and looked up again.
   const prereleasesOn = Boolean(settings.prereleases);
@@ -2346,6 +2402,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     const updatesByItself = updatesOf(settings, installs[entry.id]) === "auto";
     // The player's own files are never downloaded over.
     if (isLocal(entry.id) || installs[entry.id]?.local) return;
+    forgetProgress(entry.id);
     setJobs((j) => ({ ...j, [entry.id]: { id: entry.id, phase: "downloading", received: 0, total: null } }));
     const ref = appRef(entry.id, entry.slug);
     const was = installs[entry.id];
@@ -2577,7 +2634,10 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       const githubHost = custom?.provider === "github" ? (custom.host ?? "github.com") : undefined;
       const hostToken = githubHost ? tokensNow.current[githubHost] : undefined;
       const viaApi = githubHost && hostToken ? githubAsset(githubProvider.apiBase(githubHost), custom!.repository, asset.id) : undefined;
-      const done = await native.install({
+      // Waiting for a slot shows as Waiting; its download shows as it starts.
+      const waits = () => setJobs((j) => ({ ...j, [entry.id]: { id: entry.id, phase: "waiting", received: 0, total: null } }));
+      const starts = () => setJobs((j) => (j[entry.id] && !("error" in j[entry.id]) && (j[entry.id] as Progress).phase === "waiting" ? { ...j, [entry.id]: { id: entry.id, phase: "downloading", received: 0, total: null } } : j));
+      const done = await slots.current.run(entry.id, () => (starts(), native.install({
         id: entry.id,
         url: viaApi ?? asset.url,
         ...(viaApi && { githubToken: hostToken, fallbackUrl: asset.url }),
@@ -2593,7 +2653,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         program: was?.installer ? was.program : undefined,
         ...(cacheNow && { cache: cacheUse(cacheNow, { id: entry.id, version: release.version, os: asset.os, arch: asset.architecture, slug: entry.slug }, protectedFiles(installs)) }),
         ...(keepSetup && { runSetup: false }),
-      });
+      })), waits);
       // Installed only, keeping every system's files or source code: those come once it's in, in the background.
       if (cacheNow?.mode === "installed" && (cacheNow.allPlatforms || cacheNow.sources) && !custom) requestCache([entry.id]);
       // A Windows installer's program, when Quiver can't tell which it is: the player says, as in Quiver Launcher 3.
@@ -3478,7 +3538,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         setAppMoves(({ [id]: _, ...rest }) => rest);
       }
     },
-    cancel: (id) => void native.cancelInstall(id).catch(() => {}),
+    cancel: (id) => void (slots.current.cancel(id) || native.cancelInstall(id).catch(() => {})),
   };
   const now = useRef(value);
   now.current = value;

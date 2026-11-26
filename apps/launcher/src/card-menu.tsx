@@ -13,7 +13,7 @@ import { Check, ChevronRight, Download, MoreHorizontal, Play, Plus } from "lucid
 import { t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import type { Entry } from "@quiverlauncher/api";
-import { canGet, earlyGetOffer, earlyOffer, filesAddable, hasUpdate, locatable, movable, pulledVerified, renamable, updateFor, useLauncher } from "./store";
+import { canGet, earlyGetOffer, earlyOffer, filesAddable, hasUpdate, locatable, movable, pulledVerified, renamable, updateFor, useJob, useLauncher } from "./store";
 import { Popover, newKey } from "./library";
 import { manageTags } from "./tag-settings";
 import { foldersOn, providerName, shortcutRequest, shortcutsOn, steamRunsUsNote, useAppDetail, withTag } from "./detail";
@@ -249,9 +249,9 @@ export const fileName = (path: string) => path.split(/[/\\]/).pop() || path;
 
 /** An app's main action, as its page has it, and what goes with it at the top of its menus. */
 function useMainItems(entry: Entry, onOpen: () => void): { main?: Item; top: Item[] } {
-  const { config, library, installs, jobs, catalog, get, play, cancel, dismiss, declineUpdate, addToLibrary } = useLauncher();
+  const { config, library, installs, catalog, get, play, cancel, dismiss, declineUpdate, addToLibrary } = useLauncher();
   const install = installs[entry.id];
-  const job = jobs[entry.id];
+  const job = useJob(entry.id);
   const failed = job && "error" in job;
   const busy = job && !failed;
   const latest = catalog[entry.id] ?? entry;
@@ -260,7 +260,7 @@ function useMainItems(entry: Entry, onOpen: () => void): { main?: Item; top: Ite
     ? // A local app has nothing to download: Try again plays it again.
       { text: t`Try again`, act: () => (install?.local ? (dismiss(entry.id), void play(entry.id)) : void get(entry)) }
     : busy
-      ? { text: job.phase === "installing" ? t`Installing…` : percent === null ? t`Downloading…` : t`Downloading ${percent}%`, act: () => {}, disabled: true }
+      ? { text: job.phase === "installing" ? t`Installing…` : job.phase === "waiting" ? t`Waiting to download…` : percent === null ? t`Downloading…` : t`Downloading ${percent}%`, act: () => {}, disabled: true }
       : install
         ? { text: t({ message: "Play", comment: "Menu item that starts an installed app" }), act: () => void play(entry.id), icon: "play" }
         : canGet(entry, config.os)

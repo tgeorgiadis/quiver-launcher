@@ -11,7 +11,7 @@ import { Trans } from "@lingui/react/macro";
 import { i18n } from "@quiverlauncher/i18n";
 import type { Entry } from "@quiverlauncher/api";
 import { Artwork, cardSources, coverOf } from "@quiverlauncher/ui";
-import { updateFor, useLauncher } from "./store";
+import { updateFor, useJobs, useLauncher } from "./store";
 import { downloadsLine, downloadsOf, leftOutOfUpdateAll, offersUpdates, sizeLabel, updateAllLabel, updateAllOf, updateKeysOf, type Downloads } from "./downloads";
 import { LauncherNotes, useLauncherUpdate } from "./update";
 import { namesOf } from "./library-tile";
@@ -26,7 +26,8 @@ import { clearCacheFiles, fetchNow, useFetchState, type CacheFile } from "./cach
 
 /** What's downloading and waiting, and the apps by the player's names for them. */
 function useDownloads() {
-  const { library, catalog, installs, jobs, settings } = useLauncher();
+  const { library, catalog, installs, settings } = useLauncher();
+  const jobs = useJobs();
   const launcher = useLauncherUpdate();
   const downloads = downloadsOf(library, jobs, installs, catalog, settings.hidden);
   const entryOf = (id: string): Entry | undefined => catalog[id] && withOverrides(catalog[id], library.find((i) => i.id === id)?.overrides);
@@ -223,7 +224,9 @@ export function DownloadsPage({
                   : t`Didn't finish`
                 : going.phase === "installing"
                   ? t`Installing`
-                  : size
+                  : going.phase === "waiting"
+                    ? t`Waiting its turn`
+                    : size
                     ? t`${received} of ${size}`
                     : going.received
                       ? t`${received} so far`

@@ -563,20 +563,34 @@ async fn respond(req: &InstallRequest) -> Result<reqwest::Response, String> {
 async fn stream_to(req: &InstallRequest, response: reqwest::Response, mut file: tokio::fs::File, progress: &impl Fn(Progress)) -> Result<String, String> {
     let total = response.content_length();
     let mut hasher = Sha256::new();
-    let (mut received, mut reported) = (0u64, 0u64);
+    let mut received = 0u64;
+    let mut reported: Option<std::time::Instant> = None;
     let mut stream = response.bytes_stream();
     while let Some(chunk) = stream.next().await {
         let chunk = chunk.map_err(|e| format!("The download stopped: {e}"))?;
         hasher.update(&chunk);
         file.write_all(&chunk).await.map_err(text)?;
         received += chunk.len() as u64;
-        if received - reported >= 256 * 1024 || Some(received) == total {
-            reported = received;
+        if progress_due(&mut reported, Some(received) == total) {
             progress(Progress { id: req.id.clone(), phase: "downloading", received, total, setup: false });
         }
     }
     file.flush().await.map_err(text)?;
     Ok(hex::encode(hasher.finalize()))
+}
+
+/// How often a download's progress goes to the window. Each report draws the parts that show it again, so a fast
+/// download reporting every 256 KB (hundreds a second) kept the window too busy to answer the player.
+const PROGRESS_EVERY: std::time::Duration = std::time::Duration::from_millis(100);
+
+/// Whether a download's progress is due to go out: the first, the last, and then one every `PROGRESS_EVERY`.
+fn progress_due(last: &mut Option<std::time::Instant>, finished: bool) -> bool {
+    let now = std::time::Instant::now();
+    if finished || last.is_none_or(|at| now.duration_since(at) >= PROGRESS_EVERY) {
+        *last = Some(now);
+        return true;
+    }
+    false
 }
 
 /// How a tar archive is compressed.
@@ -1332,6 +1346,16 @@ fn unrar_into(_file: &Path, _out: &Path) -> Result<(), String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn progress_goes_out_a_few_times_a_second_and_always_at_the_end() {
+        let mut last = None;
+        assert!(progress_due(&mut last, false), "the first");
+        assert!(!(0..1000).any(|_| progress_due(&mut last, false)), "not again straight away");
+        assert!(progress_due(&mut last, true), "the last, however soon");
+        std::thread::sleep(PROGRESS_EVERY);
+        assert!(progress_due(&mut last, false), "once the time is up");
+    }
 
     /// A one-request HTTP server on this computer: what `answer` says to the request it gets, which goes to `seen`.
     fn serve(answer: impl FnOnce(&str) -> String + Send + 'static) -> (u16, std::sync::mpsc::Receiver<String>) {
