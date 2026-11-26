@@ -52,6 +52,14 @@ test("typing shows the settings that match from every section, and the list only
     await pause(100);
     assert.deepEqual(await shown(page), { advanced: ["GitHub token", "GitLab token", "Other repository tokens"] });
 
+    // In a list of boxes under one label, only the boxes that match.
+    await field.fill("update available");
+    await pause(100);
+    assert.deepEqual(await shown(page), { library: ["Update available"] });
+    await field.fill("show on cards");
+    await pause(100);
+    assert.equal((await shown(page)).library.length > 5, true, "the list's label finds all of it");
+
     await field.fill("xyzzy");
     await page.getByText("No settings match “xyzzy”.").waitFor();
     assert.deepEqual(await nav(page), []);

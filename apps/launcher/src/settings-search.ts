@@ -23,9 +23,20 @@ const SETTINGS = [
   "[data-setting]",
 ].join(", ");
 /** Several settings, under a heading of their own or not. */
-const GROUPS = [".settings-search-group", ".settings-section", ".controls", ".view-options", ".update-choices", "table.bindings", "table.bindings tbody", "[data-settings]"].join(", ");
+// A list of boxes under one label (Show on cards) is a group too: "update" shows its Update available, not every box.
+const GROUPS = [
+  ".settings-search-group",
+  ".settings-section",
+  ".controls",
+  ".view-options",
+  ".view-choice:has(> label.toggle)",
+  ".update-choices",
+  "table.bindings",
+  "table.bindings tbody",
+  "[data-settings]",
+].join(", ");
 /** What a group is called. */
-const HEADINGS = ":scope > :is(h2, h3, legend)";
+const HEADINGS = ":scope > :is(h2, h3, legend, .view-label)";
 
 /** Marks what the search hides (app.css). */
 export const HIDDEN = "data-search-hidden";
