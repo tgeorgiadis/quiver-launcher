@@ -4,8 +4,8 @@
  * large interface size) the list is the page, and a section opens on its own
  * with a way back to the list; Back from a section goes to the list first.
  */
-import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
-import { ArrowLeft, ArrowRight, ChevronRight, Clock, Cloud, Disc3, Folder, FolderInput, FolderOpen, Gamepad2, HardDrive, Library, Monitor, RefreshCw, Wrench } from "lucide-react";
+import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
+import { ArrowLeft, ArrowRight, ChevronRight, Clock, Cloud, Disc3, Folder, FolderInput, FolderOpen, Gamepad2, HardDrive, Library, Monitor, RefreshCw, Search, Wrench, X } from "lucide-react";
 import { msg, plural, t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import { i18n, LANGUAGES, type Language } from "@quiverlauncher/i18n";
@@ -39,6 +39,7 @@ import type { Entry } from "@quiverlauncher/api";
 import { INTERFACE_SIZES } from "./zoom";
 import { GameCopySettings } from "./own-copy-settings";
 import { foldersOn, useConsolePicks } from "./detail";
+import { filterSettings, highlightMatches } from "./settings-search";
 
 type Section = "general" | "library" | "apps" | "copies" | "cloud" | "cache" | "controllers" | "updates" | "advanced";
 // Names put in the language when shown, not here, where the module loads before any is picked.
@@ -101,6 +102,59 @@ export function SettingsPage({
   const backLink = useRef<HTMLButtonElement>(null);
   const list = useRef<HTMLElement>(null);
   const left = useRef<Section | null>(null);
+  // The search (settings-search.ts): every section at once, what doesn't match hidden.
+  const [query, setQuery] = useState("");
+  const typed = query.trim();
+  const searching = typed !== "";
+  const field = useRef<HTMLInputElement>(null);
+  const results = useRef<HTMLDivElement>(null);
+  // The sections something matched in; null until the first look.
+  const [found, setFound] = useState<string[] | null>(null);
+  useLayoutEffect(() => {
+    const root = results.current;
+    if (!searching || !root) {
+      setFound(null);
+      highlightMatches(document.body, "");
+      return;
+    }
+    // Again as a section's settings come in or change (a token's limits, the cache's size…).
+    let frame = 0;
+    const look = () => {
+      frame = 0;
+      const now = filterSettings(root, query);
+      setFound((was) => (was && was.join() === now.join() ? was : now));
+      highlightMatches(root, query);
+    };
+    look();
+    const watch = new MutationObserver(() => void (frame ||= requestAnimationFrame(look)));
+    watch.observe(root, { childList: true, subtree: true, characterData: true });
+    return () => {
+      watch.disconnect();
+      cancelAnimationFrame(frame);
+    };
+  }, [searching, query]);
+  useEffect(() => () => highlightMatches(document.body, ""), []);
+  // Ctrl+F (⌘F) goes to the search, from anywhere on the page; Escape, or a controller's Back, empties it before it leaves the page.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (document.querySelector('[role="dialog"], [role="menu"], [role="listbox"], .menu.floating')) return;
+      if ((e.ctrlKey || e.metaKey) && !e.altKey && e.key.toLowerCase() === "f") {
+        e.preventDefault();
+        if (!sideBySide) setPicked(null);
+        requestAnimationFrame(() => {
+          field.current?.focus();
+          field.current?.select();
+        });
+      } else if (e.key === "Escape" && searching) {
+        e.stopImmediatePropagation();
+        e.preventDefault();
+        setQuery("");
+        field.current?.focus({ preventScroll: true });
+      }
+    };
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
+  }, [sideBySide, searching]);
   // Narrow, Escape or a controller's Back leaves the section for the list, ahead of the page's own Back; a dialog over the page takes it instead.
   useEffect(() => {
     if (sideBySide || !picked) return;
@@ -134,57 +188,119 @@ export function SettingsPage({
       <h1>{sideBySide || !name ? t`Settings` : name}</h1>
       <div className="settings-columns">
         {(sideBySide || !section) && (
-          <nav ref={list} className="settings-nav" aria-label={t`Settings sections`}>
-            {sections.map(([key, label, icon]) => (
-              <button key={key} data-section={key} aria-current={key === section ? "page" : undefined} onClick={() => setPicked(key)}>
-                {icon}
-                <span>{i18n._(label)}</span>
-                {!sideBySide && <ChevronRight size={16} className="settings-nav-more" aria-hidden="true" />}
-              </button>
-            ))}
-          </nav>
-        )}
-        {section && (
-          <div className="settings-pane" role="region" aria-label={name}>
-            {sideBySide && <h2>{name}</h2>}
-            {section === "general" ? (
-              <GeneralSettings onRunSetup={onRunSetup} />
-            ) : section === "library" ? (
-              <LibrarySettings v3={anchor === "v3"} />
-            ) : section === "apps" ? (
-              <>
-                <AppsFolder />
-                <PortableDefaultSetting />
-                <WindowsRunnerSetting />
-              </>
-            ) : section === "copies" ? (
-              <GameCopySettings />
-            ) : section === "cloud" ? (
-              <>
-                <CloudSavesSettings />
-                <SyncFolderSettings />
-              </>
-            ) : section === "cache" ? (
-              <CacheSettingsSection onOpen={onOpen} />
-            ) : section === "controllers" ? (
-              <ControlSettings />
-            ) : section === "updates" ? (
-              <>
-                <AppUpdatesSetting />
-                <UpdateSettings />
-              </>
-            ) : (
-              <>
-                <GithubTokenSetting />
-                <GitlabTokenSetting />
-                <RepositoryTokens />
-              </>
+          <div className="settings-side">
+            <label className="search settings-search">
+              <Search size={16} aria-hidden="true" />
+              <input
+                ref={field}
+                type="text"
+                aria-label={t`Search settings`}
+                placeholder={t`Search settings`}
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+              />
+              {query && (
+                <button type="button" className="search-clear" aria-label={t`Clear search`} onClick={() => (setQuery(""), field.current?.focus())}>
+                  <X size={14} />
+                </button>
+              )}
+            </label>
+            {/* Searching, the sections something matched in, each a way to its part of the results; narrow, the results are the page. */}
+            {(sideBySide || !searching) && (
+              <nav ref={list} className="settings-nav" aria-label={t`Settings sections`}>
+                {sections
+                  .filter(([key]) => !searching || !found || found.includes(key))
+                  .map(([key, label, icon]) => (
+                    <button
+                      key={key}
+                      data-section={key}
+                      aria-current={!searching && key === section ? "page" : undefined}
+                      onClick={() =>
+                        searching
+                          ? results.current?.querySelector(`.settings-search-group[data-section="${key}"]`)?.scrollIntoView({ block: "start", behavior: "smooth" })
+                          : setPicked(key)
+                      }
+                    >
+                      {icon}
+                      <span>{i18n._(label)}</span>
+                      {!sideBySide && <ChevronRight size={16} className="settings-nav-more" aria-hidden="true" />}
+                    </button>
+                  ))}
+              </nav>
             )}
           </div>
+        )}
+        {searching ? (
+          <div ref={results} className="settings-pane settings-results" role="region" aria-label={t`Search results`}>
+            {sections.map(([key, label]) => (
+              <div key={key} className="settings-search-group" data-section={key}>
+                <h2>{i18n._(label)}</h2>
+                <SectionBody section={key} onRunSetup={onRunSetup} onOpen={onOpen} />
+              </div>
+            ))}
+            {found?.length === 0 && (
+              <p className="settings-no-match" role="status">
+                <Trans>No settings match “{typed}”.</Trans>
+              </p>
+            )}
+          </div>
+        ) : (
+          section && (
+            <div className="settings-pane" role="region" aria-label={name}>
+              {sideBySide && <h2>{name}</h2>}
+              <SectionBody section={section} v3={anchor === "v3"} onRunSetup={onRunSetup} onOpen={onOpen} />
+            </div>
+          )
         )}
       </div>
     </section>
   );
+}
+
+/** What a section has. */
+function SectionBody({ section, v3, onRunSetup, onOpen }: { section: Section; v3?: boolean; onRunSetup: () => void; onOpen: (entry: Entry) => void }) {
+  switch (section) {
+    case "general":
+      return <GeneralSettings onRunSetup={onRunSetup} />;
+    case "library":
+      return <LibrarySettings v3={v3} />;
+    case "apps":
+      return (
+        <>
+          <AppsFolder />
+          <PortableDefaultSetting />
+          <WindowsRunnerSetting />
+        </>
+      );
+    case "copies":
+      return <GameCopySettings />;
+    case "cloud":
+      return (
+        <>
+          <CloudSavesSettings />
+          <SyncFolderSettings />
+        </>
+      );
+    case "cache":
+      return <CacheSettingsSection onOpen={onOpen} />;
+    case "controllers":
+      return <ControlSettings />;
+    case "updates":
+      return (
+        <>
+          <AppUpdatesSetting />
+          <UpdateSettings />
+        </>
+      );
+    case "advanced":
+      return (
+        <>
+          <GithubTokenSetting />
+          <GitlabTokenSetting />
+          <RepositoryTokens />
+        </>
+      );
+  }
 }
 
 /**
@@ -217,6 +333,7 @@ function TraySettings() {
           }}
         />
         <Trans>Start with Windows, in the system tray</Trans>
+        <span hidden data-search={t({ message: "startup autostart login boot", comment: "Extra words, separated by spaces, that a search in Settings finds this setting by, besides its name: Start with Windows" })} />
       </label>
     </>
   );
@@ -266,6 +383,7 @@ function GeneralSettings({ onRunSetup }: { onRunSetup: () => void }) {
       </label>
       <Field label={<Trans comment="Setting: the launcher's larger, full-screen look for a controller">TV mode</Trans>}>
         <select
+          data-search={t({ message: "big picture couch controller", comment: "Extra words, separated by spaces, that a search in Settings finds this setting by, besides its name: TV mode" })}
           value={settings.tvMode ?? "auto"}
           onChange={(e) => setSettings({ ...settings, tvMode: e.target.value === "auto" ? undefined : (e.target.value as "on" | "off") })}
         >
@@ -289,7 +407,7 @@ function GeneralSettings({ onRunSetup }: { onRunSetup: () => void }) {
       )}
       {config.os === "windows" && <TraySettings />}
       <Field label={<Trans>Interface size</Trans>}>
-        <select value={settings.scale ?? 1} onChange={(e) => setSettings({ ...settings, scale: Number(e.target.value) })}>
+        <select data-search={t({ message: "zoom scale text", comment: "Extra words, separated by spaces, that a search in Settings finds this setting by, besides its name: Interface size" })} value={settings.scale ?? 1} onChange={(e) => setSettings({ ...settings, scale: Number(e.target.value) })}>
           {INTERFACE_SIZES.map((size) => (
             <option key={size} value={size}>
               {new Intl.NumberFormat(i18n.locale, { style: "percent" }).format(size)}
@@ -298,7 +416,7 @@ function GeneralSettings({ onRunSetup }: { onRunSetup: () => void }) {
         </select>
       </Field>
       <Field label={<Trans>Mouse wheel speed</Trans>}>
-        <select value={settings.scrollSpeed ?? 1} onChange={(e) => setSettings({ ...settings, scrollSpeed: Number(e.target.value) === 1 ? undefined : Number(e.target.value) })}>
+        <select data-search={t({ message: "scroll", comment: "Extra words, separated by spaces, that a search in Settings finds this setting by, besides its name: Mouse wheel speed" })} value={settings.scrollSpeed ?? 1} onChange={(e) => setSettings({ ...settings, scrollSpeed: Number(e.target.value) === 1 ? undefined : Number(e.target.value) })}>
           {WHEEL_SPEEDS.map((speed) => (
             <option key={speed} value={speed}>
               {speed === 1 ? t({ message: "Normal", comment: "Mouse wheel speed: the system's" }) : t({ message: `${speed}×`, comment: "Mouse wheel speed: times as far as the system's, such as 2×" })}
@@ -312,6 +430,7 @@ function GeneralSettings({ onRunSetup }: { onRunSetup: () => void }) {
       </label>
       <Field label={<Trans>Theme</Trans>}>
         <select
+          data-search={t({ message: "appearance dark mode light mode colors", comment: "Extra words, separated by spaces, that a search in Settings finds this setting by, besides its name: Theme" })}
           value={settings.theme ?? "system"}
           onChange={(e) => setSettings({ ...settings, theme: e.target.value === "system" ? undefined : (e.target.value as Theme) })}
         >
@@ -347,6 +466,7 @@ export function LanguageSetting() {
   return (
     <Field label={<Trans>Language</Trans>}>
       <select
+        data-search={t({ message: "translation", comment: "Extra words, separated by spaces, that a search in Settings finds this setting by, besides its name: Language" })}
         value={settings.language ?? "system"}
         onChange={(e) => setSettings({ ...settings, language: e.target.value === "system" ? undefined : (e.target.value as Language) })}
       >

@@ -1486,6 +1486,11 @@ msgstr "Secciones de la app"
 msgid "App updates"
 msgstr "Actualizaciones de apps"
 
+#. Extra words, separated by spaces, that a search in Settings finds this setting by, besides its name: Theme
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "appearance dark mode light mode colors"
+msgstr "apariencia modo oscuro modo claro colores"
+
 #: ../../apps/launcher/src/App.tsx
 msgid "Apps"
 msgstr "Apps"
@@ -1740,6 +1745,11 @@ msgstr "Antes de desinstalar"
 #: ../../apps/launcher/src/ways-to-play.tsx
 msgid "Best first, by player feedback"
 msgstr "Los mejores primero, según las opiniones de los jugadores"
+
+#. Extra words, separated by spaces, that a search in Settings finds this setting by, besides its name: TV mode
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "big picture couch controller"
+msgstr "big picture sofá control televisor"
 
 #. A release Quiver won't install
 #: ../ui/src/index.tsx
@@ -2271,6 +2281,7 @@ msgstr "Limpiar huérfanos…"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/library.tsx
+#: ../../apps/launcher/src/settings-page.tsx
 msgid "Clear search"
 msgstr "Limpiar búsqueda"
 
@@ -4040,6 +4051,11 @@ msgstr "Teclado"
 msgid "Keyboard and mouse"
 msgstr "Teclado y mouse"
 
+#. Extra words, separated by spaces, that a search in Settings finds this setting by, besides its name: the table of key and controller bindings
+#: ../../apps/launcher/src/controls.tsx
+msgid "keys keyboard buttons shortcuts remap"
+msgstr "teclas teclado botones atajos asignar"
+
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Language"
 msgstr "Idioma"
@@ -4887,6 +4903,10 @@ msgstr "No se encontraron versiones."
 #: ../../apps/launcher/src/ways-to-play.tsx
 msgid "No reports yet"
 msgstr "Aún sin reportes"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "No settings match “{typed}”."
+msgstr "Ningún ajuste coincide con “{typed}”."
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "No system yet"
@@ -6386,6 +6406,11 @@ msgstr "Di qué salió mal, para que el desarrollador y otros jugadores puedan e
 msgid "Say what's wrong or missing."
 msgstr "Di qué está mal o qué falta."
 
+#. Extra words, separated by spaces, that a search in Settings finds this setting by, besides its name: Mouse wheel speed
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "scroll"
+msgstr "desplazamiento"
+
 #. Controller hint: what the scroll stick does
 #: ../../apps/launcher/src/spatial.ts
 msgid "Scroll"
@@ -6427,6 +6452,14 @@ msgstr "Buscar mods"
 #: ../../apps/launcher/src/App.tsx
 msgid "Search ports, games and tools"
 msgstr "Buscar ports, juegos y herramientas"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Search results"
+msgstr "Resultados de la búsqueda"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Search settings"
+msgstr "Buscar ajustes"
 
 #: ../../apps/launcher/src/tag-settings.tsx
 msgid "Search tags"
@@ -7082,6 +7115,11 @@ msgstr "La inicia donde está. No se descarga, mueve ni elimina nada."
 #: ../../apps/launcher/src/custom.ts
 msgid "Starts the program you put in its folder, {folder}."
 msgstr "Inicia el programa que pusiste en su carpeta, {folder}."
+
+#. Extra words, separated by spaces, that a search in Settings finds this setting by, besides its name: Start with Windows
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "startup autostart login boot"
+msgstr "inicio arranque automático sesión"
 
 #. How the selected apps update: never, each staying on the version it has
 #: ../../apps/launcher/src/library-ticking.tsx
@@ -7799,6 +7837,11 @@ msgstr "Entre las mejor calificadas"
 #: ../../apps/launcher/src/media.tsx
 msgid "Trailer"
 msgstr "Tráiler"
+
+#. Extra words, separated by spaces, that a search in Settings finds this setting by, besides its name: Language
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "translation"
+msgstr "traducción idioma"
 
 #: ../../apps/launcher/src/detail.tsx
 msgid "Trusted creator"
@@ -8730,3 +8773,8 @@ msgstr "Se colocaron tus partidas de {device}. Las que estaban aquí quedaron re
 #: ../../apps/launcher/src/tag-settings.tsx
 msgid "Your tags"
 msgstr "Tus etiquetas"
+
+#. Extra words, separated by spaces, that a search in Settings finds this setting by, besides its name: Interface size
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "zoom scale text"
+msgstr "zoom escala texto tamaño"

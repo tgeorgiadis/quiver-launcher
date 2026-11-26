@@ -289,13 +289,13 @@ function ahead(direction: Direction, current: HTMLElement, among: HTMLElement[])
 /**
  * What Up and Down keep to, leaving only once nothing more in it is that way,
  * so the page beside one isn't left for it (Play's Down is the page's tabs, not
- * the library's sidebar): the top bar, the library's sidebar, Settings' list,
+ * the library's sidebar): the top bar, the library's sidebar, Settings' list (and its search over it),
  * and a panel open over the page (View options), which the page's Up and Down
  * don't go into either. Sideways, only the top bar keeps to itself (the
  * account's Left is Browse, not the page under the bar). A panel, once in it,
  * is never left by a direction at all (move).
  */
-const AREAS = ".topbar, .library-sidebar, .settings-nav, .menu.floating";
+const AREAS = ".topbar, .library-sidebar, .settings-side, .menu.floating";
 
 /** Where a library starts for the d-pad: Continue playing's Play, else the app open beside its sidebar, else its first card. */
 const libraryStart = (all: HTMLElement[]) => all.find((el) => el.matches(".continue-play, .library-sidebar [aria-current], .library-grid .card-open"));
@@ -329,6 +329,13 @@ function landing(direction: Direction, current: HTMLElement, best: HTMLElement, 
   const vertical = direction === "up" || direction === "down";
   const among = (el: HTMLElement | null) => (el && all.includes(el) ? el : undefined);
   const list = best.closest(".settings-nav, .library-sidebar");
+  // Down from Settings' search: into what it found, else the list's first section (not the open one's, nor the
+  // section's first control, which may be nearer).
+  if (direction === "down" && current.closest(".settings-search")) {
+    const results = document.querySelector(".settings-results");
+    const to = results ? all.find((el) => results.contains(el)) : all.find((el) => el.closest(".settings-nav"));
+    if (to) return to;
+  }
   if (list && !list.contains(current) && !(vertical && best.closest(".sidebar-top"))) return among(list.querySelector<HTMLElement>("[aria-current]")) ?? best;
   if (!vertical) return best;
   // Up from the library's search, on its row under the tabs and tools: the sort, the tools' first, rather than

@@ -1486,6 +1486,11 @@ msgstr "Разделы приложения"
 msgid "App updates"
 msgstr "Обновления приложений"
 
+#. Extra words, separated by spaces, that a search in Settings finds this setting by, besides its name: Theme
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "appearance dark mode light mode colors"
+msgstr "внешний вид тёмная тема светлая тема цвета"
+
 #: ../../apps/launcher/src/App.tsx
 msgid "Apps"
 msgstr "Приложения"
@@ -1740,6 +1745,11 @@ msgstr "Перед удалением"
 #: ../../apps/launcher/src/ways-to-play.tsx
 msgid "Best first, by player feedback"
 msgstr "Сначала лучшие, по отзывам игроков"
+
+#. Extra words, separated by spaces, that a search in Settings finds this setting by, besides its name: TV mode
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "big picture couch controller"
+msgstr "big picture диван геймпад телевизор"
 
 #. A release Quiver won't install
 #: ../ui/src/index.tsx
@@ -2271,6 +2281,7 @@ msgstr "Удалить лишние…"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/library.tsx
+#: ../../apps/launcher/src/settings-page.tsx
 msgid "Clear search"
 msgstr "Очистить поиск"
 
@@ -4040,6 +4051,11 @@ msgstr "Клавиатура"
 msgid "Keyboard and mouse"
 msgstr "Клавиатура и мышь"
 
+#. Extra words, separated by spaces, that a search in Settings finds this setting by, besides its name: the table of key and controller bindings
+#: ../../apps/launcher/src/controls.tsx
+msgid "keys keyboard buttons shortcuts remap"
+msgstr "клавиши клавиатура кнопки сочетания назначение"
+
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Language"
 msgstr "Язык"
@@ -4887,6 +4903,10 @@ msgstr "Версии не найдены."
 #: ../../apps/launcher/src/ways-to-play.tsx
 msgid "No reports yet"
 msgstr "Отзывов пока нет"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "No settings match “{typed}”."
+msgstr "Нет настроек, подходящих под «{typed}»."
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "No system yet"
@@ -6386,6 +6406,11 @@ msgstr "Опишите, что пошло не так, чтобы разрабо
 msgid "Say what's wrong or missing."
 msgstr "Опишите, что неверно или чего не хватает."
 
+#. Extra words, separated by spaces, that a search in Settings finds this setting by, besides its name: Mouse wheel speed
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "scroll"
+msgstr "прокрутка"
+
 #. Controller hint: what the scroll stick does
 #: ../../apps/launcher/src/spatial.ts
 msgid "Scroll"
@@ -6427,6 +6452,14 @@ msgstr "Поиск модов"
 #: ../../apps/launcher/src/App.tsx
 msgid "Search ports, games and tools"
 msgstr "Поиск портов, игр и инструментов"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Search results"
+msgstr "Результаты поиска"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Search settings"
+msgstr "Поиск по настройкам"
 
 #: ../../apps/launcher/src/tag-settings.tsx
 msgid "Search tags"
@@ -7082,6 +7115,11 @@ msgstr "Запускает его на месте. Ничего не скачи�
 #: ../../apps/launcher/src/custom.ts
 msgid "Starts the program you put in its folder, {folder}."
 msgstr "Запускает программу, которую вы положили в его папку {folder}."
+
+#. Extra words, separated by spaces, that a search in Settings finds this setting by, besides its name: Start with Windows
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "startup autostart login boot"
+msgstr "автозапуск запуск вход загрузка"
 
 #. How the selected apps update: never, each staying on the version it has
 #: ../../apps/launcher/src/library-ticking.tsx
@@ -7799,6 +7837,11 @@ msgstr "Высокий рейтинг"
 #: ../../apps/launcher/src/media.tsx
 msgid "Trailer"
 msgstr "Трейлер"
+
+#. Extra words, separated by spaces, that a search in Settings finds this setting by, besides its name: Language
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "translation"
+msgstr "перевод язык"
 
 #: ../../apps/launcher/src/detail.tsx
 msgid "Trusted creator"
@@ -8730,3 +8773,8 @@ msgstr "Сохранения с {device} установлены. Для тех, 
 #: ../../apps/launcher/src/tag-settings.tsx
 msgid "Your tags"
 msgstr "Ваши теги"
+
+#. Extra words, separated by spaces, that a search in Settings finds this setting by, besides its name: Interface size
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "zoom scale text"
+msgstr "масштаб размер текста"

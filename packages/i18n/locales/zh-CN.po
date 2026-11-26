@@ -1486,6 +1486,11 @@ msgstr "应用分区"
 msgid "App updates"
 msgstr "应用更新"
 
+#. Extra words, separated by spaces, that a search in Settings finds this setting by, besides its name: Theme
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "appearance dark mode light mode colors"
+msgstr "外观 深色模式 浅色模式 颜色"
+
 #: ../../apps/launcher/src/App.tsx
 msgid "Apps"
 msgstr "应用"
@@ -1740,6 +1745,11 @@ msgstr "卸载前"
 #: ../../apps/launcher/src/ways-to-play.tsx
 msgid "Best first, by player feedback"
 msgstr "按玩家反馈从优到劣排序"
+
+#. Extra words, separated by spaces, that a search in Settings finds this setting by, besides its name: TV mode
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "big picture couch controller"
+msgstr "大屏幕 沙发 手柄 电视"
 
 #. A release Quiver won't install
 #: ../ui/src/index.tsx
@@ -2271,6 +2281,7 @@ msgstr "清理孤立文件…"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/library.tsx
+#: ../../apps/launcher/src/settings-page.tsx
 msgid "Clear search"
 msgstr "清除搜索内容"
 
@@ -4040,6 +4051,11 @@ msgstr "键盘"
 msgid "Keyboard and mouse"
 msgstr "键盘和鼠标"
 
+#. Extra words, separated by spaces, that a search in Settings finds this setting by, besides its name: the table of key and controller bindings
+#: ../../apps/launcher/src/controls.tsx
+msgid "keys keyboard buttons shortcuts remap"
+msgstr "按键 键盘 按钮 快捷键 映射"
+
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Language"
 msgstr "语言"
@@ -4887,6 +4903,10 @@ msgstr "未找到版本。"
 #: ../../apps/launcher/src/ways-to-play.tsx
 msgid "No reports yet"
 msgstr "暂无反馈"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "No settings match “{typed}”."
+msgstr "没有与“{typed}”匹配的设置。"
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "No system yet"
@@ -6386,6 +6406,11 @@ msgstr "说明出了什么问题，方便开发者和其他玩家理解。"
 msgid "Say what's wrong or missing."
 msgstr "说明问题或缺少的内容。"
 
+#. Extra words, separated by spaces, that a search in Settings finds this setting by, besides its name: Mouse wheel speed
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "scroll"
+msgstr "滚动"
+
 #. Controller hint: what the scroll stick does
 #: ../../apps/launcher/src/spatial.ts
 msgid "Scroll"
@@ -6427,6 +6452,14 @@ msgstr "搜索模组"
 #: ../../apps/launcher/src/App.tsx
 msgid "Search ports, games and tools"
 msgstr "搜索移植版、游戏和工具"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Search results"
+msgstr "搜索结果"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Search settings"
+msgstr "搜索设置"
 
 #: ../../apps/launcher/src/tag-settings.tsx
 msgid "Search tags"
@@ -7082,6 +7115,11 @@ msgstr "从当前位置启动。不会下载、移动或删除任何内容。"
 #: ../../apps/launcher/src/custom.ts
 msgid "Starts the program you put in its folder, {folder}."
 msgstr "启动你放入其文件夹 {folder} 中的程序。"
+
+#. Extra words, separated by spaces, that a search in Settings finds this setting by, besides its name: Start with Windows
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "startup autostart login boot"
+msgstr "开机启动 自动启动 登录"
 
 #. How the selected apps update: never, each staying on the version it has
 #: ../../apps/launcher/src/library-ticking.tsx
@@ -7799,6 +7837,11 @@ msgstr "评分最高"
 #: ../../apps/launcher/src/media.tsx
 msgid "Trailer"
 msgstr "预告片"
+
+#. Extra words, separated by spaces, that a search in Settings finds this setting by, besides its name: Language
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "translation"
+msgstr "翻译 语言"
 
 #: ../../apps/launcher/src/detail.tsx
 msgid "Trusted creator"
@@ -8730,3 +8773,8 @@ msgstr "已换上来自 {device} 的存档。原先在这里的存档已备份�
 #: ../../apps/launcher/src/tag-settings.tsx
 msgid "Your tags"
 msgstr "你的标签"
+
+#. Extra words, separated by spaces, that a search in Settings finds this setting by, besides its name: Interface size
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "zoom scale text"
+msgstr "缩放 比例 文字 大小"

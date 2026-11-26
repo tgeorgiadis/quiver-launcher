@@ -2441,17 +2441,35 @@ main > div:not([hidden]) > .library-split > .library-pane { padding-bottom: var(
 /* A setting's select, its label above it: no wider than its longest choice needs. */
 .settings-pane .ql-field { max-width: 320px; }
 /* A setting of the pane's own is a row: its name on the left, its control on the right, a line between it and the next. */
-.settings-pane > :is(.toggle, .ql-field), .settings-section > :is(.toggle, .ql-field) {
+:is(.settings-pane, .settings-search-group) > :is(.toggle, .ql-field), .settings-section > :is(.toggle, .ql-field) {
   display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 16px;
   max-width: none; padding-top: 12px; border-top: 1px solid var(--line); color: var(--fg); font-size: 14px;
 }
-.settings-pane > :is(.toggle, .ql-field):is(:first-child, h2 + *), .settings-section > :is(.toggle, .ql-field):first-child { padding-top: 0; border-top: 0; }
-.settings-pane > .toggle, .settings-section > .toggle { flex-direction: row-reverse; flex-wrap: nowrap; }
-.settings-pane > .ql-field > :is(select, input), .settings-section > .ql-field > :is(select, input) { flex: 0 1 220px; width: auto; }
-.settings-pane > .ql-field > :is(.ql-field-hint, .ql-field-error), .settings-section > .ql-field > :is(.ql-field-hint, .ql-field-error) { flex-basis: 100%; }
+:is(.settings-pane, .settings-search-group) > :is(.toggle, .ql-field):is(:first-child, h2 + *), .settings-section > :is(.toggle, .ql-field):first-child { padding-top: 0; border-top: 0; }
+:is(.settings-pane, .settings-search-group) > .toggle, .settings-section > .toggle { flex-direction: row-reverse; flex-wrap: nowrap; }
+:is(.settings-pane, .settings-search-group) > .ql-field > :is(select, input), .settings-section > .ql-field > :is(select, input) { flex: 0 1 220px; width: auto; }
+:is(.settings-pane, .settings-search-group) > .ql-field > :is(.ql-field-hint, .ql-field-error), .settings-section > .ql-field > :is(.ql-field-hint, .ql-field-error) { flex-basis: 100%; }
 /* The pane's heading is the section's, so its first part needs no line of its own. */
-.settings-pane > :is(:first-child, h2 + *):is(.settings-section, .controls) { padding-top: 0; border-top: 0; }
+:is(.settings-pane, .settings-search-group) > :is(:first-child, h2 + *):is(.settings-section, .controls) { padding-top: 0; border-top: 0; }
 .settings-pane :is(.settings-section, .controls) > button { justify-self: start; }
+/*
+ * Searching (settings-search.ts): the field over the list, and every section's matching settings in one pane, each
+ * section under its name; what doesn't match is hidden, and the words found are marked.
+ */
+.settings-side { position: sticky; top: 20px; flex: 0 0 210px; display: grid; align-content: start; gap: 12px; }
+.settings-side .settings-nav { position: static; }
+.settings-search { min-width: 0; max-width: none; padding: 8px 10px; }
+.settings-search:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.settings-search input { min-width: 0; }
+.settings-results { gap: 36px; }
+.settings-search-group { display: grid; align-content: start; gap: 14px; min-width: 0; }
+.settings-no-match { color: var(--muted); font-size: 15px; }
+/* A line between results, not over a section's first (what was before it may be hidden). */
+.settings-search-group > :is(.toggle, .ql-field, .settings-section, .controls) { padding-top: 0; border-top: 0; }
+.settings-search-group > :not(h2, [data-search-hidden]) ~ :is(.toggle, .ql-field) { padding-top: 12px; border-top: 1px solid var(--line); }
+.settings-search-group > :not(h2, [data-search-hidden]) ~ :is(.settings-section, .controls) { padding-top: 14px; border-top: 1px solid var(--line); }
+[data-search-hidden] { display: none !important; }
+::highlight(settings-search) { background-color: color-mix(in srgb, var(--accent) 32%, transparent); color: var(--strong); }
 .music-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
 .background-preview { width: min(280px, 100%); aspect-ratio: 16 / 9; overflow: hidden; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); }
 .background-preview img { display: block; width: 100%; height: 100%; object-fit: cover; }
@@ -2463,6 +2481,8 @@ main > div:not([hidden]) > .library-split > .library-pane { padding-bottom: var(
 .library-background { position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; will-change: transform; }
 .library-background img { display: block; width: 100%; height: 100%; object-fit: cover; }
 .shell:has(.library-background) > .topbar { background: linear-gradient(var(--topbar), var(--topbar)), var(--bg); }
+.settings-page:not([data-side-by-side]) .settings-columns { flex-direction: column; align-items: stretch; gap: 16px; }
+.settings-page:not([data-side-by-side]) .settings-side { position: static; flex: 1; }
 .settings-page:not([data-side-by-side]) .settings-nav { position: static; flex: 1; gap: 0; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); overflow: hidden; }
 .settings-page:not([data-side-by-side]) .settings-nav button { padding: 15px 16px; border-radius: 0; font-size: 15px; }
 .settings-page:not([data-side-by-side]) .settings-nav button + button { border-top: 1px solid var(--line); }

@@ -106,7 +106,7 @@ export function ControlSettings() {
       <p className="muted">
         {listening ? t`Press what you want to use, or Esc to cancel.` : t`Pick a binding, then press the key or button to use for it.`}
       </p>
-      <table className="bindings">
+      <table className="bindings" data-search={t({ message: "keys keyboard buttons shortcuts remap", comment: "Extra words, separated by spaces, that a search in Settings finds this setting by, besides its name: the table of key and controller bindings" })}>
         <thead>
           <tr>
             <th>
