@@ -101,7 +101,8 @@ export type PcSpecs = { cpu: string | null; gpu: string | null; ramGb: number | 
 export type ProviderHttpResponse = { status: number; headers: Record<string, string>; body: string };
 export type Progress = {
   id: string;
-  phase: "downloading" | "installing";
+  /** `waiting`: the launcher's own, for a download waiting its turn (download-slots.ts); the Rust side never sends it. */
+  phase: "waiting" | "downloading" | "installing";
   received: number;
   total: number | null;
   /** Installing in the app's own setup window (a Windows installer). */

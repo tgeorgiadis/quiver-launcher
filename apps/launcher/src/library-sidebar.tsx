@@ -8,7 +8,7 @@ import { Check, EyeOff, Pin, X } from "lucide-react";
 import { t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import type { Entry } from "@quiverlauncher/api";
-import { hasUpdate, useLauncher, type Install, type LibraryItem } from "./store";
+import { hasUpdate, useJob, useLauncher, type Install, type LibraryItem } from "./store";
 import { CardArt, useLibraryView } from "./library-view";
 import { namesOf } from "./library-tile";
 import { SIDEBAR_WIDTHS, dayLabel, playTimeLabel, sidebarWidth } from "./sidebar";
@@ -217,11 +217,11 @@ function SidebarRow({
   menu: boolean;
   onSelect: () => void;
 }) {
-  const { installs, jobs, catalog, play, settings } = useLauncher();
+  const { installs, catalog, play, settings } = useLauncher();
   // Selecting many at once (library-ticking.tsx): only an app in the library, which has its menu.
   const { ticking, ticked } = useTicked(menu ? [entry.id] : []);
   const install = installs[entry.id];
-  const job = jobs[entry.id];
+  const job = useJob(entry.id);
   const row = useRef<HTMLButtonElement>(null);
   // The app picked elsewhere (its page opened from a game's, say) scrolls into view.
   useLayoutEffect(() => {
@@ -232,7 +232,7 @@ function SidebarRow({
     job && "error" in job
       ? ["error", t`Couldn't install`]
       : job
-        ? ["busy", job.phase === "installing" ? t`Installing` : percent !== undefined ? t`Downloading ${percent}%` : t`Downloading`]
+        ? ["busy", job.phase === "installing" ? t`Installing` : job.phase === "waiting" ? t`Waiting to download` : percent !== undefined ? t`Downloading ${percent}%` : t`Downloading`]
         : install && hasUpdate(catalog[entry.id] ?? entry, install)
           ? ["update", t`Update available`]
           : install

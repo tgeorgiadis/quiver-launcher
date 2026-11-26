@@ -12,6 +12,7 @@ import { t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import { useLauncher, type Settings } from "./store";
 import { track } from "./telemetry";
+import { DOWNLOADS_AT_ONCE, DOWNLOADS_AT_ONCE_CHOICES } from "./download-slots";
 
 type Mode = "wait" | "newest";
 
@@ -65,6 +66,7 @@ export function AppUpdatesSetting({ inSetup = false }: { inSetup?: boolean }) {
       {!inSetup && <AutoUpdatesSetting />}
       {!inSetup && <PrereleasesSetting />}
       {!inSetup && <UpdatesBannerSetting />}
+      {!inSetup && <DownloadsAtOnceSetting />}
     </section>
   );
 }
@@ -125,6 +127,41 @@ function UpdatesBannerSetting() {
       </label>
       <p className="muted">
         <Trans>When it&apos;s off, the library doesn&apos;t show it. The Downloads button still counts the updates waiting, and its page has Update all.</Trans>
+      </p>
+    </div>
+  );
+}
+
+/** How many downloads run at once; the rest wait their turn (download-slots.ts). */
+function DownloadsAtOnceSetting() {
+  const { settings, setSettings } = useLauncher();
+  const atOnce = settings.downloadsAtOnce ?? DOWNLOADS_AT_ONCE;
+  return (
+    <div className="prereleases-setting">
+      <label className="panel-field">
+        <span className="field-label">
+          <Trans comment="Setting: how many apps download and install at the same time">Downloads at once</Trans>
+        </span>
+        <select
+          value={atOnce}
+          onChange={(e) => {
+            const count = Number(e.target.value);
+            setSettings((s) => {
+              const { downloadsAtOnce: _, ...rest } = s;
+              return count === DOWNLOADS_AT_ONCE ? rest : { ...rest, downloadsAtOnce: count };
+            });
+            track("downloads_at_once_set", { count });
+          }}
+        >
+          {DOWNLOADS_AT_ONCE_CHOICES.map((n) => (
+            <option key={n} value={n}>
+              {n === DOWNLOADS_AT_ONCE ? t({ message: `${n} (default)`, comment: "Downloads at once: the number Quiver uses unless the player picks another" }) : String(n)}
+            </option>
+          ))}
+        </select>
+      </label>
+      <p className="muted">
+        <Trans>When you install or update several apps together, this many download at a time and the rest wait their turn.</Trans>
       </p>
     </div>
   );

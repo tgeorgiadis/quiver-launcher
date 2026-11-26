@@ -628,6 +628,11 @@ msgstr "{n, plural, one {# zur Bibliothek hinzufügen} other {# zur Bibliothek h
 msgid "{n, plural, one {Install #} other {Install #}}"
 msgstr "{n, plural, one {# installieren} other {# installieren}}"
 
+#. Downloads at once: the number Quiver uses unless the player picks another
+#: ../../apps/launcher/src/app-updates.tsx
+msgid "{n} (default)"
+msgstr ""
+
 #: ../../apps/launcher/src/setup.tsx
 msgid "{n} of {total}"
 msgstr "{n} von {total}"
@@ -2815,6 +2820,11 @@ msgstr "Downloads"
 #: ../../apps/launcher/src/own.tsx
 msgid "Downloads {only}"
 msgstr "Lädt {only} herunter"
+
+#. Setting: how many apps download and install at the same time
+#: ../../apps/launcher/src/app-updates.tsx
+msgid "Downloads at once"
+msgstr ""
 
 #: ../../apps/launcher/src/cache-page.tsx
 msgid "Downloads start shortly after Quiver opens, then every 6 hours."
@@ -8289,6 +8299,24 @@ msgstr "Warte, bis der Download fertig ist, und verschiebe sie dann."
 msgid "Wait for its download to finish, then rename its folder."
 msgstr "Warte, bis der Download fertig ist, und benenne den Ordner dann um."
 
+#: ../../apps/launcher/src/downloads-page.tsx
+msgid "Waiting its turn"
+msgstr ""
+
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/library-sidebar.tsx
+#: ../../apps/launcher/src/library.tsx
+msgid "Waiting to download"
+msgstr ""
+
+#: ../../apps/launcher/src/card-menu.tsx
+msgid "Waiting to download…"
+msgstr ""
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Waiting…"
+msgstr ""
+
 #. Heading of a README's warning callout, as on GitHub
 #: ../ui/src/index.tsx
 msgctxt "README callout"
@@ -8391,6 +8419,10 @@ msgstr "Wenn er voll ist, machen die am längsten nicht genutzten Dateien Platz.
 #: ../../apps/launcher/src/app-updates.tsx
 msgid "When it's off, the library doesn't show it. The Downloads button still counts the updates waiting, and its page has Update all."
 msgstr "Wenn das aus ist, zeigt die Bibliothek es nicht. Der Downloads-Knopf zählt die wartenden Updates trotzdem, und seine Seite hat „Alle aktualisieren“."
+
+#: ../../apps/launcher/src/app-updates.tsx
+msgid "When you install or update several apps together, this many download at a time and the rest wait their turn."
+msgstr ""
 
 #: ../../apps/launcher/src/setup.tsx
 msgid "Where apps install"

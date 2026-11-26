@@ -1243,8 +1243,8 @@ const playedAgo = (time: number, now = Date.now()) => {
  * What this computer has of an app, for the line under its card: its state (app.css colours some) and its words. A
  * download's progress is in the card's button; this only says one is under way.
  */
-export function copyOf(c: { busy?: "downloading" | "installing"; update: boolean; installed: boolean; lastPlayed?: number; inLibrary: boolean }) {
-  if (c.busy) return { state: "busy", text: c.busy === "installing" ? t`Installing` : t`Downloading` };
+export function copyOf(c: { busy?: "waiting" | "downloading" | "installing"; update: boolean; installed: boolean; lastPlayed?: number; inLibrary: boolean }) {
+  if (c.busy) return { state: "busy", text: c.busy === "installing" ? t`Installing` : c.busy === "waiting" ? t`Waiting to download` : t`Downloading` };
   if (c.update) return { state: "update", text: t`Update available` };
   if (c.lastPlayed) return { state: "played", text: playedAgo(c.lastPlayed) };
   if (c.installed) return { state: "ready", text: t`Installed, not played yet` };

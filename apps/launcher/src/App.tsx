@@ -6,7 +6,7 @@ import { Plural, Trans } from "@lingui/react/macro";
 import { i18n } from "@quiverlauncher/i18n";
 import type { MessageDescriptor } from "@lingui/core";
 import { Artwork, OS_NAMES, PlatformIcons, ReleaseBadge, SourcedImage, heroSources } from "@quiverlauncher/ui";
-import { PORTABLE_FILE, availableOn, canGet, catalogOs, declinedUpdate, earlyGetOffer, earlyOffer, filesAddable, folderNameOf, hasUpdate, locatable, movable, noProgram, pulledVerified, renamable, rootOf, samePath, skipped, stillWaiting, tvModeOn, updateFor, updatesByItself, updatesOf, useLauncher, versionKnown, type AppMove, type Choice } from "./store";
+import { PORTABLE_FILE, availableOn, canGet, catalogOs, declinedUpdate, earlyGetOffer, earlyOffer, filesAddable, folderNameOf, hasUpdate, locatable, movable, noProgram, pulledVerified, renamable, rootOf, samePath, skipped, stillWaiting, tvModeOn, updateFor, updatesByItself, updatesOf, useJob, useLauncher, versionKnown, type AppMove, type Choice } from "./store";
 import { TabPrompt } from "./pad-hints";
 import { Dialog, FilterPill, LibraryPage, MultiPill, Popover, consoleOptions, filterLabel, pickedLabel, projectTypeOptions, withOverrides, type MultiOption } from "./library";
 import { BrowseCardOptions, useBrowseCards, useLibraryView, useSidebarFits } from "./library-view";
@@ -997,8 +997,8 @@ function BrowseAction({ entry, onOpen }: { entry: Entry; onOpen: (e: Entry, at?:
 /** The one button a card needs: Add, Install, progress, Play or Update. `apart`: the page says why a release was withdrawn itself. */
 /** `reasonElsewhere`: a failure's reason is shown beside it (the Downloads page's row), so only its buttons here. */
 function Action({ entry, apart, reasonElsewhere }: { entry: Entry; apart?: boolean; reasonElsewhere?: boolean }) {
-  const { config, library, installs, jobs, catalog, get, play, dismiss, setUpdates, cancel, locateInstall, setLaunch, setNotice, addToLibrary, appMoves } = useLauncher();
-  const job = jobs[entry.id];
+  const { config, library, installs, catalog, get, play, dismiss, setUpdates, cancel, locateInstall, setLaunch, setNotice, addToLibrary, appMoves } = useLauncher();
+  const job = useJob(entry.id);
   const install = installs[entry.id];
   // Its verified release was withdrawn too: Choose a version, in place of installing it.
   const [versions, setVersions] = useState(false);
@@ -1089,9 +1089,9 @@ function Action({ entry, apart, reasonElsewhere }: { entry: Entry; apart?: boole
     const percent = job.total ? Math.round((job.received / job.total) * 100) : null;
     const name = entry.projectName;
     const bar = (
-      <div className="progress" aria-label={job.phase === "installing" ? t`Installing` : t`Downloading`}>
-        <div className="bar" style={{ width: `${job.phase === "installing" ? 100 : (percent ?? 5)}%` }} />
-        <span>{job.setup ? (config.os === "android" ? t`Installing: confirm it when Android asks` : t`Installing: finish its setup window`) : job.phase === "installing" ? t`Installing…` : percent === null ? t`Downloading…` : t`Downloading ${percent}%`}</span>
+      <div className="progress" aria-label={job.phase === "installing" ? t`Installing` : job.phase === "waiting" ? t`Waiting to download` : t`Downloading`}>
+        <div className="bar" style={{ width: `${job.phase === "installing" ? 100 : job.phase === "waiting" ? 0 : (percent ?? 5)}%` }} />
+        <span>{job.setup ? (config.os === "android" ? t`Installing: confirm it when Android asks` : t`Installing: finish its setup window`) : job.phase === "installing" ? t`Installing…` : job.phase === "waiting" ? t`Waiting…` : percent === null ? t`Downloading…` : t`Downloading ${percent}%`}</span>
       </div>
     );
     // Once its files are going in, an install finishes: stopping then could leave the app half there.
