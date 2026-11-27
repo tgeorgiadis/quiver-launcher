@@ -13,7 +13,7 @@ import { hideOnApp, shownTags, type HiddenTags } from "./catalog-tags";
 import type { GameFailure } from "./game-report";
 import { native, type Config, type Installed, type SaveBackup, type ShortcutPlay, type LaunchOptions, type MovingApp, type OldApp, type OldFilter, type Progress, type StateProblem, type V3Library, type WindowsRunner } from "./native";
 import { Recovery } from "./recovery";
-import { assetFilterFor, bestAssets, installable, installFormat, isMsi, pickedBefore, releaseFor, wantedFiles } from "./assets";
+import { assetFilterFor, bestAssets, formatChoices, installable, installedFormat, installFormat, installPreference, isMsi, keepFormat, pickedBefore, releaseFor, wantedFiles, type InstallPreference, type LinuxFormat } from "./assets";
 import { cameAfter, fromSite, scanAsks, installedFile, insteadOf, newestUnblocked, sameChecksum, unverifiedFile, versionLabel, withdrawnAsBlocked } from "./versions";
 import { captureError, captureFailure, failureKind, Problem, reasonOf, reportStartupFailure, setTelemetryAppsDir, setTelemetryAppsFolders, telemetryChoice, track, type TelemetryContext } from "./telemetry";
 import { appsDueToday, appsOnComputer, librarySummary } from "./usage-summary";
@@ -157,6 +157,11 @@ export type Install = {
   launch?: LaunchOptions;
   /** The file the player picked among several for this computer, as a filter (`assetFilterFor`): updates take it again. */
   pick?: string;
+  /**
+   * The kind of file it was installed from (`installFormat`). On Linux, its updates keep to it, an archive, an AppImage
+   * or a Flatpak bundle, until the player changes it on the app's Manage tab (`format` there).
+   */
+  format?: ReturnType<typeof installFormat>;
   /** The empty files its folder has, once the player or Settings chose them (Add files to folder); unset, the catalog's. Kept through updates. */
   files?: string[];
   /** The player's own copies of its game, by the catalog's setup file id (own-copy.ts). Kept through updates. */
@@ -370,6 +375,8 @@ type Launcher = {
   /** Adds several at once (Browse's selected apps), saying nothing: the caller says how many. */
   addAllToLibrary: (entries: Entry[]) => void;
   setUpdates: (id: string, updates: Install["updates"]) => void;
+  /** The kind of file a Linux app's updates install (an archive, an AppImage, a Flatpak bundle), from its next update. */
+  setFormat: (id: string, format: LinuxFormat) => void;
   /** Sets whether an installed app gets pre-releases; undefined goes back to the player's default. */
   setPrereleases: (id: string, prereleases: Install["prereleases"]) => void;
   /** Stops offering this release of an app; a newer one is offered as usual. */
@@ -1577,6 +1584,12 @@ export type Settings = {
   prereleases?: boolean;
   /** Offer preview releases of Quiver Launcher too. */
   previewUpdates?: boolean;
+  /**
+   * The kind of file new Linux installs take when a release has more than one (`installPreference`): `automatic`, or
+   * unset, asks. Set by the Settings the format preference pull request adds; `preferFlatpak` is its earlier checkbox.
+   */
+  preferredInstallFormat?: InstallPreference;
+  preferFlatpak?: boolean;
   /** Announcements dismissed here, by id (announcements.ts). */
   dismissedAnnouncements?: string[];
   /** Where earlier versions kept the player's GitHub token, as plain text; it moves to the keychain's token map on start. */
@@ -2412,6 +2425,8 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     const keepSetup = !settings.runSetupPrograms && !was?.setup;
     // The player's, read here: further down, `settings` is the catalog's for installing it.
     const groupByConsole = Boolean(settings.groupByConsole);
+    // The kind of file a new Linux install takes, when a release has more than one: unset, the player picks.
+    const preference = installPreference(settings);
     // The download cache, as the player set it: the file from it when it's there, and kept in it as its mode says.
     const cacheNow = config.cacheDir || settings.cache?.dir ? cacheOf(settings.cache, config.cacheDir ?? "") : undefined;
     const systemFolders = { consoleFolders: settings.consoleFolders, systemFolderNames: settings.systemFolderNames };
@@ -2521,10 +2536,12 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         ? []
         : clicked
           ? !kind || isMsi(clicked.filename) === (kind === "msi") ? [clicked] : []
-          : bestAssets(wanted(release.assets), config.os, config.arch, settings.releaseAssetFilter, kind, platform);
+          : formatChoices(wanted(release.assets), config.os, config.arch, settings.releaseAssetFilter, kind, platform, was ? "automatic" : preference);
       // A file the player picked that a later release names differently: they pick again, even from one.
       const missed = !stray && !candidates.length && !clicked && Boolean(custom && settings.releaseAssetFilter);
-      if (missed) candidates = bestAssets(wanted(release.assets), config.os, config.arch, undefined, kind, platform);
+      if (missed) candidates = formatChoices(wanted(release.assets), config.os, config.arch, undefined, kind, platform, was ? "automatic" : preference);
+      // An update keeps to the kind of file installed, an archive, an AppImage or a Flatpak bundle, without asking.
+      if (was && !clicked && config.os === "linux") candidates = keepFormat(candidates, installedFormat(was, pickedBefore(candidates, lastPick)));
       let [asset, ...others] = candidates;
       // An automatic update never stops to ask: it waits until the launcher starts again, or the player updates it.
       const waitForPlayer = (until = Infinity) => {
@@ -2684,7 +2701,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         const dir = into && !msi ? done.dir : i[entry.id]?.dir;
         const inApps = into && !msi ? Boolean(group) || appsFolders(i, config.appsDir).some((f) => samePath(f.path, into)) : i[entry.id]?.inApps;
         const kept = into && !msi ? group : i[entry.id]?.group;
-        return { ...i, [entry.id]: { dir, ...(inApps ? { inApps: true as const } : {}), ...(kept ? { group: kept } : {}), lastPlayed: i[entry.id]?.lastPlayed, ...(installedAt ? { installedAt } : {}), playTime: i[entry.id]?.playTime, ...(i[entry.id]?.copies ? { copies: i[entry.id].copies } : {}), ...(launch ? { launch } : {}), ...(updates ? { updates } : {}), ...(skip ? { skip } : {}), ...(declined ? { declined } : {}), ...(unverified ? { unverified: true } : {}), ...(blocked ? { blocked } : {}), ...(checksum ? { checksum } : {}), ...(pick ? { pick } : {}), ...(files ? { files } : {}), version: release.version, releasedAt: release.releasedAt, releaseId: release.id, folder, executables: msi ? [] : executables, ...(done.installer ? { installer: done.installer, ...(program ? { program } : {}) } : {}), ...(done.setup ? { setup: true as const } : {}), ...(wine ? { wine: true } : {}) } };
+        return { ...i, [entry.id]: { dir, ...(inApps ? { inApps: true as const } : {}), ...(kept ? { group: kept } : {}), lastPlayed: i[entry.id]?.lastPlayed, ...(installedAt ? { installedAt } : {}), playTime: i[entry.id]?.playTime, ...(i[entry.id]?.copies ? { copies: i[entry.id].copies } : {}), ...(launch ? { launch } : {}), ...(updates ? { updates } : {}), ...(skip ? { skip } : {}), ...(declined ? { declined } : {}), ...(unverified ? { unverified: true } : {}), ...(blocked ? { blocked } : {}), ...(checksum ? { checksum } : {}), ...(pick ? { pick } : {}), ...(format ? { format: format as Install["format"] } : {}), ...(files ? { files } : {}), version: release.version, releasedAt: release.releasedAt, releaseId: release.id, folder, executables: msi ? [] : executables, ...(done.installer ? { installer: done.installer, ...(program ? { program } : {}) } : {}), ...(done.setup ? { setup: true as const } : {}), ...(wine ? { wine: true } : {}) } };
       });
       setJobs(({ [entry.id]: _, ...rest }) => rest);
       setFinished((f) => [{ id: entry.id, version: release.version, update: Boolean(from), at: Date.now() }, ...f.filter((d) => d.id !== entry.id)]);
@@ -2919,6 +2936,13 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       }
     },
     setUpdates: (id, updates) => setInstalls((i) => (i[id] ? { ...i, [id]: { ...i[id], updates } } : i)),
+    // A file picked by its kind (".appimage") named the kind it was: a pick by name still tells files of the new one apart.
+    setFormat: (id, format) =>
+      setInstalls((i) => {
+        if (!i[id]) return i;
+        const { pick, ...rest } = i[id];
+        return { ...i, [id]: { ...rest, format, ...(pick && !pick.startsWith(".") ? { pick } : {}) } };
+      }),
     setPrereleases: (id, prereleases) =>
       setInstalls((i) => {
         if (!i[id]) return i;

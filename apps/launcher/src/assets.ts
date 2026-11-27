@@ -130,6 +130,71 @@ export function bestAssets(assets: Asset[], os: Os, arch: string, filter?: strin
   return ranked.filter((r) => r.rank === ranked[0].rank).map((r) => r.a);
 }
 
+/** An AppImage, which runs as the one file it is, where an archive is unpacked into the app's folder. */
+export const isAppImage = (name: string) => /\.appimage$/i.test(name);
+
+/** The kinds of file a Linux build can come as, for the player to choose between: unpacked, an AppImage, a Flatpak bundle. */
+export const LINUX_FORMATS = ["archive", "appimage", "flatpak"] as const;
+export type LinuxFormat = (typeof LINUX_FORMATS)[number];
+/**
+ * The player's preferred kind for new Linux installs (Settings, from the pull request that adds it): `automatic`, or
+ * unset, asks when a release has more than one. `preferFlatpak` is that pull request's earlier checkbox.
+ */
+export type InstallPreference = "automatic" | LinuxFormat;
+export const installPreference = (settings: { preferredInstallFormat?: InstallPreference; preferFlatpak?: boolean }): InstallPreference =>
+  settings.preferredInstallFormat ?? (settings.preferFlatpak ? "flatpak" : "automatic");
+
+/** Which of the Linux kinds a file is: none for a bare program, a Windows installer or an APK. */
+export const linuxFormat = (name: string): LinuxFormat | undefined => {
+  const format = installFormat(name);
+  return (LINUX_FORMATS as readonly string[]).includes(format) ? (format as LinuxFormat) : undefined;
+};
+
+/**
+ * The files `bestAssets` takes, and on Linux the same build's other kinds beside it: an archive, an AppImage and a
+ * Flatpak bundle, as Birdman 64 releases a tar.gz and an AppImage. They run differently, so the player picks the one
+ * they want, rather than Quiver taking the archive unasked; with a `preference` (`installPreference`) other than
+ * `automatic`, that kind, when the release has it. Of a Windows build through Wine, only `bestAssets`'.
+ */
+export function formatChoices(
+  assets: Asset[],
+  os: Os,
+  arch: string,
+  filter?: string,
+  kind?: "msi" | "files",
+  platform?: Os,
+  preference: InstallPreference = "automatic",
+): Asset[] {
+  const best = bestAssets(assets, os, arch, filter, kind, platform);
+  if (os !== "linux" || !best.length || best[0].os === "windows") return best;
+  // As well suited to this computer as the best: the same system's build, for its architecture just as much.
+  const same = (a: Asset) => a.os === best[0].os && archRank(a, arch) === archRank(best[0], arch);
+  const all = [...best];
+  for (const format of LINUX_FORMATS) {
+    const ofFormat = bestAssets(assets.filter((a) => linuxFormat(a.filename) === format), os, arch, filter, kind, platform).filter(same);
+    all.push(...ofFormat.filter((a) => !all.includes(a)));
+  }
+  const preferred = preference === "automatic" ? [] : all.filter((a) => linuxFormat(a.filename) === preference);
+  return preferred.length ? preferred : all;
+}
+
+/**
+ * The kind an installed app is, for its updates to keep to (`keepFormat`): what it was installed from, else what the
+ * file the player picked before is, else an AppImage when it starts one, else unpacked.
+ */
+export function installedFormat(install: { format?: string; executables: string[]; program?: string }, picked?: Asset): LinuxFormat {
+  if ((LINUX_FORMATS as readonly (string | undefined)[]).includes(install.format)) return install.format as LinuxFormat;
+  const fromPick = picked && linuxFormat(picked.filename);
+  if (fromPick) return fromPick;
+  return [...install.executables, install.program ?? ""].some(isAppImage) ? "appimage" : "archive";
+}
+
+/** An update's files, kept to the kind the app is installed as (`installedFormat`), when the release has it. */
+export function keepFormat(candidates: Asset[], format: LinuxFormat): Asset[] {
+  const same = candidates.filter((a) => linuxFormat(a.filename) === format);
+  return same.length ? same : candidates;
+}
+
 /**
  * A release's files for any system: its builds, without the checksums, signatures, debug symbols and source archives
  * beside them. What the download cache keeps of a release for every platform (cache.ts).
@@ -167,7 +232,8 @@ export function pickedBefore(assets: Asset[], pick?: string): Asset | undefined 
 /**
  * A filter that keeps picking the file the player chose among several, in
  * later releases too: the longest part of its name, without version numbers,
- * that no other file's name has. Its whole name when no part is its own.
+ * that no other file's name has. Else its format (".appimage"), when no other file has it, as for the same build
+ * released as an AppImage and an archive. Its whole name when neither is its own.
  */
 export function assetFilterFor(chosen: string, files: string[]): string {
   const name = chosen.toLowerCase();
@@ -175,8 +241,10 @@ export function assetFilterFor(chosen: string, files: string[]): string {
   // Platform and format words name the computer, not the app: a filter with one would miss on another computer.
   const PLATFORM = /(?:^|[\s._-])(?:windows|win(?:32|64)?|linux|macos|mac|osx|x64|x86(?:[_-]64)?|amd64|arm64|aarch64|universal|portable)(?=$|[\s._-])/g;
   const trim = (part: string) => part.replace(/^[\s._-]+|[\s._-]+$/g, "");
+  const FORMAT = /\.(?:zip|7z|tar(?:\.(?:gz|xz|zst|bz2))?|tgz|txz|tzst|tbz2?|rar|appimage|flatpak|exe|apk|msi)$/;
+  const format = FORMAT.exec(name)?.[0];
   const parts = name
-    .replace(/\.(?:zip|7z|tar(?:\.(?:gz|xz|zst|bz2))?|tgz|txz|tzst|tbz2?|rar|appimage|flatpak|exe|apk|msi)$/, "")
+    .replace(FORMAT, "")
     .replace(PLATFORM, " ")
     .split(/v?\d+(?:[._-]\d+)+/)
     .map(trim);
@@ -185,7 +253,8 @@ export function assetFilterFor(chosen: string, files: string[]): string {
     [...parts, ...words]
       .filter((p) => p.length >= 2)
       .sort((a, b) => b.length - a.length)
-      .find((p) => !others.some((o) => o.includes(p))) ?? name
+      .find((p) => !others.some((o) => o.includes(p))) ??
+    (format && !others.some((o) => o.endsWith(format)) ? format : name)
   );
 }
 

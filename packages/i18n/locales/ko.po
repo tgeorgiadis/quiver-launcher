@@ -1603,6 +1603,11 @@ msgstr "아직 없는 앱에는 받기가 표시돼요. 누르기 전에는 아�
 msgid "Apps you install from now on are kept as they install. Check now keeps the version you have installed of every app."
 msgstr "이제부터 설치하는 앱은 설치할 때 보관됩니다. 지금 확인을 누르면 설치된 모든 앱의 현재 버전을 보관합니다."
 
+#. Download format: an archive Quiver unpacks into the app's folder
+#: ../../apps/launcher/src/App.tsx
+msgid "Archive (tar.gz, zip…), unpacked"
+msgstr "압축 파일(tar.gz, zip…), 압축 해제"
+
 #: ../../apps/launcher/src/own.tsx
 msgid "Artwork and consoles from the game"
 msgstr "게임의 아트워크와 콘솔"
@@ -2786,6 +2791,11 @@ msgstr "다운로드 캐시"
 msgid "Download cache used"
 msgstr "사용 중인 다운로드 캐시"
 
+#. The kind of file a Linux app installs from: an archive, an AppImage or a Flatpak bundle
+#: ../../apps/launcher/src/App.tsx
+msgid "Download format"
+msgstr "다운로드 형식"
+
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/downloads-page.tsx
 #: ../../apps/launcher/src/library-sidebar.tsx
@@ -3938,6 +3948,10 @@ msgstr "모든 파일이 공개된 지 48시간이 지나 문제 있는 업로�
 #: ../../apps/launcher/src/library-tile.tsx
 msgid "Its newest available version was withdrawn: choose a version"
 msgstr "사용 가능한 최신 버전이 철회되었어요: 버전을 선택하세요"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Its updates install this kind of file when a release has one."
+msgstr "릴리스에 이 형식의 파일이 있으면 업데이트 시 이 파일을 설치합니다."
 
 #. Installs the mod alone, without the ones it needs
 #: ../../apps/launcher/src/mods.tsx

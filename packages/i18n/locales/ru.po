@@ -1603,6 +1603,11 @@ msgstr "У приложений, которых у вас ещё нет, ест�
 msgid "Apps you install from now on are kept as they install. Check now keeps the version you have installed of every app."
 msgstr "Приложения, которые вы установите с этого момента, сохраняются при установке. «Проверить сейчас» сохраняет установленную версию каждого приложения."
 
+#. Download format: an archive Quiver unpacks into the app's folder
+#: ../../apps/launcher/src/App.tsx
+msgid "Archive (tar.gz, zip…), unpacked"
+msgstr "Архив (tar.gz, zip…), распакованный"
+
 #: ../../apps/launcher/src/own.tsx
 msgid "Artwork and consoles from the game"
 msgstr "Изображения и консоли из игры"
@@ -2786,6 +2791,11 @@ msgstr "Кэш загрузок"
 msgid "Download cache used"
 msgstr "Занятый кэш загрузок"
 
+#. The kind of file a Linux app installs from: an archive, an AppImage or a Flatpak bundle
+#: ../../apps/launcher/src/App.tsx
+msgid "Download format"
+msgstr "Формат загрузки"
+
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/downloads-page.tsx
 #: ../../apps/launcher/src/library-sidebar.tsx
@@ -3938,6 +3948,10 @@ msgstr "Каждый её файл доступен уже 48 часов, так
 #: ../../apps/launcher/src/library-tile.tsx
 msgid "Its newest available version was withdrawn: choose a version"
 msgstr "Самая новая доступная версия отозвана: выберите версию"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Its updates install this kind of file when a release has one."
+msgstr "Обновления устанавливают файл этого типа, если он есть в выпуске."
 
 #. Installs the mod alone, without the ones it needs
 #: ../../apps/launcher/src/mods.tsx
