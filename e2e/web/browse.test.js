@@ -203,7 +203,12 @@ test("Refresh asks the catalog again for the same search, by the d-pad, and keep
   await searched;
   await page.locator(".browse-tools .refresh:not([aria-busy=true])").waitFor();
   const asked = [];
-  const listen = (r) => new URL(r.url()).pathname.endsWith("/apps") && asked.push(new URL(r.url()).searchParams.get("search"));
+  // The grid's pages, not a shelf's: the d-pad resting on a card on its way can bring that app's More like this ahead
+  // (SHELF_SIZE apps).
+  const listen = (r) => {
+    const url = new URL(r.url());
+    if (url.pathname.endsWith("/apps") && url.searchParams.get("limit") !== "20") asked.push(url.searchParams.get("search"));
+  };
   page.on("request", listen);
   try {
     assert.doesNotMatch(await reach.pressOn(app, ".browse-tools .refresh", "South"), /^not reached/);
