@@ -167,11 +167,11 @@ export type Install = {
  * set up themselves, which Quiver doesn't ask for at Play.
  */
 export type OwnCopy = {
-  /** Where the player keeps it; empty when it's `yours`. */
+  /** Where the player keeps it (the archive, for one packed in a .zip, .7z or .rar); empty when it's `yours`. */
   path: string;
   /** The player said they set it up themselves: Quiver didn't check it or put it anywhere, and passes the game nothing. */
   yours?: true;
-  /** Where Quiver put it for the app, when the catalog says where. */
+  /** Where Quiver put it for the app, when the catalog says where, or where it unpacked it from its archive. */
   placed?: string;
   /** The dump it matched ("US 1.0"), when it matched one. */
   dump?: string;

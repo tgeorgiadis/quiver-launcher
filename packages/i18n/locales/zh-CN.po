@@ -216,6 +216,11 @@ msgstr "{0, plural, other {更新 # 个应用}}"
 msgid "{0} free"
 msgstr "{0} 可用空间"
 
+#. placeholder {0}: fileName(phase.archive)
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "{0} has more than one file in it that could be your copy. Choose the one {name} needs."
+msgstr "{0} 中有不止一个文件可能是你的副本。请选择 {name} 需要的那个。"
+
 #. placeholder {0}: placedCount + 1
 #. placeholder {1}: placedCount + queue.length
 #: ../../apps/launcher/src/own-copy-setup.tsx
@@ -7946,6 +7951,10 @@ msgstr "无限制"
 msgid "Unlock"
 msgstr "解锁"
 
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "Unpacking your copy…"
+msgstr "正在解压你的副本…"
+
 #. Moderation action
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/discussions.tsx
@@ -8442,7 +8451,7 @@ msgstr "{name} 的更新内容"
 msgid "What's wrong or missing?"
 msgstr "有什么问题或缺少什么？"
 
-#. placeholder {0}: fileName(phase.copy.path)
+#. placeholder {0}: phase.copy.placed ?? fileName(phase.copy.path)
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "When {name} asks for it, pick this file: {0}"
 msgstr "当 {name} 提示你提供文件时，请选择此文件：{0}"

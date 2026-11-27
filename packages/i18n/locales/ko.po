@@ -216,6 +216,11 @@ msgstr "{0, plural, other {앱 #개 업데이트}}"
 msgid "{0} free"
 msgstr "{0} 남음"
 
+#. placeholder {0}: fileName(phase.archive)
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "{0} has more than one file in it that could be your copy. Choose the one {name} needs."
+msgstr "{0}에 사본일 수 있는 파일이 둘 이상 있습니다. {name}에 필요한 파일을 선택하세요."
+
 #. placeholder {0}: placedCount + 1
 #. placeholder {1}: placedCount + queue.length
 #: ../../apps/launcher/src/own-copy-setup.tsx
@@ -7946,6 +7951,10 @@ msgstr "무제한"
 msgid "Unlock"
 msgstr "잠금 해제"
 
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "Unpacking your copy…"
+msgstr "사본 압축 푸는 중…"
+
 #. Moderation action
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/discussions.tsx
@@ -8442,7 +8451,7 @@ msgstr "{name}의 새로운 기능"
 msgid "What's wrong or missing?"
 msgstr "무엇이 잘못되거나 빠졌나요?"
 
-#. placeholder {0}: fileName(phase.copy.path)
+#. placeholder {0}: phase.copy.placed ?? fileName(phase.copy.path)
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "When {name} asks for it, pick this file: {0}"
 msgstr "{name}이(가) 요청하면 이 파일을 고르세요: {0}"
