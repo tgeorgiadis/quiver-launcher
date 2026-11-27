@@ -31,7 +31,8 @@ export function OwnCopyChips({ entry, install }: { entry: Entry; install: Instal
     const checks = files.map(async (f) => {
       const copy = install.copies?.[f.id];
       if (!copy || copy.yours) return null;
-      const there = await native.copyPresent(install.folder, install.dir, Boolean(install.wine), f, copy.path).catch(() => true);
+      // One unpacked from an archive is where it was unpacked, not the archive.
+      const there = await native.copyPresent(install.folder, install.dir, Boolean(install.wine), f, copy.placed ?? copy.path).catch(() => true);
       return there ? null : f.id;
     });
     void Promise.all(checks).then((ids) => current && setGone(new Set(ids.filter((id): id is string => !!id))));
@@ -107,6 +108,9 @@ function intro(file: SetupFile, name: string) {
 type Phase =
   | { kind: "looking" }
   | { kind: "choose"; found: { path: string; size: number; mine?: boolean }[] }
+  | { kind: "unpacking"; path: string }
+  // An archive with several files that could be the copy: the player says which. `archive` is the one they chose.
+  | { kind: "inside"; archive: string; found: { path: string; size: number }[] }
   | { kind: "checking"; path: string }
   | { kind: "placing"; path: string }
   | { kind: "problem"; path: string; checked: CheckedCopy | null; text: string; inPlace?: boolean }
@@ -190,9 +194,27 @@ export function OwnCopyPrompt() {
   };
   const folder = file.kind === "folder";
 
-  const use = async (path: string, inPlace = false) => {
+  // `archive`: the .zip, .7z or .rar the player chose, which `path` was unpacked from.
+  const use = async (path: string, inPlace = false, archive?: string): Promise<unknown> => {
     const turn = asked.current;
     setProgress(null);
+    // Packed in an archive the game doesn't read: unpacked first, then the copy in it is checked. Of several that could
+    // be it (a set's regions, a game's discs), the player picks, the likeliest by name first.
+    if (!inPlace && !archive) {
+      setPhase({ kind: "unpacking", path });
+      let inside: { path: string; size: number }[] | null;
+      try {
+        inside = await native.unpackCopy(install.folder, install.dir, file, path);
+      } catch (e) {
+        return turn === asked.current && setPhase({ kind: "problem", path, checked: null, text: String(e) });
+      }
+      if (turn !== asked.current) return;
+      if (inside?.length === 1) return use(inside[0].path, false, path);
+      if (inside) {
+        const { likely, others } = rankCopies(inside, [...entry.games.map((g) => g.title), entry.name], file.label);
+        return setPhase({ kind: "inside", archive: path, found: [...likely, ...others] });
+      }
+    }
     setPhase({ kind: "checking", path });
     let checked: CheckedCopy;
     try {
@@ -209,7 +231,7 @@ export function OwnCopyPrompt() {
     setPhase({ kind: "placing", path });
     try {
       const placed = await native.placeCopy(install.folder, install.dir, Boolean(install.wine), file, path);
-      const copy: OwnCopy = { path, ...(placed ? { placed } : {}), ...(checked.dump ? { dump: checked.dump } : {}), ...(checked.verified ? { verified: true } : {}), at: Date.now() };
+      const copy: OwnCopy = { path: archive ?? path, ...(placed ? { placed } : {}), ...(checked.dump ? { dump: checked.dump } : {}), ...(checked.verified ? { verified: true } : {}), at: Date.now() };
       setCopy(entry.id, file.id, copy);
       if (turn !== asked.current) return;
       setPlacedCount((n) => n + 1);
@@ -247,7 +269,7 @@ export function OwnCopyPrompt() {
     const picked = await native.pickFolder(title, folders[0]).catch(() => null);
     if (picked) setSettings((s) => ({ ...s, copyFolders: withCopyFolder(s.copyFolders, only ?? EVERY_CONSOLE, picked, true) }));
   };
-  const busy = phase.kind === "checking" || phase.kind === "placing";
+  const busy = phase.kind === "unpacking" || phase.kind === "checking" || phase.kind === "placing";
   const ranked = phase.kind === "choose" ? rankCopies(phase.found, [...entry.games.map((g) => g.title), entry.name], file.label) : null;
   // Choosing a file is the way on, highlighted and focused for keys and a controller, until Quiver finds a copy that
   // looks like the game: while it's still looking, when nothing found does, and when what was chosen wasn't it.
@@ -285,7 +307,8 @@ export function OwnCopyPrompt() {
                 <Trans>Your copy is where {name} reads it.</Trans>
               )}
             </p>
-            {!delivered(file) && <p className="muted">{t`When ${name} asks for it, pick this file: ${fileName(phase.copy.path)}`}</p>}
+            {/* One unpacked from an archive is in the app's folder, where the player has never looked: all of where. */}
+            {!delivered(file) && <p className="muted">{t`When ${name} asks for it, pick this file: ${phase.copy.placed ?? fileName(phase.copy.path)}`}</p>}
             {launching ? (
               <p className="muted" role="status">
                 {t`Starting ${name}…`}
@@ -362,13 +385,28 @@ export function OwnCopyPrompt() {
               <div className="progress" role="status">
                 <div className="bar" style={{ width: `${pct ?? 0}%` }} />
                 <span>
-                  {phase.kind === "checking"
-                    ? progress && pct !== null
-                      ? t`Checking… ${sizeText(progress.done)} of ${sizeText(progress.total)}`
-                      : t`Checking your copy…`
-                    : t`Putting it in place…`}
+                  {phase.kind === "unpacking"
+                    ? t`Unpacking your copy…`
+                    : phase.kind === "checking"
+                      ? progress && pct !== null
+                        ? t`Checking… ${sizeText(progress.done)} of ${sizeText(progress.total)}`
+                        : t`Checking your copy…`
+                      : t`Putting it in place…`}
                 </span>
               </div>
+            )}
+            {phase.kind === "inside" && (
+              <>
+                <p>{t`${fileName(phase.archive)} has more than one file in it that could be your copy. Choose the one ${name} needs.`}</p>
+                <div className="choices own-copy-choices">
+                  {phase.found.map((f, i) => (
+                    <button key={f.path} autoFocus={i === 0} onClick={() => void use(f.path, false, phase.archive)}>
+                      <strong>{fileName(f.path)}</strong>
+                      <span className="muted">{sizeText(f.size)}</span>
+                    </button>
+                  ))}
+                </div>
+              </>
             )}
             {phase.kind === "problem" && (
               <div className="own-copy-problem" role="alert">

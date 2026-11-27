@@ -1975,10 +1975,36 @@ async fn pick_copy(app: tauri::AppHandle, window: tauri::WebviewWindow, file: ow
         wanted.extend(["z64", "n64", "v64"]);
         wanted.dedup();
     }
+    // A copy packed in an archive too: Quiver unpacks it (unpack_copy).
+    if !wanted.is_empty() {
+        for archive in ["zip", "7z", "rar"] {
+            if !wanted.contains(&archive) {
+                wanted.push(archive);
+            }
+        }
+    }
     let filter = (!folder && !wanted.is_empty()).then_some(("Your copy", wanted.as_slice()));
     let want = if folder { picker::Want::Folder } else { picker::Want::File };
     let path = picker::choose(&app, &window, want, &title, dir.as_deref().map(Path::new), filter).await?;
     Some(path.to_string_lossy().into())
+}
+
+/// A copy the player picked packed in an archive (a .zip, .7z or .rar the app doesn't read itself), unpacked into the
+/// app's folder: the files in it that could be the copy, for the launcher to check (one) or ask which (several).
+/// Null when `path` isn't packed, and is checked as it is.
+#[tauri::command]
+async fn unpack_copy(app: tauri::AppHandle, folder: String, dir: Option<String>, file: own_copy::SetupFile, path: String) -> Result<Option<Vec<own_copy::Found>>, String> {
+    let app_dir = present_app_dir(&app.state::<Data>(), &folder, dir)?;
+    tauri::async_runtime::spawn_blocking(move || {
+        let archive = Path::new(&path);
+        if !own_copy::packed(&file, archive) {
+            return Ok(None);
+        }
+        let into = own_copy::unpacked_dir(&file, &app_dir)?;
+        own_copy::unpack(&file, archive, &into).map(Some)
+    })
+    .await
+    .map_err(|e| e.to_string())?
 }
 
 /// Whether `path` is a copy the app takes, reading it through once.
@@ -1997,6 +2023,7 @@ async fn check_copy(app: tauri::AppHandle, file: own_copy::SetupFile, path: Stri
 
 /// Puts a checked copy where the app reads it, when the catalog says where: the path it went to, or null when the
 /// app is only told where it is (by flag or environment variable). `wine`: a Windows build run through Wine or Proton.
+/// A copy unpacked from an archive (unpack_copy) is placed where it was unpacked, when it goes nowhere else.
 #[tauri::command]
 async fn place_copy(app: tauri::AppHandle, folder: String, dir: Option<String>, wine: bool, file: own_copy::SetupFile, path: String) -> Result<Option<String>, String> {
     let app_dir = present_app_dir(&app.state::<Data>(), &folder, dir)?;
@@ -2005,7 +2032,9 @@ async fn place_copy(app: tauri::AppHandle, folder: String, dir: Option<String>, 
         let progress = |done, total| {
             let _ = app.emit("copy-progress", CopyProgress { id: id.clone(), step: "place", done, total });
         };
-        own_copy::place(&file, Path::new(&path), &app_dir, wine, &progress).map(|to| to.map(|p| p.to_string_lossy().into_owned()))
+        let copy = Path::new(&path);
+        let placed = own_copy::place(&file, copy, &app_dir, wine, &progress)?;
+        Ok(own_copy::settle(&file, copy, &app_dir, placed).map(|p| p.to_string_lossy().into_owned()))
     })
     .await
     .map_err(|e| e.to_string())?
@@ -2967,6 +2996,7 @@ pub fn run() {
             found_program,
             find_copies,
             pick_copy,
+            unpack_copy,
             check_copy,
             place_copy,
             copy_present,

@@ -216,6 +216,11 @@ msgstr "{0, plural, one {Mettre à jour # appli} other {Mettre à jour # applis}
 msgid "{0} free"
 msgstr "{0} libres"
 
+#. placeholder {0}: fileName(phase.archive)
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "{0} has more than one file in it that could be your copy. Choose the one {name} needs."
+msgstr "{0} contient plus d'un fichier qui pourrait être ta copie. Choisis celui dont {name} a besoin."
+
 #. placeholder {0}: placedCount + 1
 #. placeholder {1}: placedCount + queue.length
 #: ../../apps/launcher/src/own-copy-setup.tsx
@@ -7946,6 +7951,10 @@ msgstr "Illimité"
 msgid "Unlock"
 msgstr "Déverrouiller"
 
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "Unpacking your copy…"
+msgstr "Décompression de ta copie…"
+
 #. Moderation action
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/discussions.tsx
@@ -8442,7 +8451,7 @@ msgstr "Nouveautés de {name}"
 msgid "What's wrong or missing?"
 msgstr "Qu'est-ce qui est faux ou manquant ?"
 
-#. placeholder {0}: fileName(phase.copy.path)
+#. placeholder {0}: phase.copy.placed ?? fileName(phase.copy.path)
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "When {name} asks for it, pick this file: {0}"
 msgstr "Quand {name} la demande, choisis ce fichier : {0}"

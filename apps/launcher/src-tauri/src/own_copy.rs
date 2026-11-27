@@ -2,7 +2,8 @@
 //! folder of the game's files. The catalog says what the copy is and how the app gets it (`setupFiles`, from
 //! quiverlauncher.com): put somewhere in the app's folder or the system's folders for apps' data, passed after a
 //! command-line flag or on its own, or named in an environment variable (launch.rs adds those at every start). Here it's
-//! found where players keep copies, checked (by the dumps the catalog lists, else by its kind), and put in place.
+//! found where players keep copies, checked (by the dumps the catalog lists, else by its kind), and put in place. One
+//! packed in a .zip, .7z or .rar the app doesn't read is unpacked into the app's own folder first.
 //! Quiver never downloads or ships game files: it reads the player's, and writes them nowhere but where the app
 //! they're for reads them.
 use serde::{Deserialize, Serialize};
@@ -296,12 +297,7 @@ pub fn check(file: &SetupFile, path: &Path, progress: &dyn Fn(u64, u64)) -> Chec
         return problem("That's a picture, document or video, not your copy of the game.");
     }
     if !wanted.is_empty() && !takes(&ext) {
-        let list = wanted.iter().map(|e| format!(".{e}")).collect::<Vec<_>>();
-        let list = match list.split_last() {
-            Some((last, rest)) if !rest.is_empty() => format!("{} or {last}", rest.join(", ")),
-            _ => list.join(""),
-        };
-        return problem(format!("It needs a {list} file."));
+        return problem(format!("It needs a {} file.", kinds(&wanted)));
     }
     let size = fs::metadata(path).map(|m| m.len()).unwrap_or(0);
     if size == 0 {
@@ -332,6 +328,106 @@ pub fn check(file: &SetupFile, path: &Path, progress: &dyn Fn(u64, u64)) -> Chec
             sha1: Some(hashes.big.map(|b| b.0).unwrap_or(hashes.sha1)),
             ..Default::default()
         },
+    }
+}
+
+/// The kinds of file a copy can be, for a player: ".z64, .n64 or .v64".
+fn kinds(wanted: &[String]) -> String {
+    let list = wanted.iter().map(|e| format!(".{e}")).collect::<Vec<_>>();
+    match list.split_last() {
+        Some((last, rest)) if !rest.is_empty() => format!("{} or {last}", rest.join(", ")),
+        _ => list.join(""),
+    }
+}
+
+/// The folder in an app's folder that copies picked packed in an archive are unpacked into, one folder for each copy
+/// the app takes. In the app's own folder, as the unpacked copy is for that app alone: it goes when the app does, moves
+/// with it, and a game that reads it from where it is (by flag, variable or its own dialog) can see it there.
+pub const UNPACKED: &str = "Unpacked copies";
+
+/// Where the copy `file` is unpacked to for the app in `app`.
+pub fn unpacked_dir(file: &SetupFile, app: &Path) -> Result<PathBuf, String> {
+    if file.id.is_empty() || file.id.contains(['/', '\\', ':']) || file.id.starts_with('.') || !plain(&file.id) {
+        return Err(format!("The catalog's name for this copy ({}) isn't one Quiver can use.", file.id));
+    }
+    Ok(app.join(UNPACKED).join(&file.id))
+}
+
+/// Whether `path` is an archive the copy is packed in, for Quiver to unpack first: a .zip, .7z or .rar the app
+/// doesn't read itself.
+pub fn packed(file: &SetupFile, path: &Path) -> bool {
+    if file.folder() || !path.is_file() {
+        return false;
+    }
+    let ext = path.extension().map(|e| e.to_string_lossy().to_ascii_lowercase()).unwrap_or_default();
+    ARCHIVES.contains(&ext.as_str()) && !file.wanted().contains(&ext)
+}
+
+/// Unpacks an archive the player picked into `into` (emptied first: what was unpacked for this copy before goes), and
+/// returns the files in it that could be the copy (of its kinds), in order of name. Everything in it is unpacked, not
+/// only those: a disc image's .cue needs the .bin files beside it. When none could be, or the archive can't be read,
+/// the error says so for the player, and nothing is left unpacked.
+pub fn unpack(file: &SetupFile, archive: &Path, into: &Path) -> Result<Vec<Found>, String> {
+    if into.symlink_metadata().is_ok() {
+        fs::remove_dir_all(into).map_err(|e| format!("Couldn't clear away the copy unpacked before: {e}"))?;
+    }
+    let name = archive.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
+    let failed = |text: String| {
+        let _ = fs::remove_dir_all(into);
+        text
+    };
+    crate::install::extract(archive, &name, into).map_err(|e| failed(format!("Couldn't unpack that compressed file: {e}")))?;
+    let wanted = file.wanted();
+    let mut found = Vec::new();
+    inside(&wanted, into, 0, &mut found);
+    if found.is_empty() {
+        let what = if wanted.is_empty() { "your copy of the game".to_string() } else { format!("{} file", kinds(&wanted)) };
+        return Err(failed(format!("There's no {what} in that compressed file.")));
+    }
+    found.sort_by_key(|f| f.path.to_lowercase());
+    Ok(found)
+}
+
+/// The files unpacked into `dir` that could be the copy: of its kinds, or (when it has none) any that isn't a picture,
+/// document or another archive. Not a Mac's `__MACOSX` details or anything hidden.
+fn inside(wanted: &[String], dir: &Path, depth: usize, found: &mut Vec<Found>) {
+    let Ok(entries) = fs::read_dir(dir) else { return };
+    for entry in entries.flatten() {
+        let name = entry.file_name().to_string_lossy().into_owned();
+        if name.starts_with('.') || name == "__MACOSX" {
+            continue;
+        }
+        let Ok(meta) = fs::symlink_metadata(entry.path()) else { continue };
+        if meta.is_dir() {
+            if depth + 1 < DEPTH {
+                inside(wanted, &entry.path(), depth + 1, found);
+            }
+            continue;
+        }
+        let ext = Path::new(&name).extension().map(|e| e.to_string_lossy().to_ascii_lowercase()).unwrap_or_default();
+        let kind = if wanted.is_empty() { !NOT_A_GAME.contains(&ext.as_str()) && !ARCHIVES.contains(&ext.as_str()) } else { wanted.contains(&ext) };
+        if meta.is_file() && meta.len() > 0 && kind {
+            found.push(Found { path: entry.path().to_string_lossy().into_owned(), size: meta.len(), mine: false });
+        }
+    }
+}
+
+/// After `place`: a copy unpacked from an archive (in `unpacked_dir`) that went where the app reads it is there now,
+/// a hard link or a copy of its own, so the unpacked one goes. One the app is only told of (by flag or variable), or
+/// picks itself, stays where it was unpacked, and that's where it's placed.
+pub fn settle(file: &SetupFile, copy: &Path, app: &Path, placed: Option<PathBuf>) -> Option<PathBuf> {
+    let Ok(dir) = unpacked_dir(file, app) else { return placed };
+    if !copy.starts_with(&dir) {
+        return placed;
+    }
+    match placed {
+        Some(to) => {
+            if !to.starts_with(&dir) {
+                let _ = fs::remove_dir_all(&dir);
+            }
+            Some(to)
+        }
+        None => Some(copy.to_path_buf()),
     }
 }
 
@@ -712,7 +808,8 @@ fn look(file: &SetupFile, wanted: &[String], dir: &Path, depth: usize, reach: Re
             }
         } else if !file.folder() {
             let ext = path.extension().map(|e| e.to_string_lossy().to_ascii_lowercase()).unwrap_or_default();
-            if wanted.contains(&ext) {
+            // An archive too, as many keep their copies zipped: Quiver unpacks it when it's chosen.
+            if wanted.contains(&ext) || ARCHIVES.contains(&ext.as_str()) {
                 let size = entry.metadata().map(|m| m.len()).unwrap_or(0);
                 if size > 0 {
                     found.push(Found { path: path.to_string_lossy().into_owned(), size, mine: false });
@@ -986,5 +1083,106 @@ mod tests {
         let found = find(&folder, &[], std::slice::from_ref(&dir), &[]);
         assert_eq!(found.len(), 1);
         assert!(found[0].path.ends_with("BLUS30443"));
+    }
+
+    /// A zip of `entries` (name, contents) at `path`.
+    fn zip_of(path: &Path, entries: &[(&str, &[u8])]) {
+        let mut w = zip::ZipWriter::new(fs::File::create(path).unwrap());
+        for (name, data) in entries {
+            w.start_file(*name, zip::write::SimpleFileOptions::default()).unwrap();
+            w.write_all(data).unwrap();
+        }
+        w.finish().unwrap();
+    }
+
+    #[test]
+    fn a_zipped_copy_is_unpacked_into_the_apps_folder_checked_and_put_in_place() {
+        let dir = tempfile::tempdir().unwrap();
+        let (app, kept) = (dir.path().join("app"), dir.path().join("roms"));
+        fs::create_dir_all(&app).unwrap();
+        fs::create_dir_all(&kept).unwrap();
+        let archive = kept.join("Game (USA).zip");
+        zip_of(&archive, &[("Game (USA)/Game (USA).z64", &rom()), ("Game (USA)/readme.txt", b"hi")]);
+        let file = rom_file(&sha1_of(&rom()));
+        assert!(packed(&file, &archive));
+        let into = unpacked_dir(&file, &app).unwrap();
+        let found = unpack(&file, &archive, &into).unwrap();
+        assert_eq!(found.len(), 1, "{found:?}");
+        let copy = PathBuf::from(&found[0].path);
+        assert!(copy.starts_with(&into) && copy.ends_with("Game (USA).z64"));
+        assert!(check(&file, &copy, &none).verified);
+        let placed = place(&file, &copy, &app, false, &none).unwrap();
+        // In place, the unpacked one goes: the place holds the copy itself.
+        let placed = settle(&file, &copy, &app, placed).unwrap();
+        assert_eq!(placed, app.join("baserom.us.z64"));
+        assert_eq!(fs::read(&placed).unwrap(), rom());
+        assert!(!into.exists());
+        // The player's archive is theirs: never touched.
+        assert!(archive.is_file());
+    }
+
+    #[test]
+    fn a_copy_the_game_is_only_told_of_stays_where_it_was_unpacked() {
+        let dir = tempfile::tempdir().unwrap();
+        let app = dir.path().join("app");
+        fs::create_dir_all(&app).unwrap();
+        let archive = dir.path().join("game.zip");
+        zip_of(&archive, &[("game.iso", b"a disc image"), ("cover.jpg", b"x")]);
+        let file = SetupFile { id: "disc".into(), label: "Disc".into(), flag: Some("--iso".into()), extensions: vec!["iso".into()], ..Default::default() };
+        let found = unpack(&file, &archive, &unpacked_dir(&file, &app).unwrap()).unwrap();
+        let copy = PathBuf::from(&found[0].path);
+        let placed = place(&file, &copy, &app, false, &none).unwrap();
+        assert_eq!(placed, None);
+        assert_eq!(settle(&file, &copy, &app, placed), Some(copy.clone()));
+        assert!(copy.is_file() && present(&file, &copy, &app, false));
+        // A copy the player keeps unpacked is theirs as it was: placed nowhere.
+        assert_eq!(settle(&file, &dir.path().join("game.iso"), &app, None), None);
+    }
+
+    #[test]
+    fn an_archive_with_several_copies_or_none_says_so() {
+        let dir = tempfile::tempdir().unwrap();
+        let app = dir.path().join("app");
+        let file = rom_file("x");
+        let into = unpacked_dir(&file, &app).unwrap();
+        let archive = dir.path().join("set.zip");
+        zip_of(&archive, &[("b (Europe).v64", &rom()), ("a (USA).z64", &rom()), ("__MACOSX/._a (USA).z64", b"x"), ("empty.z64", b"")]);
+        let found = unpack(&file, &archive, &into).unwrap();
+        let names: Vec<_> = found.iter().map(|f| Path::new(&f.path).file_name().unwrap().to_string_lossy().into_owned()).collect();
+        assert_eq!(names, ["a (USA).z64", "b (Europe).v64"]);
+        // Unpacking another clears away the one before; with no copy in it, nothing stays.
+        zip_of(&archive, &[("manual.pdf", b"x")]);
+        assert_eq!(unpack(&file, &archive, &into).unwrap_err(), "There's no .z64, .n64 or .v64 file in that compressed file.");
+        assert!(!into.exists());
+        fs::write(&archive, b"not a zip").unwrap();
+        assert!(unpack(&file, &archive, &into).unwrap_err().starts_with("Couldn't unpack that compressed file"));
+        assert!(!into.exists());
+    }
+
+    #[test]
+    fn only_an_archive_the_app_doesnt_read_is_unpacked() {
+        let dir = tempfile::tempdir().unwrap();
+        let archive = dir.path().join("Game.ZIP");
+        fs::write(&archive, b"x").unwrap();
+        assert!(packed(&rom_file("x"), &archive));
+        let reads_zips = SetupFile { extensions: vec!["zip".into()], ..rom_file("x") };
+        assert!(!packed(&reads_zips, &archive));
+        let folder = SetupFile { kind: Some("folder".into()), ..Default::default() };
+        assert!(!packed(&folder, &archive));
+        assert!(!packed(&rom_file("x"), &dir.path().join("Game.z64")));
+        for bad in ["", "../x", "a/b", ".x", "CON"] {
+            assert!(unpacked_dir(&SetupFile { id: bad.into(), ..Default::default() }, dir.path()).is_err(), "{bad}");
+        }
+    }
+
+    #[test]
+    fn finds_zipped_copies_too() {
+        let dir = temp("find-zipped");
+        fs::write(dir.join("Zelda (USA).zip"), b"x").unwrap();
+        fs::write(dir.join("Zelda (USA).7z"), b"x").unwrap();
+        fs::write(dir.join("Zelda.txt"), b"x").unwrap();
+        let found = find(&rom_file("x"), &[], std::slice::from_ref(&dir), &[]);
+        assert_eq!(found.len(), 2, "{found:?}");
+        let _ = fs::remove_dir_all(&dir);
     }
 }

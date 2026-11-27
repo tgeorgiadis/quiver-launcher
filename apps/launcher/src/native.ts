@@ -621,8 +621,17 @@ export const native = {
   findCopies: (file: SetupFile, folders: string[] = []) => invoke<{ path: string; size: number; mine?: boolean }[]>("find_copies", { file, folders }),
   /** Asks for the player's copy: a file of the kinds it can be, or a folder. */
   pickCopy: (file: SetupFile, dir?: string) => invoke<string | null>("pick_copy", { file, dir }),
+  /**
+   * A copy picked packed in a .zip, .7z or .rar the app doesn't read, unpacked into the app's folder: the files in it
+   * that could be the copy. Null when it isn't packed.
+   */
+  unpackCopy: (folder: string, dir: string | undefined, file: SetupFile, path: string) =>
+    invoke<{ path: string; size: number }[] | null>("unpack_copy", { folder, dir, file, path }),
   checkCopy: (file: SetupFile, path: string) => invoke<CheckedCopy>("check_copy", { file, path }),
-  /** Puts a checked copy where the app reads it; where it went, or null when the app is told by flag or variable. */
+  /**
+   * Puts a checked copy where the app reads it; where it went, or null when the app is told by flag or variable. One
+   * unpacked from an archive that goes nowhere else is placed where it was unpacked.
+   */
   placeCopy: (folder: string, dir: string | undefined, wine: boolean, file: SetupFile, path: string) =>
     invoke<string | null>("place_copy", { folder, dir, wine, file, path }),
   /** What's already where the app reads its copy, put there by the player before Quiver knew of it: its path, or null. */
