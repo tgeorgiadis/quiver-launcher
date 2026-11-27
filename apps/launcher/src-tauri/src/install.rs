@@ -659,9 +659,28 @@ pub(crate) fn named_for_contents(name: &str, file: &Path) -> Option<String> {
 
 pub(crate) fn extract(file: &Path, name: &str, out: &Path) -> Result<(), String> {
     unpack(file, name, out)?;
+    // A zip with only a tar in it, as GitHub's build artifacts wrap one to keep a Linux build's permissions
+    // (Bomberman 64 Recompiled's binary): the tar is what has the app.
+    if tarball(&name.to_lowercase()).is_none() {
+        if let Some(inner) = lone_tarball(out) {
+            let inner_name = inner.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
+            unpack(&inner, &inner_name, out)?;
+            fs::remove_file(&inner).map_err(text)?;
+        }
+    }
     #[cfg(unix)]
     open_up(out);
     Ok(())
+}
+
+/// The tar archive that's all a folder holds, if that's all it holds.
+fn lone_tarball(dir: &Path) -> Option<PathBuf> {
+    let mut entries = fs::read_dir(dir).ok()?.flatten();
+    let only = entries.next()?;
+    if entries.next().is_some() || !only.file_type().ok()?.is_file() {
+        return None;
+    }
+    tarball(&only.file_name().to_string_lossy().to_lowercase()).map(|_| only.path())
 }
 
 /// Lets the player into everything an archive unpacked and run its programs.
@@ -1063,8 +1082,11 @@ pub fn find_executable(dir: &Path, preferred: &[String], os: &str) -> Option<Pat
     if let Some(hit) = preferred_in(dir, &files, preferred) {
         return Some(hit.clone());
     }
+    // An AppImage's AppRun starts what's in the `usr` folder beside it. Without one, as a Birdman64 download has it
+    // beside its program, it ends at once: the program beside it is the game.
+    let stray_apprun = |p: &PathBuf, n: &str| n == "apprun" && !p.parent().is_some_and(|d| d.join("usr").is_dir());
     let helper = |n: &str| HELPERS.iter().any(|h| n.starts_with(h));
-    let linux = |p: &PathBuf, n: &str| n.ends_with(".appimage") || n.ends_with(".x86_64") || is_unix_binary(p);
+    let linux = |p: &PathBuf, n: &str| n.ends_with(".appimage") || n.ends_with(".x86_64") || (is_unix_binary(p) && !stray_apprun(p, n));
     // A Windows build's helper script (a run.sh beside its .exe) isn't the
     // game: with no Linux program here, there's none, and Wine runs the .exe.
     let scripts = files.iter().any(|p| linux(p, &name(p))) || !files.iter().any(|p| name(p).ends_with(".exe") && !helper(&name(p)));
@@ -2063,6 +2085,21 @@ mod tests {
     }
 
     #[test]
+    #[cfg(unix)]
+    fn an_apprun_without_its_appdir_isnt_the_game() {
+        use std::os::unix::fs::PermissionsExt;
+        let dir = tempfile::tempdir().unwrap();
+        for name in ["AppRun", "birdman64"] {
+            fs::write(dir.path().join(name), "").unwrap();
+            fs::set_permissions(dir.path().join(name), fs::Permissions::from_mode(0o755)).unwrap();
+        }
+        assert_eq!(find_executable(dir.path(), &[], "linux"), Some(dir.path().join("birdman64")));
+        // In an AppDir, it's what starts the app.
+        fs::create_dir_all(dir.path().join("usr/bin")).unwrap();
+        assert_eq!(find_executable(dir.path(), &[], "linux"), Some(dir.path().join("AppRun")));
+    }
+
+    #[test]
     fn says_what_kinds_of_file_a_folder_has_but_not_their_names() {
         let dir = tempfile::tempdir().unwrap();
         for f in ["My Secret Game.PAK", "bin/a.dll", "bin/b.dll", "notes", ".quiver-version", "odd.has space"] {
@@ -2155,6 +2192,31 @@ mod tests {
                 assert_eq!(fs::metadata(out.join("game.sh")).unwrap().permissions().mode() & 0o111, 0o111, "{name} keeps the program runnable");
             }
         }
+        // A zip with only the tar in it, as a GitHub build artifact: the tar is unpacked too, and not kept.
+        let wrapped = {
+            let mut w = zip::ZipWriter::new(io::Cursor::new(Vec::new()));
+            w.start_file("Game-linux.tar.gz", zip::write::SimpleFileOptions::default()).unwrap();
+            io::Write::write_all(&mut w, &gz).unwrap();
+            w.finish().unwrap().into_inner()
+        };
+        let dir = tempfile::tempdir().unwrap();
+        let file = dir.path().join("Game-linux.zip");
+        fs::write(&file, &wrapped).unwrap();
+        let out = dir.path().join("out");
+        extract(&file, "Game-linux.zip", &out).unwrap();
+        flatten(&out).unwrap();
+        assert_eq!(fs::read_to_string(out.join("data/level1.dat")).unwrap(), "level");
+        assert!(!out.join("Game-linux.tar.gz").exists());
+        // Beside other files, a tar is one of the app's files, kept as it is.
+        let mut w = zip::ZipWriter::new(io::Cursor::new(Vec::new()));
+        for name in ["Game-linux.tar.gz", "readme.txt"] {
+            w.start_file(name, zip::write::SimpleFileOptions::default()).unwrap();
+            io::Write::write_all(&mut w, &gz).unwrap();
+        }
+        fs::write(&file, w.finish().unwrap().into_inner()).unwrap();
+        let out = dir.path().join("out2");
+        extract(&file, "Game-linux.zip", &out).unwrap();
+        assert!(out.join("Game-linux.tar.gz").is_file());
         // Something else is a single program, not an archive.
         assert_eq!(tarball("game.x86_64"), None);
         assert_eq!(tarball("Game.tar.zst"), Some(Tarball::Zstd));
