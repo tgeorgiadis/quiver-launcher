@@ -35,6 +35,10 @@ if [ -n "$cache" ] && [ -d "$cache/lists" ]; then
   sudo cp -r "$cache/archives/." /var/cache/apt/archives/
   sudo "${apt[@]}" install -y --no-download "$@" && exit
   echo "::warning::What the cache kept wasn't all this run needs, so the rest comes from Ubuntu's mirror"
+  # The cached lists are dropped first. Copied, they're dated now, so the update below would ask the mirror only for
+  # lists newer than that, be told there are none, and leave the old ones: packages they name that the mirror has
+  # replaced (libudev-dev for an older libudev1 than the image's) then can't install.
+  sudo find /var/lib/apt/lists -maxdepth 1 -type f ! -name lock -delete
 fi
 
 # The lists and the packages, into $APT_CACHE, without packages the lists no longer name.
