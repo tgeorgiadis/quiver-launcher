@@ -156,7 +156,7 @@ for (const [device, theme] of [
     });
 
     test("Browse", async () => {
-      await tab("Browse");
+      await tab("Discover");
       await page.locator("article").first().waitFor();
       await check("04-browse");
       await tap(/^Filters/);
@@ -194,7 +194,7 @@ for (const [device, theme] of [
     });
 
     test("Announcements, Add an app and Sign in", async () => {
-      await tab("Browse");
+      await tab("Discover");
       await check("20-announcement");
       // Add an app is the library's; Browse's button is the catalog's submission form.
       for (const [i, [button, name, from]] of [

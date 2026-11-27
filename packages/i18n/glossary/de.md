@@ -8,7 +8,7 @@ launchers do. Sentence case, with nouns capitalised as German needs.
 | app | App (die App, die Apps) | |
 | library | Bibliothek | |
 | playlist | Playlist | |
-| Browse | Entdecken | the catalog page |
+| Discover | Entdecken | the catalog page |
 | catalog | Katalog | |
 | Add / Install | Hinzufügen / Installieren | the buttons that put an app in the library, then install it |
 | Play / Play anyway | Spielen / Trotzdem spielen | |

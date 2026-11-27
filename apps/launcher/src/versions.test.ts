@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 import type { Asset, HistoryRelease, Release, UnverifiedRelease } from "@quiverlauncher/api";
-import { changesUpTo, installedFile, insteadOf, newestUnblocked, saidOf, scanAsks, unverifiedFile, unverifiedIn, versionList, wayOffLabel, withdrawnAsBlocked } from "./versions";
+import { changesUpTo, installedFile, insteadOf, newestUnblocked, saidOf, scanAsks, unverifiedFile, unverifiedIn, versionLabel, versionList, wayOffLabel, withdrawnAsBlocked } from "./versions";
 
 const release = (version: string, releasedAt: number, id = `gh-${version}`): Release => ({
   id,
@@ -192,4 +192,10 @@ test("Newest right away asks first of a release VirusTotal warned of or flagged,
   expect(scanAsks({ verdict: "pending" })).toBe(false);
   expect(scanAsks({ verdict: "warning", engines: "1 of 70 engines" })).toBe(true);
   expect(scanAsks({ verdict: "flagged", engines: "9 of 70 engines" })).toBe(true);
+});
+
+test("a version number gets a v, a tag that isn't one stays as it is", () => {
+  expect(versionLabel("1.2.0")).toBe("v1.2.0");
+  expect(versionLabel("v1.2.0")).toBe("v1.2.0");
+  expect(versionLabel("test-2026-11-26-windows-2")).toBe("test-2026-11-26-windows-2");
 });

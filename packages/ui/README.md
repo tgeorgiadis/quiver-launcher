@@ -52,8 +52,9 @@ palette and light/dark themes. Define these, for example on `:root`:
 `tokens.css` holds the colour roles both apps share (`--bg`, `--panel`, `--card`, `--field`, `--line`, `--fg`,
 `--strong`, `--muted`, `--accent`, `--on-accent`, `--link`, `--green`, `--caution`, `--danger`), dark by default and
 light under `:root[data-theme="light"]`, with the scales: type (`--size-11` … `--size-38`), spacing (`--space-4` …
-`--space-48`), corners (`--radius-4` … `--radius-16`, `--radius-pill`) and the two shadows (`--shadow-menu`,
-`--shadow-dialog`). An app imports it first and gives the `--ql-*` variables above from it.
+`--space-48`), corners (`--radius-4` … `--radius-16`, `--radius-pill`), the two shadows (`--shadow-menu`,
+`--shadow-dialog`) and motion (`--duration-fast` 120ms, `--duration-base` 200ms, `--duration-slow` 320ms, `--ease-enter`,
+`--ease-exit`). An app imports it first and gives the `--ql-*` variables above from it.
 
 `controls.css` and `@quiverlauncher/ui/controls` are the basic controls, built on those tokens:
 

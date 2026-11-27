@@ -289,13 +289,15 @@ function ahead(direction: Direction, current: HTMLElement, among: HTMLElement[])
 /**
  * What Up and Down keep to, leaving only once nothing more in it is that way,
  * so the page beside one isn't left for it (Play's Down is the page's tabs, not
- * the library's sidebar): the top bar, the library's sidebar, Settings' list (and its search over it),
- * and a panel open over the page (View options), which the page's Up and Down
+ * the library's sidebar): the top bar, the library's sidebar, Settings' list (and its search over it), the
+ * column beside a wide app page's tab (the README's Down reads on down it, not into the app's details), a discussion
+ * open beside Community's list (its comments' Down reads on down them, not into the list), and a
+ * panel open over the page (View options), which the page's Up and Down
  * don't go into either. Sideways, only the top bar keeps to itself (the
  * account's Left is Browse, not the page under the bar). A panel, once in it,
  * is never left by a direction at all (move).
  */
-const AREAS = ".topbar, .library-sidebar, .settings-side, .menu.floating";
+const AREAS = ".topbar, .library-sidebar, .settings-side, .app-rail, .thread-pane[data-beside], .menu.floating";
 
 /** Where a library starts for the d-pad: Continue playing's Play, else the app open beside its sidebar, else its first card. */
 const libraryStart = (all: HTMLElement[]) => all.find((el) => el.matches(".continue-play, .library-sidebar [aria-current], .library-grid .card-open"));
@@ -1001,6 +1003,15 @@ function noteFocus(e: FocusEvent) {
   const { scrollLeft, scrollTop } = pageArea();
   const zoom = boxZoom();
   last = { el, dialog, page: pageShowing(), x: (r.left + r.width / 2) / zoom + scrollLeft, y: (r.top + r.height / 2) / zoom + scrollTop };
+}
+
+/**
+ * The focus put in a page that has just come in place of the one that had it (App.tsx, before it's drawn), rather than
+ * once the page has changed (startSpatialNavigation's wait): the page shows with its focus, and the button hints that
+ * go with it (pad-hints.tsx), from its first frame, not a moment after.
+ */
+export function focusShownPage() {
+  refocus();
 }
 
 function refocus() {

@@ -24,8 +24,8 @@ msgstr "{0, plural, other {다른 플랫폼용 앱 #개가 숨겨져 있어요.}
 
 #. placeholder {0}: changed.length
 #: ../../apps/launcher/src/browse-ticking.tsx
-msgid "{0, plural, one {# app hidden from Browse.} other {# apps hidden from Browse.}}"
-msgstr "{0, plural, other {앱 #개를 둘러보기에서 숨겼습니다.}}"
+msgid "{0, plural, one {# app hidden from Discover.} other {# apps hidden from Discover.}}"
+msgstr "{0, plural, other {앱 #개를 탐색에서 숨겼습니다.}}"
 
 #. placeholder {0}: ids.length
 #: ../../apps/launcher/src/library-ticking.tsx
@@ -51,8 +51,8 @@ msgstr "{0, plural, other {앱 #개 확인함}}"
 
 #. placeholder {0}: changed.length
 #: ../../apps/launcher/src/browse-ticking.tsx
-msgid "{0, plural, one {# app shows in Browse again.} other {# apps show in Browse again.}}"
-msgstr "{0, plural, other {앱 #개가 둘러보기에 다시 표시됩니다.}}"
+msgid "{0, plural, one {# app shows in Discover again.} other {# apps show in Discover again.}}"
+msgstr "{0, plural, other {앱 #개가 탐색에 다시 표시됩니다.}}"
 
 #. placeholder {0}: ids.length
 #: ../../apps/launcher/src/library-ticking.tsx
@@ -127,6 +127,11 @@ msgstr "{0, plural, other {그중 #개는 세이브를 자기 폴더에 보관�
 #: ../../apps/launcher/src/library-ticking.tsx
 msgid "{0, plural, one {# of them may keep your saves in its folder. Uninstalling sends them to the trash too.} other {# of them may keep your saves in their folders. Uninstalling sends them to the trash too.}}"
 msgstr "{0, plural, other {이 중 #개 앱은 저장 데이터를 앱 폴더에 둘 수 있습니다. 제거하면 그 데이터도 휴지통으로 갑니다.}}"
+
+#. placeholder {0}: listed.length
+#: ../../apps/launcher/src/detail.tsx
+msgid "{0, plural, one {# other file} other {# other files}}"
+msgstr ""
 
 #. placeholder {0}: library.apps.length
 #: ../../apps/launcher/src/old-library.tsx
@@ -1090,9 +1095,18 @@ msgstr "투명 PNG. Steam 바로 가기에 쓰입니다."
 msgid "Abbreviated (N64, GBC, PS2)"
 msgstr "약칭 (N64, GBC, PS2)"
 
+#: ../../apps/launcher/src/App.tsx
+msgid "About {app}"
+msgstr ""
+
 #: ../../apps/launcher/src/detail.tsx
 msgid "About this app"
 msgstr "이 앱 정보"
+
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/discussions.tsx
+msgid "About this discussion"
+msgstr ""
 
 #. Reason for reporting a post
 #: ../../apps/launcher/src/discussions.tsx
@@ -1221,7 +1235,7 @@ msgstr "콘솔별 폴더 추가"
 msgid "Add folders…"
 msgstr "폴더 추가…"
 
-#. Button over the apps selected in Browse: adds them to the library without installing them
+#. Button over the apps selected in Discover: adds them to the library without installing them
 #: ../../apps/launcher/src/browse-ticking.tsx
 msgid "Add to library"
 msgstr "라이브러리에 추가"
@@ -1334,6 +1348,10 @@ msgstr "모든 앱"
 #: ../../apps/launcher/src/library.tsx
 msgid "All consoles"
 msgstr "모든 콘솔"
+
+#: ../../apps/launcher/src/discussions.tsx
+msgid "All discussions"
+msgstr ""
 
 #. Menu item, last under Manage: opens the app's page at its Manage tab
 #: ../../apps/launcher/src/card-menu.tsx
@@ -1728,6 +1746,10 @@ msgid "Based on the project's README, checked {date}"
 msgstr "프로젝트 README 기준, {date} 확인"
 
 #: ../../apps/launcher/src/feedback.tsx
+msgid "Be the first to say how it runs"
+msgstr ""
+
+#: ../../apps/launcher/src/feedback.tsx
 msgid "Be the first to say how it went."
 msgstr "어땠는지 처음으로 알려 주세요."
 
@@ -1778,17 +1800,9 @@ msgid "Bring your apps over from Quiver Launcher 3?"
 msgstr "Quiver Launcher 3의 앱을 가져올까요?"
 
 #. Tab listing mods to install
-#. The tab with the catalog of apps
-#. The tab with the catalog of apps
-#: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/mods.tsx
 msgid "Browse"
 msgstr "둘러보기"
-
-#. Settings section: how the catalog's cards look in Browse
-#: ../../apps/launcher/src/settings-page.tsx
-msgid "Browse cards"
-msgstr "둘러보기 카드"
 
 #: ../../apps/launcher/src/console-folders.tsx
 msgid "Browse for a folder for {name}"
@@ -2018,6 +2032,10 @@ msgstr "백업 선택…"
 #: ../../apps/launcher/src/own-copy-settings.tsx
 msgid "Choose a console…"
 msgstr "콘솔 선택…"
+
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Choose a discussion to read it here."
+msgstr ""
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Choose a download"
@@ -2310,6 +2328,10 @@ msgstr "{title} 닫기"
 msgid "Close a game by holding buttons together for a second, for games with no way to quit"
 msgstr "버튼을 함께 1초간 누르고 있으면 게임 닫기 (종료 방법이 없는 게임용)"
 
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Close discussion"
+msgstr ""
+
 #: ../../apps/launcher/src/library-sidebar.tsx
 msgid "Close filters"
 msgstr "필터 닫기"
@@ -2376,6 +2398,7 @@ msgstr "Quiver Launcher 3에서 오셨나요? 폴더 위치를 알려 주시면 
 msgid "Comment"
 msgstr "댓글 달기"
 
+#. How many comments a discussion has
 #: ../../apps/launcher/src/discussions.tsx
 msgid "Comments"
 msgstr "댓글"
@@ -2420,6 +2443,10 @@ msgstr "복원하지 않고 계속"
 #: ../../apps/launcher/src/controls.tsx
 msgid "Controller"
 msgstr "컨트롤러"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Controller support"
+msgstr ""
 
 #: ../../apps/launcher/src/controls.tsx
 #: ../../apps/launcher/src/settings-page.tsx
@@ -2704,6 +2731,23 @@ msgstr "개발자는 일부 버전을 사전 출시로 표시해요. 베타나 �
 #: ../../apps/launcher/src/downloads-page.tsx
 msgid "Didn't finish"
 msgstr "완료되지 않음"
+
+#. The tab with the catalog of apps
+#. The tab with the catalog of apps
+#. The tab with the catalog of apps
+#: ../../apps/launcher/src/App.tsx
+msgid "Discover"
+msgstr "탐색"
+
+#. Settings section: how the catalog's cards look in Discover
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Discover cards"
+msgstr "탐색 카드"
+
+#. Heading over a discussion's facts, in the column beside it
+#: ../../apps/launcher/src/discussions.tsx
+msgid "DISCUSSION"
+msgstr ""
 
 #. Tab on an app's page: players' threads about it
 #: ../../apps/launcher/src/App.tsx
@@ -3019,6 +3063,11 @@ msgstr "아주 넓게"
 msgid "Featured"
 msgstr "추천"
 
+#. Heading over a port's features, as Widescreen or Controller support
+#: ../../apps/launcher/src/detail.tsx
+msgid "FEATURES"
+msgstr ""
+
 #: ../../apps/launcher/src/App.tsx
 msgid "File"
 msgstr "파일"
@@ -3026,6 +3075,11 @@ msgstr "파일"
 #: ../../apps/launcher/src/app-files.tsx
 msgid "File name, like config.ini"
 msgstr "파일 이름(예: config.ini)"
+
+#. Over a release's files
+#: ../../apps/launcher/src/detail.tsx
+msgid "Files"
+msgstr ""
 
 #: ../../apps/launcher/src/release-files.tsx
 msgid "Files of {version}"
@@ -3089,6 +3143,10 @@ msgstr "폴더 이름"
 #: ../../apps/launcher/src/discussions.tsx
 msgid "Follow"
 msgstr "팔로우"
+
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Follow it to see its new comments in Community's Following."
+msgstr ""
 
 #. Community tab: the discussions the player follows
 #: ../../apps/launcher/src/discussions.tsx
@@ -3229,6 +3287,10 @@ msgstr "게임"
 msgid "General"
 msgstr "일반"
 
+#: ../../apps/launcher/src/detail.tsx
+msgid "Get {version}"
+msgstr ""
+
 #. Button on the player's Discord profile that opens Quiver Launcher's download page, for their friends. Discord cuts it at 32 characters
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Get Quiver Launcher"
@@ -3265,10 +3327,6 @@ msgstr "GitLab 토큰"
 #: ../../apps/launcher/src/App.tsx
 msgid "Go back"
 msgstr "뒤로 가기"
-
-#: ../../apps/launcher/src/discussions.tsx
-msgid "Go to Community"
-msgstr "커뮤니티로 가기"
 
 #. Where an app goes once its systems are chosen, such as Ports/Multi-system
 #: ../../apps/launcher/src/settings-page.tsx
@@ -3391,8 +3449,8 @@ msgstr "닫은 공지 숨기기"
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/browse-ticking.tsx
 #: ../../apps/launcher/src/card-menu.tsx
-msgid "Hide from Browse"
-msgstr "둘러보기에서 숨기기"
+msgid "Hide from Discover"
+msgstr "탐색에서 숨기기"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/card-menu.tsx
@@ -3470,6 +3528,11 @@ msgstr "어땠나요?"
 #: ../../apps/launcher/src/feedback.tsx
 msgid "How did it run"
 msgstr "어떻게 실행됐나요"
+
+#. Heading beside an app's README: what players said of how it runs
+#: ../../apps/launcher/src/feedback.tsx
+msgid "HOW IT RUNS"
+msgstr ""
 
 #: ../../apps/launcher/src/setup.tsx
 msgid "How should apps update?"
@@ -3578,7 +3641,11 @@ msgstr "앱의 사전 출시 포함"
 msgid "Include preview updates"
 msgstr "미리 보기 업데이트 포함"
 
-#. Button over the apps selected in Browse: installs them
+#: ../../apps/launcher/src/detail.tsx
+msgid "Increased internal resolution"
+msgstr ""
+
+#. Button over the apps selected in Discover: installs them
 #. Button that installs a mod
 #. Button that installs an app
 #. Button that installs an app
@@ -4053,6 +4120,7 @@ msgid "Keyboard"
 msgstr "키보드"
 
 #: ../../apps/launcher/src/controls.tsx
+#: ../../apps/launcher/src/detail.tsx
 msgid "Keyboard and mouse"
 msgstr "키보드 및 마우스"
 
@@ -4073,6 +4141,11 @@ msgstr "크게"
 #: ../../apps/launcher/src/library-view.tsx
 msgid "Large name"
 msgstr "큰 이름"
+
+#. When a discussion last had a comment
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Last active"
+msgstr ""
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Last backed up {hereWhen}. The saves in your sync folder stay there as a backup. These become your newest."
@@ -4442,6 +4515,10 @@ msgstr "Quiver Launcher 3의 태그 필터가 그리우신가요? 재생 목록�
 msgid "Mod requirements"
 msgstr "모드 요구 사항"
 
+#: ../../apps/launcher/src/detail.tsx
+msgid "Mod support"
+msgstr ""
+
 #: ../../apps/launcher/src/mods.tsx
 msgid "Mods"
 msgstr "모드"
@@ -4458,8 +4535,10 @@ msgstr "모드는 앱 폴더의 {modsPath}에 들어가요. 직접 넣은 파일
 msgid "Mods to browse"
 msgstr "둘러볼 모드"
 
+#. App page button: a menu of what's seldom wanted (hide from Discover, report a problem)
 #. Button over the selected apps: the rest of what can change on them
 #. Button over the selected apps: the rest of what can change on them
+#: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/library-ticking.tsx
 msgid "More"
 msgstr "더 보기"
@@ -4856,6 +4935,10 @@ msgstr "라이브러리에 있는 앱에 아직 토론이 없습니다."
 msgid "No discussions yet. Ask a question or share a tip."
 msgstr "아직 토론이 없어요. 질문하거나 팁을 공유하세요."
 
+#: ../../apps/launcher/src/detail.tsx
+msgid "No features listed yet."
+msgstr ""
+
 #. A release with no files Quiver Launcher can install, such as one with only source code
 #: ../ui/src/index.tsx
 msgid "No files"
@@ -5220,6 +5303,14 @@ msgstr "확인"
 #: ../../apps/launcher/src/library-view.tsx
 msgid "One card for each game"
 msgstr "게임마다 카드 하나"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Online co-op"
+msgstr ""
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Online multiplayer"
+msgstr ""
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/library.tsx
@@ -5849,10 +5940,6 @@ msgstr "Quiver Launcher가 이 버전을 알 수 없어요. {updateVersion}을(�
 msgid "Quiver Launcher doesn't offer this release by itself"
 msgstr "Quiver Launcher가 이 버전을 알아서 제공하지 않아요"
 
-#: ../../apps/launcher/src/detail.tsx
-msgid "Quiver Launcher doesn't offer this release by itself. Installing one of its files asks you to confirm first."
-msgstr "Quiver Launcher가 이 버전을 알아서 제공하지 않아요. 파일을 설치하려면 먼저 확인해야 해요."
-
 #: ../../apps/launcher/src/main.tsx
 msgid "Quiver Launcher hit a problem"
 msgstr "Quiver Launcher에 문제가 생겼어요"
@@ -6039,6 +6126,11 @@ msgstr ""
 msgid "Release files"
 msgstr "버전 파일"
 
+#. Over a release's notes
+#: ../../apps/launcher/src/detail.tsx
+msgid "Release notes"
+msgstr ""
+
 #. Tab of an app's page
 #. Which of an app's releases it gets: main releases only, or pre-releases too
 #: ../../apps/launcher/src/App.tsx
@@ -6218,10 +6310,14 @@ msgstr "라이브러리를 {taken}의 라이브러리({count, plural, other {앱
 msgid "Report"
 msgstr "신고"
 
-#. App page button: tell the maintainers something on the page is wrong or missing
 #: ../../apps/launcher/src/correction.tsx
 msgid "Report a problem"
 msgstr "문제 신고"
+
+#. App page menu item: tell the maintainers something on the page is wrong or missing
+#: ../../apps/launcher/src/App.tsx
+msgid "Report a problem…"
+msgstr ""
 
 #: ../../apps/launcher/src/game-report-prompt.tsx
 msgid "Report sent. Thanks."
@@ -6543,6 +6639,10 @@ msgstr "보고서 보기"
 msgid "See what each app keeps in your account, and remove copies you don't need."
 msgstr "앱마다 계정에 보관된 내용을 확인하고 필요 없는 사본을 삭제하세요."
 
+#: ../../apps/launcher/src/feedback.tsx
+msgid "See what players said"
+msgstr ""
+
 #: ../../apps/launcher/src/old-library.tsx
 msgid "See which apps"
 msgstr "어떤 앱인지 보기"
@@ -6804,8 +6904,8 @@ msgstr "숨긴 앱 보기"
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/browse-ticking.tsx
 #: ../../apps/launcher/src/card-menu.tsx
-msgid "Show in Browse"
-msgstr "둘러보기에 표시"
+msgid "Show in Discover"
+msgstr "탐색에 표시"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/card-menu.tsx
@@ -7054,6 +7154,14 @@ msgstr "사용 공간"
 msgid "Spam"
 msgstr "스팸"
 
+#: ../../apps/launcher/src/detail.tsx
+msgid "Split screen"
+msgstr ""
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Split-screen co-op"
+msgstr ""
+
 #: ../../apps/launcher/src/custom-art.tsx
 msgid "Square, about 512×512. The app's page, the Icon view and its shortcuts."
 msgstr "정사각형, 약 512×512. 앱 페이지, 아이콘 보기, 바로 가기에 쓰입니다."
@@ -7091,6 +7199,16 @@ msgstr "어떤 프로그램을 실행할까요?"
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Start with Windows, in the system tray"
 msgstr "Windows 시작 시 시스템 트레이에서 실행"
+
+#. When a discussion was started
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Started"
+msgstr ""
+
+#. Who started a discussion
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Started by"
+msgstr ""
 
 #. Who started a discussion, in a list of discussions
 #: ../../apps/launcher/src/discussions.tsx
@@ -7893,6 +8011,10 @@ msgstr "입력"
 msgid "Type the folder's whole path, or choose it with Browse…"
 msgstr "폴더의 전체 경로를 입력하거나 찾아보기…로 골라 주세요."
 
+#: ../../apps/launcher/src/detail.tsx
+msgid "Ultrawide"
+msgstr ""
+
 #: ../../apps/launcher/src/sidebar.ts
 msgid "Under a minute"
 msgstr "1분 미만"
@@ -7950,6 +8072,10 @@ msgstr "무제한"
 #: ../../apps/launcher/src/discussions.tsx
 msgid "Unlock"
 msgstr "잠금 해제"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Unlocked framerate"
+msgstr ""
 
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Unpacking your copy…"
@@ -8131,6 +8257,10 @@ msgstr "업데이트가 나오자마자 묻지 않고 설치돼요. 해로운 �
 #: ../../apps/launcher/src/App.tsx
 msgid "Updates keep installing into it. Desktop and Steam shortcuts you made before point at the old name, so make them again."
 msgstr "업데이트는 계속 이 폴더에 설치돼요. 전에 만든 바탕 화면 및 Steam 바로 가기는 예전 이름을 가리키므로 다시 만들어 주세요."
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Updates won't install it for you, but you can still install it here. You'll be asked to confirm first."
+msgstr ""
 
 #: ../../apps/launcher/src/downloads-page.tsx
 msgid "Updating Quiver Launcher"
@@ -8539,6 +8669,10 @@ msgid "Wide, about 920×430. The Cover view, and anywhere there's no box art."
 msgstr "가로형, 약 920×430. 커버 보기와 박스 아트가 없는 곳에 쓰입니다."
 
 #: ../../apps/launcher/src/detail.tsx
+msgid "Widescreen"
+msgstr ""
+
+#: ../../apps/launcher/src/detail.tsx
 msgid "Windows (Wine)"
 msgstr "Windows (Wine)"
 
@@ -8598,6 +8732,10 @@ msgstr ""
 #: ../../apps/launcher/src/App.tsx
 msgid "You skipped {updateVersion}. Quiver Launcher offers the next new release."
 msgstr "{updateVersion}을(를) 건너뛰었어요. Quiver Launcher가 다음 새 버전을 제안해요."
+
+#: ../../apps/launcher/src/discussions.tsx
+msgid "You'll see its new comments in Community's Following."
+msgstr ""
 
 #: ../../apps/launcher/src/announcements-ui.tsx
 msgid "You're all caught up."

@@ -341,7 +341,9 @@ export function LibraryPage({
   const fitTabs = () => {
     const row = tabRow.current;
     const tools = bar.current?.querySelector<HTMLElement>(".library-tools");
-    if (!bar.current || !tools) return;
+    // Not while the library is out of the page (another tab's showing, kept-screen.tsx): it measures nothing there,
+    // and it'd come back as a phone's, Group by and the tabs popping in a moment after.
+    if (!bar.current || !tools || !bar.current.isConnected || !bar.current.clientWidth) return;
     const across = (el: HTMLElement) => {
       const items = ([...el.children] as HTMLElement[]).filter((item) => !item.matches(".library-show"));
       return items.length ? items[items.length - 1].offsetLeft + items[items.length - 1].offsetWidth - items[0].offsetLeft : 0;
@@ -1283,15 +1285,16 @@ function ContinuePlaying({ entry, played, onOpen, action }: { entry: Entry; play
     <section className={`continue app-backdrop${art ? " has-art" : ""}`} aria-label={t`Continue playing`}>
       {art && <SourcedImage key={art} className="backdrop-art" sources={heroSources(art)} alt="" priority onFail={() => {}} />}
       <div className="continue-inner">
-        <span className="continue-label">
-          <Play size={12} fill="currentColor" aria-hidden="true" />
-          <Trans>Continue playing</Trans>
-          <span className="continue-meta">{playedAgo(played)}</span>
-        </span>
         <h2 className="continue-title">
           {name}
           {install && !install.local && <span className="continue-version">{versionLabel(install.version)}</span>}
         </h2>
+        {/* Under the name, not a label over it: what this is, and when it was last played. */}
+        <p className="continue-label">
+          <Play size={12} fill="currentColor" aria-hidden="true" />
+          <Trans>Continue playing</Trans>
+          <span className="continue-meta">{playedAgo(played)}</span>
+        </p>
         <div className="continue-action">
           {install && !jobs[entry.id] ? (
             <>

@@ -23,7 +23,7 @@ describe("fitCards", () => {
 
 describe("FeaturedCarousel", () => {
   const slide = (id: string): FeaturedSlide => ({
-    entry: { id, projectName: id, tags: [], supportedOS: [], games: [], recommended: 0, reportIssues: 0, reportBroken: 0, addedAt: 0 },
+    entry: { id, slug: id.toLowerCase(), projectName: id, tags: [], supportedOS: [], games: [], recommended: 0, reportIssues: 0, reportBroken: 0, addedAt: 0 },
   });
   const show = (opened = vi.fn()) => {
     const view = render(

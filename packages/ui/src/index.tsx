@@ -89,11 +89,57 @@ export function cardSources(url: string, sizes: string): ImageSource[] {
 /** A small copy of a card's picture, for a blurred backdrop behind it: no more detail than the blur leaves. */
 export const blurSource = (url: string) => (resizable(url) ? resized(url, 240, 70) : url);
 
-/** A wide picture across the window (an app's hero), as the site's pages ask for it, else the picture itself. */
-export function heroSources(url: string): ImageSource[] {
+/**
+ * A wide picture across the window (an app's hero), as the site's pages ask for it, else the picture itself. `sizes`
+ * as wide as it shows: a window's whole width at 1.5x took the 3840 copy for art a little narrower than that.
+ */
+export function heroSources(url: string, sizes = "100vw"): ImageSource[] {
   if (!resizable(url)) return [{ src: url }];
   const widths = [1280, 1920, 2560, 3840];
-  return [{ src: resized(url, 1920), srcSet: widths.map((w) => `${resized(url, w)} ${w}w`).join(", "), sizes: "100vw" }, { src: url }];
+  return [{ src: resized(url, 1920), srcSet: widths.map((w) => `${resized(url, w)} ${w}w`).join(", "), sizes }, { src: url }];
+}
+
+/**
+ * A game's logo over its art, resized, else the picture itself. As a repository keeps them they're large PNGs (one was
+ * 900 KB), which GitHub lets a browser keep only five minutes; the resized copy is a fraction of that, kept a year.
+ */
+export const logoSources = (url: string): ImageSource[] => (resizable(url) ? [{ src: resized(url, 800) }, { src: url }] : [{ src: url }]);
+
+/** The pictures already loaded in this window, by their sources: one that comes again shows at once. */
+const loadedImages = new Set<string>();
+const imageKey = (source: ImageSource) => `${source.src} ${source.srcSet ?? ""} ${source.sizes ?? ""}`;
+
+/**
+ * An img's loading attributes for `source`. A picture already loaded in this
+ * window (a screen shown again, or one warmImage loaded ahead) loads at once
+ * and is drawn with the page, rather than a frame or two after it, blank
+ * meanwhile; any other one waits until it's near the screen, unless `priority`.
+ */
+export function imageLoading(source: ImageSource, priority = false) {
+  const known = loadedImages.has(imageKey(source));
+  return {
+    loading: known || priority ? "eager" : "lazy",
+    decoding: known ? "sync" : "async",
+    onLoad: () => void loadedImages.add(imageKey(source)),
+  } as const;
+}
+
+/**
+ * Loads a picture ahead, as an img with `source` would (the same copy, from
+ * its srcSet and sizes), so it shows at once when a screen with it does.
+ */
+export function warmImage(source: ImageSource): void {
+  const key = imageKey(source);
+  if (loadedImages.has(key) || typeof Image === "undefined") return;
+  const img = new Image();
+  img.decoding = "async";
+  if (source.sizes) img.sizes = source.sizes;
+  if (source.srcSet) img.srcset = source.srcSet;
+  img.src = source.src;
+  img.decode().then(
+    () => loadedImages.add(key),
+    () => {},
+  );
 }
 
 /**
@@ -124,9 +170,8 @@ export function SourcedImage({
       srcSet={source.srcSet}
       sizes={source.sizes}
       alt={alt}
-      loading={priority ? "eager" : "lazy"}
+      {...imageLoading(source, priority)}
       fetchPriority={priority ? "high" : undefined}
-      decoding="async"
       onError={() => (index + 1 < sources.length ? setIndex(index + 1) : onFail())}
     />
   );

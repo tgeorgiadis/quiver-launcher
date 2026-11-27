@@ -5,7 +5,7 @@
  * overrides); names, artwork and files always come from the catalog. The
  * last catalog data seen is cached so the library shows instantly offline.
  */
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore, type Dispatch, type ReactNode, type SetStateAction } from "react";
+import { createContext, startTransition, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type Dispatch, type ReactNode, type SetStateAction } from "react";
 import { msg, plural, t } from "@lingui/core/macro";
 import { ApiError, createClient, createGithub, createGitlab, createProviders, githubAsset, githubProvider, githubRepository, parseRepository, toRef, type Asset, type Client, type Console, type Entry, type Github, type Gitlab, type Os, type HistoryRelease, type Release, type ReleaseScan, type ReleaseStatus, type UnverifiedRelease, type Verified, type Withdrawn, type Providers, type RepositoryRef } from "@quiverlauncher/api";
 import type { HiddenApp } from "./browse-hidden";
@@ -891,6 +891,31 @@ export function oncePerFolder<T extends { id: string }>(apps: T[], installs: Rec
 const LauncherContext = createContext<Launcher | null>(null);
 
 export const useLauncher = () => useContext(LauncherContext)!;
+
+/**
+ * A screen kept under a page (Discover, Library, a page lower in the stack) sees the launcher as it was when the page
+ * covered it: a change meanwhile (a setting, App details folded) doesn't draw it all again under the page, which held
+ * up the change itself (Discover's cards took most of a quarter of a second). Shown again, it comes back as it was, at
+ * once, and takes what changed just after, without holding up the window (a transition), as KeptScreen does with
+ * what the window passes it. Its effects go on meanwhile; a button pressed in it reads the launcher as it is
+ * (useLauncherNow).
+ */
+export function KeptLauncher({ shown, children }: { shown: boolean; children: ReactNode }) {
+  const live = useLauncher();
+  const kept = useRef(live);
+  const wasShown = useRef(shown);
+  const [, catchUp] = useState(0);
+  const back = shown && !wasShown.current;
+  const value = shown && !back ? live : kept.current;
+  useLayoutEffect(() => {
+    kept.current = value;
+    wasShown.current = shown;
+  });
+  useEffect(() => {
+    if (back) startTransition(() => catchUp((n) => n + 1));
+  }, [back]);
+  return <LauncherContext.Provider value={value}>{children}</LauncherContext.Provider>;
+}
 
 const LauncherNow = createContext<{ readonly current: Launcher } | null>(null);
 /**

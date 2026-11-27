@@ -27,7 +27,8 @@ export type Version = {
 };
 export const bare = (v: string) => v.trim().replace(/^v/i, "");
 /** "v1.2", however the release names it. */
-export const versionLabel = (version = "") => (/^v/i.test(version) ? version : `v${version}`);
+// Only a number gets a "v": a tag such as "test-build-2" stays as it is.
+export const versionLabel = (version = "") => (/^\d/.test(version) ? `v${version}` : version);
 
 /**
  * What an update brings, from a history newest first: `to`, and the releases since `have` with something to say, not

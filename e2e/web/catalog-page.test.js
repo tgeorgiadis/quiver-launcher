@@ -10,7 +10,7 @@ useSharedApp();
 
 test("a long README: the d-pad reads through it, the right stick and Page Down scroll it, and A on what's out of sight shows it", async () => {
   await home();
-  await open("button", { text: "Browse" });
+  await open("button", { text: "Discover" });
   assert.equal(await open('article[data-slug="test-remake"] .card-open'), "page: Test Remake");
   const y = () => app.execute(() => document.querySelector(".shell > main").scrollTop);
   const inSight = () => app.execute(() => window.__reach.inSight(document.activeElement));
@@ -54,7 +54,7 @@ test("a long README: the d-pad reads through it, the right stick and Page Down s
 
 test("B closes an app page's feedback box, wherever the focus is, and only then goes back", async () => {
   await home();
-  await open("button", { text: "Browse" });
+  await open("button", { text: "Discover" });
   assert.equal(await open('article[data-slug="test-remake"] .card-open'), "page: Test Remake");
   const boxOpen = () => app.execute(() => Boolean(document.querySelector(".feedback-box .report-prompt")));
   const openBox = async () => {
@@ -90,7 +90,7 @@ test("Install's versions: one scrollbar, and the focus box stays on the focus as
     }).catch(async () => assert.fail(`the focus box is off what has the focus by ${JSON.stringify(await off())}`));
   await s.emit("pads", ["Test pad"]);
   await home();
-  await open("button", { text: "Browse" });
+  await open("button", { text: "Discover" });
   assert.equal(await open('article[data-slug="test-remake"] .card-open'), "page: Test Remake");
   // Add first: the arrow to Install's versions comes with Install.
   await reach.pressOn(app, ".app-actions .primary", "South", { text: "Add" });
@@ -139,7 +139,7 @@ test("Back on the Install button: the focus box takes in the glyph it gains as t
   await s.emit("pads", ["Test pad"]);
   await s.emit("pad-labels", { kind: "xbox", south: "A", east: "B", west: "X", north: "Y" });
   await home();
-  await open("button", { text: "Browse" });
+  await open("button", { text: "Discover" });
   assert.equal(await open('article[data-slug="test-remake"] .card-open'), "page: Test Remake");
   await reach.pressOn(app, ".app-actions .primary", "South", { text: "Add" });
   await s.until(() => app.execute(() => Boolean(document.querySelector(".app-actions .get-more"))));

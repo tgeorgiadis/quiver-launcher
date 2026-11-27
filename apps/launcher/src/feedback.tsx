@@ -9,13 +9,14 @@ import { msg, t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import type { MessageDescriptor } from "@lingui/core";
 import { i18n } from "@quiverlauncher/i18n";
-import type { Entry, Feedback, FeedbackSpecs, Release } from "@quiverlauncher/api";
+import type { Entry, Feedback, FeedbackSpecs, Page, Release } from "@quiverlauncher/api";
 import { OS_NAMES, Score, fullDate } from "@quiverlauncher/ui";
 import { useLauncher } from "./store";
 import { useAccount } from "./account";
 import { NOTE_LIMIT, NOT_SURE, clearDraft, missing, readDraft, saveDraft } from "./reviewDraft";
 import { moveFocus } from "./spatial";
 import { pcSpecs } from "./specs";
+import { FIRST_REVIEWS, answer, appKey, keptAnswer } from "./app-memory";
 
 export type Result = Feedback["result"];
 /** What the player asked to do: give feedback with this answer, or edit what they gave. */
@@ -143,6 +144,34 @@ export function ReportPrompt({ entry, count, own, onShare }: { entry: Entry; cou
 }
 
 /**
+ * Beside a wide page's tabs: what players said of how it runs, the three answers as one bar, and the way to all they
+ * said (the Player feedback tab), or to be the first to say. On that tab (no `onOpen`), just what they said.
+ */
+export function HowItRuns({ entry, onOpen }: { entry: Entry; onOpen?: () => void }) {
+  const said = { runs: entry.recommended ?? 0, issues: entry.reportIssues ?? 0, broken: entry.reportBroken ?? 0 };
+  const total = said.runs + said.issues + said.broken;
+  return (
+    <section className="panel content-panel how-it-runs" aria-labelledby="how-it-runs-title">
+      <h2 id="how-it-runs-title" className="eyebrow">
+        <Trans comment="Heading beside an app's README: what players said of how it runs">HOW IT RUNS</Trans>
+      </h2>
+      <Score runs={said.runs} issues={said.issues} broken={said.broken} />
+      {/* The split the words beside it give, drawn. */}
+      {total > 0 && (
+        <div className="runs-bar" aria-hidden="true">
+          {(["runs", "issues", "broken"] as const).map((result) => said[result] > 0 && <span key={result} className={`runs-${RESULTS[result].tone}`} style={{ flexGrow: said[result] }} />)}
+        </div>
+      )}
+      {onOpen && (
+        <button type="button" className="text-button" onClick={onOpen}>
+          {total ? <Trans>See what players said</Trans> : <Trans>Be the first to say how it runs</Trans>}
+        </button>
+      )}
+    </section>
+  );
+}
+
+/**
  * Beside an app's page, on every tab: what players said of how it runs (all of it is on the Player feedback tab under
  * it); opened, the player's own say (ReportPrompt), which closes again once they've answered, the tab's form taking it from there.
  * Closed to start with, so the page's top stays simple, unless the player left feedback unfinished, which it shows to
@@ -217,8 +246,10 @@ export function FeedbackTab({
 }) {
   const { client } = useLauncher();
   const { user } = useAccount();
-  const [list, setList] = useState<Feedback[] | undefined>();
-  const [next, setNext] = useState<string | null>(null);
+  // The first page, when it was asked ahead (app-memory.ts's prefetchReviews), drawn as the tab opens.
+  const kept = keptAnswer<Page<Feedback>>(appKey.reviews(entry.slug));
+  const [list, setList] = useState<Feedback[] | undefined>(() => kept?.items);
+  const [next, setNext] = useState<string | null>(() => (kept && !kept.isDone ? kept.nextCursor : null));
   const [round, setRound] = useState(0);
   // The form, with the answer picked to open it, if any; `asked` counts the presses that asked for it (an answer in the
   // box at the page's top, a button here), each taking the focus to its answer.
@@ -227,7 +258,9 @@ export function FeedbackTab({
   function load(cursor: string | null) {
     // Ten at a time: the first page is the one address the site keeps for
     // every launcher, so it rarely reaches the site's database.
-    client.reviews(entry.slug, cursor, 10).then(
+    // The first page shared with one asked ahead; after a change (`round`), asked anew.
+    const asked = cursor || round ? client.reviews(entry.slug, cursor, FIRST_REVIEWS) : answer(appKey.reviews(entry.slug), () => client.reviews(entry.slug, null, FIRST_REVIEWS));
+    asked.then(
       (page) => {
         setList((l) => (cursor ? [...(l ?? []), ...page.items] : page.items));
         setNext(page.isDone ? null : page.nextCursor);

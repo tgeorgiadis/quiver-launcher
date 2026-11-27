@@ -10,11 +10,12 @@ import { FaSteam } from "react-icons/fa6";
 import { msg, plural, t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import type { MessageDescriptor } from "@lingui/core";
-import { ApiError, providerFor, type AiUse, type Asset, type Checking, type Client, type DeveloperProfile, type Detail, type Entry, type HistoryRelease, type Os, type Readme as ReadmeText, type Release, type ReleaseScan, type RepositoryRef, type Withdrawn } from "@quiverlauncher/api";
+import { ApiError, providerFor, type AiUse, type Asset, type Checking, type Client, type DeveloperProfile, type Detail, type Entry, type HistoryRelease, type Os, type Page, type Readme as ReadmeText, type Release, type ReleaseScan, type RepositoryRef, type Withdrawn } from "@quiverlauncher/api";
 import { EasySetupChip, OS_NAMES, ReleaseBadge, alertTitles, badgeState, hasEasySetup, fullDate, platformList, relativeTime, tagLabel } from "@quiverlauncher/ui";
 import { hiddenOnApp, hideOnApp, hideableTags } from "./catalog-tags";
 import { Markdown, readmeImages } from "@quiverlauncher/ui/markdown";
 import { cacheOf, keepsReadme } from "./cache";
+import { FIRST_RELEASES, answer, appKey, keptAnswer, prefetchApp } from "./app-memory";
 import { i18n } from "@quiverlauncher/i18n";
 import { earlyHereFor, onlyPrereleases, pulledVerified, useLauncher, type Install, type Settings } from "./store";
 import { launchCopies } from "./own-copy";
@@ -47,11 +48,14 @@ export function useAppDetail(entry: Entry): { source: Source | null | undefined;
   const { client, library } = useLauncher();
   const custom = library.find((i) => i.id === entry.id)?.custom;
   const own = isCustom(entry.id) || isLocal(entry.id);
-  const [detail, setDetail] = useState<Detail | null | undefined>(own ? null : undefined);
+  // One asked ahead (app-memory.ts) draws the page whole at once.
+  const [detail, setDetail] = useState<Detail | null | undefined>(() => (own ? null : keptAnswer<Detail>(appKey.detail(entry.slug))));
   useEffect(() => {
     if (own) return;
     let live = true;
-    client.app(entry.slug).then(
+    // The README and releases with it, not after it.
+    prefetchApp(client, entry.slug);
+    answer(appKey.detail(entry.slug), () => client.app(entry.slug)).then(
       (d) => live && setDetail(d),
       () => live && setDetail(null),
     );
@@ -105,12 +109,18 @@ export function PrereleaseTag() {
 /** The releases the site approved, newest first: 5, then 10 more at a time. */
 export function useReleases(entry: Entry, on: boolean) {
   const { client } = useLauncher();
-  const [items, setItems] = useState<Release[] | undefined>();
-  const [next, setNext] = useState<string | null>(null);
+  const first = () => keptAnswer<Page<Release>>(appKey.releases(entry.slug));
+  const [items, setItems] = useState<Release[] | undefined>(() => first()?.items);
+  const [next, setNext] = useState<string | null>(() => {
+    const page = first();
+    return page && !page.isDone ? page.nextCursor : null;
+  });
   const [loading, setLoading] = useState(false);
   function load(cursor: string | null, count: number) {
     setLoading(true);
-    client.releases(entry.slug, count, cursor).then(
+    // The first few as app-memory.ts keeps them, maybe asked ahead; more as asked.
+    const asked = cursor ? client.releases(entry.slug, count, cursor) : answer(appKey.releases(entry.slug), () => client.releases(entry.slug, count, null));
+    asked.then(
       (page) => {
         setItems((list) => (cursor ? [...(list ?? []), ...page.items] : page.items));
         setNext(page.isDone ? null : page.nextCursor);
@@ -120,7 +130,7 @@ export function useReleases(entry: Entry, on: boolean) {
     );
   }
   useEffect(() => {
-    if (on) load(null, 5);
+    if (on) load(null, FIRST_RELEASES);
   }, [client, entry.slug, on]); // eslint-disable-line react-hooks/exhaustive-deps
   return { items, more: Boolean(next), loading, loadMore: () => load(next, 10) };
 }
@@ -155,20 +165,33 @@ const historyPage = (client: Client, slug: string, cursor?: string | null) =>
     return client.releases(slug, HISTORY_PAGE, cursor).then((page) => ({ ...page, items: page.items.map(asHistory) }));
   });
 
+/** The first page of every release, kept with the app's page (app-memory.ts). */
+const historyFirst = (client: Client, slug: string) => answer(appKey.history(slug), () => historyPage(client, slug, null));
+
+/**
+ * An app's releases asked ahead with its page, as the pointer or the focus rests on its card (App.tsx): the page opens
+ * with its Releases tab's count, and the tab whole. The address every launcher asks, which the site's cache keeps.
+ */
+export function prefetchHistory(client: Client, slug: string) {
+  historyFirst(client, slug).catch(() => {});
+}
+
 /**
  * Every release of the app's repository, newest first, verified or not, as
  * the website's Releases tab lists them: 10, then 10 more at a time. A site
- * that doesn't list them all yet gives its verified ones.
+ * that doesn't list them all yet gives its verified ones. Asked for once
+ * `on`; one asked ahead (prefetchHistory) shows at once, `on` or not.
  */
 export function useReleaseHistory(entry: Entry, on: boolean) {
   const { client } = useLauncher();
-  const [all, setAll] = useState<HistoryRelease[] | undefined>();
+  const [kept] = useState(() => keptAnswer<Page<HistoryRelease>>(appKey.history(entry.slug)));
+  const [all, setAll] = useState<HistoryRelease[] | undefined>(kept?.items);
   const [shown, setShown] = useState(HISTORY_SHOWN);
-  const [next, setNext] = useState<string | null>(null);
+  const [next, setNext] = useState<string | null>(kept && !kept.isDone ? kept.nextCursor : null);
   const [loading, setLoading] = useState(false);
   function load(cursor: string | null) {
     setLoading(true);
-    historyPage(client, entry.slug, cursor).then(
+    (cursor ? historyPage(client, entry.slug, cursor) : historyFirst(client, entry.slug)).then(
       (page) => {
         setAll((list) => (cursor ? [...(list ?? []), ...page.items] : page.items));
         setNext(page.isDone ? null : page.nextCursor);
@@ -282,11 +305,30 @@ function KeptReadmeNote({ at }: { at: number }) {
   );
 }
 
-/** The project's README: the site's copy, else straight from its host. Asked for (`asked`), it's shown whole, scrolled to, with the focus to read on from. */
-export function Readme({ entry, source, asked }: { entry: Entry; source: Source | null | undefined; asked?: boolean }) {
+/** The window's height, kept current as it's resized. */
+function useWindowHeight() {
+  const [height, setHeight] = useState(() => window.innerHeight);
+  useEffect(() => {
+    const resized = () => setHeight(window.innerHeight);
+    window.addEventListener("resize", resized);
+    return () => window.removeEventListener("resize", resized);
+  }, []);
+  return height;
+}
+
+/**
+ * The project's README: the site's copy, else straight from its host. Asked for (`asked`), it's shown whole, scrolled to, with the focus to read on
+ * from. `onArrived` hears once it came, or that there's none: what's under it waits for that, so it isn't pushed down. `tall`, with the
+ * app's facts and More like this beside it rather than under it: more of it shows before Read more, most of the window's height.
+ */
+export function Readme({ entry, source, asked, tall, onArrived }: { entry: Entry; source: Source | null | undefined; asked?: boolean; tall?: boolean; onArrived?: () => void }) {
+  const windowHeight = useWindowHeight();
   const { client, providers, settings, config, installs } = useLauncher();
-  // A kept copy, while quiverlauncher.com can't be reached: its pictures, and when it was kept.
-  const [readme, setReadme] = useState<(ReadmeText & { images?: Record<string, string>; keptAt?: number }) | null | undefined>();
+  // A kept copy, while quiverlauncher.com can't be reached: its pictures, and when it was kept. The site's copy, when
+  // one asked ahead came (app-memory.ts), is drawn with the page.
+  const [readme, setReadme] = useState<(ReadmeText & { images?: Record<string, string>; keptAt?: number }) | null | undefined>(() =>
+    isCustom(entry.id) || isLocal(entry.id) ? undefined : (keptAnswer<ReadmeText | null>(appKey.readme(entry.slug)) ?? undefined),
+  );
   const start = useRef<HTMLSpanElement>(null);
   const arrived = readme !== undefined;
   useEffect(() => {
@@ -294,6 +336,9 @@ export function Readme({ entry, source, asked }: { entry: Entry; source: Source 
     start.current?.parentElement?.scrollIntoView({ block: "start" });
     start.current?.focus({ preventScroll: true });
   }, [asked, arrived]);
+  useEffect(() => {
+    if (arrived) onArrived?.();
+  }, [arrived]); // eslint-disable-line react-hooks/exhaustive-deps
   const top = asked && <span ref={start} className="clip-fold" tabIndex={-1} />;
   useEffect(() => {
     if (source === undefined || isLocal(entry.id)) return;
@@ -302,7 +347,7 @@ export function Readme({ entry, source, asked }: { entry: Entry; source: Source 
     const cache = cacheOf(settings.cache, config.cacheDir ?? "");
     void (async () => {
       // The site's copy, else straight from its host, as ever: always the newest there is, when either answers.
-      const site = isCustom(entry.id) ? undefined : await client.readme(entry.slug).then((r) => ({ r, reached: true }), () => ({ r: null, reached: false }));
+      const site = isCustom(entry.id) ? undefined : await answer(appKey.readme(entry.slug), () => client.readme(entry.slug)).then((r) => ({ r, reached: true }), () => ({ r: null, reached: false }));
       const online = site?.r ?? (await upstream());
       if (online) {
         if (live) setReadme(online);
@@ -322,9 +367,9 @@ export function Readme({ entry, source, asked }: { entry: Entry; source: Source 
     return (
       <section className="readme">
         {top}
-        <h3>
+        <h2>
           <Trans>About this app</Trans>
-        </h3>
+        </h2>
         <p className="detail-description">{entry.description}</p>
       </section>
     );
@@ -334,7 +379,7 @@ export function Readme({ entry, source, asked }: { entry: Entry; source: Source 
     <section className="readme">
       {top}
       <div className="readme-top">
-        <h3>README</h3>
+        <h2>README</h2>
         {/* The whole README, store badges included, as its host shows it. */}
         {source && (
           <a className="readme-full" href={source.url}>
@@ -344,7 +389,7 @@ export function Readme({ entry, source, asked }: { entry: Entry; source: Source 
         )}
       </div>
       <div className="readme-body">
-        <Clipped height={320} opened={asked}>
+        <Clipped height={tall ? Math.max(320, Math.round(windowHeight * 0.6)) : 320} opened={asked}>
           {readme.keptAt !== undefined && <KeptReadmeNote at={readme.keptAt} />}
           <Markdown text={readme.markdown} rawBase={readme.rawBase} htmlBase={readme.htmlBase} alertTitles={alertTitles()} images={readme.images} />
         </Clipped>
@@ -415,6 +460,12 @@ function ReleaseCard({
   const install = onInstall && !(state !== "verified" && files === 0) ? onInstall : undefined;
   const hours = release.checkEndsAt !== undefined ? hoursFrom(release.checkEndsAt) : 0;
   const engines = scan?.engines ?? t({ message: "flagged", comment: "What VirusTotal said of a release's files, after “VirusTotal:”" });
+  // The one file this computer runs is named by Install, which installs it, and not listed again; with several, Install asks which.
+  const here = install && state !== "blocked" ? release.assets.filter(runsHere) : [];
+  const one = here.length === 1 ? here[0] : undefined;
+  // A blocked one doesn't link its files.
+  const listed = state === "blocked" ? [] : release.assets.filter((a) => a !== one);
+  const [others, setOthers] = useState(false);
   return (
     <article className={`panel release release-${state}${open ? " open" : ""}`}>
       <button type="button" className="release-summary" aria-expanded={open} onClick={onToggle}>
@@ -484,6 +535,12 @@ function ReleaseCard({
               </p>
             </>
           )}
+          {/* Not offered, in words a player knows: an update won't bring it, and installing it is theirs to choose. */}
+          {state === "unverified" && !offered && install && (
+            <p>
+              <Trans>Updates won&apos;t install it for you, but you can still install it here. You&apos;ll be asked to confirm first.</Trans>
+            </p>
+          )}
           {state === "blocked" && (
             <p>
               <strong>
@@ -510,69 +567,71 @@ function ReleaseCard({
                 : t`Quiver blocked this release, so it doesn't link its files. Installing it asks you to accept the risk first.`}
             </p>
           ) : (
+            // Not offered, it says so over its files (release-why); offered, nothing, unless its scan still makes it ask (versions.ts's scanAsks).
             state === "unverified" &&
-            (!offered ? (
+            offered &&
+            scanAsks(scan) && (
               <p className="release-files-note">
-                <Trans>Quiver Launcher doesn&apos;t offer this release by itself. Installing one of its files asks you to confirm first.</Trans>
+                <Trans>VirusTotal hasn&apos;t cleared this release, so installing it asks you to confirm first.</Trans>
               </p>
-            ) : (
-              // Offered, so nothing to say of it, unless its scan still makes it ask (versions.ts's scanAsks).
-              scanAsks(scan) && (
-                <p className="release-files-note">
-                  <Trans>VirusTotal hasn&apos;t cleared this release, so installing it asks you to confirm first.</Trans>
-                </p>
-              )
-            ))
+            )
           )}
-          {install && (
-            <button type="button" className={`release-install ${state}`} onClick={() => install()}>
-              <Download size={16} aria-hidden="true" /> {installLabel(version)}
-            </button>
-          )}
-          {state !== "blocked" && (
-            <div className="download-list">
-              {release.assets.map((a) => {
-                // A file that isn't verified with its release, marked as on the website, so a player sees which one waits.
-                const why = unverifiedFile(a, release);
-                const changed = why === "changed" ? changedFile(a.checkEndsAt) : undefined;
-                const body = (
-                  <>
-                    <Download size={18} />
-                    <span>
-                      <strong>
-                        {a.os === "unknown" ? t`Platform unspecified` : (OS_NAMES[a.os] ?? a.os)} · {a.architecture}
-                      </strong>
-                      <small>{a.filename}</small>
-                      {changed && <small className="file-why">{changed}</small>}
-                    </span>
-                    {changed && (
-                      <span className="file-mark">
-                        <ReleaseBadge state="unverified" title={changed} />
-                      </span>
-                    )}
-                    {why === "unchecked" && (
-                      <span className="file-mark unchecked">{t({ message: "Not checked by Quiver", comment: "A release's file Quiver has no checksum for, though it has for the release's other files" })}</span>
-                    )}
-                  </>
-                );
-                // One this computer runs installs, as the player chose it; any other opens on its host.
-                return install && runsHere(a) ? (
-                  <button type="button" className="download" key={a.id} onClick={() => install(a.filename)}>
-                    {body}
-                    <span className="download-go">
-                      <Trans comment="Button that installs this version">Install</Trans>
-                    </span>
+          {/* Getting it, in a box of its own over the notes: Install, the file it installs beside it, and the release's other files. */}
+          {(install || listed.length > 0) && (
+            <section className="release-get" aria-label={t`Get ${version}`}>
+              {install && (
+                <div className="release-get-main">
+                  <button type="button" className={`release-install ${state}`} onClick={() => install(one?.filename)}>
+                    <Download size={18} aria-hidden="true" /> {installLabel(version)}
                   </button>
-                ) : (
-                  <a className="download" key={a.id} href={a.url}>
-                    {body}
-                    <ExternalLink size={14} />
-                  </a>
-                );
-              })}
-            </div>
+                  {one && (
+                    <span className="release-get-file">
+                      <FileFacts file={one} release={release} />
+                    </span>
+                  )}
+                </div>
+              )}
+              {listed.length > 0 && (
+                <div className="release-files">
+                  {/* Under the file Install names, the rest fold away, so Install stays the first thing in sight. */}
+                  {one ? (
+                    <button type="button" className="release-files-toggle" aria-expanded={others} onClick={() => setOthers((o) => !o)}>
+                      {plural(listed.length, { one: "# other file", other: "# other files" })}
+                      <ChevronDown size={16} aria-hidden="true" />
+                    </button>
+                  ) : (
+                    install && <h4 className="release-get-title">{t({ message: "Files", comment: "Over a release's files" })}</h4>
+                  )}
+                  {(!one || others) && (
+                    <div className="download-list">
+                      {listed.map((a) =>
+                        // One this computer runs installs, as the player chose it; any other opens on its host.
+                        install && runsHere(a) ? (
+                          <button type="button" className="download" key={a.id} onClick={() => install(a.filename)}>
+                            <Download size={16} aria-hidden="true" />
+                            <FileFacts file={a} release={release} />
+                            <span className="download-go">
+                              <Trans comment="Button that installs this version">Install</Trans>
+                            </span>
+                          </button>
+                        ) : (
+                          <a className="download" key={a.id} href={a.url}>
+                            <Download size={16} aria-hidden="true" />
+                            <FileFacts file={a} release={release} />
+                            <ExternalLink size={14} aria-hidden="true" />
+                          </a>
+                        ),
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </section>
           )}
           {/* Its notes after its files, cut to their start: a long changelog doesn't push them out of sight. */}
+          <h4 className="release-notes-title">
+            <Trans comment="Over a release's notes">Release notes</Trans>
+          </h4>
           {release.notes.trim() ? (
             <div className="release-notes">
               <Clipped height={180}>
@@ -595,6 +654,34 @@ function ReleaseCard({
         </div>
       )}
     </article>
+  );
+}
+
+/**
+ * A release's file: its system, architecture and name, marked when it isn't verified with its release, as on the
+ * website, so a player sees which one waits.
+ */
+function FileFacts({ file: a, release }: { file: Asset; release: HistoryRelease }) {
+  const why = unverifiedFile(a, release);
+  const changed = why === "changed" ? changedFile(a.checkEndsAt) : undefined;
+  return (
+    <>
+      <span className="file-facts">
+        <strong>
+          {a.os === "unknown" ? t`Platform unspecified` : (OS_NAMES[a.os] ?? a.os)} · {a.architecture}
+        </strong>
+        <small>{a.filename}</small>
+        {changed && <small className="file-why">{changed}</small>}
+      </span>
+      {changed && (
+        <span className="file-mark">
+          <ReleaseBadge state="unverified" title={changed} />
+        </span>
+      )}
+      {why === "unchecked" && (
+        <span className="file-mark unchecked">{t({ message: "Not checked by Quiver", comment: "A release's file Quiver has no checksum for, though it has for the release's other files" })}</span>
+      )}
+    </>
   );
 }
 
@@ -956,11 +1043,12 @@ function AiEvidence({ ai }: { ai: AiUse }) {
  */
 function DeveloperLink({ developer, name, own }: { developer: { key: string; name: string }; name: string; own: boolean }) {
   const { client } = useLauncher();
-  const [profile, setProfile] = useState<DeveloperProfile | null>();
+  // One asked ahead with the page (app-memory.ts) shows with it, not a moment after.
+  const [profile, setProfile] = useState<DeveloperProfile | null | undefined>(() => (own ? undefined : keptAnswer<DeveloperProfile | null>(appKey.developer(developer.key))));
   useEffect(() => {
     if (own) return;
     let live = true;
-    client.developer(developer.key).then(
+    answer(appKey.developer(developer.key), () => client.developer(developer.key)).then(
       (p) => live && setProfile(p),
       () => live && setProfile(null),
     );
@@ -1032,14 +1120,13 @@ export function ProjectDetails({ entry, detail, source }: { entry: Entry; detail
               </dd>
             )}
           </div>
-          {source && (
+          {/* Its row there while the site's answer is on its way, as AI use's is, so the list doesn't grow when it comes. */}
+          {source !== null && (
             <div>
               <dt>
                 <Trans comment="Where an app's code is: a link to its repository">Source</Trans>
               </dt>
-              <dd>
-                <RepositoryLink source={source} />
-              </dd>
+              <dd>{source ? <RepositoryLink source={source} /> : <span className="muted">…</span>}</dd>
             </div>
           )}
           <div>
@@ -1066,7 +1153,52 @@ export function ProjectDetails({ entry, detail, source }: { entry: Entry; detail
         </dl>
       )}
       {open && evidence && ai && <AiEvidence ai={ai} />}
+      {open && entry.projectType === "port" && <Features entry={entry} />}
     </section>
+  );
+}
+
+/**
+ * A port's features, as on the website (its convex/featureTags.ts and labels.ts): its feature tags in the site's order,
+ * display, input, multiplayer, then extras, and Mod support for one with mods set up.
+ */
+const FEATURES: [string, MessageDescriptor][] = [
+  ["widescreen", msg`Widescreen`],
+  ["ultrawide", msg`Ultrawide`],
+  ["unlocked framerate", msg`Unlocked framerate`],
+  ["increased internal resolution", msg`Increased internal resolution`],
+  ["controller support", msg`Controller support`],
+  ["keyboard and mouse", msg`Keyboard and mouse`],
+  ["online co-op", msg`Online co-op`],
+  ["split-screen co-op", msg`Split-screen co-op`],
+  ["split screen", msg`Split screen`],
+  ["online multiplayer", msg`Online multiplayer`],
+  ["mod support", msg`Mod support`],
+];
+
+/** A port's feature (Widescreen, say): listed under Features in App details, so not among its tags. */
+export const isFeatureTag = (tag: string) => FEATURES.some(([feature]) => feature === tag);
+
+function Features({ entry }: { entry: Entry }) {
+  const has = new Set([...(entry.tags ?? []), ...(entry.launcher?.mods ? ["mod support"] : [])]);
+  const features = FEATURES.filter(([tag]) => has.has(tag));
+  return (
+    <div className="features">
+      <h3 className="eyebrow">
+        <Trans comment="Heading over a port's features, as Widescreen or Controller support">FEATURES</Trans>
+      </h3>
+      {features.length ? (
+        <ul className="feature-list">
+          {features.map(([tag, name]) => (
+            <li key={tag}>{i18n._(name)}</li>
+          ))}
+        </ul>
+      ) : (
+        <p className="muted feature-empty">
+          <Trans>No features listed yet.</Trans>
+        </p>
+      )}
+    </div>
   );
 }
 

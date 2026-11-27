@@ -260,6 +260,37 @@ test("A on a dropdown opens its options: the d-pad goes through them, A picks on
   assert.equal(await where(), "main");
 });
 
+test("a click on a dropdown opens Quiver's list, not the system's: a click picks, a second click or Escape closes it, and the keys open it too", async () => {
+  await home();
+  await open("button", { text: "Library" });
+  const SORT = ".library-tools select[aria-label=Sort]";
+  const picked = () => app.execute((q) => document.querySelector(q).selectedOptions[0].label, SORT);
+  const list = page.locator(".select-picker");
+  const was = await picked();
+  await page.locator(SORT).click();
+  assert.equal(await list.count(), 1, "the click opened Quiver's list");
+  const other = (await list.locator("[role=option]").allInnerTexts()).find((label) => label !== was);
+  await list.locator("[role=option]", { hasText: other }).click();
+  assert.equal(await list.count(), 0, "picking closes it");
+  assert.equal(await picked(), other);
+  assert.equal(await reach.focused(app), 'select "Sort"');
+  // A second click on the dropdown closes its list, the sort as it was.
+  await page.locator(SORT).click();
+  await page.locator(SORT).click();
+  assert.equal(await list.count(), 0, "a second click closes it");
+  // Space opens it from the keys, a letter goes to an option starting with it, and Escape closes it and goes no further.
+  await page.keyboard.press("Space");
+  assert.equal(await list.count(), 1, "Space opened it");
+  const letter = was[0].toLowerCase();
+  await page.keyboard.press(letter);
+  assert.equal((await app.execute(() => document.activeElement.textContent))[0].toLowerCase(), letter);
+  await page.keyboard.press("Escape");
+  assert.equal(await list.count(), 0, "Escape closes it");
+  assert.equal(await picked(), other);
+  assert.equal(await reach.focused(app), 'select "Sort"');
+  assert.equal(await where(), "main");
+});
+
 test("at another interface size, the focus box is on what has the focus and a game's ports line up with its card", async () => {
   // Zoomed as Settings' Interface size zooms the page, which WebKit (a Steam Deck's) measures as it lays it out, not as
   // it shows: the box and the list were drawn a fraction of the way toward the window's corner.

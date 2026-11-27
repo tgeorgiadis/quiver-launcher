@@ -16,6 +16,7 @@ import { WHEEL_SPEEDS, pageArea } from "./spatial";
 import { native, type AppsMoving } from "./native";
 import { DEFAULT_MUSIC_VOLUME, musicProblem, watchMusicProblem } from "./music";
 import { DEFAULT_BACKGROUND_OPACITY, useBackgroundImage } from "./library-background";
+import { enter, useEnterOnChange } from "./motion";
 import { BrowseCardOptions, PlatformChoice, ViewOptions } from "./library-view";
 import { Snapshots } from "./recovery";
 import { FindOldLibrary } from "./old-library";
@@ -174,8 +175,11 @@ export function SettingsPage({
     else if (left.current) list.current?.querySelector<HTMLElement>(`[data-section="${left.current}"]`)?.focus({ preventScroll: true });
     left.current = picked;
   }, [sideBySide, picked]);
+  // Another section's settings come in as it opens, as a screen's cards do (motion.ts); the list of sections stays put.
+  const page = useRef<HTMLElement>(null);
+  useEnterOnChange(() => page.current?.querySelector(".settings-pane:not(.settings-results)"), section, enter);
   return (
-    <section className="settings-page" aria-label={t`Settings`} data-side-by-side={sideBySide || undefined}>
+    <section ref={page} className="settings-page" aria-label={t`Settings`} data-side-by-side={sideBySide || undefined}>
       {sideBySide || !section ? (
         <button className="back-link" onClick={onBack}>
           <ArrowLeft size={15} /> {back}
@@ -489,9 +493,9 @@ function LibrarySettings({ v3 }: { v3?: boolean }) {
     <>
       <ViewOptions groups />
       {config.os !== "android" && config.os !== "ios" && <BackgroundSetting />}
-      <section className="settings-section" aria-label={t`Browse cards`}>
+      <section className="settings-section" aria-label={t`Discover cards`}>
         <h3>
-          <Trans comment="Settings section: how the catalog's cards look in Browse">Browse cards</Trans>
+          <Trans comment="Settings section: how the catalog's cards look in Discover">Discover cards</Trans>
         </h3>
         <BrowseCardOptions />
       </section>

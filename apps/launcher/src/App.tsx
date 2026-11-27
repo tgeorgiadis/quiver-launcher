@@ -1,17 +1,17 @@
 import { startTransition, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { ArrowLeft, ArrowUp, BookOpen, Save, ChevronDown, Cloud, CircleArrowDown, CircleCheck, CirclePlay, CircleUser, Compass, Disc3, Download, Eye, EyeOff, FolderInput, FolderOpen, FolderPen, FolderSearch, FolderSync, History, Info, MessagesSquare, LayoutGrid, Library, LogOut, PanelLeft, Mail, PackagePlus, Pencil, Pin, Play, Plus, Search, Settings2, SettingsIcon, RefreshCw, RotateCcw, ShieldAlert, ShieldCheck, ShieldX, SlidersHorizontal, Smile, Trash2, TriangleAlert, Tv, Wrench, X } from "lucide-react";
+import { ArrowLeft, ArrowUp, BookOpen, Save, ChevronDown, Cloud, CircleArrowDown, CircleCheck, CirclePlay, CircleUser, Compass, Disc3, Download, Eye, EyeOff, FolderInput, FolderOpen, FolderPen, FolderSearch, FolderSync, History, Info, MessagesSquare, LayoutGrid, Library, LogOut, PanelLeft, Mail, MoreHorizontal, Flag, PackagePlus, Pencil, Pin, Play, Plus, Search, Settings2, SettingsIcon, RefreshCw, RotateCcw, ShieldAlert, ShieldCheck, ShieldX, SlidersHorizontal, Smile, Trash2, TriangleAlert, Tv, Wrench, X } from "lucide-react";
 import type { AppQuery, Asset, Entry, GameMatch, Os, Page, ProjectType } from "@quiverlauncher/api";
 import { msg, plural, t } from "@lingui/core/macro";
 import { Plural, Trans } from "@lingui/react/macro";
 import { i18n } from "@quiverlauncher/i18n";
 import type { MessageDescriptor } from "@lingui/core";
-import { Artwork, OS_NAMES, PlatformIcons, ReleaseBadge, SourcedImage, heroSources } from "@quiverlauncher/ui";
-import { PORTABLE_FILE, availableOn, canGet, catalogOs, declinedUpdate, earlyGetOffer, earlyOffer, filesAddable, folderNameOf, hasUpdate, locatable, movable, noProgram, pulledVerified, renamable, rootOf, samePath, skipped, stillWaiting, tvModeOn, updateFor, updatesByItself, updatesOf, useJob, useLauncher, versionKnown, type AppMove, type Choice } from "./store";
+import { Artwork, OS_NAMES, PlatformIcons, ReleaseBadge, SourcedImage, cardSources, tagLabel, warmImage } from "@quiverlauncher/ui";
+import { PORTABLE_FILE, availableOn, canGet, catalogOs, declinedUpdate, earlyGetOffer, earlyOffer, filesAddable, folderNameOf, hasUpdate, locatable, movable, noProgram, pulledVerified, renamable, rootOf, samePath, skipped, stillWaiting, tvModeOn, updateFor, updatesByItself, updatesOf, useJob, useLauncher, KeptLauncher, versionKnown, type AppMove, type Choice } from "./store";
 import { TabPrompt } from "./pad-hints";
 import { Dialog, FilterPill, LibraryPage, MultiPill, Popover, consoleOptions, filterLabel, pickedLabel, projectTypeOptions, withOverrides, type MultiOption } from "./library";
-import { BrowseCardOptions, useBrowseCards, useLibraryView, useSidebarFits } from "./library-view";
+import { BrowseCardOptions, browseCardSource, useBrowseCards, useLibraryView, useSidebarFits } from "./library-view";
 import { DownloadsButton, DownloadsPage, DownloadsStrip, SidebarDownloads } from "./downloads-page";
-import { VersionsDialog, PanelFormHead, ProjectDetails, Readme, ReleasesTab, RepositoryLink, Shortcuts, Consoles, Tags, Versions, checkingOf, foldersOn, hoursFrom, scanText, useAppDetail, useListed, useReleaseHistory, useReleases } from "./detail";
+import { VersionsDialog, PanelFormHead, ProjectDetails, isFeatureTag, Readme, ReleasesTab, RepositoryLink, Shortcuts, Consoles, Tags, Versions, checkingOf, foldersOn, hoursFrom, prefetchHistory, scanText, useAppDetail, useListed, useReleaseHistory, useReleases } from "./detail";
 import { UpdateBanner, useUpdateCheck } from "./update";
 import { useAnnouncementsCheck } from "./announcements";
 import { AnnouncementBanner, AnnouncementsButton, AnnouncementsDialog, useTidyDismissals } from "./announcements-ui";
@@ -19,15 +19,20 @@ import { useShortcutUpgrade } from "./shortcut-upgrade";
 import { LaunchOptionsButton, outsideFolder } from "./launch-options";
 import { AddFilesButton, AddFilesDialogBody } from "./app-files";
 import { versionLabel, wayOffLabel } from "./versions";
-import { FeedbackBox, FeedbackTab, useOwnFeedback, type Intent } from "./feedback";
-import { CommunityButton, CommunityPage, DiscussionNavProvider, DiscussionPage, DiscussionsTab, useDiscussionCount } from "./discussions";
-import { CorrectionStatusPanel, ReportProblem } from "./correction";
+import { FeedbackBox, FeedbackTab, HowItRuns, useOwnFeedback, type Intent } from "./feedback";
+import { CommunityButton, CommunityPage, DiscussionNavProvider, DiscussionsTab, ThreadDetails, useDiscussionCount, useDiscussionsAhead, useThread } from "./discussions";
+import { useWiderThan } from "./wide";
+import { CorrectionStatusPanel, useReportProblem } from "./correction";
 import { GamePage, GamesSection, gameVersionLabel, type GameLink } from "./game";
-import { WaysToPlay } from "./ways-to-play";
-import { Discover, MoreLikeThis } from "./discover";
+import { WaysToPlay, prefetchWaysToPlay } from "./ways-to-play";
+import { Discover, MoreLikeThis, launcherHero, prefetchBrowse, prefetchMoreLikeThis } from "./discover";
+import { prefetchApp, prefetchGame, prefetchReviews } from "./app-memory";
+import { KeptScreen } from "./kept-screen";
+import { keepGames, keepGrid, keptEntry, keptGames, keptGrid } from "./browse-memory";
 import { ErrorBoundary } from "./boundary";
-import { FORWARD, pageArea, toTop } from "./spatial";
+import { FORWARD, focusShownPage, pageArea, toTop } from "./spatial";
 import { track, trackScreen } from "./telemetry";
+import { useEnterOnChange } from "./motion";
 import { TelemetryNotice, useTelemetrySetup } from "./telemetry-ui";
 import { managesCatalog, useAccount, type CatalogDefaults } from "./account";
 import { native } from "./native";
@@ -54,7 +59,7 @@ import type { CloudUsage } from "./cloud-saves";
 import { SavesTab } from "./saves-tab";
 import { PortSettingsTab, usePortSettings } from "./port-settings";
 import { FilePicker } from "./file-picker";
-import { BrowseMenu, fileName } from "./card-menu";
+import { BrowseMenu, fileName, menuArrows } from "./card-menu";
 import { browseShown, hiddenMatches, toggleHidden, type HiddenView } from "./browse-hidden";
 import { BrowseTickArea, TickableCard } from "./browse-ticking";
 import { closesOutside } from "./overlay";
@@ -73,9 +78,9 @@ type View =
   | { kind: "game"; game: GameLink }
   | { kind: "downloads" }
   | { kind: "settings"; section?: "library" | "copies" | "cloud" | "updates"; anchor?: "v3" }
-  | { kind: "community" }
-  | { kind: "discussion"; id: string };
-const viewKey = (v: View) => (v.kind === "app" ? `app:${v.entry.id}` : v.kind === "game" ? `game:${v.game.slug}` : v.kind === "discussion" ? `discussion:${v.id}` : v.kind);
+  // A discussion opens in Community, at it, from wherever there's a link to one (a followed one's, the site's).
+  | { kind: "community"; thread?: string };
+const viewKey = (v: View) => (v.kind === "app" ? `app:${v.entry.id}` : v.kind === "game" ? `game:${v.game.slug}` : v.kind);
 const shorten = (text: string) => (text.length > 40 ? `${text.slice(0, 39).trimEnd()}…` : text);
 /** "v1.2" for "1.2" or "v1.2": releases are tagged either way. */
 /** "v1.2" and "1.2" are the same release. */
@@ -89,7 +94,7 @@ export function App() {
   useTray();
   useDiscordPresence();
   useDownloadCache();
-  const { library, client, settings, setSettings, config, catalog, catalogTotal } = useLauncher();
+  const { library, client, settings, setSettings, config, catalog, catalogTotal, consoles, remember } = useLauncher();
   // TV mode, a larger look over the library and Browse: turned on, or by itself in Steam's Game Mode.
   const tv = tvModeOn(settings, config);
   const setTv = (on: boolean) => setSettings({ ...settings, tvMode: on ? "on" : "off" });
@@ -103,6 +108,8 @@ export function App() {
   const [search, setSearch] = useState("");
   // Browse's filters as the player picked them, kept while they're in the library: Browse starts again from them.
   const [browseKept, setBrowseKept] = useState<KeptBrowse | null>(null);
+  // Browse, once shown, is kept while the player is in the library, as the library is while they're in Browse (kept-screen.tsx).
+  const [browseShown, setBrowseShown] = useState(tab === "browse");
   const [signingIn, setSigningIn] = useState(false);
   // Read before this start counts as one (useTelemetrySetup).
   const [settingUp, setSettingUp] = useState(() => showsSetup(settings));
@@ -117,8 +124,9 @@ export function App() {
     setStack((s) => {
       covered.current[s.length] = here;
       // A page already open further down is gone back to, so the stack stays short.
+      // Community, gone back to for a discussion, opens at it.
       const i = s.findIndex((v) => viewKey(v) === viewKey(view));
-      return i >= 0 ? s.slice(0, i + 1) : [...s, view];
+      return i < 0 ? [...s, view] : view.kind === "community" && view.thread ? [...s.slice(0, i), view] : s.slice(0, i + 1);
     });
   }, []);
   const open = useCallback(
@@ -133,7 +141,7 @@ export function App() {
   const openDownloads = useCallback(() => open({ kind: "downloads" }), [open]);
   const openSettings = useCallback(() => open({ kind: "settings" }), [open]);
   const openCommunity = useCallback(() => open({ kind: "community" }), [open]);
-  const openDiscussion = useCallback((id: string) => open({ kind: "discussion", id }), [open]);
+  const openDiscussion = useCallback((id: string) => open({ kind: "community", thread: id }), [open]);
   // A discussion's app name opens that app's Discussions; an app not in the catalog loaded here is asked for by its slug.
   const openAppDiscussions = useCallback(
     async (entryId: string, slug?: string) => {
@@ -171,8 +179,17 @@ export function App() {
     const next = ahead.current.pop();
     if (next) push(next);
   }, [push, library]);
+  // Where each of Library and Browse was scrolled to when the player left it: switching back finds it there.
+  const tabScroll = useRef<Partial<Record<Tab, number>>>({});
+  const scrollTo = useRef<number | null>(null);
   const switchTab = (next: Tab) => {
+    if (next !== tab) {
+      // Under a page, the tab was where the first page opened from it.
+      tabScroll.current[tab] = stack.length ? (covered.current[0]?.y ?? 0) : pageArea().scrollTop;
+      scrollTo.current = tabScroll.current[next] ?? 0;
+    }
     setTab(next);
+    if (next === "browse") setBrowseShown(true);
     setStack([]);
     covered.current = [];
     ahead.current = [];
@@ -183,7 +200,8 @@ export function App() {
     depth.current = stack.length;
     const at = back ? covered.current[stack.length] : undefined;
     // Braces matter: scrollTo returns a Promise in newer WebView2, and an effect's return value is its cleanup.
-    pageArea().scrollTo(0, at?.y ?? 0);
+    pageArea().scrollTo(0, at?.y ?? scrollTo.current ?? 0);
+    scrollTo.current = null;
     if (at?.focus instanceof HTMLElement && at.focus.isConnected) at.focus.focus({ preventScroll: true });
   }, [stack]);
   // Escape, or a controller's Back, goes back a page; an open dialog takes it instead.
@@ -207,6 +225,71 @@ export function App() {
     return () => window.removeEventListener(FORWARD, onForward);
   }, [goForward]);
   const top = stack.at(-1);
+  // Browse's front page brought ahead while the player is in the library, once the consoles (its shelves) are known
+  // and the library has settled: Browse then shows whole at once (discover.tsx, browse-memory.ts).
+  const prefetched = useRef(false);
+  useEffect(() => {
+    if (prefetched.current || tab !== "library" || !consoles.length || tvModeOn(settings, config)) return;
+    const later = window.setTimeout(() => {
+      prefetched.current = true;
+      void prefetchBrowse({ client, os: config.os, consoles, remember, cardSource: (entry) => browseCardSource(settings.browseCards, entry) });
+    }, 1500);
+    return () => window.clearTimeout(later);
+  }, [tab, consoles.length, client]); // eslint-disable-line react-hooks/exhaustive-deps
+  // An app's page asked for ahead while the pointer or the focus rests on its card, row or Discover slide a moment, so
+  // it opens whole (app-memory.ts): its art (the banner and the icon on it), its ways to play, its discussion count and
+  // the apps like it too. Not one the player added, which has no page on the site.
+  const { count: countAhead } = useDiscussionsAhead();
+  const known = useRef({ catalog, library, remember, countAhead, os: config.os });
+  known.current = { catalog, library, remember, countAhead, os: config.os };
+  useEffect(() => {
+    let slug: string | undefined;
+    let later = 0;
+    const rest = (e: Event) => {
+      // A game's page too, from a link to it (an app's "Based on", its ways to play).
+      const game = e.target instanceof Element ? e.target.closest("button[data-game]")?.getAttribute("data-game") : null;
+      const at = e.target instanceof Element ? e.target.closest(".entry-card[data-slug], .sidebar-row[data-slug], .featured-slide[data-slug], .port-row[data-slug]")?.getAttribute("data-slug") : null;
+      const key = game ? `game:${game}` : at ?? undefined;
+      if (key === slug) return;
+      slug = key;
+      window.clearTimeout(later);
+      if (game) later = window.setTimeout(() => prefetchGame(client, game), 150);
+      if (!at || game) return;
+      later = window.setTimeout(() => {
+        const { catalog, library, remember, countAhead, os } = known.current;
+        // Browse's cards are all the catalog's; the library's may be the player's own.
+        const item = library.find((i) => i.slug === at);
+        if (item && isOwn(item.id)) return;
+        prefetchApp(client, at);
+        prefetchHistory(client, at);
+        const listed = (item && catalog[item.id]) || keptEntry(at);
+        if (!listed) return;
+        // As the page shows it: with the player's own name and artwork.
+        const entry = withOverrides(listed, item?.overrides);
+        const hero = entry.libraryArt?.hero || entry.libraryArt?.header;
+        if (hero) warmImage(launcherHero(hero)[0]);
+        const icon = entry.artwork ?? entry.libraryArt?.logo;
+        if (icon) warmImage({ src: icon });
+        prefetchWaysToPlay({ client, remember }, entry);
+        prefetchMoreLikeThis(client, entry, os);
+        countAhead(entry.id);
+      }, 150);
+    };
+    document.addEventListener("pointerover", rest);
+    document.addEventListener("focusin", rest);
+    return () => {
+      window.clearTimeout(later);
+      document.removeEventListener("pointerover", rest);
+      document.removeEventListener("focusin", rest);
+    };
+  }, [client]);
+  // The cards of the screen that shows come in (motion.ts): the top page's, or Library's or Browse's under it.
+  const main = useRef<HTMLElement>(null);
+  const tabLayer = useRef<HTMLDivElement>(null);
+  useEnterOnChange(() => (top ? main.current?.querySelector(":scope > .page-layer:not([hidden])") : tabLayer.current), top ? viewKey(top) : `tab:${tab}`);
+  // Its focus there as it's first drawn, the controller's hints with it, when what had the focus went with the screen
+  // before (spatial.ts).
+  useLayoutEffect(focusShownPage, [top ? viewKey(top) : `tab:${tab}`]); // eslint-disable-line react-hooks/exhaustive-deps
   // Usage data: the screen shown, a catalog app's or game's by its slug (never one the player added).
   const screen = !top ? tab : top.kind === "app" ? `app:${isOwn(top.entry.id) ? "" : top.entry.slug}` : top.kind === "game" ? `game:${top.game.slug}` : top.kind;
   useEffect(() => {
@@ -217,7 +300,7 @@ export function App() {
   useEffect(() => void (signingIn && trackScreen({ screen: "sign_in" })), [signingIn]);
   const query = search.trim();
   const searched = shorten(query);
-  const listName = tab === "library" ? t`Library` : query ? t`Back to results for “${searched}”` : t({ message: "Browse", comment: "The tab with the catalog of apps" });
+  const listName = tab === "library" ? t`Library` : query ? t`Back to results for “${searched}”` : t({ message: "Discover", comment: "The tab with the catalog of apps" });
   /** What Back on the page at `i` returns to. */
   const backFrom = (i: number) => {
     const below = stack[i - 1];
@@ -231,16 +314,38 @@ export function App() {
             ? t`Downloads`
             : below.kind === "community"
               ? t`Community`
-              : below.kind === "discussion"
-                ? t`Back`
-                : t`Settings`;
+              : t`Settings`;
   };
   // The Sidebar layout's foot says how downloads are going, in place of the strip.
   const { view: libraryView, set: setLibraryView } = useLibraryView();
   const sidebar = libraryView.layout === "sidebar";
   const sidebarFits = useSidebarFits();
   const strip = !(tab === "library" && libraryView.layout === "sidebar" && sidebarFits);
-  const action = (entry: Entry) => <Action entry={entry} />;
+  const action = useCallback((entry: Entry) => <Action entry={entry} />, []);
+  // Library and Browse, made again only when what's passed to them changes: not each time the window draws (a page
+  // opened over them, the tab switched), which made every card of theirs again (kept-screen.tsx).
+  const switchTabNow = useRef(switchTab);
+  useLayoutEffect(() => void (switchTabNow.current = switchTab));
+  const toBrowse = useCallback(() => switchTabNow.current("browse"), []);
+  const addApp = useCallback(() => setAdding(true), []);
+  const signIn = useCallback(() => setSigningIn(true), []);
+  const sidebarDownloads = useMemo(() => <SidebarDownloads onOpen={openDownloads} />, [openDownloads]);
+  const libraryPage = useCallback(
+    (entry: Entry) => (
+      <ErrorBoundary fallback={(error) => <PageProblem error={error} />}>
+        <AppPage entry={entry} onOpenGame={openGame} onOpenApp={openApp} onSignIn={signIn} />
+      </ErrorBoundary>
+    ),
+    [openGame, openApp, signIn],
+  );
+  const libraryScreen = useMemo(
+    () => <LibraryPage onOpen={openApp} onBrowse={toBrowse} onAdd={addApp} onSignIn={signIn} downloads={sidebarDownloads} action={action} page={libraryPage} />,
+    [openApp, toBrowse, addApp, signIn, sidebarDownloads, action, libraryPage],
+  );
+  const browseScreen = useMemo(
+    () => <BrowsePage onOpen={openApp} onOpenGame={openGame} search={search} onSearch={setSearch} kept={browseKept} onKeep={setBrowseKept} />,
+    [openApp, openGame, search, browseKept],
+  );
   const downloadAction = (entry: Entry) => <Action entry={entry} reasonElsewhere />;
   // Without the system's title bar, the top bar's empty space moves the window.
   const { buttons, maximized } = useWindowButtons();
@@ -265,7 +370,7 @@ export function App() {
             <Library size={16} aria-hidden="true" /> <Trans>Library</Trans> <span className="count">{library.length}</span>
           </button>
           <button className={tab === "browse" ? "active" : ""} aria-current={tab === "browse" && !top ? "page" : undefined} onClick={() => switchTab("browse")}>
-            <Compass size={16} aria-hidden="true" /> <Trans comment="The tab with the catalog of apps">Browse</Trans>
+            <Compass size={16} aria-hidden="true" /> <Trans comment="The tab with the catalog of apps">Discover</Trans>
             {catalogTotal !== undefined && <span className="count">{catalogTotal}</span>}
           </button>
           {tv && <TabPrompt step="nextTab" />}
@@ -303,10 +408,11 @@ export function App() {
         </button>
         <WindowControls buttons={buttons} maximized={maximized} />
       </header>
-      <main className={top ? "app-main" : ""}>
+      <main ref={main} className={top ? "app-main" : ""}>
         {/*
           Every page in the stack stays mounted, hidden under the top one, so
-          Back finds it as it was left. One that fails shows why and a way back;
+          Back finds it as it was left, with the launcher as it was until then
+          (KeptLauncher). One that fails shows why and a way back;
           the boundary around them all catches a page failing as it closes, and
           OK brings back the pages still open.
         */}
@@ -328,26 +434,28 @@ export function App() {
         >
           {stack.map((view, i) => (
             <div key={viewKey(view)} className="page-layer" hidden={i !== stack.length - 1}>
-              <ErrorBoundary fallback={(error) => <PageProblem error={error} back={backFrom(i)} onBack={goBack} />}>
-                {view.kind === "app" ? (
-                  <AppPage entry={view.entry} at={view.at} tv={tv} back={backFrom(i)} onClose={goBack} onOpenGame={openGame} onOpenApp={openApp} onSignIn={() => setSigningIn(true)} />
-                ) : view.kind === "downloads" ? (
-                  <DownloadsPage back={backFrom(i)} onBack={goBack} onOpen={openApp} action={downloadAction} />
-                ) : view.kind === "settings" ? (
-                  <SettingsPage back={backFrom(i)} onBack={goBack} onRunSetup={() => setSettingUp(true)} onOpen={openApp} start={view.section} anchor={view.anchor} />
-                ) : view.kind === "community" ? (
-                  <CommunityPage back={backFrom(i)} onBack={goBack} />
-                ) : view.kind === "discussion" ? (
-                  <DiscussionPage id={view.id} back={backFrom(i)} onBack={goBack} />
-                ) : (
-                  <GamePage game={view.game} back={backFrom(i)} onBack={goBack} onOpenApp={openApp} action={action} />
-                )}
-              </ErrorBoundary>
+              <KeptLauncher shown={i === stack.length - 1}>
+                <ErrorBoundary fallback={(error) => <PageProblem error={error} back={backFrom(i)} onBack={goBack} />}>
+                  {view.kind === "app" ? (
+                    <AppPage entry={view.entry} at={view.at} tv={tv} back={backFrom(i)} onClose={goBack} onOpenGame={openGame} onOpenApp={openApp} onSignIn={() => setSigningIn(true)} />
+                  ) : view.kind === "downloads" ? (
+                    <DownloadsPage back={backFrom(i)} onBack={goBack} onOpen={openApp} action={downloadAction} />
+                  ) : view.kind === "settings" ? (
+                    <SettingsPage back={backFrom(i)} onBack={goBack} onRunSetup={() => setSettingUp(true)} onOpen={openApp} start={view.section} anchor={view.anchor} />
+                  ) : view.kind === "community" ? (
+                    <CommunityPage asked={view} back={backFrom(i)} onBack={goBack} />
+                  ) : (
+                    <GamePage game={view.game} back={backFrom(i)} onBack={goBack} onOpenApp={openApp} action={action} />
+                  )}
+                </ErrorBoundary>
+              </KeptLauncher>
             </div>
           ))}
         </ErrorBoundary>
         {/* Kept mounted under the pages too, so going back keeps the search, filters and scroll. */}
-        <div hidden={Boolean(top)}>
+        <div ref={tabLayer} hidden={Boolean(top)}>
+          {/* The screen's name for screen readers and heading lists; the top bar's tab shows it to everyone else. */}
+          <h1 className="sr-only">{tab === "library" ? <Trans>Library</Trans> : <Trans comment="The tab with the catalog of apps">Discover</Trans>}</h1>
           {/* A download under way always shows how it's going, over whichever banner has its turn. */}
           {strip && <DownloadsStrip onOpen={openDownloads} active offerUpdates={tab === "library" && !tv} />}
           {/*
@@ -369,23 +477,11 @@ export function App() {
             {/* Across the window under the top bar in the Sidebar layout, edge to edge. */}
             <AnnouncementBanner edge={!strip} onOpen={() => setAnnouncementsOpen(true)} onOpenApp={openApp} />
           </div>
-          {tab === "library" ? (
-            <LibraryPage
-              onOpen={openApp}
-              onBrowse={() => switchTab("browse")}
-              onAdd={() => setAdding(true)}
-              onSignIn={() => setSigningIn(true)}
-              downloads={<SidebarDownloads onOpen={openDownloads} />}
-              action={action}
-              page={(entry) => (
-                <ErrorBoundary fallback={(error) => <PageProblem error={error} />}>
-                  <AppPage entry={entry} onOpenGame={openGame} onOpenApp={openApp} onSignIn={() => setSigningIn(true)} />
-                </ErrorBoundary>
-              )}
-            />
-          ) : (
-            <BrowsePage onOpen={openApp} onOpenGame={openGame} search={search} onSearch={setSearch} kept={browseKept} onKeep={setBrowseKept} />
-          )}
+          {/* Under a page, as the pages under the top one are (above). */}
+          <KeptLauncher shown={!top}>
+            <KeptScreen shown={tab === "library"}>{libraryScreen}</KeptScreen>
+            {(browseShown || tab === "browse") && <KeptScreen shown={tab === "browse"}>{browseScreen}</KeptScreen>}
+          </KeptLauncher>
         </div>
       </main>
       <BackToTop />
@@ -529,7 +625,6 @@ function BrowsePage({
   const libraryNow = useRef(library);
   libraryNow.current = library;
   // The apps left out: those in the library when their page came. One added since stays, with its badge.
-  const [owned, setOwned] = useState<Set<string>>(new Set());
   // The site's catalog filters: the ones saved on the account ("Save as my
   // default" on the website), but the platform starts at what this computer
   // runs ("here"), since only those apps can be installed here.
@@ -542,6 +637,11 @@ function BrowsePage({
     setup: d?.setup === "easy" ? "easy" : undefined,
   });
   const [filters, setFilters] = useState(() => kept?.filters ?? fromSaved(saved));
+  // The grid as Browse last showed it for this search and these filters, a moment ago (browse-memory.ts): shown at
+  // once, where it was, rather than asked for again.
+  const gridKey = (f: BrowseFilters, search: string) => JSON.stringify([config.os, search, f]);
+  const [remembered] = useState(() => keptGrid(gridKey(filters, search)));
+  const [owned, setOwned] = useState<Set<string>>(() => new Set(remembered?.owned));
   // The account can load after Browse opens: its saved filters apply until the player picks their own.
   const picked = useRef(Boolean(kept));
   useEffect(() => {
@@ -551,9 +651,9 @@ function BrowsePage({
     picked.current = true;
     setFilters(next);
   };
-  const [pages, setPages] = useState<Page<Entry>[]>([]);
+  const [pages, setPages] = useState<Page<Entry>[]>(() => remembered?.pages ?? []);
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!remembered);
   // Refresh's own first page on its way: its icon turns meanwhile.
   const [refreshing, setRefreshing] = useState(false);
   const [games, setGames] = useState<GameMatch[]>([]);
@@ -598,18 +698,30 @@ function BrowsePage({
         setRefreshing(false);
       });
   }
+  // Asked for once for each search and set of filters (and again for another client: signed in or out), not as
+  // Browse opens with the grid it remembered for them; Refresh asks again by itself.
+  const asked = useRef<{ key: string; client: typeof client } | null>(remembered ? { key: gridKey(filters, search), client } : null);
   useEffect(() => {
+    const key = gridKey(filters, query);
+    if (asked.current?.key === key && asked.current.client === client) return;
+    asked.current = { key, client };
     load();
   }, [query, JSON.stringify(filters), client]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Kept for the next time Browse opens, once a page is in.
+  useEffect(() => {
+    if (!loading && !error && pages.length) keepGrid(gridKey(filters, query), pages, owned);
+  }, [pages, owned, loading, error]); // eslint-disable-line react-hooks/exhaustive-deps
   // As on the website: games whose titles match the search, above the apps, whatever the filters.
   useEffect(() => {
     // As on the website, the last search's games go as soon as the search changes.
     setGames([]);
     setGamesFor(null);
     if (query.trim().length < 2) return setGamesFor(query);
+    const kept = keptGames(query);
+    if (kept) return void (setGames(kept), setGamesFor(query));
     let live = true;
     client.matchingGames(query).then(
-      (found) => live && (setGames(found), setGamesFor(query)),
+      (found) => live && (keepGames(query, found), setGames(found), setGamesFor(query)),
       () => live && (setGames([]), setGamesFor(query)),
     );
     return () => {
@@ -1263,7 +1375,7 @@ function AppPage({
   onOpenApp: (entry: Entry, at?: PageAt) => void;
   onSignIn: () => void;
 }) {
-  const { config, library, installs, jobs, catalog, remove, confirmUninstall, askRename, askName, managing, askManage, consoleNames, setUpdates, declineUpdate, haveUpdate, get, switched, switchToCatalog, locateInstall, askPlace, appMoves, settings } = useLauncher();
+  const { client, config, library, installs, jobs, catalog, remove, confirmUninstall, askRename, askName, managing, askManage, consoleNames, setUpdates, declineUpdate, haveUpdate, get, switched, switchToCatalog, locateInstall, askPlace, appMoves, settings, withShownTags } = useLauncher();
   // An app the player added and switched to the catalog's shows the catalog's.
   const id = switched[opened.id] ?? opened.id;
   const item = library.find((i) => i.id === id);
@@ -1321,12 +1433,25 @@ function AppPage({
   }, [managing]); // eslint-disable-line react-hooks/exhaustive-deps
   const readmeAsked = !!at && "readme" in at;
   const [readme, setReadme] = useState(readmeAsked);
+  // The app whose README came (or turned out to have none), so More like this, under it, can show.
+  const [readmeIn, setReadmeIn] = useState<string>();
+  // Wide enough, a catalog app's tabs have its facts and how it runs in a column beside them.
+  const page = useRef<HTMLElement>(null);
+  const wide = useWiderThan(page, RAIL_FROM);
+  const rail = site && !tv && wide;
+  // A discussion opened from its Discussions tab, in place of its list there.
+  const thread = useThread();
   // Every release, asked for once the player opens the Releases tab or points
   // at it: most visits never do, and an app's history is one of the site's
   // biggest reads.
   const [historyFor, setHistoryFor] = useState<string | null>(null);
   if (tab === "releases" && historyFor !== entry.slug) setHistoryFor(entry.slug);
   const wantHistory = () => setHistoryFor(entry.slug);
+  // A tab's first answers asked for as the pointer or the focus comes to it, so it opens whole.
+  const discussionsAhead = useDiscussionsAhead();
+  const tabAhead: Partial<Record<string, () => void>> = site
+    ? { releases: wantHistory, feedback: () => prefetchReviews(client, entry.slug), discussions: () => discussionsAhead.board(entry.id) }
+    : {};
   const history = useReleaseHistory(entry, site && historyFor === entry.slug);
   // Sharing feedback asked for here; signing in comes first when needed.
   const [intent, setIntent] = useState<Intent | null>(null);
@@ -1365,6 +1490,19 @@ function AppPage({
   // The installed release was withdrawn: why, over the way off it.
   const pulled = install && catalog[entry.id]?.withdrawn?.find((w) => w.version === install.version);
   const eyebrow = [...new Set((entry.consoles ?? []).map((c) => consoleNames[c] ?? c.toUpperCase()))].join(", ");
+  // Its tags that say something the header doesn't already, quietly after what it's based on: not a console (the
+  // eyebrow names those), not what kind of project it is (the eyebrow again), not a port's features (App details lists
+  // them), none the player hid, each once.
+  const named = new Set([...(entry.consoles ?? []).map((c) => (consoleNames[c] ?? c).toLowerCase()), ...KIND_TAGS]);
+  const heroTags = withShownTags(entry).tags.flatMap((tag) => {
+    if (Object.hasOwn(consoleNames, tag) || named.has(tag.toLowerCase()) || (entry.projectType === "port" && isFeatureTag(tag))) return [];
+    const label = tagLabel(tag);
+    if (named.has(label.toLowerCase())) return [];
+    named.add(label.toLowerCase());
+    return [label];
+  });
+  // With the version it's based on, as one: "Arcade version · Street Fighter", wrapping as a whole.
+  const notes = [entry.basedOn ? gameVersionLabel(entry.basedOn, consoleNames) : "", ...heroTags].filter(Boolean).join(" · ");
   // Put in the sentences below by name.
   const verifiedVersion = versionLabel(entry.verified?.version);
   // The release this computer could update to, which may not be the verified one: that may be for another system.
@@ -1382,23 +1520,21 @@ function AppPage({
   // What this computer has of the app, and its setup: a tab of its own, or the page itself for a local app.
   const computer = (item || install) && (
     <section className="app-panel computer-panel" aria-label={t({ message: "Manage", comment: "Tab of an app's page: its shortcuts, setup and place in the library" })}>
-      {/* A tab says it already. */}
-      {!tabs.length && (
-        <h3>
-          <Trans comment="Tab of an app's page: its shortcuts, setup and place in the library">Manage</Trans>
-        </h3>
-      )}
+      {/* A tab shows it already, so then it's for screen readers and heading lists only. */}
+      <h2 className={tabs.length ? "sr-only" : undefined}>
+        <Trans comment="Tab of an app's page: its shortcuts, setup and place in the library">Manage</Trans>
+      </h2>
       {/* A group with nothing in it for this app (no shortcuts on macOS, say) doesn't show. */}
       <div className="panel-group">
-        <h4>
+        <h3>
           <Trans>Shortcuts</Trans>
-        </h4>
+        </h3>
         <Shortcuts entry={entry} />
       </div>
       <div className="panel-group">
-        <h4>
+        <h3>
           <Trans comment="Heading over an app's mods, launch options, versions and updates">Setup</Trans>
-        </h4>
+        </h3>
         <ModsButton entry={entry} />
         {install && foldersOn(config.os) && <LaunchOptionsButton id={entry.id} />}
         {filesAddable(install) && foldersOn(config.os) && !(job && !("error" in job)) && <AddFilesButton entry={entry} />}
@@ -1440,9 +1576,9 @@ function AppPage({
       </div>
       {item && (
         <div className="panel-group">
-          <h4>
+          <h3>
             <Trans>Library</Trans>
-          </h4>
+          </h3>
           <Customize id={item.id} />
           {isOwn(item.id) && <ChangeGame id={item.id} />}
           {isLocal(item.id) && <LinkToCatalog id={item.id} />}
@@ -1470,10 +1606,47 @@ function AppPage({
       )}
     </section>
   );
+  const panel = (
+    <>
+      {tab === "overview" && (
+        <>
+          {/* Short, general facts first, over the README, which can run long: beside it, with the column. */}
+          {site && !rail && <ProjectDetails entry={entry} detail={detail} source={source} />}
+          {/* Under its facts, as on the website: something there wrong or missing, for maintainers to fix. */}
+          {site && !rail && <CorrectionStatusPanel entry={entry} />}
+          {/* In TV mode, long and full of links: there when asked for. */}
+          {tv && !readme ? (
+            <button type="button" className="panel-action opens tv-readme" onClick={() => setReadme(true)}>
+              <BookOpen size={18} aria-hidden="true" /> <Trans>Read the README</Trans>
+            </button>
+          ) : (
+            <Readme entry={entry} source={source} asked={readmeAsked} tall={rail} onArrived={() => setReadmeIn(entry.slug)} />
+          )}
+        </>
+      )}
+      {tab === "media" && <MediaTab videos={media} slug={entry.slug} />}
+      {tab === "releases" && <ReleasesTab entry={entry} detail={detail} history={history} checking={checking} openVersion={at && "releases" in at ? at.releases : undefined} />}
+      {(tabs.length ? tab === "computer" : true) && computer}
+      {tab === "settings" && settingsTab.length > 0 && <PortSettingsTab entry={entry} state={portSettings} />}
+      {tab === "saves" && savesTab.length > 0 && <SavesTab entry={entry} />}
+      {tab === "discussions" && <DiscussionsTab entryId={entry.id} thread={thread} detailsBeside={rail} />}
+      {tab === "feedback" && (
+        <FeedbackTab
+          entry={entry}
+          releases={releases.items}
+          own={own}
+          onSaved={refresh}
+          intent={intent}
+          onIntentDone={() => setIntent(null)}
+          onShare={share}
+        />
+      )}
+    </>
+  );
   return (
-    <section className="app-page" data-tv={tv || undefined} aria-label={entry.projectName}>
+    <section ref={page} className="app-page" data-tv={tv || undefined} aria-label={entry.projectName}>
       <div className={`app-backdrop${hero ? " has-art" : ""}`}>
-        {hero && <SourcedImage key={hero} className="backdrop-art" sources={heroSources(hero)} alt="" priority onFail={() => {}} />}
+        {hero && <SourcedImage key={hero} className="backdrop-art" sources={launcherHero(hero)} alt="" priority onFail={() => {}} />}
         <div className="backdrop-inner">
           {onClose && !tv && (
             <button className="back-link" onClick={onClose}>
@@ -1505,6 +1678,8 @@ function AppPage({
                   </button>
                 )}
               </div>
+              {/* What it is under its name, then the games it's based on, in the website's order. */}
+              {entry.description && <p className="app-tagline">{entry.description}</p>}
               {entry.games.length > 0 && (
                 <div className="based-on">
                   <span className="based-on-label">
@@ -1516,12 +1691,16 @@ function AppPage({
                       {g.title}
                     </button>
                   ))}
-                  {entry.basedOn && <span className="based-on-version">{gameVersionLabel(entry.basedOn, consoleNames)}</span>}
+                  {notes && <span className="based-on-version">{notes}</span>}
                   {/* The other apps that play its game, best first: which is best is easy to miss on the game's page alone. */}
                   {site && <WaysToPlay entry={entry} onOpenApp={onOpenApp} onOpenGame={onOpenGame} />}
                 </div>
               )}
-              {entry.description && <p className="app-tagline">{entry.description}</p>}
+              {entry.games.length === 0 && heroTags.length > 0 && (
+                <div className="based-on">
+                  <span className="based-on-version">{heroTags.join(" · ")}</span>
+                </div>
+              )}
             </div>
             {/* The version, apart from the rest at the top right. */}
             {(entry.verified || install) && (
@@ -1582,16 +1761,14 @@ function AppPage({
                   <FolderOpen size={17} /> <Trans>Open folder</Trans>
                 </button>
               )}
-              {/* Out of Browse, as its card's menu has it. */}
-              {site && !item && <BrowseHideButton entry={entry} />}
               {/* Its files go; the app stays in the library to get again. Taking it out is under Manage. */}
               {install && !install.local && !(job && !("error" in job)) && !tv && (
                 <button className="danger" onClick={() => confirmUninstall({ entry })}>
                   <Trash2 size={17} /> <Trans>Uninstall</Trans>
                 </button>
               )}
-              {/* Something on the page wrong or missing: to the maintainers. */}
-              {site && <ReportProblem entry={entry} installed={install && !install.local ? install.version : undefined} onSignIn={onSignIn} />}
+              {/* What's seldom wanted, in a menu at the end so the buttons stay few: hiding it from Discover, as its card's menu has it, and telling the maintainers something on the page is wrong or missing. */}
+              {site && <MoreActions entry={entry} discover={!item} installed={install && !install.local ? install.version : undefined} onSignIn={onSignIn} />}
               {install && foldersOn(config.os) && !(job && !("error" in job)) && <OwnCopyChips entry={entry} install={install} />}
             </div>
             {/* When it was added to the library is the sidebar's to say; here, what playing it has come to. */}
@@ -1741,8 +1918,9 @@ function AppPage({
                 type="button"
                 role="tab"
                 aria-selected={tab === key}
-                onClick={() => setTab(key)}
-                {...(key === "releases" ? { onPointerEnter: wantHistory, onFocus: wantHistory } : {})}
+                // The tab it's on, chosen again, goes back to its list from a discussion open in it.
+                onClick={() => (key === "discussions" && tab === key ? thread.close() : setTab(key))}
+                {...(tabAhead[key] ? { onPointerEnter: tabAhead[key], onFocus: tabAhead[key] } : {})}
               >
                 <Icon className="tab-icon" size={19} aria-hidden="true" />
                 {label}
@@ -1762,48 +1940,81 @@ function AppPage({
         )}
       </div>
       <div className="app-columns">
-        <div ref={content} className="app-content" role={tabs.length ? "tabpanel" : undefined}>
-          {tab === "overview" && (
+        <div ref={content} className={rail ? "app-content app-split" : "app-content"} role={tabs.length && !rail ? "tabpanel" : undefined}>
+          {rail ? (
             <>
-              {/* Short, general facts first, over the README, which can run long. */}
-              {site && <ProjectDetails entry={entry} detail={detail} source={source} />}
-              {/* Under its facts, as on the website: something there wrong or missing, for maintainers to fix. */}
-              {site && <CorrectionStatusPanel entry={entry} />}
-              {/* In TV mode, long and full of links: there when asked for. */}
-              {tv && !readme ? (
-                <button type="button" className="panel-action opens tv-readme" onClick={() => setReadme(true)}>
-                  <BookOpen size={18} aria-hidden="true" /> <Trans>Read the README</Trans>
-                </button>
-              ) : (
-                <Readme entry={entry} source={source} asked={readmeAsked} />
-              )}
+              <div className="app-split-main" role={tabs.length ? "tabpanel" : undefined}>
+                {panel}
+              </div>
+              {/* Beside every tab: what the app is and how it runs, wherever the player is on its page. */}
+              {/* A discussion open in its tab has its own facts there instead: who started it, when, and following it. */}
+              <Rail label={tab === "discussions" && thread.id ? t`About this discussion` : t`About ${app}`}>
+                {tab === "discussions" && thread.id ? (
+                  <ThreadDetails id={thread.id} />
+                ) : (
+                  <>
+                    {/* Its cover first, as the website's column has it. */}
+                    {entry.libraryArt?.header && (
+                      <div className="panel rail-cover">
+                        <Artwork src={entry.libraryArt.header} sources={cardSources(entry.libraryArt.header, "300px")} name={entry.projectName} />
+                      </div>
+                    )}
+                    <ProjectDetails entry={entry} detail={detail} source={source} />
+                    <CorrectionStatusPanel entry={entry} />
+                    <HowItRuns entry={entry} onOpen={tab === "feedback" ? undefined : () => setTab("feedback")} />
+                  </>
+                )}
+              </Rail>
             </>
-          )}
-          {tab === "media" && <MediaTab videos={media} slug={entry.slug} />}
-          {tab === "releases" && <ReleasesTab entry={entry} detail={detail} history={history} checking={checking} openVersion={at && "releases" in at ? at.releases : undefined} />}
-          {(tabs.length ? tab === "computer" : true) && computer}
-          {tab === "settings" && settingsTab.length > 0 && <PortSettingsTab entry={entry} state={portSettings} />}
-          {tab === "saves" && savesTab.length > 0 && <SavesTab entry={entry} />}
-          {tab === "discussions" && <DiscussionsTab entryId={entry.id} />}
-          {tab === "feedback" && (
-            <FeedbackTab
-              entry={entry}
-              releases={releases.items}
-              own={own}
-              onSaved={refresh}
-              intent={intent}
-              onIntentDone={() => setIntent(null)}
-              onShare={share}
-            />
+          ) : (
+            panel
           )}
         </div>
       </div>
-      {site && <MoreLikeThis entry={entry} onOpen={onOpenApp} action={(e) => <BrowseAction entry={e} onOpen={onOpenApp} />} />}
+      {site && (
+        <MoreLikeThis
+          entry={entry}
+          onOpen={onOpenApp}
+          action={(e) => <BrowseAction entry={e} onOpen={onOpenApp} />}
+          held={tab === "overview" && !(tv && !readme) && readmeIn !== entry.slug}
+        />
+      )}
     </section>
   );
 }
 
+/** How wide an app's page is (not the window: in the library it shares it) before its tabs have a column beside them. */
+const RAIL_FROM = 1180;
+
+/**
+ * The column beside a wide page's tabs. It stays in view as the README scrolls by, when it fits the window
+ * whole: one taller would hide its foot until the page's end.
+ */
+function Rail({ label, children }: { label: string; children: ReactNode }) {
+  const rail = useRef<HTMLElement>(null);
+  const [fits, setFits] = useState(false);
+  useLayoutEffect(() => {
+    const el = rail.current;
+    const view = el?.closest("main");
+    if (!el || !view) return;
+    const measure = () => setFits(el.offsetHeight + 32 <= view.clientHeight);
+    measure();
+    if (typeof ResizeObserver === "undefined") return;
+    const sized = new ResizeObserver(measure);
+    sized.observe(el);
+    sized.observe(view);
+    return () => sized.disconnect();
+  }, []);
+  return (
+    <aside ref={rail} className="app-rail" data-fits={fits || undefined} aria-label={label}>
+      {children}
+    </aside>
+  );
+}
+
 // Names put in the language when shown, not here, where the module loads before any is picked.
+/** Tags that only say what kind of project an app is, which its page's eyebrow says already. */
+const KIND_TAGS = ["port", "ports", "pc-port", "native-port", "source-port", "recomp", "recompilation", "static-recompilation", "decomp", "decompilation", "remake", "tool", "emulator", "game"];
 const PROJECT_TYPES: Record<string, MessageDescriptor> = {
   port: msg({ message: "Port", comment: "A kind of project: a game brought to other platforms" }),
   tool: msg({ message: "Tool", comment: "A kind of project" }),
@@ -1904,14 +2115,35 @@ function HideButton({ id }: { id: string }) {
   );
 }
 
-/** Whether Browse shows the app (browse-hidden.ts), beside its Get on its page. */
-function BrowseHideButton({ entry }: { entry: Entry }) {
+/**
+ * The app page's More (⋯) at the end of its buttons: whether Discover shows the app (browse-hidden.ts), for one not in
+ * the library, and Report a problem, whose dialog stays when the menu closes.
+ */
+function MoreActions({ entry, discover, installed, onSignIn }: { entry: Entry; discover: boolean; installed?: string; onSignIn: () => void }) {
   const { settings, setSettings } = useLauncher();
+  const spot = useRef<HTMLSpanElement>(null);
+  // The menu's button: just before the spot, which holds nothing.
+  const report = useReportProblem({ entry, installed, onSignIn, focusBack: () => spot.current?.previousElementSibling as HTMLElement | null });
   const hidden = settings.browseHidden?.some((h) => h.id === entry.id);
   return (
-    <button onClick={() => setSettings({ ...settings, browseHidden: toggleHidden(settings.browseHidden, entry) })}>
-      {hidden ? <Eye size={17} /> : <EyeOff size={17} />} {hidden ? t`Show in Browse` : t`Hide from Browse`}
-    </button>
+    <>
+      <Popover label={t({ message: "More", comment: "App page button: a menu of what's seldom wanted (hide from Discover, report a problem)" })} icon={<MoreHorizontal size={20} />} role="menu" className="more-actions" panel="card-menu-panel">
+        {(close) => (
+          <div className="game-menu" data-arrows="" onKeyDown={menuArrows}>
+            {discover && (
+              <button type="button" role="menuitem" data-item onClick={() => (close(), setSettings({ ...settings, browseHidden: toggleHidden(settings.browseHidden, entry) }))}>
+                {hidden ? <Eye size={16} aria-hidden="true" /> : <EyeOff size={16} aria-hidden="true" />} {hidden ? t`Show in Discover` : t`Hide from Discover`}
+              </button>
+            )}
+            <button type="button" role="menuitem" data-item onClick={() => (close(), report.start())}>
+              <Flag size={16} aria-hidden="true" /> <Trans comment="App page menu item: tell the maintainers something on the page is wrong or missing">Report a problem…</Trans>
+            </button>
+          </div>
+        )}
+      </Popover>
+      <span ref={spot} hidden />
+      {report.dialog}
+    </>
   );
 }
 

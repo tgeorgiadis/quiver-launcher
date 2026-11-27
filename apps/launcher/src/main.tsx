@@ -16,6 +16,7 @@ import { captureUncaught } from "./telemetry";
 import { PadHints } from "./pad-hints";
 import { onBackButtonPress } from "@tauri-apps/api/app";
 import { goBack, startSpatialNavigation } from "./spatial";
+import { startSelectLists } from "./select-picker";
 import { native } from "./native";
 import { ErrorBoundary, errorText } from "./boundary";
 import { showTheme, systemTheme } from "./theme";
@@ -24,6 +25,8 @@ import { invoke } from "@tauri-apps/api/core";
 
 // Until settings load, the window's own theme (set from them at start, or the system's).
 showTheme(systemTheme());
+// Every dropdown opens Quiver's own list (select-picker.ts), its keys before spatial navigation's.
+startSelectLists();
 startSpatialNavigation();
 startFpsProbe();
 // On CEF the window can't tell when it's in front (gamepad.rs), so controllers go by the page's focus.

@@ -3,24 +3,42 @@
  * the focused control (spatial.ts's buttonsNow), labelled as on the controller
  * used last, by the player's bindings. Settings can hide it.
  */
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
 import { t } from "@lingui/core/macro";
 import { native, type PadLabels } from "./native";
 import { useLauncher } from "./store";
 import { DEFAULT_PAD, buttonsNow, confirmButton, haloMoved, label, pageArea, quickButton, takesText, withDefaults, type Action, type Bindings } from "./spatial";
 import { boxZoom } from "./zoom";
 
-/** The connected controllers' names, kept up to date. */
-export function usePads() {
-  const [pads, setPads] = useState<string[]>([]);
-  useEffect(() => {
-    // Listening before asking: one there from the start (a Steam Deck's own) is told of at once, maybe before this listens.
-    const off = native.onControllers(setPads);
-    void off.then(() => native.controllers()).then(setPads);
-    return () => void off.then((stop) => stop());
-  }, []);
-  return pads;
+/**
+ * Something the launcher's told of and can ask for (the controllers, what they call their buttons), kept once for
+ * every component: one drawn later (an app's page, its tab prompts) has it from its first render, rather than asking
+ * again and showing it a moment after the rest. Listening before asking: one there from the start (a Steam Deck's own)
+ * is told of at once, maybe before this listens.
+ */
+function shared<T>(start: T, listen: (handler: (value: T) => void) => Promise<() => void>, ask: () => Promise<T>) {
+  let now = start;
+  let started = false;
+  const told = new Set<() => void>();
+  const set = (value: T) => {
+    now = value;
+    told.forEach((tell) => tell());
+  };
+  const subscribe = (tell: () => void) => {
+    told.add(tell);
+    if (!started) {
+      started = true;
+      void listen(set).then(() => ask()).then(set, () => {});
+    }
+    return () => void told.delete(tell);
+  };
+  return function useShared() {
+    return useSyncExternalStore(subscribe, () => now);
+  };
 }
+
+/** The connected controllers' names, kept up to date. */
+export const usePads = shared<string[]>([], native.onControllers, () => native.controllers());
 
 /**
  * Beside a row of tabs while a controller's connected: the shoulder button that goes to the tab before (or after) the
@@ -41,16 +59,7 @@ export function TabPrompt({ step }: { step: "prevTab" | "nextTab" }) {
 }
 
 /** What the controller used last calls its buttons, kept up to date. */
-export function usePadLabels() {
-  const [labels, setLabels] = useState<PadLabels | null>(null);
-  useEffect(() => {
-    // Listening before asking, as for the controllers.
-    const off = native.onControllerLabels(setLabels);
-    void off.then(() => native.controllerLabels()).then(setLabels);
-    return () => void off.then((stop) => stop());
-  }, []);
-  return labels;
-}
+export const usePadLabels = shared<PadLabels | null>(null, native.onControllerLabels, () => native.controllerLabels());
 
 /** A pair of buttons as one hint, as LB RB for the tabs: both, or the one of them that's bound. */
 const pairLabel = (pad: Bindings, labels: PadLabels | null, back: Action, on: Action) =>
@@ -136,7 +145,9 @@ export function PadHints() {
       clearTimeout(settled);
       settled = window.setTimeout(soon, 150);
     };
-    document.addEventListener("focusin", soon);
+    // The button the focus's controls press marked as the focus comes to it, before it's drawn; the rest after.
+    const focused = () => (mark(), soon());
+    document.addEventListener("focusin", focused);
     document.addEventListener("focusout", soon);
     window.addEventListener("scroll", scrolled, { capture: true, passive: true });
     // Not its own changes, which would have it go round again.
@@ -145,7 +156,7 @@ export function PadHints() {
     return () => {
       cancelAnimationFrame(frame);
       clearTimeout(settled);
-      document.removeEventListener("focusin", soon);
+      document.removeEventListener("focusin", focused);
       document.removeEventListener("focusout", soon);
       window.removeEventListener("scroll", scrolled, { capture: true });
       changes.disconnect();

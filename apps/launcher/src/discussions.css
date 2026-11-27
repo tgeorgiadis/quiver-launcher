@@ -1,15 +1,14 @@
 /*
  * Discussions (discussions.tsx), as on the website (its src/styles.css):
- * the app page's tab, the Community page and a discussion's own page.
+ * the app page's tab and the Community page, each discussion opening where its list is.
  */
 .topbar button.community-button { position: relative; width: 34px; height: 34px; padding: 0; border-radius: 50%; }
 .topbar button.community-button.active { background: var(--field); }
 .topbar button.community-button.active svg { color: var(--accent); }
 
-.community-page, .discussion-page { display: flex; flex-direction: column; gap: 16px; width: min(960px, 100%); margin-inline: auto; padding: 20px var(--gutter) 48px; }
-/* Community uses the width as the site's does (its .container, 1280px). */
-.community-page { width: min(1280px, 100%); }
-.community-page > .back-link, .discussion-page > .back-link { align-self: flex-start; }
+/* Community uses the width as the site's does (its .container, 1280px), and more of a large window, as an app's page does. */
+.community-page { display: flex; flex-direction: column; gap: 16px; width: min(100%, max(1280px, 80%), 1600px); margin-inline: auto; padding: 20px var(--gutter) 48px; }
+.community-page > .back-link { align-self: flex-start; }
 .community-page h1 { margin: 0; font-size: 28px; line-height: 1.2; }
 .community-page > p { margin: 0; font-size: 14px; }
 .community-page > p a { color: var(--link); text-decoration: underline; }
@@ -22,7 +21,7 @@
 .community-page .community-search input { width: 200px; height: 36px; border: 0; background: transparent; color: var(--fg); font-size: 13px; }
 
 /* A box for a list, a post or the empty state, as the app page's panels. */
-:is(.discussions, .community-page, .discussion-page) .panel { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
+:is(.discussions, .community-page) .panel { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
 .discussion-list.panel { overflow: hidden; }
 .discussions { display: flex; flex-direction: column; gap: 16px; }
 .discussions-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 16px; }
@@ -60,7 +59,7 @@
 .discussion-app-consoles { color: var(--muted); font-size: 13px; }
 .discussion-app-go { flex: none; box-sizing: content-box; padding: 6px; border-radius: 999px; background: color-mix(in srgb, var(--panel) 85%, transparent); color: var(--muted); }
 .discussion-app:hover .discussion-app-go { color: var(--fg); }
-.discussion-thread h1 { margin: 0 0 16px; font-size: 22px; line-height: 1.2; overflow-wrap: anywhere; }
+.discussion-thread-title { margin: 0 0 16px; font-size: 22px; line-height: 1.2; overflow-wrap: anywhere; }
 .discussion-post { padding: 16px; }
 .discussion-post-head { display: flex; align-items: center; gap: 12px; }
 .discussion-post-head > div { display: flex; flex-direction: column; flex: 1; min-width: 0; }
@@ -79,7 +78,7 @@ img.avatar { object-fit: cover; }
 .discussion-reported { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; }
 
 .discussion-comments { display: flex; flex-direction: column; margin-top: 24px; }
-.discussion-comments h2 { margin: 0 0 8px; font-size: 18px; }
+.discussion-comments > h3 { margin: 0 0 8px; font-size: 18px; }
 .discussion-comments > .button { align-self: center; margin: 8px 0; }
 .discussion-comment { padding: 16px 0; border-top: 1px solid var(--line); }
 .discussion-comment.is-hidden { opacity: 0.7; }
@@ -103,3 +102,25 @@ img.avatar { object-fit: cover; }
 .discussion-row-body { display: flex; flex: 1; min-width: 0; flex-direction: column; gap: 4px; }
 .discussion-row-place { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; color: var(--muted); font-size: 12px; }
 .discussion-row-app { padding: 1px 7px; border: 1px solid var(--line); border-radius: 4px; color: var(--fg); font-weight: 500; }
+
+/*
+ * A discussion where its list is (discussions.tsx's ThreadPane): in place of the list, Back to it at its top; or, in a
+ * wide Community, beside it, in view as the list scrolls by, with a scroll of its own.
+ */
+.discussion-board, .community-list, .community-body { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+:is(.discussion-board, .community-list)[hidden] { display: none; }
+.community-page[data-split] .community-body { display: grid; grid-template-columns: minmax(380px, 5fr) minmax(0, 7fr); gap: 32px; align-items: start; }
+.thread-pane { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.thread-pane > .back-link { align-self: flex-start; }
+.thread-pane[data-beside] { position: sticky; top: 16px; overflow-y: auto; overscroll-behavior: contain; padding: 4px 4px 16px 32px; border-left: 1px solid var(--line); }
+.thread-pane[data-beside] > .thread-close { align-self: flex-end; width: 34px; height: 34px; margin: -4px 0 -8px; padding: 0; border-radius: 50%; }
+.thread-pane[data-beside] > .thread-close:hover { background: var(--field); }
+.thread-empty { align-items: center; justify-content: center; min-height: 320px; color: var(--muted); text-align: center; }
+.thread-empty p { margin: 0; font-size: 14px; }
+/* The row a discussion open beside the list came from. */
+.discussion-row-link[aria-current] { background: var(--accent-soft); box-shadow: inset 3px 0 0 var(--accent); }
+.discussion-row-link[aria-current] .discussion-row-title { color: var(--strong); }
+/* Its facts in the column beside it on an app's page, a row each, as the app's are. */
+.thread-details dl { display: block; margin: 0; }
+.thread-details .discussion-actions { margin-top: 12px; }
+.thread-details-note { margin: 8px 0 0; font-size: 12px; }

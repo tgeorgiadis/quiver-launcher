@@ -13,10 +13,10 @@ test("TV mode is the usual pages, larger: it stays on the tab it's turned on fro
   const s2 = await openApp({ state: installed });
   try {
     await s2.page.locator("article[data-slug]").first().waitFor();
-    await s2.page.locator(".topbar nav button", { hasText: "Browse" }).click();
+    await s2.page.locator(".topbar nav button", { hasText: "Discover" }).click();
     await s2.page.locator(".tv-button").click();
     await s2.page.locator(".shell.tv-mode").waitFor();
-    assert.equal(await s2.app.execute(() => document.querySelector(".topbar nav button.active").innerText.includes("Browse")), true, "still on Browse");
+    assert.equal(await s2.app.execute(() => document.querySelector(".topbar nav button.active").innerText.includes("Discover")), true, "still on Discover");
     await s2.page.locator("main input[type='search'], main .search input").first().waitFor();
     await s2.page.locator(".topbar nav button", { hasText: "Library" }).click();
     await s2.page.locator(".library-grid.size-large.image-box article[data-slug]").first().waitFor();

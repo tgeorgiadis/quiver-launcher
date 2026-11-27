@@ -4,7 +4,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { openApp } from "./app.js";
-import { app, appPage, back, everything, installed, open, page, s, section, useSharedApp } from "./controller.js";
+import { app, appPage, back, changed, everything, installed, open, page, s, section, useSharedApp, where } from "./controller.js";
 import * as reach from "../reach.js";
 
 useSharedApp();
@@ -87,12 +87,23 @@ test("a page opened with A has the focus in it, and a button that changes as it'
   assert.doesNotMatch(await reach.focused(app), /^body/);
 });
 
-test("Report a problem, by the app's actions: signing in opens its dialog, B closes it to its button, and A sends one", async () => {
+/** A on the page's More (⋯), then on its Report a problem…: the screen that leads to. */
+const report = async () => {
+  await reach.pressOn(app, "button.more-actions", "South");
+  // The menu opens with the focus on its first item, which for an app in the library is this one.
+  await s.until(async () => /^button "Report a problem…"/.test(await reach.focused(app)));
+  const from = await where();
+  await reach.press(app, "South");
+  return changed(from);
+};
+const onMore = async () => /^button "More"/.test(await reach.focused(app));
+
+test("Report a problem, in the app's More menu: signing in opens its dialog, B closes it to the menu's button, and A sends one", async () => {
   assert.equal(await appPage(), "page: Test Port");
   // Nothing about corrections on the page until the player has sent one.
   assert.equal(await page.locator(".correction-prompt").count(), 0);
-  // Signed out, the button signs in first, and the dialog opens after.
-  assert.equal(await open("button", { text: "Report a problem" }), "dialog: Sign in");
+  // Signed out, it signs in first, and the dialog opens after.
+  assert.equal(await report(), "dialog: Sign in");
   const dialog = page.locator('[role="dialog"]');
   await dialog.locator('form > button[type="button"]').last().click();
   await dialog.locator('input[autocomplete="username"]').fill("corrections");
@@ -103,12 +114,12 @@ test("Report a problem, by the app's actions: signing in opens its dialog, B clo
   // The focus in it, on its first control: the topic.
   await s.until(async () => /^select .* in Report a problem$/.test(await reach.focused(app)));
   await everything("the Report a problem dialog");
-  // B closes the dialog, not the page, and the focus goes back to its button.
+  // B closes the dialog, not the page, and the focus goes back to the menu's button.
   await form.locator("textarea").focus();
   assert.equal(await back(), "page: Test Port");
   assert.equal(await page.locator(".correction-dialog").count(), 0);
-  await s.until(async () => /Report a problem/.test(await reach.focused(app)));
-  await reach.press(app, "South");
+  await s.until(onMore);
+  assert.equal(await report(), "dialog: Report a problem");
   await form.locator("select").selectOption("quiver");
   await page.getByText("To say how it ran, use Player feedback.").waitFor();
   await form.locator("textarea").fill("It starts the level editor, not the game.");
@@ -120,11 +131,11 @@ test("Report a problem, by the app's actions: signing in opens its dialog, B clo
     { user: "corrections", entryId: "entry_test-port", topic: "quiver", body: "It starts the level editor, not the game.", source: "launcher", installed: "1.0.0" },
   );
   assert.ok(sent.client.version && sent.client.os, "with the launcher's version and system");
-  // Done, which has the focus, closes it back to the button; the Overview now says where the report stands.
+  // Done, which has the focus, closes it back to the menu's button; the Overview now says where the report stands.
   await s.until(async () => /Done/.test(await reach.focused(app)));
   await reach.press(app, "South");
   assert.equal(await page.locator(".correction-dialog").count(), 0);
-  await s.until(async () => /Report a problem/.test(await reach.focused(app)));
+  await s.until(onMore);
   await page.locator(".correction-prompt").getByText(/You reported a problem on/).waitFor();
 });
 

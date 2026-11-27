@@ -53,8 +53,8 @@ test("signed out, or signed in as a player, an app's page has no Edit in admin",
     await own.page.locator(".app-page .back-link").click();
     await signIn(own.page, "player");
     await openPage(own.page);
-    // Report a problem is there for everyone signed in; Edit in admin isn't.
-    await own.page.locator(".app-actions").getByRole("button", { name: "Report a problem" }).waitFor();
+    // More (with Report a problem) is there for everyone; Edit in admin isn't.
+    await own.page.locator(".app-actions").getByRole("button", { name: "More" }).waitFor();
     assert.equal(await own.page.getByRole("button", { name: "Edit in admin" }).count(), 0, "a player");
   } finally {
     await own.close();

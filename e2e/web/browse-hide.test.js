@@ -21,7 +21,7 @@ before(async () => {
 
 beforeEach(async () => {
   await page.reload();
-  await page.getByRole("button", { name: /^Browse ?\d*$/ }).click();
+  await page.getByRole("button", { name: /^Discover ?\d*$/ }).click();
   await card("tampered-port").first().waitFor();
 });
 
@@ -44,8 +44,8 @@ const empty = () => page.locator(".empty", { hasText: "Nothing matches that sear
 test("a card's menu hides an app, Only hidden apps shows it, and Show in Browse puts it back", async () => {
   await card("tampered-port").first().click({ button: "right" });
   const items = await menu().getByRole("menuitem").allInnerTexts();
-  for (const name of ["Read the README", "Share feedback…", "Hide from Browse"]) assert.ok(items.includes(name), items.join());
-  await item("Hide from Browse").click();
+  for (const name of ["Read the README", "Share feedback…", "Hide from Discover"]) assert.ok(items.includes(name), items.join());
+  await item("Hide from Discover").click();
   await card("tampered-port").first().waitFor({ state: "detached" });
 
   await page.locator(".owned-note", { hasText: "1 app here is hidden." }).waitFor();
@@ -55,7 +55,7 @@ test("a card's menu hides an app, Only hidden apps shows it, and Show in Browse 
   assert.equal(await card("test-remake").count(), 0, "only the hidden app shows");
 
   // The last one back: to the rest of Browse, not a view of nothing, and with nothing to choose from any more.
-  await inMenu("tampered-port", "Show in Browse");
+  await inMenu("tampered-port", "Show in Discover");
   await card("test-remake").first().waitFor();
   await card("tampered-port").first().waitFor();
   assert.equal(await page.getByLabel("Hidden apps", { exact: true }).count(), 0);
@@ -69,7 +69,7 @@ test("a right-click puts the focus on the menu's main action, Add", async () => 
 });
 
 test("Only hidden apps says so when none is in the search", async () => {
-  await inMenu("tampered-port", "Hide from Browse");
+  await inMenu("tampered-port", "Hide from Discover");
   await filters();
   await hiddenView("only");
   await card("tampered-port").waitFor();
@@ -79,7 +79,7 @@ test("Only hidden apps says so when none is in the search", async () => {
 });
 
 test("Only hidden apps asks for the hidden apps alone, not for page after page of the catalog", async () => {
-  await inMenu("tampered-port", "Hide from Browse");
+  await inMenu("tampered-port", "Hide from Discover");
   await filters();
   const before = s.api.catalogQueries().filter((q) => q.path === "catalog:list").length;
   await hiddenView("only");
@@ -92,7 +92,7 @@ test("Only hidden apps asks for the hidden apps alone, not for page after page o
 test("Only hidden apps doesn't offer to hide the library's apps, which it shows whichever way that is", async () => {
   await page.locator(".owned-note button", { hasText: "Show it" }).first().click();
   await page.locator(".owned-note", { hasText: "Apps in your library are shown here too." }).waitFor();
-  await inMenu("tampered-port", "Hide from Browse");
+  await inMenu("tampered-port", "Hide from Discover");
   await filters();
   await hiddenView("only");
   await card("tampered-port").waitFor();

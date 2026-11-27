@@ -1,0 +1,627 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-27T12:16:09.386Z",
+  "title": "Design System: Quiver",
+  "extensions": {
+    "colorMeta": {
+      "night-navy": {
+        "role": "neutral",
+        "displayName": "Night Navy",
+        "canonical": "#090f17",
+        "tonalRamp": [
+          "#1f2126",
+          "#3c3e40",
+          "#58595a",
+          "#808181",
+          "#a7a7a8",
+          "#c8c8c8",
+          "#e1e1e1",
+          "#f3f3f3"
+        ]
+      },
+      "panel-navy": {
+        "role": "neutral",
+        "displayName": "Panel Navy",
+        "canonical": "#131922",
+        "tonalRamp": [
+          "#1d2229",
+          "#3c3e41",
+          "#58595b",
+          "#808182",
+          "#a7a7a8",
+          "#c8c8c9",
+          "#e1e1e1",
+          "#f3f3f3"
+        ]
+      },
+      "card-navy": {
+        "role": "neutral",
+        "displayName": "Card Navy",
+        "canonical": "#141a23",
+        "tonalRamp": [
+          "#1d2229",
+          "#3b3e42",
+          "#58595b",
+          "#808182",
+          "#a7a7a8",
+          "#c8c8c9",
+          "#e1e1e1",
+          "#f3f3f3"
+        ]
+      },
+      "field-slate": {
+        "role": "neutral",
+        "displayName": "Field Slate",
+        "canonical": "#212831",
+        "tonalRamp": [
+          "#1c222a",
+          "#3a3e44",
+          "#57595d",
+          "#7f8183",
+          "#a7a7a8",
+          "#c8c8c9",
+          "#e1e1e2",
+          "#f3f3f3"
+        ]
+      },
+      "hairline": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "canonical": "#262d36",
+        "tonalRamp": [
+          "#1c2229",
+          "#393e44",
+          "#56595d",
+          "#7f8183",
+          "#a6a7a9",
+          "#c8c8c9",
+          "#e1e1e2",
+          "#f3f3f3"
+        ]
+      },
+      "mist-text": {
+        "role": "neutral",
+        "displayName": "Mist Text",
+        "canonical": "#e8eaee",
+        "tonalRamp": [
+          "#212122",
+          "#3d3e3f",
+          "#58595a",
+          "#7f8183",
+          "#a6a7aa",
+          "#c7c8cc",
+          "#dfe1e5",
+          "#f2f3f5"
+        ]
+      },
+      "bright-white": {
+        "role": "neutral",
+        "displayName": "Bright White",
+        "canonical": "#ffffff",
+        "tonalRamp": [
+          "#212121",
+          "#3d3d3d",
+          "#595959",
+          "#808080",
+          "#a7a7a7",
+          "#c8c8c8",
+          "#e1e1e1",
+          "#f3f3f3"
+        ]
+      },
+      "quiet-grey": {
+        "role": "neutral",
+        "displayName": "Quiet Grey",
+        "canonical": "#8f959d",
+        "tonalRamp": [
+          "#202124",
+          "#3b3e41",
+          "#55595e",
+          "#7c8188",
+          "#a3a8ae",
+          "#c6c8cc",
+          "#e0e1e3",
+          "#f2f3f3"
+        ]
+      },
+      "quiver-sky": {
+        "role": "primary",
+        "displayName": "Quiver Sky",
+        "canonical": "#38bdf8",
+        "tonalRamp": [
+          "#052433",
+          "#0e4259",
+          "#185f7f",
+          "#2689b5",
+          "#34b3ea",
+          "#90d0fa",
+          "#c8e5fc",
+          "#e9f4fe"
+        ]
+      },
+      "sky-ink": {
+        "role": "primary",
+        "displayName": "Sky Ink",
+        "canonical": "#04121b",
+        "tonalRamp": [
+          "#1b2228",
+          "#3b3e41",
+          "#57595b",
+          "#808182",
+          "#a7a7a8",
+          "#c8c8c9",
+          "#e1e1e1",
+          "#f3f3f3"
+        ]
+      },
+      "link-sky": {
+        "role": "primary",
+        "displayName": "Link Sky",
+        "canonical": "#7dd3fc",
+        "tonalRamp": [
+          "#11242d",
+          "#234150",
+          "#355e72",
+          "#4e88a3",
+          "#68b0d3",
+          "#7dd3fc",
+          "#c1e7fd",
+          "#e7f5fe"
+        ]
+      },
+      "sage-good": {
+        "role": "status",
+        "displayName": "Sage Good",
+        "canonical": "#8ac3a2",
+        "tonalRamp": [
+          "#17241c",
+          "#2c4236",
+          "#415f4e",
+          "#608a72",
+          "#7eb394",
+          "#abd1ba",
+          "#d3e6da",
+          "#edf4f0"
+        ]
+      },
+      "amber-caution": {
+        "role": "status",
+        "displayName": "Amber Caution",
+        "canonical": "#d7b56a",
+        "tonalRamp": [
+          "#28200e",
+          "#493c1f",
+          "#685730",
+          "#967e48",
+          "#c3a45f",
+          "#dfc595",
+          "#ede0ca",
+          "#f7f2ea"
+        ]
+      },
+      "coral-danger": {
+        "role": "status",
+        "displayName": "Coral Danger",
+        "canonical": "#e38c87",
+        "tonalRamp": [
+          "#321b1a",
+          "#593431",
+          "#7e4b48",
+          "#b46e6a",
+          "#e4918d",
+          "#edbdbb",
+          "#f5dcdb",
+          "#fbf0f0"
+        ]
+      },
+      "day-page": {
+        "role": "neutral",
+        "displayName": "Day Page (light theme)",
+        "canonical": "#f4f5f7",
+        "tonalRamp": [
+          "#212122",
+          "#3d3d3e",
+          "#58595a",
+          "#808182",
+          "#a7a7a9",
+          "#c7c8ca",
+          "#e0e1e3",
+          "#f2f3f5"
+        ]
+      },
+      "day-panel": {
+        "role": "neutral",
+        "displayName": "Day Panel (light theme)",
+        "canonical": "#ffffff",
+        "tonalRamp": [
+          "#212121",
+          "#3d3d3d",
+          "#595959",
+          "#808080",
+          "#a7a7a7",
+          "#c8c8c8",
+          "#e1e1e1",
+          "#f3f3f3"
+        ]
+      },
+      "day-field": {
+        "role": "neutral",
+        "displayName": "Day Field (light theme)",
+        "canonical": "#e8eaee",
+        "tonalRamp": [
+          "#212122",
+          "#3d3e3f",
+          "#58595a",
+          "#7f8183",
+          "#a6a7aa",
+          "#c7c8cc",
+          "#dfe1e5",
+          "#f2f3f5"
+        ]
+      },
+      "day-hairline": {
+        "role": "neutral",
+        "displayName": "Day Hairline (light theme)",
+        "canonical": "#dcdee2",
+        "tonalRamp": [
+          "#212122",
+          "#3d3e3f",
+          "#58595b",
+          "#7f8183",
+          "#a6a7aa",
+          "#c7c8cc",
+          "#e0e1e5",
+          "#f2f3f4"
+        ]
+      },
+      "day-text": {
+        "role": "neutral",
+        "displayName": "Day Text (light theme)",
+        "canonical": "#121821",
+        "tonalRamp": [
+          "#1d2228",
+          "#3c3e41",
+          "#58595b",
+          "#808182",
+          "#a7a7a8",
+          "#c8c8c9",
+          "#e1e1e1",
+          "#f3f3f3"
+        ]
+      },
+      "day-strong": {
+        "role": "neutral",
+        "displayName": "Day Strong (light theme)",
+        "canonical": "#0b0c0e",
+        "tonalRamp": [
+          "#212122",
+          "#3d3d3e",
+          "#595959",
+          "#808081",
+          "#a7a7a7",
+          "#c8c8c8",
+          "#e1e1e1",
+          "#f3f3f3"
+        ]
+      },
+      "day-muted": {
+        "role": "neutral",
+        "displayName": "Day Muted (light theme)",
+        "canonical": "#5b616b",
+        "tonalRamp": [
+          "#1f2126",
+          "#3a3e45",
+          "#545962",
+          "#7d8187",
+          "#a5a7ab",
+          "#c7c8ca",
+          "#e1e1e2",
+          "#f2f3f3"
+        ]
+      },
+      "day-sky": {
+        "role": "primary",
+        "displayName": "Day Sky (light theme)",
+        "canonical": "#0369a1",
+        "tonalRamp": [
+          "#00233b",
+          "#014166",
+          "#025d90",
+          "#5b84ae",
+          "#95a9c3",
+          "#bfc9d8",
+          "#dde2ea",
+          "#f1f3f6"
+        ]
+      },
+      "day-link": {
+        "role": "primary",
+        "displayName": "Day Link (light theme)",
+        "canonical": "#075985",
+        "tonalRamp": [
+          "#012439",
+          "#044163",
+          "#1f5d87",
+          "#6a839e",
+          "#9ba9b9",
+          "#c2c9d2",
+          "#dee2e6",
+          "#f1f3f5"
+        ]
+      },
+      "day-good": {
+        "role": "status",
+        "displayName": "Day Good (light theme)",
+        "canonical": "#2e7d52",
+        "tonalRamp": [
+          "#092716",
+          "#16462c",
+          "#236441",
+          "#578c6c",
+          "#93ae9c",
+          "#beccc2",
+          "#dce3de",
+          "#f1f3f2"
+        ]
+      },
+      "day-caution": {
+        "role": "status",
+        "displayName": "Day Caution (light theme)",
+        "canonical": "#8a5d00",
+        "tonalRamp": [
+          "#301e00",
+          "#553800",
+          "#795100",
+          "#9b7b58",
+          "#b7a494",
+          "#d1c6be",
+          "#e6e0dc",
+          "#f4f2f1"
+        ]
+      },
+      "day-danger": {
+        "role": "status",
+        "displayName": "Day Danger (light theme)",
+        "canonical": "#b93a30",
+        "tonalRamp": [
+          "#420f0b",
+          "#72201a",
+          "#a13128",
+          "#c16662",
+          "#d19a98",
+          "#e1c1c0",
+          "#eededd",
+          "#f8f1f1"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "One hero line per page at most."
+      },
+      "headline-detail": {
+        "displayName": "Headline, detail",
+        "purpose": "The title of an app or game page."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Page headings, the page's one h1."
+      },
+      "section": {
+        "displayName": "Section",
+        "purpose": "Section headings (h2)."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Card and panel titles; long reading text at 16px/1.5."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Body text and descriptions, 72 characters a line at most."
+      },
+      "control": {
+        "displayName": "Control",
+        "purpose": "Buttons (600), inputs, tabs, menus, table cells."
+      },
+      "secondary": {
+        "displayName": "Secondary",
+        "purpose": "Dates, counts, hints under a field."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Small capital labels and counts in chips; the smallest size."
+      }
+    },
+    "shadows": [
+      {
+        "name": "menu",
+        "value": "0 4px 16px var(--shadow)",
+        "purpose": "Menus, popovers, dropdown lists."
+      },
+      {
+        "name": "dialog",
+        "value": "0 16px 48px var(--shadow)",
+        "purpose": "Dialogs."
+      },
+      {
+        "name": "card-lift",
+        "value": "0 15px 30px var(--ql-card-shadow)",
+        "purpose": "A catalog card under the pointer or holding the focus, with a 4px lift and a Quiver Sky border."
+      }
+    ],
+    "motion": [
+      {
+        "name": "state",
+        "value": "0.16s ease",
+        "purpose": "Hover and focus changes on buttons and cards (background, colour, border, lift)."
+      },
+      {
+        "name": "press",
+        "value": "translateY(1px)",
+        "purpose": "A button being pressed."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "prefers-reduced-motion: reduce",
+        "purpose": "Movement becomes a simple fade or nothing."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "phone",
+        "value": "760px"
+      },
+      {
+        "name": "laptop",
+        "value": "1080px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Main Button",
+      "kind": "button",
+      "refersTo": "button-main",
+      "description": "The one main action on a view: Get, Download, Save.",
+      "html": "<button class=\"ds-btn ds-btn-main\">Get</button>",
+      "css": ".ds-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 36px; padding: 8px 16px; border: 0; border-radius: 8px; font: inherit; font-family: 'Inter Variable', Inter, system-ui, sans-serif; font-size: 13px; font-weight: 600; line-height: 1.2; cursor: pointer; transition: background 0.16s, color 0.16s; } .ds-btn:active { transform: translateY(1px); } .ds-btn:focus-visible { outline: 2px solid var(--accent, #38bdf8); outline-offset: 2px; } .ds-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; } .ds-btn-main { background: var(--accent, #38bdf8); color: var(--on-accent, #04121b); } .ds-btn-main:hover { background: var(--link, #7dd3fc); }"
+    },
+    {
+      "name": "Button",
+      "kind": "button",
+      "refersTo": "button",
+      "description": "Every other action: neutral until touched.",
+      "html": "<button class=\"ds-btn ds-btn-neutral\">Add to playlist</button>",
+      "css": ".ds-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 36px; padding: 8px 16px; border: 0; border-radius: 8px; font: inherit; font-family: 'Inter Variable', Inter, system-ui, sans-serif; font-size: 13px; font-weight: 600; line-height: 1.2; cursor: pointer; transition: background 0.16s, color 0.16s; } .ds-btn:active { transform: translateY(1px); } .ds-btn:focus-visible { outline: 2px solid var(--accent, #38bdf8); outline-offset: 2px; } .ds-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; } .ds-btn-neutral { background: var(--field, #212831); color: var(--fg, #e8eaee); } .ds-btn-neutral:hover { background: color-mix(in srgb, var(--fg, #e8eaee) 10%, var(--field, #212831)); color: var(--strong, #fff); }"
+    },
+    {
+      "name": "Danger Button",
+      "kind": "button",
+      "refersTo": "button-danger",
+      "description": "Destructive actions: neutral until hovered.",
+      "html": "<button class=\"ds-btn ds-btn-danger\">Remove</button>",
+      "css": ".ds-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 36px; padding: 8px 16px; border: 0; border-radius: 8px; font: inherit; font-family: 'Inter Variable', Inter, system-ui, sans-serif; font-size: 13px; font-weight: 600; line-height: 1.2; cursor: pointer; transition: background 0.16s, color 0.16s; } .ds-btn:active { transform: translateY(1px); } .ds-btn:focus-visible { outline: 2px solid var(--accent, #38bdf8); outline-offset: 2px; } .ds-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; } .ds-btn-danger { background: var(--field, #212831); color: var(--danger, #e38c87); } .ds-btn-danger:hover { background: color-mix(in srgb, var(--danger, #e38c87) 16%, var(--field, #212831)); }"
+    },
+    {
+      "name": "Field",
+      "kind": "input",
+      "refersTo": "field",
+      "description": "A label above an input, with a hint under it.",
+      "html": "<label class=\"ds-field\"><span class=\"ds-field-label\">Name</span><input class=\"ds-input\" placeholder=\"CI token\" /><span class=\"ds-field-hint\">Shown in your token list.</span></label>",
+      "css": ".ds-field { display: grid; gap: 4px; color: var(--fg, #e8eaee); font-family: 'Inter Variable', Inter, system-ui, sans-serif; font-size: 13px; max-width: 320px; } .ds-field-label { font-weight: 500; } .ds-input { height: 36px; padding: 0 12px; border: 1px solid var(--line, #262d36); border-radius: 8px; background: var(--field, #212831); color: var(--fg, #e8eaee); font: inherit; outline: 0; } .ds-input:hover { border-color: var(--muted, #8f959d); } .ds-input:focus-visible { border-color: var(--accent, #38bdf8); box-shadow: 0 0 0 1px var(--accent, #38bdf8); } .ds-field-hint { color: var(--muted, #8f959d); font-size: 12px; }"
+    },
+    {
+      "name": "Dropdown",
+      "kind": "input",
+      "refersTo": "field",
+      "description": "Quiver's own dropdown, never the browser's list: a field-styled button opening a lit list with the chosen option checked.",
+      "html": "<div class=\"ds-select\"><button class=\"ds-select-button\" aria-expanded=\"true\"><span>In 30 days</span><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m6 9 6 6 6-6\"/></svg></button><ul class=\"ds-select-list\" role=\"listbox\"><li role=\"option\" aria-selected=\"false\">In 7 days</li><li role=\"option\" aria-selected=\"true\" data-active>In 30 days <svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M20 6 9 17l-5-5\"/></svg></li><li role=\"option\" aria-selected=\"false\">In 90 days</li><li role=\"option\" aria-selected=\"false\">Never</li></ul></div>",
+      "css": ".ds-select { position: relative; width: 220px; padding-bottom: 180px; font-family: 'Inter Variable', Inter, system-ui, sans-serif; } .ds-select-button { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 8px; height: 36px; padding: 0 10px 0 12px; border: 1px solid var(--line, #262d36); border-radius: 8px; background: var(--field, #212831); color: var(--fg, #e8eaee); font: inherit; font-size: 13px; cursor: pointer; } .ds-select-button:hover, .ds-select-button[aria-expanded='true'] { border-color: var(--muted, #8f959d); } .ds-select-button:focus-visible { outline: 2px solid var(--accent, #38bdf8); outline-offset: 2px; } .ds-select-button[aria-expanded='true'] svg { transform: rotate(180deg); } .ds-select-list { position: absolute; top: 42px; left: 0; min-width: 100%; margin: 0; padding: 6px; list-style: none; display: grid; border: 1px solid var(--line, #262d36); border-radius: 12px; background: var(--panel, #131922); box-shadow: 0 4px 16px var(--shadow, #0009); } .ds-select-list li { display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; border-radius: 6px; color: var(--muted, #8f959d); font-size: 13px; cursor: pointer; } .ds-select-list li:hover, .ds-select-list li[data-active] { background: var(--field, #212831); color: var(--strong, #fff); } .ds-select-list li[aria-selected='true'] { color: var(--strong, #fff); font-weight: 600; } .ds-select-list li svg { color: var(--accent, #38bdf8); }"
+    },
+    {
+      "name": "Header Navigation",
+      "kind": "nav",
+      "refersTo": "",
+      "description": "The same header on every page; the active section underlined in Quiver Sky.",
+      "html": "<nav class=\"ds-nav\"><a href=\"#\" class=\"active\">Discover</a><a href=\"#\">Playlists</a><a href=\"#\">Submit an app</a></nav>",
+      "css": ".ds-nav { display: flex; gap: 20px; height: 48px; font-family: 'Inter Variable', Inter, system-ui, sans-serif; font-size: 13px; } .ds-nav a { display: flex; align-items: center; padding-top: 2px; border-bottom: 2px solid transparent; color: var(--muted, #8f959d); text-decoration: none; } .ds-nav a:hover { color: var(--strong, #fff); } .ds-nav a.active { color: var(--strong, #fff); border-bottom-color: var(--accent, #38bdf8); } .ds-nav a:focus-visible { outline: 2px solid var(--accent, #38bdf8); outline-offset: 2px; }"
+    },
+    {
+      "name": "Chip",
+      "kind": "chip",
+      "refersTo": "chip",
+      "description": "A small fact about an app; Easy setup is the highlighted one.",
+      "html": "<span class=\"ds-chips\"><span class=\"ds-chip ds-chip-easy\">Easy setup</span><span class=\"ds-chip\">AI-assisted</span></span>",
+      "css": ".ds-chips { display: inline-flex; gap: 6px; font-family: 'Inter Variable', Inter, system-ui, sans-serif; } .ds-chip { padding: 1px 6px; border: 1px solid var(--line, #262d36); border-radius: 999px; color: var(--muted, #8f959d); font-size: 11px; white-space: nowrap; } .ds-chip-easy { border-color: color-mix(in srgb, var(--green, #8ac3a2) 50%, transparent); color: var(--green, #8ac3a2); }"
+    },
+    {
+      "name": "Catalog Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "An app in the catalog or library: the art leads; hover or focus lifts it with a Quiver Sky border.",
+      "html": "<article class=\"ds-card\" tabindex=\"0\"><div class=\"ds-card-cover\"></div><div class=\"ds-card-body\"><span class=\"ds-card-meta\">Recomp · Nintendo 64</span><strong class=\"ds-card-name\">Zelda64Recomp</strong><span class=\"ds-card-score\">● Runs well</span></div></article>",
+      "css": ".ds-card { display: flex; flex-direction: column; width: 220px; border: 1px solid var(--line, #262d36); border-radius: 8px; overflow: hidden; background: var(--card, #141a23); font-family: 'Inter Variable', Inter, system-ui, sans-serif; transition: transform 0.16s, border-color 0.16s, box-shadow 0.16s; outline: 0; } .ds-card:hover, .ds-card:focus-visible { transform: translateY(-4px); border-color: var(--accent, #38bdf8); box-shadow: 0 15px 30px var(--shadow, #0009); } .ds-card-cover { height: 124px; background: linear-gradient(135deg, #1f3b5c, #0d1724); } .ds-card-body { display: grid; gap: 4px; padding: 12px; } .ds-card-meta { color: var(--muted, #8f959d); font-size: 11px; } .ds-card-name { color: var(--strong, #fff); font-size: 14px; font-weight: 600; } .ds-card-score { color: var(--green, #8ac3a2); font-size: 11px; }"
+    },
+    {
+      "name": "Panel",
+      "kind": "custom",
+      "refersTo": "panel",
+      "description": "A section on the page: a border, a 16px title, no shadow.",
+      "html": "<section class=\"ds-panel\"><h3 class=\"ds-panel-title\">Releases</h3><p class=\"ds-panel-text\">9.3.1 · Sep 27, 2026</p></section>",
+      "css": ".ds-panel { display: grid; gap: 12px; max-width: 360px; padding: 16px; border: 1px solid var(--line, #262d36); border-radius: 12px; background: var(--panel, #131922); font-family: 'Inter Variable', Inter, system-ui, sans-serif; } .ds-panel-title { margin: 0; color: var(--strong, #fff); font-size: 16px; font-weight: 600; } .ds-panel-text { margin: 0; color: var(--muted, #8f959d); font-size: 12px; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Lit Shelf",
+    "overview": "Quiver is a dark, quiet shelf, and the games' art is the light on it. The interface is Night Navy and soft grey so that box art, covers and screenshots carry the colour. One sky-blue action, Quiver Sky, says what to do next. Everything else stays neutral until a hand reaches for it. The same shelf stands at a desk, on the couch with a controller, on a phone and on quiverlauncher.com. The launcher and the website are one system, built from one token file (`packages/ui/src/tokens.css`).\n\nThe mood is calm and dark, and the art leads. Density is moderate: a library or catalog is a grid of cards that scan quickly, and the chrome around it is thin, flat and quiet. Components are quiet until touched. At rest they are flat fills and hairlines. Hover, keyboard focus and controller focus bring Quiver Sky and, for a card, a small lift. Dark is the default. The light theme keeps every role and swaps only the values.\n\nThe system already has its rules written down in the website repository's `docs/standards/design.md`, and `scripts/check-standards.mjs` counts the places that break them. This file records the same system for design tools. Where the two disagree, the standard wins and this file gets fixed.",
+    "keyCharacteristics": [
+      "Night Navy rooms, Quiver Sky as the single accent, art as the colour.",
+      "One typeface, Inter Variable, on a nine-step scale from 11px to 38px.",
+      "Strict scales for space, corners and shadow. A value off a scale is a bug.",
+      "Flat at rest. Borders or a tonal step separate things, not shadows.",
+      "Components are quiet until touched, then lit with Quiver Sky.",
+      "The launcher and the website look and read the same."
+    ],
+    "rules": [
+      {
+        "name": "The One Light Rule",
+        "body": "Quiver Sky marks one main action per view. Two filled sky buttons side by side are a mistake. Everything else is neutral until hovered, focused or selected.",
+        "section": "colors"
+      },
+      {
+        "name": "The Job, Not Shade Rule",
+        "body": "CSS names a colour's job (`var(--muted)`), never a hex code and never a shade (`--gray-63`). A colour changes in `tokens.css` and nowhere else.",
+        "section": "colors"
+      },
+      {
+        "name": "The Never Alone Rule",
+        "body": "Colour is never the only signal. A status carries a word or an icon as well (\"Runs well\", \"Doesn't run\").",
+        "section": "colors"
+      },
+      {
+        "name": "The Nine Sizes Rule",
+        "body": "Text uses 11, 12, 13, 14, 16, 18, 22, 28 or 38px. Half sizes (12.5, 13.5) are not sizes, and nothing is below 11px.",
+        "section": "typography"
+      },
+      {
+        "name": "The Capitals Rule",
+        "body": "Uppercase is only for 11px labels, with 0.06em letter-spacing.",
+        "section": "typography"
+      },
+      {
+        "name": "The One Heading Rule",
+        "body": "Every screen has one `h1`, and levels never skip. Where the design shows the screen's name another way (the launcher's Library and Discover tabs, an app page's Manage tab), the heading is there for screen readers only.",
+        "section": "typography"
+      },
+      {
+        "name": "The Flat Shelf Rule",
+        "body": "Things in the page cast no shadow. The only shadows are the menu, the dialog, and the card lifted by hover or focus.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** let the art carry the colour. The interface stays in Night Navy, Panel Navy, Card Navy and the greys.",
+      "**Do** give each view one Quiver Sky main button, placed last in a form and on the right in a dialog.",
+      "**Do** write colours by their job (`var(--accent)`, `var(--muted)`) and take every size, space, corner and shadow from `tokens.css`.",
+      "**Do** give every interactive thing rest, hover, focus (a 2px Quiver Sky outline at a 2px offset), pressed, disabled and busy states.",
+      "**Do** keep text at WCAG AA (4.5:1, or 3:1 at 18px and up) in both themes.",
+      "**Do** make a change in the launcher and the website in the same piece of work, so the same thing looks and reads the same in both.",
+      "**Do** move only the cards as a screen changes: the cards in sight fade in and rise 8px together, while the header, search and filters are simply there. Within a screen, a section's content comes in the same way as another opens (Settings), while the list of sections stays put.",
+      "**Do** bring a screen back as it was left (its content, scroll and pictures) rather than loading it again.",
+      "**Do** keep things where they'll be while a screen loads: a placeholder is as tall as what replaces it, and what sits under a part still on its way waits for it rather than being pushed down when it comes.",
+      "**Do** honour `prefers-reduced-motion`, so movement becomes a simple fade."
+    ],
+    "donts": [
+      "**Don't** put two filled Quiver Sky buttons side by side.",
+      "**Don't** use a hex code, a shade name, or a number that isn't on a scale.",
+      "**Don't** set text below 11px, use half sizes, or add a second typeface.",
+      "**Don't** put uppercase anywhere but 11px labels.",
+      "**Don't** give things in the page a shadow. Only menus, dialogs and the lifted card cast one.",
+      "**Don't** combine a border, a different background and a shadow on one panel.",
+      "**Don't** show the browser's native dropdown list. Use Quiver's own dropdown.",
+      "**Don't** let colour alone carry a status.",
+      "**Don't** use the Quiver logo or icons outside their roles, or alter them (`TRADEMARKS.md`)."
+    ]
+  }
+}

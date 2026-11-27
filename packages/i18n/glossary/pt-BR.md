@@ -9,7 +9,7 @@ and headings, as in English.
 | app | app (o app, os apps) | not "aplicativo" in buttons; fine in longer sentences |
 | library | biblioteca | |
 | playlist | playlist | the library's own lists |
-| Browse | Explorar | the catalog page |
+| Discover | Descobrir | the catalog page |
 | catalog | catálogo | |
 | Add / Install | Adicionar / Instalar | the buttons that put an app in the library, then install it |
 | Play | Jogar | |

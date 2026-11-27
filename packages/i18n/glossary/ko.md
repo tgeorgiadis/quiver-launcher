@@ -8,7 +8,7 @@ Polite, friendly 해요체 in sentences; short noun forms on buttons and labels
 | app | 앱 | |
 | library | 라이브러리 | |
 | playlist | 재생 목록 | |
-| Browse | 둘러보기 | the catalog page |
+| Discover | 탐색 | the catalog page |
 | catalog | 카탈로그 | |
 | Add / Install | 추가 / 설치 | the buttons that put an app in the library, then install it |
 | Play / Play anyway | 플레이 / 그래도 플레이 | |

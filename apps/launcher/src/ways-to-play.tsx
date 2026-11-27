@@ -13,6 +13,7 @@ import { CardArt } from "./library-view";
 import { Popover } from "./library";
 import { availableOn, useLauncher } from "./store";
 import { byPlayerFeedback, feedbackScore, reportCount } from "./catalog";
+import { answer, appKey, keptAnswer } from "./app-memory";
 
 /** Fewer reports than this, and an app's share of "runs well" says too little to show, or to rank it top. */
 export const ENOUGH_REPORTS = 5;
@@ -42,19 +43,38 @@ export function waysToPlay(entries: Entry[], os: string) {
 /** A game's apps, kept for the session: the pill shows at once on an app's page opened again. */
 const seen = new Map<string, GameDetail | null>();
 
+type Launcher = Pick<ReturnType<typeof useLauncher>, "client" | "remember">;
+
+/** `slug`'s game's apps: those kept, else asked once for everyone waiting, the game's page among them (app-memory.ts). */
+function gameApps({ client, remember }: Launcher, slug: string): Promise<GameDetail | null> {
+  if (seen.has(slug)) return Promise.resolve(seen.get(slug) ?? null);
+  return answer(appKey.game(slug), () => client.game(slug)).then((d) => {
+    seen.set(slug, d);
+    if (d) remember(d.entries);
+    return d;
+  });
+}
+
+/**
+ * The apps that play an app's game, asked ahead as the pointer or the focus rests on its card (App.tsx), so its page
+ * shows how many ways there are to play with the rest, rather than a moment after.
+ */
+export function prefetchWaysToPlay(launcher: Launcher, entry: Pick<Entry, "games">) {
+  if (entry.games.length === 1) gameApps(launcher, entry.games[0].slug).catch(() => {});
+}
+
 /** The apps that play `slug`'s game, once they've come. */
 function useGameApps(slug: string | undefined) {
-  const { client, remember } = useLauncher();
-  const [data, setData] = useState(() => (slug ? seen.get(slug) : undefined));
+  const launcher = useLauncher();
+  const { client } = launcher;
+  const [data, setData] = useState(() => (slug ? (seen.get(slug) ?? keptAnswer<GameDetail | null>(appKey.game(slug))) : undefined));
   useEffect(() => {
     if (!slug) return setData(undefined);
     if (seen.has(slug)) return setData(seen.get(slug));
     setData(undefined);
     let live = true;
-    client.game(slug).then(
+    gameApps(launcher, slug).then(
       (d) => {
-        seen.set(slug, d);
-        if (d) remember(d.entries);
         if (live) setData(d);
       },
       () => {},
@@ -142,7 +162,7 @@ export function WaysToPlay({ entry, onOpenApp, onOpenGame }: { entry: Entry; onO
           {elsewhere.map(way(close))}
           <div className="ways-foot">
             <span className="muted">{t`"Runs well" is the share of players who said it runs well for them.`}</span>
-            <button type="button" className="link-button" onClick={() => (close(), onOpenGame(game))}>
+            <button type="button" className="link-button" data-game={game.slug} onClick={() => (close(), onOpenGame(game))}>
               {t`See the game's page`} →
             </button>
           </div>

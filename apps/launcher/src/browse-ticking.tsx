@@ -113,7 +113,7 @@ function BrowseBar({ ids, shown, menu, onSelectAll, onDone }: BarProps) {
           {items("playlists")}
         </Popover>
         <button type="button" className="tool tick-part" onClick={hide}>
-          <EyeOff size={15} /> <span className="tool-label">{allHidden ? t`Show in Browse` : t`Hide from Browse`}</span>
+          <EyeOff size={15} /> <span className="tool-label">{allHidden ? t`Show in Discover` : t`Hide from Discover`}</span>
         </button>
         {/* Where the bar is too narrow for the buttons above: all of it in one menu. */}
         <Popover label={t`Edit selected`} icon={<><MoreHorizontal size={15} /> <span className="tool-label">{t`Edit selected`}</span></>} role="menu" up className="tool tick-whole" panel="card-menu-panel">
@@ -133,10 +133,10 @@ function BrowseBar({ ids, shown, menu, onSelectAll, onDone }: BarProps) {
 
 /** "Add to library", or how many of those selected it adds where it's fewer. */
 const addCount = (n: number, of: number) =>
-  n && n < of ? plural(n, { one: "Add # to library", other: "Add # to library" }) : t({ message: "Add to library", comment: "Button over the apps selected in Browse: adds them to the library without installing them" });
+  n && n < of ? plural(n, { one: "Add # to library", other: "Add # to library" }) : t({ message: "Add to library", comment: "Button over the apps selected in Discover: adds them to the library without installing them" });
 /** "Install", or how many of those selected it installs where it's fewer. */
 const installCount = (n: number, of: number) =>
-  n && n < of ? plural(n, { one: "Install #", other: "Install #" }) : t({ message: "Install", comment: "Button over the apps selected in Browse: installs them" });
+  n && n < of ? plural(n, { one: "Install #", other: "Install #" }) : t({ message: "Install", comment: "Button over the apps selected in Discover: installs them" });
 
 /**
  * Adding, installing and hiding the selected apps; each stops selecting, as what they did shows on their cards
@@ -179,8 +179,8 @@ function useBrowseActions(ids: string[], onDone: () => void) {
     };
     setNotice(
       allHidden
-        ? plural(changed.length, { one: "# app shows in Browse again.", other: "# apps show in Browse again." })
-        : plural(changed.length, { one: "# app hidden from Browse.", other: "# apps hidden from Browse." }),
+        ? plural(changed.length, { one: "# app shows in Discover again.", other: "# apps show in Discover again." })
+        : plural(changed.length, { one: "# app hidden from Discover.", other: "# apps hidden from Discover." }),
       { action: { label: t({ message: "Undo", comment: "Button on the toast after hiding apps: shows them again, selected" }), act: undo } },
     );
     did(allHidden ? "show" : "hide", changed.length);
@@ -262,7 +262,7 @@ function BrowseTickedItems({ ids, part, close, onDone }: { ids: string[]; part: 
       {part === "all" && (
         <>
           <hr />
-          {item(allHidden ? t`Show in Browse` : t`Hide from Browse`, hide)}
+          {item(allHidden ? t`Show in Discover` : t`Hide from Discover`, hide)}
         </>
       )}
     </div>
