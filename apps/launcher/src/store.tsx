@@ -1611,7 +1611,7 @@ export type Settings = {
   previewUpdates?: boolean;
   /**
    * The kind of file new Linux installs take when a release has more than one (`installPreference`): `automatic`, or
-   * unset, asks. Set by the Settings the format preference pull request adds; `preferFlatpak` is its earlier checkbox.
+   * unset, asks. Settings > Apps, Download format; `preferFlatpak` is an earlier test build's checkbox.
    */
   preferredInstallFormat?: InstallPreference;
   preferFlatpak?: boolean;

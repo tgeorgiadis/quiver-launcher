@@ -112,7 +112,8 @@ test("with a controller, Down from the search goes into what it found, and B emp
 
     await page.locator(".settings-search input").fill("update");
     await pause(100);
-    assert.deepEqual(await nav(page), ["Library", "Updates"]);
+    // On Linux, the Download format hint says each app keeps its own on updates.
+    assert.deepEqual(await nav(page), ["Library", "Apps folder", "Updates"]);
     await reach.press(app, "DPadDown");
     await pause(100);
     assert.equal(await focus(), "Show installed and update icons");
