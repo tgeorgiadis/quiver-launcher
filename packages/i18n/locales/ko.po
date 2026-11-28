@@ -1622,6 +1622,7 @@ msgid "Apps you install from now on are kept as they install. Check now keeps th
 msgstr "이제부터 설치하는 앱은 설치할 때 보관됩니다. 지금 확인을 누르면 설치된 모든 앱의 현재 버전을 보관합니다."
 
 #. Download format: an archive Quiver unpacks into the app's folder
+#: ../../apps/launcher/src/app-files.tsx
 #: ../../apps/launcher/src/App.tsx
 msgid "Archive (tar.gz, zip…), unpacked"
 msgstr "압축 파일(tar.gz, zip…), 압축 해제"
@@ -1638,6 +1639,11 @@ msgstr "설정과 같이: {name}"
 #: ../../apps/launcher/src/discussions.tsx
 msgid "Ask a question, share a tip or talk about this app. For how it ran, use Player feedback."
 msgstr "질문하거나 팁을 공유하거나 이 앱에 대해 이야기하세요. 실행이 어땠는지는 플레이어 피드백에 남겨 주세요."
+
+#. Download format: Which download? asks when a release has more than one kind
+#: ../../apps/launcher/src/app-files.tsx
+msgid "Ask each time"
+msgstr "매번 묻기"
 
 #. Button: have Quiver ask for the player's copy of the game at Play again
 #: ../../apps/launcher/src/own-copy-setup.tsx
@@ -2836,6 +2842,7 @@ msgid "Download cache used"
 msgstr "사용 중인 다운로드 캐시"
 
 #. The kind of file a Linux app installs from: an archive, an AppImage or a Flatpak bundle
+#: ../../apps/launcher/src/app-files.tsx
 #: ../../apps/launcher/src/App.tsx
 msgid "Download format"
 msgstr "다운로드 형식"
@@ -8603,6 +8610,10 @@ msgstr "{name}이(가) 요청하면 이 파일을 고르세요: {0}"
 #: ../../apps/launcher/src/app-files.tsx
 msgid "When a download is a setup program, Quiver runs it once while installing, and Play starts what it installed."
 msgstr "다운로드가 설치 프로그램이면 Quiver가 설치 중에 한 번 실행하고, 플레이는 설치된 프로그램을 시작합니다."
+
+#: ../../apps/launcher/src/app-files.tsx
+msgid "When a release has the same Linux build as an archive, an AppImage or a Flatpak, new installs take this one. Each app keeps its own on updates, and you can change it on its Manage tab."
+msgstr "릴리스에 같은 Linux 빌드가 압축 파일, AppImage, Flatpak으로 있으면 새로 설치할 때 이 형식을 사용합니다. 각 앱은 업데이트할 때 자기 형식을 유지하며, 앱의 관리 탭에서 바꿀 수 있습니다."
 
 #: ../../apps/launcher/src/own-copy-settings.tsx
 msgid "When an app needs your own copy of a game, like a ROM or a disc image, Quiver looks for it in these folders, and nowhere else."

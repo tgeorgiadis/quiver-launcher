@@ -218,3 +218,37 @@ test("the Manage tab changes the format an installed app's updates take", async 
     await s.close();
   }
 });
+
+test("Settings' Download format installs that kind without asking, and Ask each time asks again", async () => {
+  const s = await onLinux([BOTH("1.0.0")]);
+  try {
+    await s.page.locator(".topbar button[aria-label='Settings']").click();
+    await s.page.locator('.settings-nav [data-section="apps"]').click();
+    const format = s.page.getByLabel("Download format");
+    assert.equal(await format.inputValue(), "automatic");
+    if (process.env.SHOT_DIR) await format.locator("xpath=..").screenshot({ path: `${process.env.SHOT_DIR}/settings-download-format.png` });
+    await format.selectOption("appimage");
+    assert.equal(await format.inputValue(), "appimage");
+  } finally {
+    await s.close();
+  }
+  for (const [settings, asks] of [[{ preferredInstallFormat: "appimage" }, false], [{ preferFlatpak: true }, true], [{}, true]]) {
+    const s = await openApp({
+      state: { library: [{ id: ID, slug: "test-port", addedAt: 1 }], settings },
+      config: { os: "linux", arch: "x64" },
+      prepare: (api) => api.setReleases("test-port", [BOTH("1.0.0")]),
+    });
+    try {
+      await clickMenu(s, "Install");
+      if (asks) {
+        // No Flatpak in this release: the earlier checkbox prefers nothing here, so the player picks.
+        await s.page.locator(".choose").waitFor();
+        await s.page.locator(".choose .choices button").filter({ hasText: "AppImage" }).click();
+      }
+      assert.equal(await installedFile(s), "Port-1.0.0-x86_64.AppImage");
+      if (!asks) assert.equal(await s.page.locator(".choose").count(), 0);
+    } finally {
+      await s.close();
+    }
+  }
+});

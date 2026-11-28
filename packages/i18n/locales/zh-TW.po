@@ -1622,6 +1622,7 @@ msgid "Apps you install from now on are kept as they install. Check now keeps th
 msgstr "從現在起安裝的應用程式會在安裝時保留。「立即檢查」會保留每個應用程式已安裝的版本。"
 
 #. Download format: an archive Quiver unpacks into the app's folder
+#: ../../apps/launcher/src/app-files.tsx
 #: ../../apps/launcher/src/App.tsx
 msgid "Archive (tar.gz, zip…), unpacked"
 msgstr "壓縮檔（tar.gz、zip…），解壓縮安裝"
@@ -1638,6 +1639,11 @@ msgstr "與“設定”中的相同：{name}"
 #: ../../apps/launcher/src/discussions.tsx
 msgid "Ask a question, share a tip or talk about this app. For how it ran, use Player feedback."
 msgstr "提問、分享技巧或聊聊這個應用程式。執行狀況請寫在玩家意見回饋裡。"
+
+#. Download format: Which download? asks when a release has more than one kind
+#: ../../apps/launcher/src/app-files.tsx
+msgid "Ask each time"
+msgstr "每次詢問"
 
 #. Button: have Quiver ask for the player's copy of the game at Play again
 #: ../../apps/launcher/src/own-copy-setup.tsx
@@ -2836,6 +2842,7 @@ msgid "Download cache used"
 msgstr "已使用的下載快取"
 
 #. The kind of file a Linux app installs from: an archive, an AppImage or a Flatpak bundle
+#: ../../apps/launcher/src/app-files.tsx
 #: ../../apps/launcher/src/App.tsx
 msgid "Download format"
 msgstr "下載格式"
@@ -8603,6 +8610,10 @@ msgstr "當 {name} 提示你提供檔案時，請選擇此檔案：{0}"
 #: ../../apps/launcher/src/app-files.tsx
 msgid "When a download is a setup program, Quiver runs it once while installing, and Play starts what it installed."
 msgstr "下載的是安裝程式時，Quiver 會在安裝過程中執行一次，「遊玩」則啟動它安裝的程式。"
+
+#: ../../apps/launcher/src/app-files.tsx
+msgid "When a release has the same Linux build as an archive, an AppImage or a Flatpak, new installs take this one. Each app keeps its own on updates, and you can change it on its Manage tab."
+msgstr "當某個版本以壓縮檔、AppImage 或 Flatpak 提供同一個 Linux 版本時，新安裝會使用這一種。每個應用程式更新時保留自己的格式，你可以在它的「管理」分頁中更改。"
 
 #: ../../apps/launcher/src/own-copy-settings.tsx
 msgid "When an app needs your own copy of a game, like a ROM or a disc image, Quiver looks for it in these folders, and nowhere else."

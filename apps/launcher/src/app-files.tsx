@@ -14,6 +14,7 @@ import type { Entry } from "@quiverlauncher/api";
 import { PanelFormHead } from "./detail";
 import { native } from "./native";
 import { PORTABLE_FILE, uniqueFiles, useLauncher } from "./store";
+import { installPreference, type InstallPreference } from "./assets";
 
 const isPortable = (name: string) => name.toLowerCase() === PORTABLE_FILE;
 const same = (a: string[], b: string[]) => a.length === b.length && a.every((n) => b.some((m) => m.toLowerCase() === n.toLowerCase()));
@@ -209,6 +210,29 @@ export function PortableDefaultSetting() {
             )}
           </p>
         </>
+      )}
+      {config.os === "linux" && (
+        <label className="panel-field">
+          <span className="field-label">
+            <Trans>Download format</Trans>
+          </span>
+          <select
+            value={installPreference(settings)}
+            onChange={(e) => {
+              const { preferFlatpak: _, ...rest } = settings;
+              const value = e.target.value as InstallPreference;
+              setSettings({ ...rest, preferredInstallFormat: value === "automatic" ? undefined : value });
+            }}
+          >
+            <option value="automatic">{t({ message: "Ask each time", comment: "Download format: Which download? asks when a release has more than one kind" })}</option>
+            <option value="archive">{t`Archive (tar.gz, zip…), unpacked`}</option>
+            <option value="appimage">AppImage</option>
+            <option value="flatpak">Flatpak</option>
+          </select>
+          <small className="muted">
+            <Trans>When a release has the same Linux build as an archive, an AppImage or a Flatpak, new installs take this one. Each app keeps its own on updates, and you can change it on its Manage tab.</Trans>
+          </small>
+        </label>
       )}
     </section>
   );

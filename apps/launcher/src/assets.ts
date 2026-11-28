@@ -137,8 +137,8 @@ export const isAppImage = (name: string) => /\.appimage$/i.test(name);
 export const LINUX_FORMATS = ["archive", "appimage", "flatpak"] as const;
 export type LinuxFormat = (typeof LINUX_FORMATS)[number];
 /**
- * The player's preferred kind for new Linux installs (Settings, from the pull request that adds it): `automatic`, or
- * unset, asks when a release has more than one. `preferFlatpak` is that pull request's earlier checkbox.
+ * The player's preferred kind for new Linux installs (Settings > Apps, Download format): `automatic`, or unset, asks
+ * when a release has more than one. `preferFlatpak` is an earlier test build's checkbox, read until a format is chosen.
  */
 export type InstallPreference = "automatic" | LinuxFormat;
 export const installPreference = (settings: { preferredInstallFormat?: InstallPreference; preferFlatpak?: boolean }): InstallPreference =>

@@ -1622,6 +1622,7 @@ msgid "Apps you install from now on are kept as they install. Check now keeps th
 msgstr "Les apps que vous installez désormais sont conservées à leur installation. Vérifier maintenant conserve la version installée de chaque app."
 
 #. Download format: an archive Quiver unpacks into the app's folder
+#: ../../apps/launcher/src/app-files.tsx
 #: ../../apps/launcher/src/App.tsx
 msgid "Archive (tar.gz, zip…), unpacked"
 msgstr "Archive (tar.gz, zip…), décompressée"
@@ -1638,6 +1639,11 @@ msgstr "Comme dans les Paramètres : {name}"
 #: ../../apps/launcher/src/discussions.tsx
 msgid "Ask a question, share a tip or talk about this app. For how it ran, use Player feedback."
 msgstr "Pose une question, partage une astuce ou parle de cette app. Pour dire comment elle a tourné, utilise les retours des joueurs."
+
+#. Download format: Which download? asks when a release has more than one kind
+#: ../../apps/launcher/src/app-files.tsx
+msgid "Ask each time"
+msgstr "Demander à chaque fois"
 
 #. Button: have Quiver ask for the player's copy of the game at Play again
 #: ../../apps/launcher/src/own-copy-setup.tsx
@@ -2836,6 +2842,7 @@ msgid "Download cache used"
 msgstr "Cache de téléchargements utilisé"
 
 #. The kind of file a Linux app installs from: an archive, an AppImage or a Flatpak bundle
+#: ../../apps/launcher/src/app-files.tsx
 #: ../../apps/launcher/src/App.tsx
 msgid "Download format"
 msgstr "Format de téléchargement"
@@ -8603,6 +8610,10 @@ msgstr "Quand {name} la demande, choisis ce fichier : {0}"
 #: ../../apps/launcher/src/app-files.tsx
 msgid "When a download is a setup program, Quiver runs it once while installing, and Play starts what it installed."
 msgstr "Quand un téléchargement est un programme d'installation, Quiver le lance une fois pendant l'installation, et Jouer lance ce qu'il a installé."
+
+#: ../../apps/launcher/src/app-files.tsx
+msgid "When a release has the same Linux build as an archive, an AppImage or a Flatpak, new installs take this one. Each app keeps its own on updates, and you can change it on its Manage tab."
+msgstr "Quand une version propose la même build Linux en archive, en AppImage ou en Flatpak, les nouvelles installations prennent celui-ci. Chaque app garde le sien lors des mises à jour, et tu peux le changer dans son onglet Gérer."
 
 #: ../../apps/launcher/src/own-copy-settings.tsx
 msgid "When an app needs your own copy of a game, like a ROM or a disc image, Quiver looks for it in these folders, and nowhere else."
