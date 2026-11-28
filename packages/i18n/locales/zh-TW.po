@@ -4571,6 +4571,11 @@ msgstr "大多數應用程式都需要你自己的遊戲副本，例如 ROM 或�
 msgid "Most downloaded"
 msgstr "下載量最多"
 
+#. Library sort: the app played longest, all told, first
+#: ../../apps/launcher/src/sort.ts
+msgid "Most played"
+msgstr "遊玩最久"
+
 #: ../../apps/launcher/src/App.tsx
 msgid "Most relevant"
 msgstr "最相關"
@@ -6091,6 +6096,11 @@ msgstr "最近新增"
 msgid "Recently finished"
 msgstr "最近完成"
 
+#. Library sort: the app installed last first
+#: ../../apps/launcher/src/sort.ts
+msgid "Recently installed"
+msgstr "最近安裝"
+
 #: ../../apps/launcher/src/sort.ts
 msgid "Recently played"
 msgstr "最近遊玩"
@@ -6116,6 +6126,16 @@ msgstr "重新整理"
 #: ../../apps/launcher/src/App.tsx
 msgid "Reinstall {installedVersion}"
 msgstr "重新安裝 {installedVersion}"
+
+#. Library sort: by the year the game an app plays first came out (not the app's own release)
+#: ../../apps/launcher/src/sort.ts
+msgid "Release date, newest first"
+msgstr "發行日期，最新在前"
+
+#. Library sort: by the year the game an app plays first came out (not the app's own release)
+#: ../../apps/launcher/src/sort.ts
+msgid "Release date, oldest first"
+msgstr "發行日期，最早在前"
 
 #: ../../apps/launcher/src/own.tsx
 msgid "Release feed"

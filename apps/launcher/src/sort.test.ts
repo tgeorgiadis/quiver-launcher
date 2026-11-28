@@ -34,6 +34,19 @@ describe("library sorting", () => {
     expect(sorted("added", apps, { A: { addedAt: 3 }, B: { addedAt: 1 } })).toEqual(["A", "B", "C"]);
   });
 
+  it("puts the most recently installed or the most played first", () => {
+    const apps = [app("A"), app("B"), app("C")];
+    expect(sorted("installed-at", apps, { A: { installedAt: 2 }, C: { installedAt: 8 } })).toEqual(["C", "A", "B"]);
+    expect(sorted("playtime", apps, { A: { playTime: 60 }, B: { playTime: 3600 } })).toEqual(["B", "A", "C"]);
+  });
+
+  it("sorts by when the game first came out, either way, with games of no known year last", () => {
+    const apps = [app("Recomp", "Banjo-Kazooie"), app("Port", "Doom"), app("Mine"), app("Other", "Zelda")];
+    const facts = { Recomp: { year: 1998 }, Port: { year: 1993 }, Other: { year: 1998 } };
+    expect(sorted("released", apps, facts)).toEqual(["Port", "Recomp", "Other", "Mine"]);
+    expect(sorted("released-new", apps, facts)).toEqual(["Recomp", "Other", "Port", "Mine"]);
+  });
+
   it("puts the app with the newest release first, by its verified one when it has one", () => {
     const released = (name: string, verified?: number, last?: number) => ({ ...app(name), ...(verified ? { verified: { releasedAt: verified } } : {}), lastReleaseAt: last }) as Entry;
     // B's newest release isn't verified yet: its verified one counts.
