@@ -68,6 +68,7 @@ import { copiesNeeded } from "./own-copy";
 import { GameCopiesNotice } from "./own-copy-settings";
 import { AppUpdatesNotice } from "./app-updates";
 import { ReleaseFiles } from "./release-files";
+import { installedFormat, type LinuxFormat } from "./assets";
 
 type Tab = "library" | "browse";
 /** A page over the library or catalog: an app's, an original game's, Downloads or Settings. */
@@ -1571,6 +1572,7 @@ function AppPage({
         )}
         {item && <UpdatesChoice id={item.id} />}
         {item && <PrereleasesChoice id={item.id} />}
+        {item && <FormatChoice id={item.id} />}
         <CacheChoice entry={entry} />
         {item && !isLocal(item.id) && <ReleaseFiles entry={entry} source={source} />}
       </div>
@@ -2094,6 +2096,31 @@ function PrereleasesChoice({ id }: { id: string }) {
         <option value="main">{t({ message: "Main releases only", comment: "Which releases an app gets: only the ones its developer didn't mark as pre-releases" })}</option>
         <option value="include">{t({ message: "Include pre-releases", comment: "Which releases an app gets: pre-releases too" })}</option>
       </select>
+    </label>
+  );
+}
+
+/**
+ * The kind of file a Linux app's updates install, when a release has more than one: unpacked from an archive, an
+ * AppImage, or a Flatpak bundle. It was asked, or taken as Settings prefers, when the app was installed.
+ */
+function FormatChoice({ id }: { id: string }) {
+  const { installs, config, setFormat } = useLauncher();
+  const install = installs[id];
+  if (config.os !== "linux" || !install || install.local || install.wine || install.installer || install.setup) return null;
+  return (
+    <label className="panel-field">
+      <span className="field-label">
+        <Trans comment="The kind of file a Linux app installs from: an archive, an AppImage or a Flatpak bundle">Download format</Trans>
+      </span>
+      <select value={installedFormat(install)} onChange={(e) => setFormat(id, e.target.value as LinuxFormat)}>
+        <option value="archive">{t({ message: "Archive (tar.gz, zip…), unpacked", comment: "Download format: an archive Quiver unpacks into the app's folder" })}</option>
+        <option value="appimage">AppImage</option>
+        <option value="flatpak">Flatpak</option>
+      </select>
+      <small className="muted">
+        <Trans>Its updates install this kind of file when a release has one.</Trans>
+      </small>
     </label>
   );
 }

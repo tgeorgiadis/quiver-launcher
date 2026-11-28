@@ -1,6 +1,6 @@
 import { describe, expect, it, test } from "vitest";
 import type { Asset, Os } from "@quiverlauncher/api";
-import { assetFilterFor, bestAssets, fileWanted, hasBuildFor, installable, installFormat, otherSystems, parseFileFilter, pickedBefore, releaseFor, runsHere, wantedFiles } from "./assets";
+import { assetFilterFor, bestAssets, fileWanted, formatChoices, hasBuildFor, installable, installedFormat, installFormat, installPreference, keepFormat, otherSystems, parseFileFilter, pickedBefore, releaseFor, runsHere, wantedFiles } from "./assets";
 
 const asset = (filename: string, os: Asset["os"], architecture: Asset["architecture"] = "x64"): Asset => ({
   id: filename, url: `https://example.com/${filename}`, filename, os, architecture, format: "",
@@ -295,5 +295,69 @@ describe("the player's release files filter", () => {
     expect(releaseFor(releases, "windows", "x64", { files: "EXIT2" })?.version).toBe("1");
     expect(releaseFor(releases, "windows", "x64", { files: "EXIT2", platform: "windows" })?.version).toBe("1");
     expect(releaseFor(releases, "windows", "x64")?.version).toBe("2");
+  });
+});
+
+describe("an AppImage beside an archive, as Birdman 64 releases", () => {
+  // Birdman 64 v1.5.1's files.
+  const files = [
+    asset("Birdman64-android-arm64.apk", "android", "arm64"),
+    asset("birdman64-linux-x64.tar.gz", "linux"),
+    asset("Birdman64-windows-x64-debug-symbols.pdb", "windows"),
+    asset("Birdman64-windows-x64.zip", "windows"),
+    asset("Birdman64-x86_64.AppImage", "linux"),
+    asset("SHA256SUMS-linux.txt", "unknown", "unknown"),
+  ];
+  const names = (list: Asset[]) => list.map((a) => a.filename);
+
+  it("offers both on Linux, the archive first", () => {
+    expect(names(bestAssets(files, "linux", "x64"))).toEqual(["birdman64-linux-x64.tar.gz"]);
+    expect(names(formatChoices(files, "linux", "x64"))).toEqual(["birdman64-linux-x64.tar.gz", "Birdman64-x86_64.AppImage"]);
+    // Nothing more to offer elsewhere, nor where there's no archive, nor for Windows' build through Wine.
+    expect(names(formatChoices(files, "windows", "x64"))).toEqual(["Birdman64-windows-x64.zip"]);
+    expect(names(formatChoices([files[4]], "linux", "x64"))).toEqual(["Birdman64-x86_64.AppImage"]);
+    expect(names(formatChoices(files, "linux", "x64", undefined, "files", "windows"))).toEqual(["Birdman64-windows-x64.zip"]);
+  });
+
+  it("leaves out an AppImage that suits this computer less, or that the catalog's filter does", () => {
+    const arm = [asset("Game-linux-x64.tar.gz", "linux"), asset("Game-aarch64.AppImage", "linux", "arm64"), asset("Game.AppImage", "linux", "unknown")];
+    expect(names(formatChoices(arm, "linux", "x64"))).toEqual(["Game-linux-x64.tar.gz"]);
+    expect(names(formatChoices(files, "linux", "x64", "linux-x64"))).toEqual(["birdman64-linux-x64.tar.gz"]);
+  });
+
+  it("keeps the player's pick by its format in later releases", () => {
+    const all = names(installable(files, "linux"));
+    expect(assetFilterFor("Birdman64-x86_64.AppImage", all)).toBe(".appimage");
+    expect(assetFilterFor("birdman64-linux-x64.tar.gz", all)).toBe(".tar.gz");
+    const next = [asset("birdman64-1.6-linux-x64.tar.gz", "linux"), asset("Birdman64-1.6-x86_64.AppImage", "linux")];
+    expect(pickedBefore(next, ".appimage")?.filename).toBe("Birdman64-1.6-x86_64.AppImage");
+    expect(pickedBefore(next, ".tar.gz")?.filename).toBe("birdman64-1.6-linux-x64.tar.gz");
+  });
+
+  it("an update keeps to the kind installed: as saved, else as the file picked or the program it starts says", () => {
+    const both = formatChoices(files, "linux", "x64");
+    const app = (more: { format?: string; executables?: string[] }) => ({ executables: ["birdman64"], ...more });
+    expect(installedFormat(app({ format: "appimage" }))).toBe("appimage");
+    expect(installedFormat(app({}))).toBe("archive");
+    expect(installedFormat(app({ executables: ["Birdman64-x86_64.AppImage"] }))).toBe("appimage");
+    expect(installedFormat(app({}), both[1])).toBe("appimage");
+    // A Windows build through Wine is no Linux kind: what it starts says.
+    expect(installedFormat(app({ format: "executable" }))).toBe("archive");
+    expect(names(keepFormat(both, "archive"))).toEqual(["birdman64-linux-x64.tar.gz"]);
+    expect(names(keepFormat(both, "appimage"))).toEqual(["Birdman64-x86_64.AppImage"]);
+    // Nothing of that kind: what there is.
+    expect(names(keepFormat(both, "flatpak"))).toEqual(names(both));
+  });
+
+  it("offers a Flatpak bundle too, and takes the kind the player prefers without asking", () => {
+    const three = [...files, asset("Birdman64-x86_64.flatpak", "linux")];
+    expect(names(formatChoices(three, "linux", "x64"))).toEqual(["birdman64-linux-x64.tar.gz", "Birdman64-x86_64.AppImage", "Birdman64-x86_64.flatpak"]);
+    expect(names(formatChoices(three, "linux", "x64", undefined, undefined, undefined, "flatpak"))).toEqual(["Birdman64-x86_64.flatpak"]);
+    expect(names(formatChoices(three, "linux", "x64", undefined, undefined, undefined, "appimage"))).toEqual(["Birdman64-x86_64.AppImage"]);
+    // Preferred, but not in this release: the player picks from what there is.
+    expect(names(formatChoices(files, "linux", "x64", undefined, undefined, undefined, "flatpak"))).toHaveLength(2);
+    expect(installPreference({})).toBe("automatic");
+    expect(installPreference({ preferFlatpak: true })).toBe("flatpak");
+    expect(installPreference({ preferFlatpak: true, preferredInstallFormat: "archive" })).toBe("archive");
   });
 });

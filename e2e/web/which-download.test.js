@@ -144,3 +144,77 @@ test("the maintainers can be told, in a click, which file is the build for which
     await s.close();
   }
 });
+
+// As Birdman 64 v1.5.1: the same Linux build as an archive and as an AppImage.
+const BOTH = (version) => ({
+  id: `release_${version}`,
+  version,
+  releasedAt: version === "1.0.0" ? Date.UTC(2026, 0, 1) : Date.UTC(2025, 11, 1),
+  prerelease: false,
+  assets: files([`port-${version}-linux-x64.tar.gz`, "linux"], [`Port-${version}-x86_64.AppImage`, "linux"], [`Port-${version}-windows-x64.zip`, "windows"]).map((a) => ({ ...a, architecture: "x64" })),
+});
+const onLinux = (releases, installs = {}) =>
+  openApp({
+    state: { library: [{ id: ID, slug: "test-port", addedAt: 1 }], installs },
+    config: { os: "linux", arch: "x64" },
+    prepare: (api) => api.setReleases("test-port", releases),
+  });
+const clickMenu = async (s, text) => {
+  await s.page.locator("article[data-slug]").first().click({ button: "right" });
+  await s.page.locator('[role="menu"] [role="menuitem"]').filter({ hasText: text }).first().click();
+};
+
+test("a Linux build released as an archive and an AppImage asks which, and installs the one picked", async () => {
+  const s = await onLinux([BOTH("1.0.0")]);
+  try {
+    await clickMenu(s, "Install");
+    const dialog = s.page.locator(".choose");
+    await dialog.waitFor();
+    if (process.env.SHOT_DIR) await dialog.screenshot({ path: `${process.env.SHOT_DIR}/which-download-appimage.png` });
+    const choices = dialog.locator(".choices button");
+    assert.deepEqual(await choices.allInnerTexts(), ["port-1.0.0-linux-x64.tar.gz", "Port-1.0.0-x86_64.AppImage"]);
+    await choices.filter({ hasText: "AppImage" }).click();
+    assert.equal(await installedFile(s), "Port-1.0.0-x86_64.AppImage");
+  } finally {
+    await s.close();
+  }
+});
+
+test("an update keeps the format installed or picked before, without asking", async () => {
+  // The mock's verified release is 1.0.0.
+  const was = (more) => ({ [ID]: { version: "0.9.0", releasedAt: BOTH("0.9.0").releasedAt, folder: "test-port", executables: ["port"], ...more } });
+  for (const [installs, file] of [
+    [was({ format: "appimage" }), "Port-1.0.0-x86_64.AppImage"],
+    [was({ pick: ".appimage" }), "Port-1.0.0-x86_64.AppImage"],
+    // Installed before Quiver asked: as it was, by the program it starts.
+    [was({}), "port-1.0.0-linux-x64.tar.gz"],
+    [was({ executables: ["Port-x86_64.AppImage"] }), "Port-1.0.0-x86_64.AppImage"],
+  ]) {
+    const s = await onLinux([BOTH("1.0.0"), BOTH("0.9.0")], installs);
+    try {
+      await s.page.locator(".tile-update, .tile-icon-update").first().waitFor({ state: "attached" });
+      await clickMenu(s, "Update to v1.0.0");
+      assert.equal(await installedFile(s), file);
+      assert.equal(await s.page.locator(".choose").count(), 0);
+    } finally {
+      await s.close();
+    }
+  }
+});
+
+test("the Manage tab changes the format an installed app's updates take", async () => {
+  const s = await onLinux([BOTH("1.0.0"), BOTH("0.9.0")], { [ID]: { version: "0.9.0", releasedAt: BOTH("0.9.0").releasedAt, folder: "test-port", executables: ["port"], format: "archive" } });
+  try {
+    await s.page.locator('article[data-slug="test-port"] .card-open').first().click();
+    await s.page.locator('[aria-label="App sections"] button', { hasText: "Manage" }).click();
+    const format = s.page.getByLabel("Download format");
+    assert.equal(await format.inputValue(), "archive");
+    if (process.env.SHOT_DIR) await format.locator("xpath=..").screenshot({ path: `${process.env.SHOT_DIR}/download-format.png` });
+    await format.selectOption("appimage");
+    assert.equal(await format.inputValue(), "appimage");
+    await s.page.getByRole("button", { name: /Update to v1\.0\.0/ }).first().click();
+    assert.equal(await installedFile(s), "Port-1.0.0-x86_64.AppImage");
+  } finally {
+    await s.close();
+  }
+});

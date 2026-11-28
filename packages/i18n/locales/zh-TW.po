@@ -1621,6 +1621,11 @@ msgstr "尚未擁有的應用程式會顯示“獲取”；只有按下按鈕後
 msgid "Apps you install from now on are kept as they install. Check now keeps the version you have installed of every app."
 msgstr "從現在起安裝的應用程式會在安裝時保留。「立即檢查」會保留每個應用程式已安裝的版本。"
 
+#. Download format: an archive Quiver unpacks into the app's folder
+#: ../../apps/launcher/src/App.tsx
+msgid "Archive (tar.gz, zip…), unpacked"
+msgstr "壓縮檔（tar.gz、zip…），解壓縮安裝"
+
 #: ../../apps/launcher/src/own.tsx
 msgid "Artwork and consoles from the game"
 msgstr "遊戲的插畫和主機"
@@ -2830,6 +2835,11 @@ msgstr "下載快取"
 msgid "Download cache used"
 msgstr "已使用的下載快取"
 
+#. The kind of file a Linux app installs from: an archive, an AppImage or a Flatpak bundle
+#: ../../apps/launcher/src/App.tsx
+msgid "Download format"
+msgstr "下載格式"
+
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/downloads-page.tsx
 #: ../../apps/launcher/src/library-sidebar.tsx
@@ -4005,6 +4015,10 @@ msgstr "其所有檔案的釋出都已超過 48 小時，這段時間有助於�
 #: ../../apps/launcher/src/library-tile.tsx
 msgid "Its newest available version was withdrawn: choose a version"
 msgstr "最新可用版本已撤回：請選擇一個版本"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Its updates install this kind of file when a release has one."
+msgstr "如果某個版本提供這種檔案，更新時就安裝它。"
 
 #. Installs the mod alone, without the ones it needs
 #: ../../apps/launcher/src/mods.tsx
