@@ -9,7 +9,7 @@
   display: flex;
   flex-direction: column;
   border: 1px solid var(--ql-card-line);
-  border-radius: 9px;
+  border-radius: var(--radius-8);
   overflow: hidden;
   background: var(--ql-card);
   transition: transform 0.16s, border-color 0.16s, box-shadow 0.16s;
@@ -86,12 +86,12 @@
   top: 12px;
   right: 12px;
   padding: 3px 7px;
-  border-radius: 4px;
+  border-radius: var(--radius-4);
   background: var(--ql-badge-bg);
   color: var(--ql-badge-fg);
-  font-size: 8px;
-  font-weight: 700;
-  letter-spacing: 0.8px;
+  font-size: var(--size-11);
+  font-weight: 600;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 .card-body {
@@ -104,9 +104,9 @@
 .card-tags {
   display: flex;
   gap: 6px;
-  font-size: 8px;
+  font-size: var(--size-11);
   color: var(--ql-card-kind);
-  letter-spacing: 0.7px;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   margin-bottom: 7px;
   min-height: 12px;
@@ -116,7 +116,7 @@
   align-items: center;
   gap: 7px;
   color: var(--ql-platform-icons);
-  font-size: 13px;
+  font-size: var(--size-13);
 }
 /* The type and console stay on one line, scrolling on hover when cut off. */
 .card-tags > .card-kind {
@@ -136,7 +136,7 @@
   align-self: center;
   padding: 1px 6px;
   border: 1px solid var(--ql-ai-chip-line);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   color: var(--ql-ai-chip-fg);
   white-space: nowrap;
 }
@@ -167,7 +167,7 @@
 .card-body .card-title {
   display: block;
   margin: 0;
-  font-size: 15px;
+  font-size: var(--size-16);
   font-weight: 600;
   letter-spacing: -0.02em;
 }
@@ -186,7 +186,7 @@
   width: 1.2em;
   height: 1.2em;
   overflow: hidden;
-  border-radius: 4px;
+  border-radius: var(--radius-4);
 }
 .card-icon img {
   display: block;
@@ -202,7 +202,7 @@
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
-  font-size: 12.5px;
+  font-size: var(--size-12);
   color: var(--ql-card-meta);
 }
 .scrolling-text {
@@ -257,14 +257,14 @@
   max-width: none;
 }
 .based-on-label {
-  font-size: 10px;
-  letter-spacing: 0.08em;
+  font-size: var(--size-11);
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--ql-based-on-label);
 }
 /* "PlayStation version", after the games an app's page says it's based on. */
 .based-on-version {
-  font-size: 12px;
+  font-size: var(--size-12);
   color: var(--ql-based-on-label);
 }
 .game-chip {
@@ -272,12 +272,12 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 12px;
+  font-size: var(--size-12);
   line-height: 1.4;
   color: var(--ql-chip-fg);
   background: var(--ql-chip-bg);
   border: 1px solid var(--ql-chip-line);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   padding: 3px 9px;
 }
 .card-bottom {
@@ -288,12 +288,12 @@
   border-top: 1px solid var(--ql-line);
   margin-top: 15px;
   padding-top: 12px;
-  font-size: 12px;
+  font-size: var(--size-12);
   color: var(--ql-card-meta);
 }
 .score {
   color: var(--ql-positive);
-  font-size: 11px;
+  font-size: var(--size-11);
 }
 .score.positive {
   color: var(--ql-positive);
@@ -313,7 +313,7 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  font-size: 12px;
+  font-size: var(--size-12);
   font-weight: 600;
   white-space: nowrap;
 }
@@ -333,10 +333,10 @@
   color: var(--ql-score-muted);
 }
 .card-bottom .score {
-  font-size: 12px;
+  font-size: var(--size-12);
 }
 .card-bottom .score small {
-  font-size: 11px;
+  font-size: var(--size-11);
 }
 .card-bottom > .score {
   min-width: 0;
@@ -420,7 +420,7 @@
   height: auto;
   aspect-ratio: 2 / 3;
   border: 1px solid var(--ql-card-line);
-  border-radius: 10px;
+  border-radius: var(--radius-8);
   box-shadow: 0 10px 24px var(--ql-card-shadow);
   transition: transform 0.16s, border-color 0.16s, box-shadow 0.16s;
 }
@@ -478,7 +478,7 @@
   padding: 0;
   border: 0;
   color: inherit;
-  font-size: 9.5px;
+  font-size: var(--size-11);
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -490,7 +490,7 @@
   right: 8px;
   display: flex;
   padding: 4px 6px;
-  border-radius: 6px;
+  border-radius: var(--radius-4);
   color: var(--ql-on-art-fg, #fff);
   background: rgb(5 9 16 / 0.62);
   transition: opacity 0.14s;
@@ -498,7 +498,7 @@
 .cover-platforms .platform-icons {
   gap: 5px;
   color: inherit;
-  font-size: 11px;
+  font-size: var(--size-11);
 }
 .entry-card.box .card-body {
   padding: 11px 2px 2px;
@@ -506,15 +506,15 @@
 .entry-card.box .card-kind {
   display: block;
   margin-bottom: 3px;
-  font-size: 9.5px;
+  font-size: var(--size-11);
   font-weight: 600;
-  letter-spacing: 0.07em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--ql-card-kind);
 }
 .entry-card.box .card-title {
-  font-size: 14.5px;
-  font-weight: 650;
+  font-size: var(--size-14);
+  font-weight: 600;
   letter-spacing: -0.01em;
 }
 .entry-card.box :is(.card-subtitle, .card-status) {
@@ -523,7 +523,7 @@
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
-  font-size: 12.5px;
+  font-size: var(--size-12);
   color: var(--ql-card-meta);
 }
 .entry-card.box .card-bottom {
@@ -654,12 +654,12 @@
   background: rgb(10 40 70 / 0.62);
   color: rgb(196 232 255);
   font-size: 12px;
-  font-weight: 650;
+  font-weight: 600;
   letter-spacing: 0.01em;
 }
 .featured-eyebrow {
   font-size: 12px;
-  font-weight: 650;
+  font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: rgb(255 255 255 / 0.78);
@@ -673,7 +673,7 @@
   filter: drop-shadow(0 0 1px rgb(255 255 255 / 0.6)) drop-shadow(0 0 10px rgb(255 255 255 / 0.18)) drop-shadow(0 6px 18px rgb(0 0 0 / 0.5));
 }
 .featured-title {
-  font-size: clamp(30px, 3.6vw, 50px);
+  font-size: clamp(28px, 3.6vw, 38px);
   font-weight: 700;
   line-height: 1.02;
   letter-spacing: -0.03em;
@@ -697,7 +697,7 @@
   padding: 4px 11px;
   border-radius: 999px;
   background: rgb(4 8 15 / 0.6);
-  font-size: 12.5px;
+  font-size: 13px;
   font-weight: 600;
 }
 .featured-controls {
@@ -723,15 +723,29 @@
 .featured-step:hover {
   background: rgb(4 8 15 / 0.82);
 }
+/* The dot is 8px, the button around it 24px, so a finger or pointer finds it (the gaps between are part of the buttons). */
 .featured-dot {
+  display: grid;
+  place-items: center;
+  min-width: 24px;
+  height: 24px;
+  margin: 0 -4px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: none;
+}
+.featured-dot::before {
+  content: "";
   width: 8px;
   height: 8px;
-  padding: 0;
   border-radius: 999px;
   background: rgb(255 255 255 / 0.45);
-  transition: width 0.2s, background 0.2s;
+  transition: width 0.2s, background 0.2s, transform 0.2s;
 }
-.featured-dot[aria-current] {
+.featured-dot:hover::before {
+  transform: scale(1.25);
+}
+.featured-dot[aria-current]::before {
   width: 22px;
   background: var(--ql-accent);
 }
@@ -777,7 +791,7 @@
 }
 .shelf-head h2 {
   margin: 0;
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 600;
   letter-spacing: -0.02em;
 }
@@ -827,12 +841,12 @@
 .shelf-row > * {
   scroll-snap-align: start;
 }
-/* As tall as a card and its three lines, so the page doesn't jump when they come. */
+/* As tall as a card: its art, then its kind, name, maker and score under it (127px), so the page doesn't jump when they come. */
 .shelf-placeholder {
   aspect-ratio: 2 / 3;
-  margin-bottom: 66px;
+  margin-bottom: 127px;
   border: 1px solid var(--ql-card-line);
-  border-radius: 10px;
+  border-radius: 8px;
   background: var(--ql-card);
   animation: shelf-pulse 1.4s ease-in-out infinite;
 }
@@ -874,17 +888,17 @@
   font-weight: 600;
 }
 .markdown .md-h1 {
-  font-size: 1.6em;
+  font-size: 22px;
   padding-bottom: 0.3em;
   border-bottom: 1px solid var(--ql-line);
 }
 .markdown .md-h2 {
-  font-size: 1.3em;
+  font-size: 18px;
   padding-bottom: 0.3em;
   border-bottom: 1px solid var(--ql-line);
 }
 .markdown .md-h3 {
-  font-size: 1.1em;
+  font-size: 16px;
 }
 .markdown :is(.md-h4, .md-h5, .md-h6) {
   font-size: 1em;
@@ -940,7 +954,7 @@
 .markdown pre {
   background: var(--ql-pre-bg);
   border: 1px solid var(--ql-line);
-  border-radius: 6px;
+  border-radius: 8px;
   padding: 12px 14px;
   overflow-x: auto;
 }

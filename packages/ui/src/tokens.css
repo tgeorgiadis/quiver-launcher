@@ -48,6 +48,14 @@
   --radius-16: 16px;
   --radius-pill: 999px;
 
+  /* Motion: fast for hover, press and focus; base for a page or menu entering; slow for dialogs and art fading in.
+     Things entering ease out; things leaving ease in, and take the fast time. Only opacity and transform move. */
+  --duration-fast: 120ms;
+  --duration-base: 200ms;
+  --duration-slow: 320ms;
+  --ease-enter: cubic-bezier(0.2, 0, 0, 1);
+  --ease-exit: cubic-bezier(0.4, 0, 1, 1);
+
   /* The only two shadows: menus and popovers, and dialogs. */
   --shadow-menu: 0 4px 16px var(--shadow);
   --shadow-dialog: 0 16px 48px var(--shadow);
@@ -61,9 +69,10 @@
   --fg: #121821;
   --strong: #0b0c0e;
   --muted: #5b616b;
-  --accent: #0284c7;
+  /* Dark enough that white on it, and it as text on the page, keep 4.5:1 (5.9:1 on white, 5.4:1 on --bg). */
+  --accent: #0369a1;
   --on-accent: #fff;
-  --link: #0369a1;
+  --link: #075985;
   --green: #2e7d52;
   --caution: #8a5d00;
   --danger: #b93a30;

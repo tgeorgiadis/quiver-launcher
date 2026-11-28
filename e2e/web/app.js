@@ -38,7 +38,11 @@ export async function openApp({ state = {}, width = 1280, height = 800, config =
   context.setDefaultNavigationTimeout(90000);
   const page = await context.newPage();
   const errors = [];
-  page.on("pageerror", (e) => errors.push(e.message));
+  // Not the browser's note that it put off a resize to the next frame: harmless, and the launcher's telemetry drops it
+  // too (telemetry.ts's NOISE). Discover's shelves draw only once in sight (content-visibility), which can bring it on
+  // as the screen is hidden under a page.
+  const NOISE = /^ResizeObserver loop (completed with undelivered notifications|limit exceeded)/;
+  page.on("pageerror", (e) => NOISE.test(e.message) || errors.push(e.message));
   await page.addInitScript(standInForRust, { api: api.api, state, config: { convex: api.convex, accountApi: api.account, githubApi: api.github, gitlabApi: api.gitlab, ...config } });
   await page.goto(shared.url);
   await page.locator(ready).first().waitFor();

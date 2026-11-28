@@ -56,7 +56,7 @@ test("the player's picture shows behind the library's grid and nowhere else, and
     await scroller.evaluate((m) => m.scrollTo(0, 200));
     assert.equal(await behind.evaluate((i) => i.getBoundingClientRect().y), 0, "stays put as the cards scroll");
 
-    await p.locator(".topbar nav button", { hasText: "Browse" }).click();
+    await p.locator(".topbar nav button", { hasText: "Discover" }).click();
     await behind.waitFor({ state: "detached" });
     await p.locator(".topbar nav button", { hasText: "Library" }).click();
     await behind.waitFor({ state: "attached" });
@@ -71,7 +71,8 @@ test("the player's picture shows behind the library's grid and nowhere else, and
     await setting.locator("button", { hasText: "Choose a picture…" }).waitFor();
     await p.locator(".topbar nav button", { hasText: "Library" }).click();
     await p.locator(".library-grid").waitFor();
-    assert.equal(await behind.count(), 0);
+    // Gone once the library, back as it was, takes the change (kept-screen.tsx).
+    await behind.waitFor({ state: "detached" });
   } finally {
     await s2.close();
   }

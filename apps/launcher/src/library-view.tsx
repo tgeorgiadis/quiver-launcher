@@ -9,7 +9,7 @@ import { Trans } from "@lingui/react/macro";
 import type { MessageDescriptor } from "@lingui/core";
 import { i18n } from "@quiverlauncher/i18n";
 import type { Entry } from "@quiverlauncher/api";
-import { CARD_DETAILS, EntryCardContent, OS_ICONS, OS_NAMES, blurSource, boxOf, cardSources, coverOf, type CardDetail, type CardLook } from "@quiverlauncher/ui";
+import { CARD_DETAILS, EntryCardContent, OS_ICONS, OS_NAMES, blurSource, boxOf, cardSources, coverOf, imageLoading, type CardDetail, type CardLook } from "@quiverlauncher/ui";
 import { catalogOs, tvModeOn, useLauncher } from "./store";
 import { CARD_LOOKS, DETAIL_NAMES, browseCardsOf, sampleEntry, savedBrowseCards, type BrowseCards } from "./browse-cards";
 import { PLATFORMS, platformsOf, savedPlatforms, type Platform } from "./platforms";
@@ -320,6 +320,13 @@ const CATALOG_BOX = artSizes("box", "medium");
 /** And its wide cards' art. */
 const CATALOG_COVER = artSizes("cover", "medium");
 
+/** The picture a Browse card of `entry` loads first, with these Browse cards (settings.browseCards): to load it ahead. */
+export function browseCardSource(saved: Parameters<typeof browseCardsOf>[0], entry: Entry) {
+  const box = browseCardsOf(saved).look === "box";
+  const art = box ? boxOf(entry) : coverOf(entry);
+  return art ? cardSources(art, box ? CATALOG_BOX : CATALOG_COVER)[0] : undefined;
+}
+
 /**
  * This computer's Browse cards (browse-cards.ts), and a way to change them; with what an `EntryCard` takes of them for
  * an app (its look, details and the copy of its picture to load) and the class of the grid they sit in.
@@ -451,15 +458,14 @@ export function CardArt({ entry, image, sizes = artSizes(image, "medium") }: { e
     );
   return (
     <div className={`card-art ${art.fit}`} data-fit={art.fit}>
-      {art.fit === "letterbox" && <img className="card-art-blur" src={blurSource(art.art)} alt="" aria-hidden="true" loading="lazy" decoding="async" />}
+      {art.fit === "letterbox" && <img className="card-art-blur" src={blurSource(art.art)} alt="" aria-hidden="true" {...imageLoading({ src: blurSource(art.art) })} />}
       <img
         key={art.src}
         src={art.src}
         srcSet={art.srcSet}
         sizes={art.sizes}
         alt={image === "box" ? t`${name} box art` : t`${name} icon`}
-        loading="lazy"
-        decoding="async"
+        {...imageLoading(art)}
         onError={() => setFailed((f) => ({ key, count: (f.key === key ? f.count : 0) + 1 }))}
       />
     </div>

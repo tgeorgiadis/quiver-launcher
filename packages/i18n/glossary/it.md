@@ -7,7 +7,7 @@ Address the player as **tu**, friendly and plain. Sentence case.
 | app | app (l'app, le app) | |
 | library | libreria | |
 | playlist | playlist | |
-| Browse | Esplora | the catalog page |
+| Discover | Scopri | the catalog page |
 | catalog | catalogo | |
 | Add / Install | Aggiungi / Installa | the buttons that put an app in the library, then install it |
 | Play / Play anyway | Gioca / Gioca comunque | |

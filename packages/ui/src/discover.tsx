@@ -6,13 +6,13 @@
 import { Children, useEffect, useRef, useState, type ReactNode } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { msg, t } from "@lingui/core/macro";
-import { Score, SourcedImage, heroSources, type CardEntry, type ImageSource } from "./index";
+import { Score, SourcedImage, heroSources, logoSources, type CardEntry, type ImageSource } from "./index";
 import type { FeaturedReason } from "./featured";
 
 export { featuredDay, featuredMix, runsWell, type FeaturedReason } from "./featured";
 
 /** A featured app: a card's details, with the wide art and logo a slide is made of. */
-export type FeaturedEntry = CardEntry & { id: string; description?: string };
+export type FeaturedEntry = CardEntry & { id: string; slug: string; description?: string };
 /** A slide: the app, and the list it was picked from, which the slide says. */
 export type FeaturedSlide = { entry: FeaturedEntry; reason?: FeaturedReason };
 
@@ -150,7 +150,7 @@ export function FeaturedCarousel({
             </>
           );
           return (
-            <div key={entry.id} className="featured-slide" data-current={i === shown || undefined} aria-hidden={i !== shown} inert={i !== shown}>
+            <div key={entry.id} className="featured-slide" data-slug={entry.slug} data-current={i === shown || undefined} aria-hidden={i !== shown} inert={i !== shown}>
               {open(entry, content, { className: "featured-open", "aria-label": entry.projectName })}
             </div>
           );
@@ -215,7 +215,7 @@ function FeaturedLogo({ entry }: { entry: FeaturedEntry }) {
   const logo = entry.libraryArt?.logo;
   const game = entry.games[0]?.title ?? entry.projectName;
   if (!logo || failed) return <span className="featured-title">{game}</span>;
-  return <img className="featured-logo" src={logo} alt={game} decoding="async" onError={() => setFailed(true)} />;
+  return <SourcedImage className="featured-logo" sources={logoSources(logo)} alt={game} priority onFail={() => setFailed(true)} />;
 }
 
 /**

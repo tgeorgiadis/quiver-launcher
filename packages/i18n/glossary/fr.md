@@ -8,7 +8,7 @@ before « : ; ! ? », and « » for quotes.
 | app | app (l'app, les apps) | |
 | library | bibliothèque | |
 | playlist | playlist | |
-| Browse | Parcourir | the catalog page |
+| Discover | Découvrir | the catalog page |
 | catalog | catalogue | |
 | Add / Install | Ajouter / Installer | the buttons that put an app in the library, then install it |
 | Play / Play anyway | Jouer / Jouer quand même | |

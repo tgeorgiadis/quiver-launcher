@@ -54,6 +54,8 @@ const toLibrary = async () => {
   await page.keyboard.press("Escape");
   await page.locator("article[data-slug='test-port']").waitFor();
 };
+// The library comes back as it was and takes what changed meanwhile a moment later (kept-screen.tsx).
+const shows = (slug, text) => until(async () => (await kinds(slug)) === text);
 
 test("an app's Tags menu lists the catalog's tags, and unticking one takes it off that app alone", async () => {
   assert.equal(await kinds("test-port"), "RECOMP · NINTENDO");
@@ -85,8 +87,9 @@ test("Settings sums the tags up, and the tags window's catalog tab hides one on 
   await tagWindow().waitFor({ state: "detached" });
   assert.match(await section().locator(".tags-summary").innerText(), /2\s+from the catalog, 1 hidden/);
   await toLibrary();
-  assert.equal(await kinds("test-port"), "", "Nintendo unticked on it, Recomp hidden");
-  assert.equal(await kinds("tampered-port"), "");
+  // Nintendo unticked on it, Recomp hidden.
+  await shows("test-port", "");
+  await shows("tampered-port", "");
   // Not in the app's menu while it's hidden everywhere.
   await page.locator("article[data-slug='tampered-port']").click({ button: "right" });
   await page.getByRole("menuitem", { name: "Tags", exact: true }).click();
@@ -98,7 +101,7 @@ test("Settings sums the tags up, and the tags window's catalog tab hides one on 
   await tagBox("Recomp").check();
   await tagWindow().getByRole("button", { name: "Close" }).click();
   await toLibrary();
-  assert.equal(await kinds("tampered-port"), "RECOMP");
+  await shows("tampered-port", "RECOMP");
 });
 
 test("the window searches the tags, lists the shown or hidden ones, and hides or shows as many as it lists at once", async () => {
@@ -137,7 +140,7 @@ test("tags the catalog adds later are hidden when the player asked, until they s
   assert.ok(["recomp", "nintendo"].every((tag) => shown.includes(tag)), "the ones known now keep showing");
   assert.ok(!shown.includes("n64") && !shown.includes("snes"), "a console's isn't one of them");
   await toLibrary();
-  assert.equal(await kinds("tampered-port"), "RECOMP");
+  await shows("tampered-port", "RECOMP");
   assert.deepEqual(s.errors, []);
   // Later, the catalog has given an app a new tag.
   const later = await openApp({

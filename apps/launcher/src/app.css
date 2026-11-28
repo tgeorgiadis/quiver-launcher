@@ -16,7 +16,7 @@
 /* A control moved to (spatial.ts) keeps room for its focus ring at the page's top and bottom. */
 .shell > main { flex: 1; min-height: 0; overflow-y: auto; scroll-padding-block: 8px; }
 /* Beside the library's sidebar the page runs on under the controller's hints: a control moved to stays above them. */
-.shell:has(> main > div:not([hidden]) > .library-split) > main { scroll-padding-bottom: calc(8px + var(--pad-hints, 0px)); }
+.shell:has(> main > div:not([hidden]) > .kept-screen > .kept-box > .library-split) > main { scroll-padding-bottom: calc(8px + var(--pad-hints, 0px)); }
 .topbar {
   position: relative; flex: none; z-index: 5; display: flex; align-items: center; gap: 28px;
   padding: 12px 6px 12px 14px; background: var(--topbar); border-top: env(safe-area-inset-top, 0px) solid var(--topbar); border-bottom: 1px solid var(--line);
@@ -26,7 +26,8 @@
 /* Always in the window's corner, even with a bar too wide for it. */
 .window-controls { position: sticky; right: 0; z-index: 1; flex: none; align-self: stretch; display: flex; margin: -12px 0 -12px -16px; }
 .topbar[data-overflows] .window-controls { background: linear-gradient(var(--topbar), var(--topbar)), var(--bg); }
-.window-controls button { width: 46px; display: grid; place-items: center; color: var(--text-3); }
+/* At least 32px tall, also when a narrow window wraps the top bar and squeezes their row. */
+.window-controls button { width: 46px; min-height: 32px; display: grid; place-items: center; color: var(--text-3); }
 .window-controls button:hover { background: var(--field); color: var(--strong); }
 .window-controls button.close-window:hover { background: #c42b1c; color: #fff; }
 .window-controls button:focus-visible { outline-offset: -2px; }
@@ -47,10 +48,10 @@
 .brand { display: flex; align-items: center; gap: 10px; padding: 0; flex-shrink: 0; }
 .brand > img { width: 34px; height: 34px; }
 .brand > span { display: flex; align-items: center; gap: 14px; font-size: 28px; font-weight: 700; letter-spacing: -1.3px; }
-.brand-label { font-size: 9px; letter-spacing: 1.5px; color: var(--text-4); font-weight: 600; border-left: 1px solid var(--line-strong); padding-left: 14px; }
+.brand-label { font-size: var(--size-11); letter-spacing: 0.06em; color: var(--muted); font-weight: 600; border-left: 1px solid var(--line-strong); padding-left: 14px; }
 @media (max-width: 760px) {
   .brand-label { display: none; }
-  .brand > span { font-size: 24px; }
+  .brand > span { font-size: 22px; }
   .brand > img { width: 29px; height: 29px; }
 }
 /* Narrowest (a small window at a large interface size): the icon alone. */
@@ -79,12 +80,12 @@
 /* Everything after the tabs goes to the right, from the first frame: the account part shows only once it has loaded. */
 .topbar nav { display: flex; gap: 4px; margin-left: clamp(0px, 2.5vw, 32px); margin-right: auto; }
 /* The name and the library's count on one baseline; the icon centred. */
-.topbar nav button { position: relative; display: inline-flex; align-items: baseline; gap: 7px; padding: 7px 14px; border-radius: 7px; color: var(--text-3); font-weight: 500; }
+.topbar nav button { position: relative; display: inline-flex; align-items: baseline; gap: 7px; padding: 7px 14px; border-radius: 8px; color: var(--text-3); font-weight: 500; }
 .topbar nav button svg { align-self: center; }
 .topbar nav button.active, .topbar nav button:hover { color: var(--strong); background: var(--field); }
 /* The page you're on: its icon in the accent, underlined. */
 .topbar nav button.active svg { color: var(--accent); }
-.topbar nav button.active::after { content: ""; position: absolute; left: 12px; right: 12px; bottom: 1px; height: 2px; border-radius: 2px; background: var(--accent); }
+.topbar nav button.active::after { content: ""; position: absolute; left: 12px; right: 12px; bottom: 1px; height: 2px; border-radius: 4px; background: var(--accent); }
 .count { margin-left: 4px; color: var(--muted); font-size: 12px; }
 /* As wide as what's in it, not squeezed (a button's words on two lines), past a phone's: top-bar-fit.ts measures this. */
 @media (min-width: 521px) { .topbar { min-width: max-content; } }
@@ -106,7 +107,7 @@ main { padding: 28px var(--gutter) 48px; }
 /* A field, filled and outlined, its icon and placeholder brighter than the tools beside it: so it's seen as the place to type. */
 .search {
   display: flex; align-items: center; gap: 8px; flex: 1; min-width: 240px; max-width: 520px;
-  padding: 9px 12px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--field); color: var(--text-2);
+  padding: 9px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--field); color: var(--text-2);
   transition: border-color 0.15s;
 }
 .search:hover { border-color: var(--muted); }
@@ -116,7 +117,7 @@ main { padding: 28px var(--gutter) 48px; }
 /* Not the shared controls (@quiverlauncher/ui's controls.css), which bring their own look. */
 button.primary, .row button:where(:not(.ql-button)), .more button, .choices button, .choose button, .settings-pane button:where(:not(.ql-button)) {
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-  padding: 7px 14px; border-radius: 7px; background: var(--field); font-weight: 500; font-size: 13px;
+  min-height: 36px; padding: 7px 16px; border-radius: 8px; background: var(--field); font-weight: 600; font-size: 13px;
 }
 button.primary { background: var(--accent); color: var(--on-accent); }
 button.primary:hover { background: var(--accent-hover); }
@@ -130,8 +131,8 @@ button.danger { color: var(--danger); }
 .row > button { flex: 1; }
 /* Kept as weak as `.row button`, so a button with its own hover (a card's, a banner's) keeps it. */
 :where(.row) button:where(:not(.primary, .chosen, :disabled)):hover { background: var(--field-hover); color: var(--strong); }
-.progress { position: relative; height: 32px; border-radius: 7px; background: var(--field); overflow: hidden; }
-.progress .bar { position: absolute; inset: 0 auto 0 0; background: #0ea5e955; transition: width 0.2s; }
+.progress { position: relative; height: 32px; border-radius: 8px; background: var(--field); overflow: hidden; }
+.progress .bar { position: absolute; inset: 0 auto 0 0; background: color-mix(in srgb, var(--accent) 33%, transparent); transition: width 0.2s; }
 .progress span { position: relative; display: flex; height: 100%; align-items: center; justify-content: center; font-size: 12px; }
 .progress-row { flex-wrap: nowrap; gap: 6px; }
 .progress-row .progress { flex: 1; min-width: 0; }
@@ -172,7 +173,7 @@ button.danger { color: var(--danger); }
 .choose .suggest-platform h3 { grid-column: 1 / -1; margin: 4px 0 0; font-size: 13px; font-weight: 600; }
 .banner {
   display: flex; align-items: center; gap: 16px; margin-bottom: 20px; padding: 14px 16px;
-  border: 1px solid #0ea5e955; border-radius: 9px; background: #0ea5e914; font-size: 14px;
+  border: 1px solid color-mix(in srgb, var(--accent) 33%, transparent); border-radius: 8px; background: color-mix(in srgb, var(--accent) 8%, transparent); font-size: 14px;
 }
 /* Browse's front page (discover.tsx), over the whole catalog. */
 .discover { margin-top: 6px; }
@@ -181,22 +182,27 @@ button.danger { color: var(--danger); }
 .shelf-all:hover { text-decoration: underline; text-underline-offset: 3px; }
 .shelf-arrows button { color: var(--text-2); }
 .shelf-arrows button:not(:disabled):hover { color: var(--strong); border-color: var(--line-strong); }
-.discover-all { margin: 8px 0 16px; font-size: 20px; font-weight: 600; letter-spacing: -0.02em; scroll-margin-top: 12px; }
+.discover-all { margin: 8px 0 16px; font-size: 18px; font-weight: 600; letter-spacing: -0.02em; scroll-margin-top: 12px; }
 /* A phone: two cards a rowful, not one across the screen (176px and its gap left room for just one). */
 @media (max-width: 520px) { .shelf-row { --shelf-card: 130px; gap: 14px; } }
 /* Wide cards (browse-cards.ts): as wide as the grid's, and on a phone one across with the next peeking in. */
 .wide-cards .shelf-row { --shelf-card: 250px; }
+/* A shelf out of sight isn't laid out or drawn until it comes near, so Browse shows again quicker; it keeps the room
+   the first shelf takes (--shelf-size, discover.tsx), which every shelf takes at the window's size now: not the size it
+   last had (auto), which was the window's then. Its row reaches past it for the cards' lift
+   and ring (catalog.css), which the clip margin leaves in. */
+.discover .shelf { content-visibility: auto; contain-intrinsic-size: var(--shelf-size, 470px); overflow-clip-margin: 16px; }
 @media (max-width: 520px) { .wide-cards .shelf-row { --shelf-card: 230px; } }
 /* One banner at a time (App.tsx): the first that has something to say; dealing with it shows the next. */
 .banner-stack > * + * { display: none; }
 /* What just happened (App.tsx's Notice): over everything, above a controller's hints. */
 .toast {
   position: fixed; left: 50%; bottom: calc(24px + var(--pad-hints, env(safe-area-inset-bottom, 0px))); z-index: 25; transform: translateX(-50%);
-  width: max-content; max-width: min(640px, calc(100vw - 48px)); padding: 12px 18px; border: 1px solid var(--line-strong); border-radius: 10px;
+  width: max-content; max-width: min(640px, calc(100vw - 48px)); padding: 12px 18px; border: 1px solid var(--line-strong); border-radius: 8px;
   background: var(--raised); color: var(--strong); font-size: 14px; box-shadow: 0 10px 28px rgb(0 0 0 / 0.45); cursor: pointer;
 }
 .toast.has-action { display: flex; align-items: center; gap: 16px; padding-block: 8px; }
-.toast-action { flex: none; padding: 6px 12px; border-radius: 7px; color: var(--accent); font-weight: 600; }
+.toast-action { flex: none; padding: 6px 12px; border-radius: 8px; color: var(--accent); font-weight: 600; }
 .toast-action:hover, .toast-action:focus-visible { background: var(--button-hover); }
 .notice-prompt { display: grid; gap: 16px; }
 .detail.choose.game-failed { width: min(600px, 100%); }
@@ -212,7 +218,7 @@ button.danger { color: var(--danger); }
 /* On a narrow screen the buttons go under the text rather than squeezing it to a word a line. */
 .banner { flex-wrap: wrap; }
 .banner p { flex: 1 1 220px; }
-.banner button { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 7px; background: var(--button); box-shadow: inset 0 0 0 1px var(--line-strong); color: var(--strong); font-weight: 500; font-size: 13px; white-space: nowrap; }
+.banner button { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 8px; background: var(--button); box-shadow: inset 0 0 0 1px var(--line-strong); color: var(--strong); font-weight: 500; font-size: 13px; white-space: nowrap; }
 .banner button:not(.primary):hover { background: var(--button-hover); }
 .banner button.primary { background: var(--accent); box-shadow: none; color: var(--on-accent); }
 .banner button.primary:hover { background: var(--accent-hover); }
@@ -224,7 +230,7 @@ button.danger { color: var(--danger); }
 .setup button.old-library-list, .setup button.old-library-list:hover { align-self: flex-start; padding: 0; border-radius: 0; background: none; font-size: 13px; font-weight: 400; }
 .setup h2 { text-wrap: balance; }
 .account { display: flex; align-items: center; gap: 12px; }
-.account button { padding: 7px 14px; border-radius: 7px; background: var(--field); font-weight: 500; font-size: 13px; }
+.account button { padding: 7px 14px; border-radius: 8px; background: var(--field); font-weight: 500; font-size: 13px; }
 .account button:not(.link-button):hover { background: var(--field-hover); color: var(--strong); }
 /* Signed in: one button with the player's name, its menu holding Sign out. */
 .account button.account-button { display: inline-flex; align-items: center; gap: 7px; max-width: 220px; padding: 6px 10px 6px 8px; }
@@ -234,13 +240,13 @@ button.danger { color: var(--danger); }
 .account-button[aria-expanded="true"] > svg:last-child { transform: rotate(180deg); }
 /* A narrow window: the icon alone, so the top bar fits (its name is in the button's title). */
 @media (max-width: 900px) { .account-button > span { display: none; } }
-.account-menu-name { display: none; max-width: 260px; padding: 6px 10px 8px; margin-bottom: 4px; border-bottom: 1px solid var(--line); color: var(--muted); font-size: 12.5px; overflow-wrap: anywhere; }
+.account-menu-name { display: none; max-width: 260px; padding: 6px 10px 8px; margin-bottom: 4px; border-bottom: 1px solid var(--line); color: var(--muted); font-size: 13px; overflow-wrap: anywhere; }
 .account-menu-name strong { color: var(--strong); font-weight: 600; }
 @media (max-width: 900px) { .account-menu-name { display: block; } }
 .menu.account-menu { min-width: 200px; }
 .account-menu > button { display: flex; align-items: center; gap: 8px; }
 .account-menu > button > svg { color: var(--text-3); }
-.account-menu-note { padding: 6px 10px 8px; color: var(--muted); font-size: 12.5px; }
+.account-menu-note { padding: 6px 10px 8px; color: var(--muted); font-size: 13px; }
 /* Text fields (not tick boxes, which keep the focus ring): their border shows the focus. :where() keeps it as specific as it was. */
 .detail-body input:where(:not([type="checkbox"], [type="radio"], [type="range"])), .detail-body textarea,
 .app-page input:where(:not([type="checkbox"], [type="radio"], [type="range"])), .app-page textarea,
@@ -273,14 +279,14 @@ p.job-error { color: var(--danger); font-size: 13px; }
 .add-repo { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; } .add-repo input { min-width: 260px; } .add-repo p { flex-basis: 100%; }
 .options { margin: 12px 0; align-items: center; }
 .filters { gap: 10px; margin-top: -8px; }
-.toolbar select, .detail-body select, .app-page select, .settings-pane select:where(:not(.ql-field > *)) { padding: 7px 10px; border: 1px solid var(--line); border-radius: 7px; background: var(--panel); }
+.toolbar select, .detail-body select, .app-page select, .settings-pane select:where(:not(.ql-field > *)) { padding: 7px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
 .playlists { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
 .playlists button { padding: 6px 13px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); font-size: 13px; display: inline-flex; align-items: center; }
 .playlists button.active, .playlists button:hover { color: var(--strong); border-color: var(--accent); background: var(--accent-soft); }
 .console-section { margin-bottom: 28px; } .console-section h2 { font-size: 1rem; margin-bottom: 12px; color: var(--text-2); }
 /* A section's heading folds its apps away: its chevron turns to show which way. */
 .console-section:has(> h2 > [aria-expanded="false"]) { margin-bottom: 14px; }
-.section-fold { display: inline-flex; align-items: center; gap: 8px; margin-left: -8px; padding: 4px 8px; border-radius: 7px; color: inherit; font: inherit; }
+.section-fold { display: inline-flex; align-items: center; gap: 8px; margin-left: -8px; padding: 4px 8px; border-radius: 8px; color: inherit; font: inherit; }
 .section-fold:hover, .section-fold:focus-visible { background: var(--panel); color: var(--strong); }
 .section-fold > svg { color: var(--muted); transition: transform 0.15s; }
 .section-fold[aria-expanded="false"] > svg { transform: rotate(-90deg); }
@@ -296,10 +302,11 @@ p.job-error { color: var(--danger); font-size: 13px; }
 /* Onto another line between its parts, not inside one, unless one alone is wider than the line. */
 .repo-part { display: inline-block; max-width: 100%; }
 .repo-link:hover { text-decoration: underline; }
-.readme { padding: 26px 30px; border: 1px solid var(--line); border-radius: 9px; background: var(--panel); }
-.readme h3, .versions h3, .controls h3 { font-size: 15px; margin-bottom: 10px; }
+.readme { padding: 26px 30px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
+.readme h2 { font-size: 18px; font-weight: 600; margin-bottom: 10px; }
+.versions h3, .controls h3 { font-size: 16px; font-weight: 600; margin-bottom: 10px; }
 .readme-top { display: flex; align-items: baseline; justify-content: space-between; gap: 6px 15px; flex-wrap: wrap; margin-bottom: 10px; }
-.readme-top h3 { margin-bottom: 0; }
+.readme-top h2 { margin-bottom: 0; }
 .readme-full { display: inline-flex; align-items: center; gap: 3px; font-size: 13px; color: var(--link); text-decoration: none; }
 .readme-full:hover { text-decoration: underline; }
 /* Room inside its clipping for a link's focus ring (3px out, 2px wide). */
@@ -313,14 +320,14 @@ p.job-error { color: var(--danger); font-size: 13px; }
  */
 .versions li {
   flex: none; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "badge name actions" ". when actions";
-  align-items: center; gap: 2px 8px; min-height: 42px; padding: 7px 6px 7px 9px; border-radius: 7px; background: var(--panel); font-size: 13px;
+  align-items: center; gap: 2px 8px; min-height: 42px; padding: 7px 6px 7px 9px; border-radius: 8px; background: var(--panel); font-size: 13px;
 }
 .versions li > strong { grid-area: name; min-width: 0; line-height: 1.35; overflow-wrap: anywhere; }
 /* Level with the version's first line when it wraps. */
 .versions li > .release-badge { grid-area: badge; align-self: start; height: 17.5px; gap: 0; font-size: 0; }
 .versions li > .version-date { grid-area: when; display: flex; flex-wrap: wrap; align-items: center; gap: 3px 8px; min-width: 0; font-size: 12px; }
-.versions li > .version-date .prerelease-tag { padding: 0 5px; font-size: 9.5px; }
-.versions li > .version-date .other-system-tag { padding: 0 5px; border: 1px solid var(--muted); border-radius: 4px; color: var(--text-2); font-size: 9.5px; font-weight: 600; white-space: nowrap; }
+.versions li > .version-date .prerelease-tag { padding: 0 5px; font-size: 11px; }
+.versions li > .version-date .other-system-tag { padding: 0 5px; border: 1px solid var(--muted); border-radius: 4px; color: var(--text-2); font-size: 11px; font-weight: 600; white-space: nowrap; }
 .versions li > .version-actions { grid-area: actions; }
 .version-actions { display: inline-flex; align-items: center; gap: 6px; }
 /* The pin: an icon, with its words shown when a keyboard or controller is on it. */
@@ -330,7 +337,7 @@ p.job-error { color: var(--danger); font-size: 13px; }
 .pin-button:focus-visible .pin-label { position: static; width: auto; height: auto; clip-path: none; }
 /* Blocked releases stand out in red with why under them; unverified ones are plain, with a grey badge. Their Install is quieter than a verified one's. */
 .versions li.blocked {
-  --release-tone: var(--danger); border-left: 3px solid var(--release-tone); background: color-mix(in srgb, var(--release-tone) 9%, var(--panel));
+  --release-tone: var(--danger); border: 1px solid color-mix(in srgb, var(--release-tone) 45%, var(--line)); background: color-mix(in srgb, var(--release-tone) 9%, var(--panel));
 }
 .version-why { grid-column: 2 / -1; grid-row: 3; margin-top: 3px; color: var(--text-2); font-size: 12px; line-height: 1.45; overflow-wrap: anywhere; }
 .versions li button.quiet { background: none; box-shadow: inset 0 0 0 1px var(--line); color: var(--text-2); }
@@ -345,13 +352,13 @@ p.job-error { color: var(--danger); font-size: 13px; }
 .blocked-prompt h2 svg, .uninstall-prompt h2 svg { color: var(--danger); }
 .blocked-consent { display: flex; align-items: center; gap: 8px; font-weight: 600; color: var(--strong); }
 .blocked-prompt .row button.danger:not(:disabled), .uninstall-prompt .row button.danger { box-shadow: inset 0 0 0 1px var(--danger); }
-.versions li button { height: 28px; padding: 0 10px; border-radius: 7px; background: var(--field); font-size: 12.5px; transition: background 0.12s, color 0.12s; }
+.versions li button { height: 28px; padding: 0 10px; border-radius: 8px; background: var(--field); font-size: 13px; transition: background 0.12s, color 0.12s; }
 /* Install and the pin light up under the pointer; a pressed pin and a blocked Install keep their colour. */
 .versions li button:not(:disabled):hover { background: var(--field-hover); }
 .versions li .pin-button:not(:disabled):hover { color: var(--strong); }
 .versions li .pin-button[aria-pressed="true"]:not(:disabled):hover { background: color-mix(in srgb, var(--accent) 85%, var(--strong)); color: var(--on-accent); }
 .versions li button.quiet.blocked:not(:disabled):hover { background: color-mix(in srgb, var(--danger) 12%, transparent); }
-.versions li .installed { font-size: 12.5px; }
+.versions li .installed { font-size: 13px; }
 .installed { color: var(--green); }
 .shortcuts { display: grid; gap: 6px; }
 .controls { display: grid; gap: 10px; border-top: 1px solid var(--line); padding-top: 14px; }
@@ -360,7 +367,7 @@ p.job-error { color: var(--danger); font-size: 13px; }
 .bindings { border-collapse: collapse; font-size: 13px; }
 .bindings td, .bindings th { padding: 4px 6px; text-align: left; }
 .bindings th { color: var(--muted); font-weight: 500; }
-.bindings button { width: 100%; padding: 5px 10px; border-radius: 6px; background: var(--field); font-size: 12px; }
+.bindings button { width: 100%; padding: 5px 10px; border-radius: 8px; background: var(--field); font-size: 12px; }
 .bindings button.chosen { background: var(--accent); color: var(--on-accent); }
 
 /* An app's page, like its page on quiverlauncher.com. */
@@ -375,14 +382,21 @@ main.app-main { padding: 0 0 40px; }
 .back-link:hover, .back-link:focus-visible { color: var(--strong); }
 .app-hero { display: flex; align-items: flex-start; gap: 26px; }
 .app-hero > .artwork { flex-shrink: 0; width: 104px; height: 104px; padding: 12px; border: 1px solid var(--line-strong); border-radius: 16px; background: color-mix(in srgb, var(--panel) 85%, transparent); box-shadow: 0 10px 30px var(--shadow); }
-.app-hero .eyebrow { font-size: 10px; font-weight: 600; letter-spacing: 1.8px; color: var(--text-4); }
-.app-hero h1 { font-size: 38px; margin: 6px 0 8px; text-shadow: var(--hero-shadow); }
+.app-hero .eyebrow { font-size: 11px; font-weight: 600; letter-spacing: 1.8px; color: var(--muted); }
+.app-hero h1 { font-size: 38px; font-weight: 600; margin: 6px 0 8px; text-shadow: var(--hero-shadow); }
 .app-tagline { max-width: 720px; color: var(--text-2); font-size: 14px; line-height: 1.6; margin: 0 0 10px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 /* Room inside its clipping for a chip's focus ring (3px out, 2px wide). */
 .app-hero .based-on { flex-wrap: wrap; overflow: hidden; padding: 5px; margin: -5px -5px 5px; }
 .app-hero .based-on > * { flex-shrink: 0; }
 .app-hero .based-on > .game-chip { flex-shrink: 1; min-width: 0; }
 .app-hero .game-chip { white-space: normal; }
+/* The version it's based on and its tags the header doesn't already say, quiet after the games; long, it wraps. */
+.app-hero .based-on > .based-on-version { flex-shrink: 1; min-width: 0; }
+.app-page[data-tv] .app-hero .based-on-version { font-size: 15px; }
+/* The app's cover over its details in the column beside its tabs, as the website's. */
+.rail-cover { padding: 0; overflow: hidden; }
+.rail-cover .artwork { display: block; width: 100%; aspect-ratio: 460 / 215; padding: 0; border-radius: 0; }
+.rail-cover .artwork img { width: 100%; height: 100%; object-fit: cover; }
 /* The app's header (the designer's mockup): what it is, its version apart at the right, then how it runs and large buttons. */
 .app-heading { flex: 1; min-width: 0; }
 /* Its name, with a pencil beside it to rename it: faint until the pointer is on the name or the focus on the pencil. */
@@ -391,7 +405,7 @@ main.app-main { padding: 0 0 40px; }
 .title-rename { flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; padding: 0; border: 0; border-radius: 8px; background: none; color: var(--muted); opacity: 0.45; cursor: pointer; }
 .app-title:hover .title-rename, .title-rename:focus-visible { opacity: 1; }
 .title-rename:hover { background: color-mix(in srgb, var(--text) 12%, transparent); color: var(--text); }
-.app-version { flex-shrink: 0; display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 8px 18px; max-width: 40%; padding: 9px 16px; border: 1px solid var(--line-strong); border-radius: 10px; background: color-mix(in srgb, var(--panel) 80%, transparent); font-size: 14px; backdrop-filter: blur(6px); }
+.app-version { flex-shrink: 0; display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 8px 18px; max-width: 40%; padding: 9px 16px; border: 1px solid var(--line-strong); border-radius: 8px; background: color-mix(in srgb, var(--panel) 80%, transparent); font-size: 14px; backdrop-filter: blur(6px); }
 .app-version .muted { font-size: 14px; }
 .app-version .verified.withdrawn { color: var(--danger); }
 .app-main-actions { display: flex; flex-direction: column; align-items: flex-start; gap: 18px; }
@@ -417,8 +431,9 @@ main.app-main { padding: 0 0 40px; }
   .page-layer > .app-page:not(.game-page, [data-tv]) .app-hero { display: contents; }
   .page-layer > .app-page:not(.game-page, [data-tv]) .app-hero > .artwork { grid-column: 1; grid-row: 2 / span 2; width: 92px; height: 92px; }
   .page-layer > .app-page:not(.game-page, [data-tv]) .app-heading { grid-column: 2; grid-row: 2; }
-  .page-layer > .app-page:not(.game-page, [data-tv]) .app-hero h1 { font-size: 34px; margin: 4px 0 6px; }
-  .page-layer > .app-page:not(.game-page, [data-tv]) .app-tagline { margin-bottom: 0; }
+  .page-layer > .app-page:not(.game-page, [data-tv]) .app-hero h1 { font-size: 38px; margin: 4px 0 6px; }
+  .page-layer > .app-page:not(.game-page, [data-tv]) .app-heading > :last-child { margin-bottom: 0; }
+  .page-layer > .app-page:not(.game-page, [data-tv]) .app-heading > .based-on:last-child { margin-bottom: 3px; }
   .page-layer > .app-page:not(.game-page, [data-tv]) .app-version { grid-column: 3; grid-row: 2; justify-self: end; max-width: none; }
   .page-layer > .app-page:not(.game-page, [data-tv]) .app-main-actions { grid-column: 2; grid-row: 3; gap: 12px; }
   .page-layer > .app-page:not(.game-page, [data-tv]) .app-feedback-spot { position: static; grid-column: 3; grid-row: 3; justify-self: end; }
@@ -434,8 +449,9 @@ main.app-main { padding: 0 0 40px; }
   .library-pane .app-page:not(.game-page) .app-hero { display: contents; }
   .library-pane .app-page:not(.game-page) .app-hero > .artwork { grid-column: 1; grid-row: 2 / span 2; width: 92px; height: 92px; }
   .library-pane .app-page:not(.game-page) .app-heading { grid-column: 2; grid-row: 2; }
-  .library-pane .app-page:not(.game-page) .app-hero h1 { font-size: 34px; margin: 4px 0 6px; }
-  .library-pane .app-page:not(.game-page) .app-tagline { margin-bottom: 0; }
+  .library-pane .app-page:not(.game-page) .app-hero h1 { font-size: 38px; margin: 4px 0 6px; }
+  .library-pane .app-page:not(.game-page) .app-heading > :last-child { margin-bottom: 0; }
+  .library-pane .app-page:not(.game-page) .app-heading > .based-on:last-child { margin-bottom: 3px; }
   .library-pane .app-page:not(.game-page) .app-version { grid-column: 3; grid-row: 2; justify-self: end; max-width: none; }
   .library-pane .app-page:not(.game-page) .app-main-actions { grid-column: 2; grid-row: 3; gap: 12px; }
   .library-pane .app-page:not(.game-page) .app-feedback-spot { position: static; grid-column: 3; grid-row: 3; justify-self: end; }
@@ -456,7 +472,7 @@ main.app-main { padding: 0 0 40px; }
   background: var(--panel); box-shadow: 0 18px 40px var(--shadow);
 }
 /* Project details, folded to its heading or open over the README. */
-.project-details-toggle { display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 0; background: none; color: var(--text-4); font: inherit; letter-spacing: inherit; }
+.project-details-toggle { display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 0; background: none; color: var(--muted); font: inherit; letter-spacing: inherit; }
 .project-details-toggle svg { transition: transform 0.16s; }
 .project-details[data-open] .project-details-toggle svg { transform: rotate(180deg); }
 .project-details:not([data-open]) { padding-block: 16px; }
@@ -464,10 +480,13 @@ main.app-main { padding: 0 0 40px; }
 .project-details dl > div { min-width: 0; }
 .app-main-actions .score-link .score, .app-main-actions .score-link-text { font-size: 14px; }
 .app-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
-.app-actions button, .app-actions .row > button { min-height: 46px; padding: 0 22px; border-radius: 9px; font-size: 16px; gap: 9px; }
+.app-actions button, .app-actions .row > button { min-height: 46px; padding: 0 22px; border-radius: 8px; font-size: 16px; gap: 9px; }
 /* Open folder, Uninstall: no fill until hovered, so Play leads; their padding spaces them from it. */
-.app-actions > button:not(.primary) { padding: 0 16px; color: var(--text-2); transition: background 0.12s, color 0.12s; }
-.app-actions > button:not(.primary):is(:hover, :focus-visible) { background: color-mix(in srgb, var(--button) 75%, transparent); color: var(--strong); backdrop-filter: blur(6px); }
+.app-actions > button:not(.primary, .own-copy-chip) { padding: 0 16px; color: var(--text-2); transition: background 0.12s, color 0.12s; }
+.app-actions > button:not(.primary, .own-copy-chip):is(:hover, :focus-visible) { background: color-mix(in srgb, var(--button) 75%, transparent); color: var(--strong); backdrop-filter: blur(6px); }
+/* More (⋯): as tall as the rest, square, its dots in the middle (a Popover button is a block, its icon on the text baseline). */
+.app-actions > button.more-actions { display: inline-flex; align-items: center; justify-content: center; width: 46px; padding: 0; }
+.app-page[data-tv] .app-actions > button.more-actions { width: 54px; padding: 0; }
 .app-actions > button.danger { color: var(--danger); }
 .app-actions > button.danger:is(:hover, :focus-visible) { background: color-mix(in srgb, var(--danger) 16%, transparent); color: var(--red-strong); }
 .app-actions .row { gap: 12px; flex-wrap: nowrap; }
@@ -475,24 +494,24 @@ main.app-main { padding: 0 0 40px; }
 .app-actions .primary, .app-actions .wide { width: auto; min-width: 200px; }
 .app-actions .get-split { width: auto; }
 .app-actions .get-split > .get-more { width: 46px; min-width: 0; padding: 0; }
-.app-actions .progress { width: 320px; height: 46px; border-radius: 9px; }
+.app-actions .progress { width: 320px; height: 46px; border-radius: 8px; }
 .app-actions .progress-row > .cancel-download { width: 46px; height: 46px; padding: 0; }
 /* A download that failed, on its page: the reason in a box over the buttons that retry it, and only as wide as reads well. */
 .app-actions > .job-error { display: grid; gap: 12px; max-width: 720px; }
-.app-actions > .job-error p { display: flex; align-items: flex-start; gap: 8px; margin: 0; padding: 10px 14px; border: 1px solid color-mix(in srgb, var(--danger) 35%, transparent); border-radius: 9px; background: color-mix(in srgb, var(--danger) 10%, var(--panel)); color: var(--danger); font-size: 14px; line-height: 1.45; overflow-wrap: anywhere; }
+.app-actions > .job-error p { display: flex; align-items: flex-start; gap: 8px; margin: 0; padding: 10px 14px; border: 1px solid color-mix(in srgb, var(--danger) 35%, transparent); border-radius: 8px; background: color-mix(in srgb, var(--danger) 10%, var(--panel)); color: var(--danger); font-size: 14px; line-height: 1.45; overflow-wrap: anywhere; }
 .app-actions > .job-error p svg { flex: none; margin-top: 2px; }
 /* Beside a large Play, a plain button needs an edge to read as one over the artwork. */
 .app-actions .row > button:not(.primary) { background: color-mix(in srgb, var(--button) 85%, transparent); box-shadow: inset 0 0 0 1px var(--line-strong); backdrop-filter: blur(6px); }
 .app-actions .row > button:not(.primary):hover { background: var(--button-hover); }
 /* The installed release was withdrawn: why, in a callout of its own over the buttons. */
 .withdrawn-notice {
-  display: flex; align-items: flex-start; gap: 12px; max-width: 640px; padding: 12px 16px; border-radius: 10px;
+  display: flex; align-items: flex-start; gap: 12px; max-width: 640px; padding: 12px 16px; border-radius: 8px;
   border: 1px solid color-mix(in srgb, var(--danger) 45%, transparent); background: color-mix(in srgb, var(--danger) 14%, color-mix(in srgb, var(--panel) 80%, transparent));
   backdrop-filter: blur(6px);
 }
 .withdrawn-notice > svg { flex: none; margin-top: 1px; color: var(--danger); }
 .withdrawn-notice p { display: grid; gap: 2px; margin: 0; font-size: 14px; line-height: 1.45; color: var(--red-text); }
-.withdrawn-notice strong { color: var(--red-strong); font-weight: 650; }
+.withdrawn-notice strong { color: var(--red-strong); font-weight: 600; }
 @media (max-width: 860px) {
   .app-hero { flex-wrap: wrap; }
   .app-version { max-width: none; justify-content: flex-start; flex-basis: 100%; }
@@ -501,17 +520,45 @@ main.app-main { padding: 0 0 40px; }
 .app-columns { display: grid; grid-template-columns: minmax(0, 1fr); gap: 32px; padding: 28px var(--gutter) 32px; }
 /*
  * The tabs centred over what they show, which keeps to a column of its own in the middle with room either side,
- * rather than the window's whole width: easier to read, and the same width on any window.
+ * rather than the window's whole width: easier to read. 1200px on most windows; on a large one, more of it (four
+ * fifths, up to 1600px), still with room either side to keep the eye to the middle.
  */
 .detail-tabs { margin-inline: auto; }
 .app-columns { justify-items: center; }
-.app-columns > .app-content { width: min(1120px, 100%); }
+.app-columns > .app-content { width: min(100%, max(1200px, 82%), 1600px); }
+/* More like this's shelf at the foot, as wide as what's over it and in line with it. */
+.app-page:not([data-tv]) > .app-more {
+  --across: calc(100% - 2 * var(--gutter));
+  width: min(var(--across), max(1200px, var(--across) * 0.82), 1600px); margin-inline: auto; padding-inline: 0;
+}
+/*
+ * A wide page (App.tsx's RAIL_FROM): each tab in a column that reads well (the README, release notes, what players
+ * said), the app's facts and how it runs in a slim one beside it, as on the website (300px, 30px off), which stays in
+ * view as the tab scrolls by when it fits the window (data-fits).
+ */
+.app-content.app-split { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 30px; align-items: start; }
+.app-split-main { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+.app-rail { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.app-rail[data-fits] { position: sticky; top: 16px; }
+.app-rail .content-panel { padding: 18px 20px; }
+.app-rail .project-details:not([data-open]) { padding-block: 14px; }
+/* Its facts each a name over what it is, as on the website: the column is too slim for both on one line. */
+.app-rail :is(.project-details, .thread-details) dl { display: block; }
+.app-rail :is(.project-details, .thread-details) dl > div + div { margin-top: 2px; }
+.app-rail .content-panel > h2.eyebrow { margin: 0 0 12px; }
+.how-it-runs .score { display: block; font-size: 14px; }
+.how-it-runs .text-button { display: block; padding-bottom: 0; }
+.runs-bar { display: flex; gap: 2px; height: 6px; margin-top: 10px; border-radius: 3px; overflow: hidden; }
+.runs-bar > span { min-width: 6px; }
+.runs-bar > .runs-positive { background: var(--green); }
+.runs-bar > .runs-caution { background: var(--caution); }
+.runs-bar > .runs-negative { background: var(--danger); }
 /* More like this (discover.tsx), across the page's foot under both columns. */
 .app-more { padding: 4px var(--gutter) 8px; }
 .app-content { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
 .app-side { align-self: start; display: flex; flex-direction: column; gap: 16px; min-width: 0; }
-.app-panel { display: flex; flex-direction: column; gap: 14px; padding: 22px; border: 1px solid var(--line); border-radius: 9px; background: var(--panel); }
-.app-panel h3 { font-size: 15px; }
+.app-panel { display: flex; flex-direction: column; gap: 14px; padding: 22px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
+.app-panel h2 { font-size: 16px; font-weight: 600; }
 .app-panel .row { flex-wrap: wrap; }
 /*
  * The Manage tab: groups under small headings, each action a full-width
@@ -520,7 +567,7 @@ main.app-main { padding: 0 0 40px; }
  */
 .computer-panel { gap: 0; }
 .app-content > .computer-panel { width: min(760px, 100%); align-self: center; }
-.computer-panel > h3 { margin-bottom: 4px; }
+.computer-panel > h2 { margin-bottom: 4px; }
 /* A port's own settings (port-settings.tsx): a column of labelled rows, as the Manage tab's. */
 .app-content > .port-settings { width: min(760px, 100%); align-self: center; gap: 14px; }
 .port-settings-group { margin: 12px 0 0; padding-top: 12px; border-top: 1px solid var(--line); font-size: 14px; }
@@ -531,11 +578,11 @@ main.app-main { padding: 0 0 40px; }
 .port-settings-advanced { align-self: flex-start; }
 .panel-group { display: flex; flex-direction: column; gap: 8px; padding: 16px 0; border-bottom: 1px solid var(--line); }
 .panel-group:last-child { padding-bottom: 0; border-bottom: 0; }
-.panel-group:not(:has(> :not(h4))) { display: none; }
-.panel-group > h4 { margin: 0 0 2px; font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-4); }
+.panel-group:not(:has(> :not(h3))) { display: none; }
+.panel-group > h3 { margin: 0 0 2px; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
 .panel-action {
   display: flex; align-items: center; gap: 10px; width: 100%; min-height: 38px; padding: 8px 12px;
-  border-radius: 8px; background: var(--field); font-size: 13.5px; font-weight: 500; text-align: left; white-space: nowrap;
+  border-radius: 8px; background: var(--field); font-size: 14px; font-weight: 500; text-align: left; white-space: nowrap;
 }
 .panel-action:hover { background: var(--field-hover); }
 .panel-action > svg { flex: none; color: var(--text-3); }
@@ -552,14 +599,14 @@ main.app-main { padding: 0 0 40px; }
 .save-said { font-size: 13px; }
 .save-said.error { color: var(--red-text); }
 /* A backup that looks like more than saves: what it is and what to do, above Choose folder. */
-.save-look { display: grid; gap: 4px; padding: 10px 12px; border-left: 3px solid var(--accent); border-radius: 8px; background: var(--field); }
+.save-look { display: grid; gap: 4px; padding: 10px 12px; border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--line)); border-radius: 8px; background: var(--field); }
 /* Settings, Cache (cache-page.tsx): a mode's storage warning, the room used, the folder and what's under way. */
 .download-cache { display: grid; gap: 12px; }
 /* Over a README the download cache kept, while quiverlauncher.com can't be reached (detail.tsx). */
-.readme-kept { margin: 0 0 12px; padding: 8px 12px; border-left: 3px solid var(--accent); border-radius: 8px; background: var(--field); color: var(--muted); font-size: 13px; }
+.readme-kept { margin: 0 0 12px; padding: 8px 12px; border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--line)); border-radius: 8px; background: var(--field); color: var(--muted); font-size: 13px; }
 .settings-pane .download-cache button.update-choice { justify-content: flex-start; padding: 14px 16px; border: 1px solid var(--line); background: var(--panel); }
 .settings-pane .download-cache button.update-choice[aria-checked="true"] { border-color: var(--accent); background: var(--accent-soft); }
-.cache-warning { display: flex; align-items: flex-start; gap: 8px; margin: 0; padding: 10px 12px; border-left: 3px solid var(--danger); border-radius: 8px; background: var(--field); color: var(--strong); font-size: 13px; }
+.cache-warning { display: flex; align-items: flex-start; gap: 8px; margin: 0; padding: 10px 12px; border: 1px solid color-mix(in srgb, var(--danger) 45%, var(--line)); border-radius: 8px; background: var(--field); color: var(--strong); font-size: 13px; }
 .cache-warning > svg { flex: none; margin-top: 1px; color: var(--danger); }
 .cache-usage { display: grid; gap: 6px; }
 .cache-usage .save-note { margin: 0; }
@@ -572,7 +619,7 @@ main.app-main { padding: 0 0 40px; }
 .cache-title { position: relative; }
 .settings-pane .cache-titles button.cache-title-open {
   display: flex; align-items: center; justify-content: flex-start; gap: 16px; width: 100%; padding: 8px 96px 8px 8px;
-  border: 1px solid var(--line); border-radius: 10px; background: var(--panel); color: inherit; font: inherit; text-align: left;
+  border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: inherit; font: inherit; text-align: left;
 }
 .settings-pane .cache-titles button.cache-title-open:hover:not(:disabled) { border-color: var(--accent); background: var(--panel); }
 .settings-pane .cache-titles button.cache-title-open:disabled { opacity: 1; cursor: default; }
@@ -583,15 +630,15 @@ main.app-main { padding: 0 0 40px; }
 .cache-folder, .cache-fetch { flex-wrap: wrap; }
 .download-cache > .text-button { justify-self: start; }
 /* Keep in download cache, on an app's Manage tab: a row as tall as the actions beside it. */
-.panel-toggle { min-height: 38px; padding: 0 12px; border-radius: 8px; background: var(--field); color: var(--strong); font-size: 13.5px; }
+.panel-toggle { min-height: 38px; padding: 0 12px; border-radius: 8px; background: var(--field); color: var(--strong); font-size: 14px; }
 /* Settings, Cloud saves (cloud-saves-page.tsx): the room used as a bar, then an app to a row that opens to its copies. */
 .storage-bar { height: 8px; max-width: 760px; border-radius: 8px; background: var(--field); overflow: hidden; }
 .storage-bar > span { display: block; height: 100%; border-radius: 8px; background: var(--accent); }
 .storage-bar.full > span { background: var(--red-text); }
 .cloud-apps { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; max-width: 760px; }
-.cloud-app { border: 1px solid var(--line); border-radius: 10px; background: var(--panel); }
+.cloud-app { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
 .cloud-app:has(> .cloud-app-row:hover) { border-color: var(--line-strong); }
-.settings-pane button.cloud-app-row { display: flex; align-items: center; justify-content: flex-start; gap: 10px; width: 100%; padding: 10px 14px; border-radius: 10px; background: none; font-size: 13px; font-weight: 500; text-align: left; }
+.settings-pane button.cloud-app-row { display: flex; align-items: center; justify-content: flex-start; gap: 10px; width: 100%; padding: 10px 14px; border-radius: 8px; background: none; font-size: 13px; font-weight: 500; text-align: left; }
 .settings-pane button.cloud-app-row:hover { background: none; color: var(--strong); }
 .cloud-app-icon { flex: none; width: 36px; height: 36px; overflow: hidden; border-radius: 8px; background: var(--field); }
 .cloud-app-icon .artwork { width: 100%; height: 100%; }
@@ -608,13 +655,13 @@ main.app-main { padding: 0 0 40px; }
 .sync-app-row { display: flex; align-items: center; gap: 10px; padding: 10px 14px; font-size: 13px; font-weight: 500; }
 .panel-action.opens::after {
   content: ""; flex: none; width: 6px; height: 6px; margin: 0 3px 0 auto;
-  border-right: 1.5px solid var(--text-4); border-bottom: 1.5px solid var(--text-4); transform: rotate(-45deg);
+  border-right: 1.5px solid var(--muted); border-bottom: 1.5px solid var(--muted); transform: rotate(-45deg);
 }
 .shortcuts { display: grid; gap: 8px; }
-.shortcuts p { font-size: 12.5px; }
-.field-label { font-size: 12.5px; font-weight: 500; color: var(--text-3); }
+.shortcuts p { font-size: 13px; }
+.field-label { font-size: 13px; font-weight: 500; color: var(--text-3); }
 .art-field { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 10px; align-items: start; }
-.art-preview { width: 64px; overflow: hidden; border: 1px solid var(--line-strong); border-radius: 6px; background: var(--field); }
+.art-preview { width: 64px; overflow: hidden; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--field); }
 .art-preview img { display: block; width: 100%; height: 100%; object-fit: cover; }
 .art-field[data-slot="logo"] .art-preview img, .art-field[data-slot="icon"] .art-preview img { object-fit: contain; }
 .art-inputs { display: grid; gap: 5px; min-width: 0; }
@@ -622,7 +669,7 @@ main.app-main { padding: 0 0 40px; }
 .art-input { display: flex; align-items: center; gap: 4px; min-width: 0; }
 .app-panel .art-input input { flex: 1; width: 100%; min-width: 0; min-height: 34px; padding: 6px 10px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--input-bg); font-size: 13px; }
 .art-file { flex: 1; min-width: 0; font-size: 13px; color: var(--text-2); }
-.art-inputs .link-button { justify-self: start; font-size: 12.5px; }
+.art-inputs .link-button { justify-self: start; font-size: 13px; }
 .pick-listed { display: grid; gap: 6px; }
 .pick-listed button { min-height: 36px; padding: 6px 12px; text-align: start; }
 .pick-listed button[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); color: var(--strong); }
@@ -633,15 +680,15 @@ main.app-main { padding: 0 0 40px; }
 .change-game .art-match .artwork { width: 28px; height: 40px; flex-shrink: 0; border-radius: 4px; background: var(--field); }
 .change-game .art-match .artwork svg { width: 16px; height: 16px; }
 .panel-field { display: grid; gap: 5px; }
-.app-panel .panel-field select, .app-panel .panel-field input { width: 100%; min-width: 0; min-height: 38px; padding: 7px 11px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--input-bg); font-size: 13.5px; }
-.panel-form { display: grid; gap: 12px; padding: 14px; border: 1px solid var(--line); border-radius: 9px; background: color-mix(in srgb, var(--panel) 55%, var(--bg)); }
+.app-panel .panel-field select, .app-panel .panel-field input { width: 100%; min-width: 0; min-height: 38px; padding: 7px 11px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--input-bg); font-size: 14px; }
+.panel-form { display: grid; gap: 12px; padding: 14px; border: 1px solid var(--line); border-radius: 8px; background: color-mix(in srgb, var(--panel) 55%, var(--bg)); }
 .panel-form-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: -4px -6px -2px 0; }
 .panel-form-head h4 { margin: 0; font-size: 14px; }
-.panel-close { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 7px; color: var(--text-3); }
+.panel-close { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 8px; color: var(--text-3); }
 .panel-close:hover { background: var(--field-hover); color: var(--strong); }
 .panel-form .row > button { min-height: 36px; }
-.panel-form .link-button { justify-self: start; font-size: 12.5px; }
-.app-panel .launch-options input { min-height: 38px; padding: 7px 11px; border-color: var(--line-strong); background: var(--input-bg); font-size: 13.5px; }
+.panel-form .link-button { justify-self: start; font-size: 13px; }
+.app-panel .launch-options input { min-height: 38px; padding: 7px 11px; border-color: var(--line-strong); background: var(--input-bg); font-size: 14px; }
 .app-panel .versions { padding: 14px 10px 10px; }
 .app-panel .versions .panel-form-head { padding-left: 4px; }
 .app-panel .versions ul { max-height: 360px; }
@@ -655,15 +702,15 @@ main.app-main { padding: 0 0 40px; }
 .app-panel .tags { gap: 14px; margin: 6px 0 0; }
 .tag-field { display: grid; gap: 7px; }
 .app-panel .tags .chips { gap: 6px; }
-.app-panel .tags .chip { display: inline-flex; align-items: center; height: 28px; padding: 0 12px; font-size: 12.5px; }
+.app-panel .tags .chip { display: inline-flex; align-items: center; height: 28px; padding: 0 12px; font-size: 13px; }
 .app-panel .tags .chip:not(.on):hover { border-color: var(--accent); color: var(--strong); }
 .app-panel .tags .new-playlist { display: contents; }
-.app-panel .tags input { flex: 1 1 110px; width: auto; min-width: 110px; height: 28px; padding: 0 12px; border: 1px dashed var(--line-strong); border-radius: 999px; background: transparent; font-size: 12.5px; outline: 0; }
+.app-panel .tags input { flex: 1 1 110px; width: auto; min-width: 110px; height: 28px; padding: 0 12px; border: 1px dashed var(--line-strong); border-radius: 999px; background: transparent; font-size: 13px; outline: 0; }
 .app-panel .tags input:focus { border-style: solid; border-color: var(--accent); }
 /* Add a console: a dropdown dressed as the tag field beside it. */
-.app-panel .tags select.add-console { height: 28px; padding: 0 10px; border: 1px dashed var(--line-strong); border-radius: 999px; background: transparent; color: var(--chip-muted); font-size: 12.5px; }
+.app-panel .tags select.add-console { height: 28px; padding: 0 10px; border: 1px dashed var(--line-strong); border-radius: 999px; background: transparent; color: var(--chip-muted); font-size: 13px; }
 .app-panel .tags select.add-console:is(:hover, :focus-visible) { border-style: solid; border-color: var(--accent); color: var(--strong); outline: 0; }
-.app-panel .tags .link-button { justify-self: start; font-size: 12.5px; }
+.app-panel .tags .link-button { justify-self: start; font-size: 13px; }
 @media (max-width: 860px) {
   .app-columns { grid-template-columns: minmax(0, 1fr); }
   .app-hero { flex-direction: column; align-items: flex-start; gap: 14px; }
@@ -671,16 +718,16 @@ main.app-main { padding: 0 0 40px; }
 }
 
 /* Search: the results line, and the games that match above the apps (the website's CatalogPage). */
-.results-bar { margin: -6px 0 18px; font-size: 11px; color: var(--text-4); }
-.catalog-section-label { margin: 0 0 10px; font-size: 13px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: var(--text-4); }
+.results-bar { margin: -6px 0 18px; font-size: 11px; color: var(--muted); }
+.catalog-section-label { margin: 0 0 10px; font-size: 13px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); }
 .search-games { margin: 0 0 22px; padding-bottom: 22px; border-bottom: 1px solid var(--line); }
 .search-games ul { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; margin: 0; padding: 0; list-style: none; }
 .search-games button {
   display: flex; align-items: center; gap: 12px; width: 100%; padding: 10px 12px; text-align: left;
-  border: 1px solid var(--line); border-radius: 9px; background: var(--panel); transition: border-color 0.15s;
+  border: 1px solid var(--line); border-radius: 8px; background: var(--panel); transition: border-color 0.15s;
 }
 .search-games button:hover, .search-games button:focus-visible { border-color: var(--accent); }
-.search-game-art { width: 40px; height: 56px; flex-shrink: 0; border-radius: 5px; background: var(--field); }
+.search-game-art { width: 40px; height: 56px; flex-shrink: 0; border-radius: 4px; background: var(--field); }
 .search-game-art svg { width: 22px; height: 22px; }
 .search-games button > span:not(.artwork) { display: grid; gap: 3px; min-width: 0; }
 .search-games strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; }
@@ -698,14 +745,14 @@ main.app-main { padding: 0 0 40px; }
 .game-akas { max-width: 720px; color: var(--text-2); font-size: 13px; margin: -2px 0 10px; }
 .game-akas strong { font-weight: 600; }
 .detail-tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 0; }
-.detail-tags > span { display: inline-block; font-size: 10px; background: var(--field); border-radius: 4px; padding: 3px 8px; color: var(--text-2); }
+.detail-tags > span { display: inline-block; font-size: 11px; background: var(--field); border-radius: 4px; padding: 3px 8px; color: var(--text-2); }
 .game-body { padding: 8px var(--gutter) 24px; }
 .game-version + .game-version { margin-top: 28px; }
 .game-version-heading { display: flex; align-items: center; gap: 8px; margin: 0 0 12px; font-size: 16px; }
 .section-top { display: flex; align-items: center; justify-content: space-between; gap: 15px; margin-bottom: 24px; }
 .section-top h2 { display: flex; gap: 12px; align-items: center; font-size: 22px; }
 .section-top > .muted { font-size: 11px; }
-.tab-count { font-size: 10px; font-weight: 400; padding: 1px 7px; border-radius: 999px; background: var(--field); color: var(--text-3); }
+.tab-count { font-size: 11px; font-weight: 400; padding: 1px 7px; border-radius: 999px; background: var(--field); color: var(--text-3); }
 @media (max-width: 860px) {
   .game-page .app-hero > .artwork.box-art { width: 80px; height: 120px; }
 }
@@ -731,7 +778,7 @@ main.app-main { padding: 0 0 40px; }
 .old-library-move { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: stretch; gap: 12px; }
 .old-library-arrow { align-self: center; color: var(--muted); }
 /* Places, not buttons: filled and unbordered, each with a folder, amber for the old one and the accent for Quiver's. */
-.old-library-place { display: flex; align-items: flex-start; gap: 12px; padding: 14px; border-radius: 10px; background: var(--field); }
+.old-library-place { display: flex; align-items: flex-start; gap: 12px; padding: 14px; border-radius: 8px; background: var(--field); }
 .old-library-place > svg { flex: none; color: var(--caution); }
 .old-library-place[data-to] > svg { color: var(--accent); }
 .old-library-place > div { display: grid; gap: 2px; min-width: 0; }
@@ -758,21 +805,21 @@ main.app-main { padding: 0 0 40px; }
  * The welcome's slides of what's new (setup.tsx's FeatureTour): a picture beside a name and a line, then arrows round
  * dots. Every slide sits in the same cell, so the tallest sets the height; the one shown fades and slides in.
  */
-.tour { display: grid; gap: 10px; padding: 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--raised); touch-action: pan-y; user-select: none; }
+.tour { display: grid; gap: 10px; padding: 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--raised); touch-action: pan-y; user-select: none; }
 .tour-slides { display: grid; }
 .tour-slide { grid-area: 1 / 1; display: grid; grid-template-columns: 210px minmax(0, 1fr); grid-template-rows: auto 1fr; column-gap: 18px; row-gap: 6px; align-content: start; opacity: 0; visibility: hidden; transform: translateX(14px); transition: opacity 0.35s ease, transform 0.35s ease, visibility 0s linear 0.35s; }
 .tour-slide[data-shown] { opacity: 1; visibility: visible; transform: none; transition: opacity 0.35s ease, transform 0.35s ease; }
-.tour-slide h3 { align-self: end; margin: 0; color: var(--strong); font-size: 19px; }
+.tour-slide h3 { align-self: end; margin: 0; color: var(--strong); font-size: 18px; }
 .tour-slide p { margin: 0; color: var(--text-2); line-height: 1.5; }
 .tour-art { grid-row: 1 / 3; position: relative; height: 150px; overflow: hidden; border-radius: 12px; color: #fff; background: linear-gradient(135deg, var(--tour-a), var(--tour-b)); }
 .tour-art::before { content: ""; position: absolute; inset: 0; background: radial-gradient(circle at 30% 20%, #ffffff40, transparent 55%), radial-gradient(circle at 80% 110%, #00000030, transparent 60%); }
 .tour-main { position: absolute; left: 50%; top: 50%; display: grid; place-items: center; width: 84px; height: 84px; border-radius: 50%; background: #ffffff26; box-shadow: 0 0 0 10px #ffffff12, 0 10px 30px #0003; transform: translate(-50%, -50%); }
-.tour-around { position: absolute; display: grid; place-items: center; width: 38px; height: 38px; border-radius: 11px; background: #ffffff2e; box-shadow: 0 6px 16px #0002; backdrop-filter: blur(2px); }
+.tour-around { position: absolute; display: grid; place-items: center; width: 38px; height: 38px; border-radius: 12px; background: #ffffff2e; box-shadow: 0 6px 16px #0002; backdrop-filter: blur(2px); }
 .tour-around-0 { left: 14px; top: 14px; transform: rotate(-8deg); }
 .tour-around-1 { right: 14px; top: 22px; transform: rotate(7deg); }
 .tour-around-2 { right: 26px; bottom: 14px; transform: rotate(-5deg); }
-.tour-hours { position: absolute; left: 16px; bottom: 16px; display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 99px; background: #ffffff; color: #0f172a; font-size: 12px; font-weight: 700; }
-.tour-word { position: absolute; padding: 2px 8px; border-radius: 99px; background: #ffffff2e; font-size: 11px; font-weight: 600; white-space: nowrap; }
+.tour-hours { position: absolute; left: 16px; bottom: 16px; display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 999px; background: #ffffff; color: #0f172a; font-size: 12px; font-weight: 700; }
+.tour-word { position: absolute; padding: 2px 8px; border-radius: 999px; background: #ffffff2e; font-size: 11px; font-weight: 600; white-space: nowrap; }
 .tour-word-0 { left: 10px; top: 14px; }
 .tour-word-1 { right: 10px; top: 20px; }
 .tour-word-2 { left: 14px; top: 62px; }
@@ -781,11 +828,11 @@ main.app-main { padding: 0 0 40px; }
 .tour-word-5 { right: 40px; bottom: 8px; }
 .tour-slide[data-feature="languages"] .tour-main { width: 70px; height: 70px; }
 /* Two library views: a list's rows beside a grid's cards. */
-.tour-list, .tour-grid { position: absolute; top: 22px; bottom: 22px; display: grid; gap: 6px; padding: 8px; border-radius: 9px; background: #ffffff26; box-shadow: 0 8px 22px #0003; }
+.tour-list, .tour-grid { position: absolute; top: 22px; bottom: 22px; display: grid; gap: 6px; padding: 8px; border-radius: 8px; background: #ffffff26; box-shadow: 0 8px 22px #0003; }
 .tour-list { left: 14px; width: 78px; grid-auto-rows: 1fr; }
 .tour-list span { display: flex; align-items: center; gap: 5px; }
-.tour-list i { flex: none; width: 12px; height: 12px; border-radius: 3px; background: #fff; }
-.tour-list b { flex: 1; height: 5px; border-radius: 3px; background: #ffffffa0; }
+.tour-list i { flex: none; width: 12px; height: 12px; border-radius: 4px; background: #fff; }
+.tour-list b { flex: 1; height: 5px; border-radius: 4px; background: #ffffffa0; }
 .tour-grid { right: 14px; width: 92px; grid-template-columns: repeat(3, 1fr); }
 .tour-grid i { border-radius: 4px; background: #ffffffc0; }
 .tour-grid i:nth-child(odd) { background: #ffffff80; }
@@ -803,7 +850,7 @@ main.app-main { padding: 0 0 40px; }
 .tour-dots { display: flex; flex-wrap: wrap; justify-content: center; gap: 2px; }
 /* A dot is a 24-pixel target, its dot drawn small inside. */
 .tour .tour-dot { position: relative; width: 24px; height: 24px; padding: 0; border-radius: 50%; background: none; box-shadow: none; }
-.tour .tour-dot::after { content: ""; position: absolute; left: 50%; top: 50%; width: 8px; height: 8px; border-radius: 99px; background: var(--line-strong); transform: translate(-50%, -50%); transition: width 0.25s ease, background 0.25s ease; }
+.tour .tour-dot::after { content: ""; position: absolute; left: 50%; top: 50%; width: 8px; height: 8px; border-radius: 999px; background: var(--line-strong); transform: translate(-50%, -50%); transition: width 0.25s ease, background 0.25s ease; }
 .tour .tour-dot:hover::after { background: var(--muted); }
 .tour .tour-dot[aria-current]::after { width: 20px; background: var(--accent); }
 @media (max-width: 560px) {
@@ -820,11 +867,11 @@ main.app-main { padding: 0 0 40px; }
 .old-library-progress span { gap: 6px; }
 .old-library-progress .spinning { flex: none; animation: spin 1s linear infinite; }
 @media (prefers-reduced-motion: reduce) { .old-library-progress .spinning { animation: none; } }
-.old-library-apps li { display: grid; gap: 1px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 7px; background: var(--panel); font-size: 13px; }
+.old-library-apps li { display: grid; gap: 1px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); font-size: 13px; }
 .old-library-apps small { color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
 .setup .add-choice, .add-app .add-choice {
   display: flex; align-items: center; justify-content: flex-start; gap: 14px; width: 100%; padding: 14px 16px; text-align: left;
-  border: 1px solid var(--line); border-radius: 9px; background: var(--panel); transition: border-color 0.15s;
+  border: 1px solid var(--line); border-radius: 8px; background: var(--panel); transition: border-color 0.15s;
 }
 .setup .add-choice:hover, .setup .add-choice:focus-visible, .add-app .add-choice:hover, .add-app .add-choice:focus-visible { border-color: var(--accent); }
 .setup .add-choice > svg, .add-app .add-choice > svg { flex-shrink: 0; color: var(--accent); }
@@ -834,7 +881,7 @@ main.app-main { padding: 0 0 40px; }
 .update-choices { display: grid; gap: 10px; }
 .update-choice {
   display: flex; align-items: center; justify-content: flex-start; gap: 14px; width: 100%; padding: 14px 16px; text-align: left;
-  border: 1px solid var(--line); border-radius: 9px; background: var(--panel); transition: border-color 0.15s;
+  border: 1px solid var(--line); border-radius: 8px; background: var(--panel); transition: border-color 0.15s;
 }
 .update-choice:hover, .update-choice:focus-visible { border-color: var(--accent); }
 .update-choice > svg { flex-shrink: 0; color: var(--muted); }
@@ -846,7 +893,7 @@ main.app-main { padding: 0 0 40px; }
 /* Whether apps get pre-releases (app-updates.tsx): the toggle, what pre-releases are, and that each app can say otherwise. */
 .prereleases-setting { display: grid; gap: 6px; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line); }
 .prereleases-setting .toggle { color: var(--strong); font-size: 14px; }
-.prereleases-setting p { margin: 0; font-size: 12.5px; line-height: 1.5; }
+.prereleases-setting p { margin: 0; font-size: 13px; line-height: 1.5; }
 .field { display: grid; gap: 6px; font-size: 13px; color: var(--muted); }
 .picked-path { font-size: 12px; overflow-wrap: anywhere; }
 .add-app .pick-file, .add-app .art-match { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; border: 0; }
@@ -864,43 +911,47 @@ main.app-main { padding: 0 0 40px; }
  * The app page's tabs, releases, player feedback and project details, as on
  * the website (its src/styles.css), kept to the app page.
  */
-.app-page .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 9px; }
+.app-page .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; }
 .app-page .button {
   display: inline-flex; align-items: center; justify-content: center; gap: 9px; border: 1px solid transparent;
-  padding: 11px 18px; font-size: 12px; font-weight: 600; background: var(--accent); color: var(--on-accent); border-radius: 6px;
+  padding: 11px 18px; font-size: 12px; font-weight: 600; background: var(--accent); color: var(--on-accent); border-radius: 8px;
 }
 .app-page .button:hover { background: var(--accent-hover); }
 .app-page .button.secondary { background: var(--field); border-color: var(--line-strong); color: var(--fg); }
-.app-page .button.secondary:hover { background: var(--field-hover); border-color: var(--text-4); }
+.app-page .button.secondary:hover { background: var(--field-hover); border-color: var(--muted); }
 .app-page .button.small { padding: 7px 12px; gap: 7px; }
 .app-page .text-button { padding: 8px 0; color: var(--link); font-size: 12px; }
 .app-page .positive { color: var(--green); }
 .app-page .caution { color: var(--caution); }
 .app-page .negative { color: var(--danger); }
 .app-page textarea { font: inherit; }
-.app-page .eyebrow { font-size: 10px; font-weight: 600; letter-spacing: 1.8px; color: var(--text-4); }
+.app-page .eyebrow { font-size: 11px; font-weight: 600; letter-spacing: 1.8px; color: var(--muted); }
 
-/* The tabs, with where the app runs and its repository at the other end. */
-.detail-bar { display: flex; align-items: center; justify-content: space-between; gap: 8px 24px; flex-wrap: wrap; margin: 0 var(--gutter); box-shadow: inset 0 -1px var(--line); }
+/*
+ * The tabs, with where the app runs and its repository at the other end: a band across the page, a tonal step up from
+ * it (Panel Navy), where the header over the art ends and what the tabs show begins. They head what they switch,
+ * rather than floating between the two.
+ */
+.detail-bar { display: flex; align-items: center; justify-content: space-between; gap: 8px 24px; flex-wrap: wrap; padding: 0 var(--gutter); background: var(--panel); }
 /* Room above the tabs for the raised LB and RB, and under them for the open one's bar. */
 .detail-tabs { display: flex; align-items: center; gap: 12px; min-width: 0; padding-top: 6px; overflow: auto hidden; scrollbar-width: none; }
 .app-links { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 18px; min-width: 0; margin-left: auto; padding: 8px 0; font-size: 14px; }
 /* A long repository name wraps on a phone rather than running off the screen. */
 .app-links .repo-link { min-width: 0; overflow-wrap: anywhere; }
-.app-links .platform-icons { font-size: 15px; }
+.app-links .platform-icons { font-size: 14px; }
 /*
  * The tabs: large, apart, each with its icon. The open one's words are the accent's and bolder, with a thick rounded
  * bar under it, and its icon is filled in the accent with its inner lines cut out of it; the rest are grey outlines.
  */
 .detail-tabs > button {
   position: relative; display: inline-flex; align-items: center; gap: 9px; padding: 14px 18px 16px; border-radius: 12px 12px 0 0;
-  color: var(--text-4); font-size: 15.5px; font-weight: 550; white-space: nowrap;
+  color: var(--muted); font-size: 16px; font-weight: 600; white-space: nowrap;
 }
 .detail-tabs > button::after { content: ""; position: absolute; left: 12px; right: 12px; bottom: 0; height: 4px; border-radius: 4px; background: transparent; }
 .detail-tabs > button:hover { color: var(--fg); }
 .detail-tabs > button[aria-selected="true"] { color: var(--accent); font-weight: 600; }
 .detail-tabs > button[aria-selected="true"]::after { background: var(--accent); }
-.tab-icon { flex-shrink: 0; color: var(--text-4); }
+.tab-icon { flex-shrink: 0; color: var(--muted); }
 .detail-tabs > button:hover .tab-icon { color: var(--fg); }
 .detail-tabs > button[aria-selected="true"] .tab-icon { color: var(--accent); }
 /* Filled: the outer shape in the accent; on a circle's icon, what's inside it in the colour on the accent. */
@@ -912,7 +963,7 @@ main.app-main { padding: 0 0 40px; }
 /* The shoulder buttons that change tab (pad-hints.tsx), at the row's ends, raised a little off it. */
 .tab-prompt {
   flex-shrink: 0; align-self: center; margin-top: -10px; padding: 3px 9px; border-radius: 8px; background: var(--field); color: var(--text-3);
-  box-shadow: 0 2px 0 var(--line-strong), 0 4px 10px var(--shadow); font-size: 11.5px; font-weight: 600; letter-spacing: 0.02em;
+  box-shadow: 0 2px 0 var(--line-strong), 0 4px 10px var(--shadow); font-size: 12px; font-weight: 600; letter-spacing: 0.02em;
 }
 
 .score-link { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 0; }
@@ -976,12 +1027,12 @@ main.app-main { padding: 0 0 40px; }
 .release-notes .markdown :is(.md-h4, .md-h5, .md-h6) { font-size: 1.15em; }
 .release-notes .markdown :is(h1, h2, h3, h4, h5, h6) ~ :not(h1, h2, h3, h4, h5, h6) { margin-left: 16px; }
 .prerelease-tag {
-  display: inline-flex; align-items: center; padding: 2px 7px; border: 1px solid rgb(232 167 120 / 45%); border-radius: 4px;
-  background: rgb(232 167 120 / 14%); color: var(--warm); font-size: 10px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; line-height: 1.4;
+  display: inline-flex; align-items: center; padding: 2px 7px; border: 1px solid color-mix(in srgb, var(--warm) 45%, transparent); border-radius: 4px;
+  background: color-mix(in srgb, var(--warm) 14%, transparent); color: var(--warm); font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; line-height: 1.4;
 }
 .prerelease-notice {
-  margin-bottom: 15px; padding: 12px 15px; border: 1px solid rgb(232 167 120 / 35%); border-left-width: 3px; border-radius: 8px;
-  background: rgb(232 167 120 / 8%); color: var(--warm-text); font-size: 13px; line-height: 1.5;
+  margin-bottom: 15px; padding: 12px 15px; border: 1px solid color-mix(in srgb, var(--warm) 35%, transparent); border-radius: 8px;
+  background: color-mix(in srgb, var(--warm) 8%, transparent); color: var(--warm-text); font-size: 13px; line-height: 1.5;
 }
 .prerelease-notice strong { color: var(--warm); }
 /* Every release sits in release order. Unverified ones are grey and say why when opened; blocked ones stand out in red, as on the website. */
@@ -989,7 +1040,7 @@ main.app-main { padding: 0 0 40px; }
 /* In a release's title bar, right of its name: what players said of it, and whether it's withdrawn or installed here. */
 .release-tags { flex: 0 1 auto; display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 6px 14px; min-width: 0; }
 /* What players said, in one bubble: its counts read as a group, apart from Installed and the release's state. */
-.release-said { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 2px 12px; min-height: 24px; padding: 2px 10px; border-radius: 12px; font-size: 12.5px; font-weight: 500; background: color-mix(in srgb, var(--field) 70%, var(--raised)); box-shadow: inset 0 0 0 1px var(--button); }
+.release-said { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 2px 12px; min-height: 24px; padding: 2px 10px; border-radius: 12px; font-size: 13px; font-weight: 500; background: color-mix(in srgb, var(--field) 70%, var(--raised)); box-shadow: inset 0 0 0 1px var(--button); }
 .release-said > span { display: inline-flex; align-items: center; gap: 5px; }
 .release-said .said-runs { color: var(--green); }
 .release-said .said-issues { color: var(--caution); }
@@ -1000,7 +1051,7 @@ main.app-main { padding: 0 0 40px; }
 .release-intro { margin: 0 0 12px; font-size: 13px; }
 .release-unverified { --release-tone: var(--unverified); }
 .release-blocked {
-  --release-tone: var(--danger); border-color: color-mix(in srgb, var(--release-tone) 45%, var(--line)); border-left: 4px solid var(--release-tone);
+  --release-tone: var(--danger); border-color: color-mix(in srgb, var(--release-tone) 45%, var(--line));
   background: color-mix(in srgb, var(--release-tone) 9%, var(--panel));
 }
 .release-why { padding: 12px 22px 0; font-size: 13px; line-height: 1.5; }
@@ -1008,30 +1059,55 @@ main.app-main { padding: 0 0 40px; }
 .release-why p { margin: 0; }
 .release-why p + p { margin-top: 4px; }
 .release-why strong { color: var(--release-tone); }
-.release-files-note { margin: 0 0 12px; padding: 10px 12px; border-radius: 7px; background: color-mix(in srgb, var(--release-tone) 12%, transparent); font-size: 13px; line-height: 1.5; }
-.download-list { display: flex; flex-direction: column; gap: 8px; }
-.download { display: flex; align-items: center; gap: 12px; border: 1px solid var(--line-strong); padding: 12px; border-radius: 6px; color: var(--text-3); text-decoration: none; }
-.download:hover { border-color: var(--accent); }
+.release-files-note { margin: 0 0 12px; padding: 10px 12px; border-radius: 8px; background: color-mix(in srgb, var(--release-tone) 12%, transparent); font-size: 13px; line-height: 1.5; }
+/*
+ * Getting a release (ReleaseCard, detail.tsx): a box of its own over the notes, tinted with the release's tone (blue
+ * when it's verified). Install leads, with the file it installs beside it; the release's other files are rows under it.
+ */
+.release { --get-tone: var(--release-tone, var(--accent)); }
+.release-get {
+  display: grid; gap: 14px; padding: 16px; border-radius: 10px;
+  background: color-mix(in srgb, var(--get-tone) 7%, var(--field)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--get-tone) 28%, var(--line));
+}
+/* One Quiver Launcher doesn't offer, or blocked: no tint, a plain line round it, so Install reads as a choice to make, not a go. */
+.release:is(.release-unverified, .release-blocked) .release-get { background: none; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--get-tone) 40%, var(--line)); }
+.release-get-main { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
+.release-get-file { display: flex; align-items: center; gap: 12px; min-width: 0; flex: 1 1 220px; }
+.release-get-title, .release-notes-title { margin: 0 0 6px; color: var(--muted); font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
+.release-get-main + .release-files { padding-top: 12px; border-top: 1px solid color-mix(in srgb, var(--get-tone) 18%, var(--line)); }
+/* The files besides the one Install names, folded under it. */
+.release-files-toggle { display: inline-flex; align-items: center; gap: 6px; margin: -4px 0 0 -8px; padding: 6px 8px; border-radius: 6px; background: none; color: var(--text-2); font-size: 13px; font-weight: 600; }
+.release-files-toggle:hover { background: var(--field-hover); color: var(--strong); }
+.release-files-toggle svg { color: var(--muted); transition: transform 0.15s; }
+.release-files-toggle[aria-expanded="true"] svg { transform: rotate(180deg); }
+.release-files-toggle + .download-list { margin-top: 6px; }
+.release-notes-title { margin: 22px 0 0; }
+.release-notes-title + .release-notes { margin-top: 8px; }
+.download-list { display: flex; flex-direction: column; gap: 2px; margin-inline: -8px; }
+.download { display: flex; align-items: center; gap: 12px; padding: 9px 8px; border-radius: 6px; color: var(--text-3); text-decoration: none; }
+.download:hover { background: var(--field-hover); }
+.download > svg { flex: none; color: var(--muted); }
+.download:hover > svg { color: var(--text-2); }
 /* A file this computer runs installs: a button, as wide as the links beside it, saying so on its right. */
 button.download { width: 100%; text-align: left; }
-.download .download-go { flex: none; display: block; color: var(--accent); font-size: 12px; font-weight: 600; }
+.download .download-go { flex: none; display: block; padding: 4px 10px; border-radius: 6px; background: var(--accent-soft); color: var(--accent); font-size: 12px; font-weight: 600; }
 /* Installs the release, as Change version would: grey for an unverified one, red for a blocked one, as their badges. */
 .release-install {
-  display: inline-flex; align-items: center; gap: 7px; height: 32px; margin: 0 0 12px; padding: 0 14px; border-radius: 7px;
-  background: var(--accent); color: var(--on-accent); font-size: 13px; font-weight: 600;
+  flex: none; display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 18px; border-radius: 8px;
+  background: var(--accent); color: var(--on-accent); font-size: 14px; font-weight: 600;
 }
 .release-install:hover { background: var(--accent-hover); }
-.release-install:is(.unverified, .blocked) { background: none; box-shadow: inset 0 0 0 1px var(--line-strong); color: var(--text-2); }
+.release-install:is(.unverified, .blocked) { background: none; box-shadow: inset 0 0 0 1px var(--line-strong); color: var(--strong); }
 .release-install.blocked { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--danger) 50%, var(--line)); color: var(--danger); }
 .release-install:is(.unverified, .blocked):hover { background: var(--field-hover); }
-.download > span { display: flex; flex-direction: column; flex: 1; min-width: 0; }
-.download strong { font-size: 12px; }
-.download small { font-size: 10px; overflow-wrap: anywhere; }
+.file-facts { display: flex; flex-direction: column; gap: 1px; flex: 1; min-width: 0; }
+.file-facts strong { color: var(--text-2); font-size: 13px; }
+.file-facts small { color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
 /* A file not verified with its release: one that changed since in orange, as on the website (an unverified release's
    own badge stays grey here); one Quiver has no checksum for, plain. */
-.download .file-mark { flex: none; font-size: 11px; }
-.download .file-mark .release-badge.unverified, .download .file-why { color: var(--caution); }
-.download .file-mark.unchecked { color: var(--muted); }
+.file-mark { flex: none; font-size: 11px; }
+.file-mark .release-badge.unverified, .file-facts .file-why { color: var(--caution); }
+.file-mark.unchecked { color: var(--muted); }
 .app-page .empty.compact { padding: 32px 20px; }
 
 .feedback { display: flex; flex-direction: column; }
@@ -1047,20 +1123,20 @@ button.download { width: 100%; text-align: left; }
   display: inline-flex; align-items: center; gap: 6px; padding: 5px 11px 5px 8px; border: 1px solid color-mix(in srgb, currentColor 40%, transparent);
   border-radius: 999px; background: color-mix(in srgb, currentColor 10%, transparent); font-size: 12px; font-weight: 600; white-space: nowrap;
 }
-.you-tag { margin-left: 8px; padding: 1px 7px; border-radius: 999px; background: var(--you-bg); color: var(--you-fg); font-size: 10px; font-weight: 600; vertical-align: 1px; }
+.you-tag { margin-left: 8px; padding: 1px 7px; border-radius: 999px; background: var(--you-bg); color: var(--you-fg); font-size: 11px; font-weight: 600; vertical-align: 1px; }
 .feedback .review { padding: 23px; margin: 0 0 15px; }
 .review-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
 .review-author { display: flex; align-items: center; gap: 10px; }
 .avatar { display: flex; align-items: center; justify-content: center; height: 32px; width: 32px; border-radius: 50%; background: var(--field-hover); font-size: 12px; }
 .review-author > div { display: flex; flex-direction: column; font-size: 12px; }
-.review-author small { color: var(--text-4); font-size: 10px; }
+.review-author small { color: var(--muted); font-size: 11px; }
 .review-body { white-space: pre-wrap; margin: 22px 0 0; font-size: 13px; color: var(--text-3); overflow-wrap: anywhere; }
 /* Developers' answers, and feedback a developer says an update fixed (feedback.tsx). */
-.developer-tag { display: inline-flex; align-items: center; gap: 3px; padding: 1px 7px; border-radius: 999px; background: color-mix(in srgb, var(--green) 16%, transparent); color: var(--green); font-size: 10px; font-weight: 600; }
+.developer-tag { display: inline-flex; align-items: center; gap: 3px; padding: 1px 7px; border-radius: 999px; background: color-mix(in srgb, var(--green) 16%, transparent); color: var(--green); font-size: 11px; font-weight: 600; }
 .review-replies { margin: 14px 0 0 14px; padding-left: 12px; border-left: 2px solid color-mix(in srgb, var(--green) 45%, transparent); }
 .review-reply + .review-reply { margin-top: 10px; }
 .review-reply-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 12px; }
-.review-reply-head small { color: var(--text-4); font-size: 10px; }
+.review-reply-head small { color: var(--muted); font-size: 11px; }
 .review-reply p { white-space: pre-wrap; margin: 6px 0 0; font-size: 13px; color: var(--text-3); overflow-wrap: anywhere; }
 .fixed-note { display: flex; align-items: center; gap: 6px; margin: 12px 0 0; font-size: 12px; color: var(--green); }
 .fixed-note.disputed { color: var(--caution); }
@@ -1070,9 +1146,9 @@ button.download { width: 100%; text-align: left; }
 .review-specs-choice { display: grid; gap: 4px; margin: 4px 0 16px; }
 .review-specs-choice .review-specs { margin: 0; }
 .review-specs-choice small { font-size: 12px; color: var(--muted); }
-.fixed-reviews > summary { cursor: pointer; margin: 4px 0 14px; color: var(--text-4); font-size: 13px; }
+.fixed-reviews > summary { cursor: pointer; margin: 4px 0 14px; color: var(--muted); font-size: 13px; }
 .developer-badges { display: inline-flex; flex-wrap: wrap; gap: 6px; margin-left: 6px; vertical-align: 1px; }
-.trusted-badge, .verified-developer-badge { display: inline-flex; align-items: center; gap: 4px; padding: 1px 7px; border-radius: 999px; font-size: 10px; font-weight: 600; white-space: nowrap; }
+.trusted-badge, .verified-developer-badge { display: inline-flex; align-items: center; gap: 4px; padding: 1px 7px; border-radius: 999px; font-size: 11px; font-weight: 600; white-space: nowrap; }
 .trusted-badge { background: color-mix(in srgb, var(--caution) 16%, transparent); color: var(--caution); }
 .verified-developer-badge { background: color-mix(in srgb, var(--green) 16%, transparent); color: var(--green); }
 .developer-link { background: none; border: 0; padding: 0; color: inherit; font: inherit; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
@@ -1082,17 +1158,17 @@ button.download { width: 100%; text-align: left; }
 .review-editor h3 { font-size: 16px; }
 .review-editor > p { font-size: 12px; margin: 8px 0; }
 .result-options { display: flex; flex-direction: column; gap: 8px; margin: 12px 0 16px; }
-.result-options button { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding: 10px 12px; border: 1px solid var(--line-strong); border-radius: 5px; text-align: left; }
+.result-options button { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding: 10px 12px; border: 1px solid var(--line-strong); border-radius: 4px; text-align: left; }
 .result-options button strong { font-size: 12px; }
-.result-options button small { color: var(--text-4); font-size: 11px; }
+.result-options button small { color: var(--muted); font-size: 11px; }
 .result-options .selected { border-color: currentColor; background: color-mix(in srgb, currentColor 4%, transparent); }
 .result-options .selected small { color: inherit; opacity: 0.8; }
 .review-editor .field { display: flex; flex-direction: column; gap: 7px; font-size: 12px; color: var(--text-3); margin: 14px 0; }
-.review-editor textarea { width: 100%; background: var(--input-bg); border: 1px solid var(--line-strong); border-radius: 5px; padding: 10px 12px; }
+.review-editor textarea { width: 100%; background: var(--input-bg); border: 1px solid var(--line-strong); border-radius: 4px; padding: 10px 12px; }
 .form-row { display: flex; align-items: end; gap: 15px; }
 .form-row > .field { flex: 1; }
 .review-editor-actions { display: flex; gap: 10px; }
-.character-count { display: flex; justify-content: flex-end; gap: 8px; margin: -8px 0 14px; color: var(--text-4); font-size: 11px; font-variant-numeric: tabular-nums; }
+.character-count { display: flex; justify-content: flex-end; gap: 8px; margin: -8px 0 14px; color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
 .character-count.full { color: var(--caution); }
 .review-editor [role="status"] { margin-top: 12px; color: var(--danger); font-size: 12px; }
 
@@ -1112,7 +1188,13 @@ button.download { width: 100%; text-align: left; }
 
 .content-panel { padding: 22px 24px; }
 .content-panel dl { font-size: 12px; margin: 6px 0 0; }
-.content-panel dt { color: var(--text-4); margin-top: 17px; margin-bottom: 4px; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; }
+.content-panel dt { color: var(--muted); margin-top: 17px; margin-bottom: 4px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; }
+/* A port's features (detail.tsx), under its other facts as on the website: named as they are, each in a row of its own. */
+.project-details .features > h3 { margin: 17px 0 0; color: var(--muted); font-size: 11px; font-weight: 400; text-transform: uppercase; letter-spacing: 0.06em; }
+.feature-list { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 0; padding: 0; list-style: none; }
+.app-rail .feature-list { flex-direction: column; }
+.feature-list li { padding: 8px 10px; border-radius: 4px; background: var(--field); font-size: 13px; }
+.feature-empty { margin: 8px 0 0; font-size: 13px; }
 .content-panel dd { margin: 0; overflow-wrap: anywhere; }
 .content-panel .release-age.stale { color: var(--caution); }
 /* Under Project details: something wrong or missing on the page (correction.tsx). */
@@ -1125,7 +1207,7 @@ button.download { width: 100%; text-align: left; }
 /* The dialog closes with Cancel, B or outside it, as the others do: no close button of the form's own. */
 .correction-dialog .panel-close { display: none; }
 .correction-thanks { display: grid; justify-items: start; gap: 16px; padding: 20px; }
-.correction-thanks .correction-sent { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 15px; }
+.correction-thanks .correction-sent { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 14px; }
 .correction-status { display: grid; gap: 6px; min-width: 0; font-size: 13px; }
 .correction-status p { margin: 0; }
 .correction-status.done p { color: var(--green); }
@@ -1137,7 +1219,7 @@ button.download { width: 100%; text-align: left; }
 .correction-form textarea { resize: vertical; }
 .correction-form .character-count { margin: -6px 0 0; }
 .correction-hint, .correction-note { margin: -4px 0 0; }
-.ai-evidence-toggle { display: flex; width: fit-content; align-items: center; gap: 3px; margin-top: 6px; padding: 0; background: none; color: var(--text-4); font-size: 13px; }
+.ai-evidence-toggle { display: flex; width: fit-content; align-items: center; gap: 3px; margin-top: 6px; padding: 0; background: none; color: var(--muted); font-size: 13px; }
 .ai-evidence-toggle:hover { color: var(--strong); }
 .ai-evidence-toggle svg { transition: transform 0.16s; }
 .ai-evidence-toggle[aria-expanded="true"] svg { transform: rotate(90deg); }
@@ -1189,9 +1271,9 @@ button.download { width: 100%; text-align: left; }
 .menu-button:hover, .menu-button[aria-expanded="true"] { color: var(--strong); background: var(--panel); }
 .menu {
   position: absolute; top: calc(100% + 6px); left: 0; z-index: 6; display: flex; flex-direction: column; min-width: 180px; padding: 6px;
-  border: 1px solid var(--line-strong); border-radius: 9px; background: var(--panel); box-shadow: 0 12px 30px var(--shadow);
+  border: 1px solid var(--line-strong); border-radius: 8px; background: var(--panel); box-shadow: 0 12px 30px var(--shadow);
 }
-.menu > button { padding: 8px 10px; border-radius: 6px; text-align: left; font-size: 13px; white-space: nowrap; }
+.menu > button { padding: 8px 10px; border-radius: 8px; text-align: left; font-size: 13px; white-space: nowrap; }
 /* Not lit by a mouse left resting while a controller or the keys move (spatial.ts): the option under it looked chosen. */
 .menu > button:hover:where(:not([data-navigating] *)), .menu > button:focus-visible { background: var(--field-hover); }
 /* At once, not animated: a held d-pad steps a card several times a second, and each step's lift and shadow redrew two cards a frame. */
@@ -1232,7 +1314,7 @@ html[data-navigating] .shelf-row { scroll-snap-type: none; }
 .select-picker > button[aria-selected="true"] { color: var(--strong); font-weight: 600; background: var(--accent-soft); }
 .select-picker > button:disabled { color: var(--muted); }
 .game-menu, .game-submenu { display: flex; flex-direction: column; }
-.game-menu button { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 6px; text-align: left; font-size: 13px; white-space: nowrap; }
+.game-menu button { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 8px; text-align: left; font-size: 13px; white-space: nowrap; }
 /* A step brighter than the menu itself (var(--panel)), in the menu and its submenus alike. */
 /* Focus shows once it's from a key or a controller: a right-click puts it on the first item too, for them, without looking picked. */
 /* Chromium (WebView2, CEF) doesn't count a controller's focus, by script, as :focus-visible once the mouse has been used, whatever focus() asks: so data-navigating. */
@@ -1242,7 +1324,7 @@ html[data-navigating] .shelf-row { scroll-snap-type: none; }
 .game-menu button:disabled { color: var(--muted); }
 .game-menu button.danger { color: var(--danger); }
 /* The main action looks as it does on the app's page, lined up on the left with the items under it. */
-.game-menu .game-menu-main { justify-content: flex-start; gap: 9px; min-height: 46px; margin-bottom: 4px; padding: 0 10px; border-radius: 9px; background: var(--accent); color: var(--on-accent); font-size: 16px; font-weight: 500; }
+.game-menu .game-menu-main { justify-content: flex-start; gap: 9px; min-height: 46px; margin-bottom: 4px; padding: 0 10px; border-radius: 8px; background: var(--accent); color: var(--on-accent); font-size: 16px; font-weight: 500; }
 .game-menu .game-menu-main:not(:disabled):hover { background: var(--accent-hover); }
 /* Focused (as it is when the menu opens), a ring rather than a lighter colour, so it stays the page's colour. */
 .game-menu .game-menu-main:focus { box-shadow: 0 0 0 2px var(--panel), 0 0 0 4px var(--accent); }
@@ -1251,7 +1333,7 @@ html[data-navigating] .shelf-row { scroll-snap-type: none; }
 .game-menu hr { margin: 4px 6px; border: 0; border-top: 1px solid var(--line); }
 .game-submenu {
   position: absolute; z-index: 1; min-width: 190px; padding: 6px;
-  border: 1px solid var(--line-strong); border-radius: 9px; background: var(--panel); box-shadow: 0 12px 30px var(--shadow);
+  border: 1px solid var(--line-strong); border-radius: 8px; background: var(--panel); box-shadow: 0 12px 30px var(--shadow);
 }
 .game-submenu.right { left: calc(100% - 2px); }
 .game-submenu.left { right: calc(100% - 2px); }
@@ -1259,8 +1341,8 @@ html[data-navigating] .shelf-row { scroll-snap-type: none; }
 .game-submenu.below { position: static; min-width: 0; padding: 0 0 0 12px; border: 0; background: none; box-shadow: none; }
 .game-menu-check { display: inline-grid; place-items: center; width: 14px; color: var(--accent); }
 /* Play with: a program's folder after its name, quieter; a note when there's none. */
-.game-menu-path { min-width: 0; max-width: 180px; overflow: hidden; text-overflow: ellipsis; color: var(--muted); font-size: 11.5px; }
-.game-menu-note { padding: 6px 10px; color: var(--muted); font-size: 12.5px; }
+.game-menu-path { min-width: 0; max-width: 180px; overflow: hidden; text-overflow: ellipsis; color: var(--muted); font-size: 12px; }
+.game-menu-note { padding: 6px 10px; color: var(--muted); font-size: 13px; }
 /* A game's card, with more than one way to play it: which app the menu is for. */
 .game-menu-heading { max-width: 260px; padding: 6px 10px 4px; overflow: hidden; color: var(--muted); font-size: 12px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
 /* Play's question, with more than one program picked: each a row, its folder under its name. */
@@ -1306,7 +1388,7 @@ html[data-navigating] .shelf-row { scroll-snap-type: none; }
 .own-copy-problem { margin: 10px 0; padding: 10px 12px; border: 1px solid var(--danger); border-radius: 8px; }
 .own-copy-problem p { margin: 0 0 4px; }
 .own-copy-path { overflow-wrap: anywhere; font-family: ui-monospace, monospace; }
-.game-menu-new { margin: 2px 0 0; padding: 7px 10px; border: 1px solid var(--line); border-radius: 6px; background: transparent; color: inherit; font: inherit; font-size: 13px; outline: 0; }
+.game-menu-new { margin: 2px 0 0; padding: 7px 10px; border: 1px solid var(--line); border-radius: 8px; background: transparent; color: inherit; font: inherit; font-size: 13px; outline: 0; }
 .game-menu-new:focus { border-color: var(--accent); }
 .playlists { flex-wrap: nowrap; }
 
@@ -1322,7 +1404,7 @@ html[data-navigating] .shelf-row { scroll-snap-type: none; }
 .library-bar .playlists:hover { scrollbar-color: var(--line-strong) transparent; }
 .library-bar .playlists button:not(.active):hover { border-color: var(--line-strong); background: none; }
 .library-tools { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; margin-left: auto; }
-.page-tools > * { height: 34px; }
+.page-tools > * { height: 36px; }
 .library-search { gap: 7px; padding: 0 8px 0 11px; }
 .library-search:focus-within { border-color: var(--accent); }
 .library-search input { min-width: 0; height: 100%; font-size: 13px; color: var(--fg); }
@@ -1331,9 +1413,9 @@ html[data-navigating] .shelf-row { scroll-snap-type: none; }
  * type than the tools, so it's the first thing seen of the page's header.
  */
 .search-row { display: flex; justify-content: center; flex: 0 0 100%; margin-top: 12px; }
-.search-row .search { flex: 0 1 720px; width: auto; min-width: 0; max-width: 720px; height: 44px; gap: 10px; padding: 0 10px 0 15px; border-radius: 10px; }
+.search-row .search { flex: 0 1 720px; width: auto; min-width: 0; max-width: 720px; height: 44px; gap: 10px; padding: 0 10px 0 15px; border-radius: 8px; }
 .search-row .search > svg { flex-shrink: 0; }
-.search-row .search input { font-size: 15px; }
+.search-row .search input { font-size: 14px; }
 .search-row .search:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
 .search-row .search-clear { width: 26px; height: 26px; }/*
  * The library's, under the tabs and tools: room over it, so it reads as a row of its own, and the room under it
@@ -1355,18 +1437,18 @@ html[data-navigating] .shelf-row { scroll-snap-type: none; }
 .quiet-select.group-by.on > svg { color: var(--link); }
 .view-choice > .group-by { justify-self: start; }
 /* In the sidebar's filters, after Sections: an icon at the row's end. */
-.sidebar-filters .fold-all { display: grid; place-items: center; width: 28px; height: 28px; margin-left: auto; padding: 0; border-radius: 7px; color: var(--text-2); }
+.sidebar-filters .fold-all { display: grid; place-items: center; width: 28px; height: 28px; margin-left: auto; padding: 0; border-radius: 8px; color: var(--text-2); }
 .sidebar-filters .fold-all:hover, .sidebar-filters .fold-all:focus-visible { background: var(--raised); color: var(--strong); }
 .quiet-select > svg { position: absolute; right: 9px; color: var(--muted); pointer-events: none; }
 /* A search orders by relevance, so the sort waits. */
 .quiet-select select:disabled { cursor: default; background: transparent; color: var(--muted); }
 .page-tools .tool {
   display: inline-flex; align-items: center; gap: 7px; padding: 0 12px; border: 1px solid var(--line); border-radius: 8px;
-  color: var(--text-2); font-size: 13px; font-weight: 500; white-space: nowrap; transition: border-color 0.15s, background 0.15s;
+  color: var(--text-2); font-size: 13px; font-weight: 600; white-space: nowrap; transition: border-color 0.15s, background 0.15s;
 }
 .page-tools .tool:hover, .page-tools .tool[aria-expanded="true"] { color: var(--strong); background: var(--panel); border-color: var(--line-strong); }
 .page-tools .tool.on { color: var(--strong); background: var(--accent-soft); border-color: var(--accent); }
-.page-tools .tool.icon-only { width: 34px; padding: 0; justify-content: center; }
+.page-tools .tool.icon-only { width: 36px; padding: 0; justify-content: center; }
 .tool-count {
   display: inline-grid; place-items: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px;
   background: var(--accent); color: var(--on-accent); font-size: 11px; font-weight: 700; line-height: 1;
@@ -1399,22 +1481,22 @@ html[data-navigating] .shelf-row { scroll-snap-type: none; }
 .panel-tab { display: flex; align-items: center; gap: 2px; min-width: 0; border-radius: 8px; }
 .panel-tab > button:not(.menu-button) {
   display: flex; flex: 1; align-items: center; gap: 10px; min-width: 0; min-height: 34px; padding: 5px 10px; border-radius: 8px;
-  color: var(--text-2); font-size: 13.5px; font-weight: 500; text-align: left;
+  color: var(--text-2); font-size: 14px; font-weight: 500; text-align: left;
 }
 .panel-tab > button:not(.menu-button) > svg { flex-shrink: 0; width: 18px; color: var(--muted); }
 .panel-tab .playlist-icon { margin: 0; }
 .panel-tab-name { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .panel-tab:hover:where(:not([data-navigating] *)) { background: var(--panel); }
 .panel-tab:hover > button:not(.menu-button) { color: var(--strong); }
-.panel-tab.active { background: var(--accent-soft); box-shadow: inset 3px 0 var(--accent); }
+.panel-tab.active { background: var(--accent-soft); color: var(--strong); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent); }
 .panel-tab.active > button:not(.menu-button), .panel-tab.active > button > svg { color: var(--strong); }
 .panel-tab > .menu-button { flex-shrink: 0; margin-right: 4px; }
 .panel-heading {
   display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-top: 14px; padding: 6px 0 4px 10px; border-top: 1px solid var(--line);
-  color: var(--text-3); font-size: 11px; font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase;
+  color: var(--text-3); font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
 }
 .panel-heading .menu-button { margin-right: 4px; }
-.panel-empty { margin: 4px 10px; font-size: 12.5px; }
+.panel-empty { margin: 4px 10px; font-size: 13px; }
 /* An empty tab or playlist whose apps are hidden: how many, and a button that shows them (library.tsx). */
 .hidden-note { display: inline-flex; flex-direction: column; align-items: center; gap: 12px; }
 .sidebar-empty .hidden-note { align-items: flex-start; }
@@ -1430,7 +1512,7 @@ html[data-navigating] .shelf-row { scroll-snap-type: none; }
 @container library-bar (min-width: 820px) {
   .library-bar.with-panel { flex-wrap: nowrap; }
   .library-bar.with-panel > .search-row { order: -1; flex: 1 1 auto; justify-content: flex-start; margin-top: 0; }
-  .library-bar.with-panel > .search-row .search { flex: 1 1 auto; max-width: 560px; height: 38px; }
+  .library-bar.with-panel > .search-row .search { flex: 1 1 auto; max-width: 560px; }
   .library-bar.with-panel .library-tools { flex: 0 0 auto; margin-left: auto; }
   .library-bar.with-panel:has(> .search-row) { margin-bottom: 24px; }
 }
@@ -1443,7 +1525,7 @@ html[data-navigating] .shelf-row { scroll-snap-type: none; }
 @container library-bar (max-width: 520px) {
   .library-tools > * { order: 3; }
   .library-tools > .library-show { order: 0; }
-  .page-tools .add-app { order: 1; width: 34px; padding: 0; justify-content: center; }
+  .page-tools .add-app { order: 1; width: 36px; padding: 0; justify-content: center; }
   .library-bar > .search-row { margin-top: 8px; }
   .library-sort { margin-right: auto; }
   .library-sort select { padding-left: 2px; }
@@ -1481,7 +1563,7 @@ html[data-navigating] .shelf-row { scroll-snap-type: none; }
 }
 /* A phone: Submit an app is its icon, so the row still fits. */
 @container browse-bar (max-width: 440px) {
-  .browse-tools .submit-app { width: 34px; padding: 0; justify-content: center; }
+  .browse-tools .submit-app { width: 36px; padding: 0; justify-content: center; }
   .browse-tools .submit-app > span { display: none; }
 }
 
@@ -1498,6 +1580,10 @@ html[data-navigating] .shelf-row { scroll-snap-type: none; }
   :is(#library-filters, #browse-filters):not(.sidebar-filters) { grid-template-columns: minmax(0, 1fr); }
   .filter-pills, :is(#library-filters, #browse-filters):not(.sidebar-filters) > .filter-actions { grid-column: 1; justify-self: center; }
 }
+/* Beside the playlist panel the search starts at the cards' left edge, and the pills under it start there too. */
+.library-main #library-filters:not(.sidebar-filters) { grid-template-columns: auto 1fr; }
+.library-main #library-filters .filter-pills { grid-column: 1; justify-self: start; justify-content: flex-start; }
+.library-main #library-filters:not(.sidebar-filters) > .filter-actions { grid-column: 2; justify-self: end; }
 .pill {
   position: relative; display: inline-flex; align-items: center; height: 30px; border: 1px solid var(--line); border-radius: 999px;
   background: var(--panel); color: var(--text-2); transition: border-color 0.15s;
@@ -1505,13 +1591,13 @@ html[data-navigating] .shelf-row { scroll-snap-type: none; }
 .pill:hover, .pill:focus-within { border-color: var(--line-strong); }
 .pill select {
   appearance: none; field-sizing: content; max-width: 260px; height: 100%; padding: 0 28px 0 12px; border: 0; border-radius: 999px;
-  background: transparent; font-size: 12.5px; cursor: pointer; text-overflow: ellipsis;
+  background: transparent; font-size: 13px; cursor: pointer; text-overflow: ellipsis;
 }
 .pill > svg { position: absolute; right: 10px; color: var(--muted); pointer-events: none; }
 .pill.on { border-color: var(--accent); background: var(--accent-soft); color: var(--strong); }
 .pill.on select { padding-right: 2px; font-weight: 500; }
 /* A picked order's pill (Browse): its name, as a filter's choice reads. */
-.pill-label { padding: 0 2px 0 12px; font-size: 12.5px; font-weight: 500; }
+.pill-label { padding: 0 2px 0 12px; font-size: 13px; font-weight: 500; }
 .pill-clear { display: grid; place-items: center; width: 22px; height: 22px; margin: 0 4px 0 2px; border-radius: 50%; color: var(--text-2); }
 .pill-clear:hover, .pill-clear:focus-visible { color: var(--strong); background: var(--accent-soft); }
 /* A focused pill's ring goes round the whole pill, its × too, not just the dropdown inside it, whose width changes with what's picked. */
@@ -1521,37 +1607,37 @@ html[data-navigating] .shelf-row { scroll-snap-type: none; }
 /* A filter of several choices (MultiPill): a button that reads as the dropdowns beside it, its list ticked. */
 .pill .pill-button {
   display: inline-flex; align-items: center; max-width: 260px; height: 100%; padding: 0 28px 0 12px; border: 0; border-radius: 999px;
-  background: transparent; color: inherit; font-size: 12.5px; cursor: pointer;
+  background: transparent; color: inherit; font-size: 13px; cursor: pointer;
 }
 .pill.on .pill-button { padding-right: 2px; font-weight: 500; }
 .pill .pill-button:focus-visible { outline: none; }
 .pill-text { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .pill-menu { min-width: 200px; }
-.pill-menu-group { padding: 8px 10px 3px; color: var(--muted); font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
+.pill-menu-group { padding: 8px 10px 3px; color: var(--muted); font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
 .pill-menu .game-menu-check { flex: none; width: 16px; height: 16px; border: 1px solid var(--line-strong); border-radius: 4px; }
 .pill-menu button[aria-checked="true"] .game-menu-check { border-color: var(--accent); background: var(--accent); color: var(--on-accent); }
 .filter-actions { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; white-space: nowrap; }
-.filter-bar .text-button { height: 30px; padding: 0 8px; border-radius: 6px; color: var(--link); font-size: 12.5px; }
+.filter-bar .text-button { height: 30px; padding: 0 8px; border-radius: 8px; color: var(--link); font-size: 13px; }
 .filter-bar .text-button:hover { text-decoration: underline; }
 .filter-bar .save-playlist {
   display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px; border: 1px solid var(--accent); border-radius: 999px;
-  color: var(--link); font-size: 12.5px; font-weight: 500;
+  color: var(--link); font-size: 13px; font-weight: 500;
 }
 .filter-bar .save-playlist:hover, .filter-bar .save-playlist:focus-visible { background: var(--accent-soft); }
 .library-note { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin: -6px 0 18px; }
 /* Under the grid, or under an empty library's message: how many apps other platforms have, and the way to them. */
 .platform-note { gap: 4px; margin: 24px 0 0; font-size: 13px; }
 .empty .platform-note { justify-content: center; margin: 0; }
-.platform-note .text-button { height: 28px; padding: 0 6px; border-radius: 6px; color: var(--link); font-size: 13px; }
+.platform-note .text-button { height: 28px; padding: 0 6px; border-radius: 8px; color: var(--link); font-size: 13px; }
 .platform-note .text-button:hover { text-decoration: underline; }
 /* The platform menu's button: the platforms shown, and how many apps it hides. */
 .page-tools .platform-filter .platform-icons { gap: 5px; color: inherit; font-size: 13px; }
 .menu.platform-panel { width: 240px; }
 .platform-choice .toggle svg { flex: none; color: var(--muted); }
 /* How many apps a platform not ticked would show, at the end of its line. */
-.platform-count { margin-left: auto; min-width: 20px; padding: 1px 7px; border-radius: 999px; background: var(--field); color: var(--text-2); font-size: 11.5px; font-weight: 600; text-align: center; }
+.platform-count { margin-left: auto; min-width: 20px; padding: 1px 7px; border-radius: 999px; background: var(--field); color: var(--text-2); font-size: 12px; font-weight: 600; text-align: center; }
 .platform-choice .platform-hint { margin: 2px 0 0; font-size: 12px; }
-.platform-choice .text-button { justify-self: start; padding: 0; color: var(--link); font-size: 12.5px; }
+.platform-choice .text-button { justify-self: start; padding: 0; color: var(--link); font-size: 13px; }
 .platform-choice .text-button:hover { text-decoration: underline; }
 
 /* The View menu, and the same options in Settings. */
@@ -1587,7 +1673,7 @@ html[data-navigating] .shelf-row { scroll-snap-type: none; }
 .view-label { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-3); }
 .segmented { display: flex; gap: 2px; padding: 3px; border-radius: 8px; background: var(--field); }
 .view-options .segmented button {
-  flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 6px 8px; border-radius: 6px; background: transparent; color: var(--text-2); font-size: 12.5px; font-weight: 500; white-space: nowrap;
+  flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 6px 8px; border-radius: 8px; background: transparent; color: var(--text-2); font-size: 13px; font-weight: 500; white-space: nowrap;
 }
 .view-options .segmented button:hover { color: var(--strong); }
 .view-options .segmented button > svg { flex: none; color: var(--muted); }
@@ -1600,12 +1686,12 @@ html[data-navigating] .shelf-row { scroll-snap-type: none; }
 /* Moving the apps folder (settings-page.tsx): the panel asking, the move's bar, and old copies left behind. */
 /* The apps folders, one row each: path and what's in it on the left, its actions on the right. */
 .apps-folders { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; max-width: 760px; }
-.apps-folder-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 14px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px; }
+.apps-folder-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 14px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 8px; }
 .apps-folder-row[data-default] { border-color: var(--line-strong); background: var(--panel); }
 .apps-folder-info { display: grid; gap: 2px; min-width: 0; flex: 1 1 260px; }
 .apps-folder-info p { margin: 0; overflow-wrap: anywhere; }
 .apps-folder-name { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; color: var(--strong); font-weight: 600; }
-.apps-folder-badge { padding: 1px 8px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-size: 11.5px; font-weight: 600; }
+.apps-folder-badge { padding: 1px 8px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-size: 12px; font-weight: 600; }
 .apps-folder-row .row { flex: none; flex-wrap: wrap; gap: 8px; }
 .apps-folder-row .row > button { flex: none; white-space: nowrap; }
 .move-choice { display: grid; gap: 6px; }
@@ -1625,7 +1711,7 @@ html[data-navigating] .shelf-row { scroll-snap-type: none; }
 .move-confirm { max-width: 620px; border-color: var(--accent); }
 .move-notes { display: grid; gap: 6px; margin: 0; padding-left: 18px; color: var(--muted); font-size: 13px; line-height: 1.45; }
 .settings-pane > .view-options, .settings-section > .view-options { max-width: 380px; }
-.github-token input, .gitlab-token input { max-width: 380px; min-height: 38px; padding: 7px 11px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--input-bg); font-size: 13.5px; }
+.github-token input, .gitlab-token input { max-width: 380px; min-height: 38px; padding: 7px 11px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--input-bg); font-size: 14px; }
 .github-token ol, .gitlab-token ol { padding-left: 20px; display: grid; gap: 4px; }
 
 /*
@@ -1683,7 +1769,7 @@ html[data-navigating] .shelf-row { scroll-snap-type: none; }
 }
 
 /* A box art or icon card's picture. */
-.card-art { position: relative; display: grid; place-items: center; width: 100%; height: 100%; overflow: hidden; color: var(--text-4); }
+.card-art { position: relative; display: grid; place-items: center; width: 100%; height: 100%; overflow: hidden; color: var(--muted); }
 .card-art img { display: block; width: 100%; height: 100%; }
 .card-art.fill img { object-fit: cover; }
 .card-art.icon, .card-art.placeholder { background: var(--field); }
@@ -1725,15 +1811,15 @@ html[data-navigating] .shelf-row { scroll-snap-type: none; }
   .continue .backdrop-art { animation: none; transform: none; }
 }
 .continue-inner { display: flex; flex-direction: column; justify-content: flex-end; align-items: flex-start; gap: 2px; min-height: 196px; padding: 22px 26px; }
-.continue-label { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-3); }
-.continue-label .continue-meta { margin-left: 6px; letter-spacing: 0; text-transform: none; }
+.continue-label { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 4px 0 0; font-size: 13px; font-weight: 500; color: var(--text-3); }
+.continue-label .continue-meta::before { content: "·"; margin-right: 6px; }
 /* Its name, not a link: the catalog button beside Play opens its page. */
-.continue-title { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; margin: 6px 0 0; max-width: 100%; color: var(--strong); font-size: 30px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.2; text-shadow: var(--hero-shadow); }
+.continue-title { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; margin: 0; max-width: 100%; color: var(--strong); font-size: 28px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.2; text-shadow: var(--hero-shadow); }
 .continue-version { color: var(--text-3); font-size: 16px; font-weight: 500; letter-spacing: 0; }
 .continue-meta { color: var(--text-2); font-size: 13px; }
 .continue-action { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 16px; }
 .continue-action .wide { width: auto; min-width: 180px; padding-block: 9px; font-size: 14px; }
-.continue-action > button { min-height: 42px; border-radius: 9px; font-size: 14px; font-weight: 650; }
+.continue-action > button { min-height: 42px; border-radius: 8px; font-size: 14px; font-weight: 600; }
 .continue-play { min-width: 160px; justify-content: center; gap: 8px; }
 .continue-update { gap: 8px; padding: 0 16px; border: 1px solid var(--line-strong); background: color-mix(in srgb, var(--panel) 80%, transparent); }
 .continue-page { display: grid; place-items: center; width: 42px; padding: 0; border: 1px solid var(--line-strong); color: var(--text-2); background: color-mix(in srgb, var(--panel) 80%, transparent); }
@@ -1784,15 +1870,15 @@ html[data-navigating] .shelf-row { scroll-snap-type: none; }
 .layout-grid.image-icon:not(.no-names) .library-tile:is(:hover:where(:not([data-navigating] *)), [data-focus]) .card-open { background: color-mix(in srgb, var(--field) 42%, #000); }
 .layout-grid .library-tile .card-body > .tile-name { display: flex; align-items: center; gap: 7px; min-width: 0; }
 /* The details picked (view.ts): tags, AI label and platforms in small capitals over the name; a line each under it. */
-.layout-grid .library-tile .card-body > .tile-tags { display: flex; align-items: center; gap: 6px; min-width: 0; height: 16px; color: rgb(255 255 255 / 0.7); font-size: 9.5px; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; }
+.layout-grid .library-tile .card-body > .tile-tags { display: flex; align-items: center; gap: 6px; min-width: 0; height: 16px; color: rgb(255 255 255 / 0.7); font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
 .library-tile .tile-tags > .tile-kinds { flex: 0 1 auto; min-width: 0; }
-.library-tile .tile-tags > .ai-chip { flex: none; padding: 0 6px; font-size: 9px; }
+.library-tile .tile-tags > .ai-chip { flex: none; padding: 0 6px; font-size: 11px; }
 .library-tile .tile-tags > .platform-icons { flex: none; margin-left: auto; gap: 5px; color: inherit; font-size: 11px; }
 .layout-grid .library-tile .card-body > .tile-line { display: block; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; color: rgb(255 255 255 / 0.75); font-size: 12px; }
-.layout-grid .library-tile .card-title { min-width: 0; color: #fff; font-size: 17px; font-weight: 700; letter-spacing: 0; text-shadow: 0 1px 2px rgb(0 0 0 / 0.8), 0 0 8px rgb(0 0 0 / 0.5); }
-.layout-grid .library-tile .card-body > .card-subtitle { display: block; min-width: 0; color: rgb(255 255 255 / 0.82); font-size: 12.5px; text-shadow: 0 1px 2px rgb(0 0 0 / 0.8), 0 0 6px rgb(0 0 0 / 0.5); }
+.layout-grid .library-tile .card-title { min-width: 0; color: #fff; font-size: 16px; font-weight: 700; letter-spacing: 0; text-shadow: 0 1px 2px rgb(0 0 0 / 0.8), 0 0 8px rgb(0 0 0 / 0.5); }
+.layout-grid .library-tile .card-body > .card-subtitle { display: block; min-width: 0; color: rgb(255 255 255 / 0.82); font-size: var(--size-12); text-shadow: 0 1px 2px rgb(0 0 0 / 0.8), 0 0 6px rgb(0 0 0 / 0.5); }
 .size-small .library-tile .card-title { font-size: 14px; }
-.size-large .library-tile .card-title { font-size: 20px; }
+.size-large .library-tile .card-title { font-size: 18px; }
 /*
  * An app in the library that isn't installed here: its picture and the tile behind an icon greyed, as the sidebar's
  * rows are, so a shelf says at a glance what's ready to play. Its names stay as they are. It still opens, and offers Get.
@@ -1821,7 +1907,7 @@ span.tile-mark[data-copy="failed"] { background: #ff6b6b; }
 /* A download or what went wrong shows without hover; the rest still waits for it. */
 .library-tile[data-busy]:not(:hover:where(:not([data-navigating] *)), [data-focus]) .tile-overlay > :not(.tile-main) { visibility: hidden; }
 .tile-overlay > * { pointer-events: auto; }
-.tile-facts { grid-row: 1; grid-column: 1; align-self: start; display: grid; gap: 1px; min-width: 0; color: rgb(255 255 255 / 0.88); font-size: 11.5px; line-height: 1.35; text-shadow: 0 1px 3px rgb(0 0 0 / 0.7); pointer-events: none; }
+.tile-facts { grid-row: 1; grid-column: 1; align-self: start; display: grid; gap: 1px; min-width: 0; color: rgb(255 255 255 / 0.88); font-size: 12px; line-height: 1.35; text-shadow: 0 1px 3px rgb(0 0 0 / 0.7); pointer-events: none; }
 .tile-facts .card-status, .tile-facts .card-status [data-state] { color: #fff; font-weight: 600; }
 .tile-facts .tile-unverified { color: #ffc062; }
 .tile-facts .tile-newer { color: #6fd0ff; font-weight: 600; }
@@ -1852,7 +1938,7 @@ span.tile-mark[data-copy="failed"] { background: #ff6b6b; }
 .tile-play:hover, .tile-play:focus-visible { background: var(--accent-hover); }
 .library-tile[data-busy] .tile-main { left: 8px; right: 8px; bottom: 8px; padding: 6px; border-radius: 8px; background: var(--raised); box-shadow: 0 6px 18px rgb(0 0 0 / 0.35); }
 /* On one line, smaller, so "Downloading 46%" fits a narrow card's bar. */
-.library-tile .progress span { padding: 0 6px; font-size: 11.5px; white-space: nowrap; }
+.library-tile .progress span { padding: 0 6px; font-size: 12px; white-space: nowrap; }
 /* Buttons in a row of their own, full width (Try again, Dismiss); not Cancel, which sits beside a download's progress bar. */
 .library-tile[data-busy] .tile-main .row:not(.progress-row) > button { flex: 1 0 100%; }
 .size-small .tile-facts { display: none; }
@@ -1872,7 +1958,7 @@ span.tile-mark[data-copy="failed"] { background: #ff6b6b; }
 .layout-grid:not(.image-icon) .library-tile .tile-icon-update { display: none; }
 .layout-grid:not(.image-icon) .library-tile:not([data-busy], [data-withdrawn]) .tile-main { left: 10px; display: grid; gap: 8px; }
 .layout-grid:not(.image-icon) .library-tile :is(.tile-play, .tile-main .tile-update) {
-  display: flex; align-items: center; justify-content: center; gap: 7px; width: auto; min-width: 0; height: 40px; padding: 0 12px; border-radius: 9px;
+  display: flex; align-items: center; justify-content: center; gap: 7px; width: auto; min-width: 0; height: 40px; padding: 0 12px; border-radius: 8px;
   box-shadow: 0 6px 16px rgb(0 0 0 / 0.45); font-size: 14px; font-weight: 600;
 }
 .layout-grid:not(.image-icon) .library-tile .tile-play svg { width: 16px; height: 16px; margin: 0; flex-shrink: 0; fill: none; }
@@ -1902,7 +1988,7 @@ span.tile-mark[data-copy="failed"] { background: #ff6b6b; }
 .tile-withdrawn-actions { display: grid; justify-items: center; gap: 2px; }
 .tile-fix {
   display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; min-width: 0; padding: 8px 10px; border-radius: 8px;
-  color: var(--on-accent); background: var(--accent); box-shadow: 0 6px 18px rgb(0 0 0 / 0.45); font-size: 13px; font-weight: 650;
+  color: var(--on-accent); background: var(--accent); box-shadow: 0 6px 18px rgb(0 0 0 / 0.45); font-size: 13px; font-weight: 600;
 }
 .tile-fix > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tile-fix svg { flex-shrink: 0; }
@@ -1921,13 +2007,13 @@ span.tile-mark[data-copy="failed"] { background: #ff6b6b; }
  */
 .tile-get-split { position: relative; display: block; }
 .tile-get-split > .tile-get-more { position: absolute; right: -6px; bottom: -6px; width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--raised); }
-.layout-grid:not(.image-icon) .tile-get-split { display: flex; min-width: 0; border-radius: 9px; box-shadow: 0 6px 16px rgb(0 0 0 / 0.45); }
-.layout-grid:not(.image-icon) .library-tile .tile-get-split > .tile-get { flex: 1; border-radius: 9px 0 0 9px; box-shadow: none; }
-.layout-grid:not(.image-icon) .tile-get-split > .tile-get-more { position: static; width: 34px; height: auto; border: 0; border-left: 1px solid rgb(0 0 0 / 0.25); border-radius: 0 9px 9px 0; }
+.layout-grid:not(.image-icon) .tile-get-split { display: flex; min-width: 0; border-radius: 8px; box-shadow: 0 6px 16px rgb(0 0 0 / 0.45); }
+.layout-grid:not(.image-icon) .library-tile .tile-get-split > .tile-get { flex: 1; border-radius: 8px 0 0 8px; box-shadow: none; }
+.layout-grid:not(.image-icon) .tile-get-split > .tile-get-more { position: static; width: 34px; height: auto; border: 0; border-left: 1px solid rgb(0 0 0 / 0.25); border-radius: 0 8px 8px 0; }
 /* Get's own choices, over the other versions: which build, and Get's button for the newest verified of it. */
 .get-choices { display: grid; gap: 12px; margin-bottom: 16px; }
 .get-choices .segmented button {
-  flex: 1; padding: 7px 10px; border-radius: 6px; background: transparent; color: var(--text-2); font-size: 13px; font-weight: 500;
+  flex: 1; padding: 7px 10px; border-radius: 8px; background: transparent; color: var(--text-2); font-size: 13px; font-weight: 500;
 }
 .get-choices .segmented button:hover { color: var(--strong); }
 .get-choices .segmented button[aria-pressed="true"] { background: var(--segment-on); color: var(--strong); box-shadow: 0 1px 3px var(--card-shadow), inset 0 0 0 1px var(--line-strong); }
@@ -1946,7 +2032,7 @@ body:has(.overlay) .shell > main { overflow: hidden; scrollbar-gutter: stable; }
 /* A dialog's buttons are padded for words: its close button is only the icon. */
 .versions-dialog .panel-close { padding: 0; background: none; }
 .versions-dialog .panel-close:hover { background: var(--field-hover); }
-.tile-anyway { padding: 4px 8px; border-radius: 6px; color: rgb(255 255 255 / 0.85); font-size: 12px; font-weight: 600; text-shadow: 0 1px 3px rgb(0 0 0 / 0.7); }
+.tile-anyway { padding: 4px 8px; border-radius: 8px; color: rgb(255 255 255 / 0.85); font-size: 12px; font-weight: 600; text-shadow: 0 1px 3px rgb(0 0 0 / 0.7); }
 .tile-anyway:hover, .tile-anyway:focus-visible { color: #fff; text-decoration: underline; text-underline-offset: 3px; }
 /* Room for the version on a small card. */
 .size-small .tile-fix { padding: 6px 8px; font-size: 12px; }
@@ -1958,11 +2044,11 @@ body:has(.overlay) .shell > main { overflow: hidden; scrollbar-gutter: stable; }
  */
 .layout-grid:not(.no-names, .image-icon) .library-tile { --tile-names: calc(36px + 18px * var(--tile-lines, 1)); overflow: visible; border: 0; border-radius: 0; background: none; box-shadow: none; }
 .layout-grid:not(.no-names, .image-icon) .library-tile:is(:hover:where(:not([data-navigating] *)), :focus-within, [data-focus]) { border-color: transparent; box-shadow: none; }
-.layout-grid:not(.no-names, .image-icon) .library-tile .card-cover { border: 1px solid var(--ql-card-line); border-radius: 10px; box-shadow: 0 10px 24px var(--ql-card-shadow); }
+.layout-grid:not(.no-names, .image-icon) .library-tile .card-cover { border: 1px solid var(--ql-card-line); border-radius: var(--radius-8); box-shadow: 0 10px 24px var(--ql-card-shadow); }
 .layout-grid:not(.no-names, .image-icon) .library-tile:is(:hover:where(:not([data-navigating] *)), [data-focus]) .card-cover { border-color: var(--ql-accent); box-shadow: 0 18px 36px var(--ql-card-shadow), 0 0 0 1px var(--ql-accent); }
 .layout-grid:not(.no-names, .image-icon) .library-tile .card-body { position: static; height: var(--tile-names); padding: 10px 2px 0; align-content: start; background: none; border: 0; }
-.layout-grid:not(.no-names, .image-icon) .library-tile .card-title { color: var(--strong); font-size: 14.5px; font-weight: 650; text-shadow: none; }
-.layout-grid:not(.no-names, .image-icon) .library-tile .card-body > .card-subtitle { color: var(--muted); font-size: 12.5px; text-shadow: none; }
+.layout-grid:not(.no-names, .image-icon) .library-tile .card-title { color: var(--strong); font-size: var(--size-14); font-weight: 600; text-shadow: none; }
+.layout-grid:not(.no-names, .image-icon) .library-tile .card-body > .card-subtitle { color: var(--muted); font-size: var(--size-12); text-shadow: none; }
 .layout-grid:not(.no-names, .image-icon) .library-tile .card-body > .tile-line { color: var(--muted); }
 /* The update there is to the version under the name, in the update mark's colour. */
 .layout-grid .library-tile .card-body > .tile-line.tile-version-update, .layout-grid:not(.no-names, .image-icon) .library-tile .card-body > .tile-line.tile-version-update { color: var(--accent); font-weight: 600; }
@@ -1988,7 +2074,7 @@ body:has(.overlay) .shell > main { overflow: hidden; scrollbar-gutter: stable; }
 .layout-grid.wrap-names.image-box:not(.no-names) .library-tile .tile-overlay { bottom: auto; aspect-ratio: 2 / 3; }
 .layout-grid.wrap-names.image-cover:not(.no-names) .library-tile .tile-overlay { bottom: auto; height: calc(var(--cover-h) * var(--card-scale, 1)); }
 .layout-grid.wrap-names .library-tile .tile-name { align-items: flex-start; }
-.layout-grid.size-small:not(.no-names, .image-icon) .library-tile .card-title { font-size: 13.5px; }
+.layout-grid.size-small:not(.no-names, .image-icon) .library-tile .card-title { font-size: var(--size-13); }
 .layout-grid.size-large:not(.no-names, .image-icon) .library-tile .card-title { font-size: 16px; }
 .layout-grid:not(.no-names, .image-icon) .library-tile[data-round]:is(:hover:where(:not([data-navigating] *)), [data-focus]) .card-body { padding-right: 2px; }
 .layout-grid:not(.no-names, .image-icon) .library-tile[data-withdrawn]:is(:hover:where(:not([data-navigating] *)), [data-focus]) .card-body { visibility: visible; }
@@ -2005,7 +2091,7 @@ body:has(.overlay) .shell > main { overflow: hidden; scrollbar-gutter: stable; }
 .port-head .muted { flex: none; font-size: 12px; }
 .port-row { display: flex; align-items: center; gap: 8px; padding: 4px; border-radius: 8px; }
 .port-row:hover, .port-row:focus-within { background: var(--field-hover); }
-.port-open { flex: 1; display: flex; align-items: center; gap: 10px; min-width: 0; padding: 2px; border-radius: 6px; text-align: left; }
+.port-open { flex: 1; display: flex; align-items: center; gap: 10px; min-width: 0; padding: 2px; border-radius: 8px; text-align: left; }
 .port-open .card-art { flex: none; position: relative; width: 48px; height: 48px; overflow: hidden; border-radius: 8px; background: var(--field); }
 .port-open .card-art img { width: 100%; height: 100%; object-fit: cover; }
 .port-open .card-art.icon img { object-fit: contain; }
@@ -2013,7 +2099,7 @@ body:has(.overlay) .shell > main { overflow: hidden; scrollbar-gutter: stable; }
 .port-open .card-art.placeholder svg { width: 26px; height: 26px; }
 .port-names { display: grid; min-width: 0; line-height: 1.3; }
 .port-names > * { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.port-names strong { color: var(--strong); font-size: 13.5px; font-weight: 650; }
+.port-names strong { color: var(--strong); font-size: 14px; font-weight: 600; }
 .port-names small { color: var(--muted); font-size: 12px; }
 .port-names .card-status [data-state="update"], .port-names .card-status [data-state="busy"] { color: var(--accent); }
 /*
@@ -2041,7 +2127,7 @@ body:has(.overlay) .shell > main { overflow: hidden; scrollbar-gutter: stable; }
 .way-tag.top { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
 .way-tag.here { border-color: var(--line-strong); color: var(--text-2); }
 .way-tag.installed { background: color-mix(in srgb, var(--green) 16%, transparent); color: var(--green); }
-.ways-group { padding: 10px 8px 4px; color: var(--muted); font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
+.ways-group { padding: 10px 8px 4px; color: var(--muted); font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
 .ways-foot { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 12px; margin-top: 6px; padding: 10px 8px 4px; border-top: 1px solid var(--line); font-size: 12px; }
 .port-action { flex: none; width: 168px; }
 .port-action .row { flex-direction: column; flex-wrap: nowrap; align-items: stretch; gap: 4px; }
@@ -2067,10 +2153,10 @@ body:has(.overlay) .shell > main { overflow: hidden; scrollbar-gutter: stable; }
 .mods-head .row > button { flex: none; }
 .mods-filters { display: flex; gap: 8px; }
 .mods-filters input { flex: 1; min-width: 0; }
-.mods .confirm { display: flex; flex-direction: column; gap: 10px; padding: 14px; border: 1px solid var(--accent); border-radius: 9px; background: var(--panel); }
+.mods .confirm { display: flex; flex-direction: column; gap: 10px; padding: 14px; border: 1px solid var(--accent); border-radius: 8px; background: var(--panel); }
 .mods-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
 .mod { display: flex; gap: 12px; align-items: flex-start; padding: 10px 12px; border-radius: 8px; background: var(--panel); }
-.mod-icon { width: 48px; height: 48px; flex-shrink: 0; border-radius: 6px; object-fit: cover; background: var(--field); }
+.mod-icon { width: 48px; height: 48px; flex-shrink: 0; border-radius: 8px; object-fit: cover; background: var(--field); }
 .mod-text { flex: 1; min-width: 0; display: grid; gap: 3px; }
 .mod-title { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .mod-description { font-size: 13px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
@@ -2091,7 +2177,7 @@ body:has(.overlay) .shell > main { overflow: hidden; scrollbar-gutter: stable; }
 .recovery p { max-width: 520px; }
 
 /* Tags in Settings: how many, and the way into their own window. */
-.tags-summary { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 18px; max-width: 560px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 9px; background: var(--panel); }
+.tags-summary { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 18px; max-width: 560px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
 .tags-summary-counts { display: flex; flex-wrap: wrap; gap: 4px 18px; }
 .tags-summary-counts .muted { margin-left: 4px; }
 /* Their window: its tabs, search, filters and buttons stay put, and the list scrolls under them. */
@@ -2105,7 +2191,7 @@ body:has(.overlay) .shell > main { overflow: hidden; scrollbar-gutter: stable; }
 .tags-find { display: flex; gap: 8px; }
 .tags-find input { flex: 1; min-width: 0; padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
 .tags-find input:focus { border-color: var(--accent); }
-.tags-find select { flex: none; min-width: 0; max-width: 45%; padding: 7px 10px; border: 1px solid var(--line); border-radius: 7px; background: var(--panel); }
+.tags-find select { flex: none; min-width: 0; max-width: 45%; padding: 7px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
 .tags-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
 .tags-bar .chip { padding: 4px 12px; background: none; font-size: 13px; font-weight: 400; }
 .tags-bar .chip.on { background: var(--chip-bg); color: var(--chip-fg); }
@@ -2126,7 +2212,7 @@ body:has(.overlay) .shell > main { overflow: hidden; scrollbar-gutter: stable; }
 /* On a narrow window the names need the room: the buttons are their icons (and their names, read out). */
 @media (max-width: 520px) { .own-tags .own-tag-label { display: none; } .own-tags .own-tag-button { padding: 5px 9px; } }
 .own-tags .tag-rename { display: flex; gap: 6px; width: 100%; }
-.own-tags .tag-rename input { flex: 1; min-width: 0; padding: 6px 10px; border: 1px solid var(--accent); border-radius: 7px; background: var(--panel); }
+.own-tags .tag-rename input { flex: 1; min-width: 0; padding: 6px 10px; border: 1px solid var(--accent); border-radius: 8px; background: var(--panel); }
 .catalog-tag { display: flex; align-items: center; gap: 10px; min-height: 38px; padding: 6px 10px; border-radius: 8px; cursor: pointer; }
 .catalog-tag:hover, .catalog-tag:focus-within { background: var(--field-hover); }
 .catalog-tag input { flex: none; }
@@ -2135,15 +2221,15 @@ body:has(.overlay) .shell > main { overflow: hidden; scrollbar-gutter: stable; }
 .catalog-tag.off .catalog-tag-name { color: var(--muted); font-weight: 400; text-decoration: line-through; text-decoration-color: color-mix(in srgb, var(--muted) 60%, transparent); }
 
 /* A playlist's icon on its tab (one of its apps'), and choosing it. */
-.playlist-icon { display: inline-grid; width: 18px; height: 18px; margin: -2px 7px -2px -5px; overflow: hidden; border-radius: 5px; flex-shrink: 0; }
+.playlist-icon { display: inline-grid; width: 18px; height: 18px; margin: -2px 7px -2px -5px; overflow: hidden; border-radius: 4px; flex-shrink: 0; }
 .playlist-icon .card-art, .icon-choice .card-art { width: 100%; height: 100%; }
 .playlist-icon .card-art img, .icon-choice .card-art img { width: 100%; height: 100%; object-fit: contain; filter: none; }
 .playlist-icon .card-art-blur, .icon-choice .card-art-blur { display: none; }
 .playlist-icon svg { width: 14px; height: 14px; margin: auto; }
-.playlist-words { min-width: 200px; padding: 7px 10px; border: 1px solid var(--line); border-radius: 7px; background: var(--panel); }
+.playlist-words { min-width: 200px; padding: 7px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
 .icon-choice { display: grid; gap: 8px; margin: 0; padding: 0; border: 0; }
 .icon-choice [role="radiogroup"] { display: flex; flex-wrap: wrap; gap: 8px; }
-.icon-choice button { display: grid; width: 44px; height: 44px; padding: 0; overflow: hidden; border: 2px solid transparent; border-radius: 9px; background: var(--field); }
+.icon-choice button { display: grid; width: 44px; height: 44px; padding: 0; overflow: hidden; border: 2px solid transparent; border-radius: 8px; background: var(--field); }
 .icon-choice button[aria-checked="true"] { border-color: var(--accent); }
 .icon-choice button svg { width: 22px; height: 22px; margin: auto; }
 
@@ -2154,7 +2240,7 @@ body:has(.overlay) .shell > main { overflow: hidden; scrollbar-gutter: stable; }
 .media-filters > button[aria-pressed="true"] { border-color: var(--chip-line); background: var(--chip-bg); color: var(--chip-fg); }
 .media-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
 .media-grid > :first-child { grid-column: 1 / -1; }
-.media-card { margin: 0; overflow: hidden; border: 1px solid var(--line); border-radius: 9px; background: var(--panel); }
+.media-card { margin: 0; overflow: hidden; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
 .media-frame { position: relative; aspect-ratio: 16 / 9; background: #000; }
 .media-frame iframe, .media-play { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
 .media-play { padding: 0; border-radius: 0; background: none; cursor: pointer; }
@@ -2164,7 +2250,7 @@ body:has(.overlay) .shell > main { overflow: hidden; scrollbar-gutter: stable; }
 /* Inside the picture: the card's rounded corners clip anything outside. */
 .media-play:focus-visible { outline-offset: -3px; border-radius: 8px 8px 0 0; }
 .media-card figcaption { display: flex; align-items: center; gap: 10px; padding: 12px 14px; font-size: 13px; }
-.media-kind { flex-shrink: 0; padding: 2px 8px; border: 1px solid var(--chip-line); border-radius: 5px; background: var(--chip-bg); color: var(--chip-fg); font-size: 11px; }
+.media-kind { flex-shrink: 0; padding: 2px 8px; border: 1px solid var(--chip-line); border-radius: 4px; background: var(--chip-bg); color: var(--chip-fg); font-size: 11px; }
 .media-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--strong); }
 .media-youtube { display: inline-flex; align-items: center; gap: 4px; flex-shrink: 0; margin-left: auto; color: var(--link); text-decoration: none; }
 .media-youtube:hover { text-decoration: underline; }
@@ -2174,8 +2260,10 @@ body:has(.overlay) .shell > main { overflow: hidden; scrollbar-gutter: stable; }
  * The Sidebar layout: the library as a list down the left, under the top bar
  * and as tall as the window, and the app picked in it open beside it.
  */
-main:has(> div:not([hidden]) > .library-split) { padding: 0; }
-main:has(> div:not([hidden]) > .library-split) > div > .banner-stack > .banner { margin: 16px var(--gutter); }
+main:has(> div:not([hidden]) > .kept-screen > .kept-box > .library-split) { padding: 0; }
+/* Library and Browse, each in a box of its own while kept (kept-screen.tsx), laid out as if they weren't. */
+.kept-screen, .kept-box { display: contents; }
+main:has(> div:not([hidden]) > .kept-screen > .kept-box > .library-split) > div > .banner-stack > .banner { margin: 16px var(--gutter); }
 /* As wide as the player dragged it (sidebar.ts's widths), else to fit the window. */
 .library-split { display: grid; grid-template-columns: clamp(220px, var(--sidebar-width, clamp(270px, 24vw, 340px)), min(640px, 100% - 560px)) minmax(0, 1fr); align-items: start; }
 .library-sidebar {
@@ -2196,7 +2284,7 @@ main:has(> div:not([hidden]) > .library-split) > div > .banner-stack > .banner {
 .library-sidebar .sidebar-search, .library-sidebar .sidebar-search:focus-within { flex: 1 1 auto; width: auto; min-width: 0; }
 .library-sidebar .page-tools .tool.icon-only { flex-shrink: 0; }
 .sidebar-top .filter-bar { margin: 0; gap: 6px; }
-.sidebar-top .library-note, .sidebar-top .playlist-note { margin: 0; font-size: 12.5px; }
+.sidebar-top .library-note, .sidebar-top .playlist-note { margin: 0; font-size: 13px; }
 .sidebar-list { flex: 1; min-height: 0; overflow-y: auto; padding: 6px 0 12px; scrollbar-width: thin; scrollbar-color: var(--line-strong) transparent; }
 /* A heading's button, as a row over its apps: Add all to library. */
 .sidebar-group-action {
@@ -2206,7 +2294,7 @@ main:has(> div:not([hidden]) > .library-split) > div > .banner-stack > .banner {
 .sidebar-group-action:hover, .sidebar-group-action:focus-visible { background: var(--panel); }
 .sidebar-heading {
   display: flex; align-items: center; gap: 6px; width: 100%; padding: 10px 14px 4px; background: none; text-align: left;
-  color: var(--text-3); font-size: 11px; font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase;
+  color: var(--text-3); font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
 }
 .sidebar-heading:hover, .sidebar-heading:focus-visible { color: var(--strong); }
 /* Inside the row: the list scrolls, so it clips anything outside, and the rows run to its sides. */
@@ -2247,15 +2335,15 @@ main:has(> div:not([hidden]) > .library-split) > div > .banner-stack > .banner {
 }
 /* The box stands in for the ring while it shows. */
 html[data-halo] :focus-visible { outline-color: transparent; }
-.sidebar-fold { width: 10px; color: var(--text-4); }
+.sidebar-fold { width: 10px; color: var(--muted); }
 .sidebar-heading-name { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-.sidebar-count { flex-shrink: 0; color: var(--text-4); font-weight: 500; letter-spacing: 0; }
+.sidebar-count { flex-shrink: 0; color: var(--muted); font-weight: 500; letter-spacing: 0; }
 .sidebar-row {
   display: flex; align-items: center; gap: 9px; width: 100%; min-height: 30px; padding: 3px 14px 3px 20px; border-radius: 0;
-  background: none; color: var(--fg); font-size: 13.5px; text-align: left;
+  background: none; color: var(--fg); font-size: 14px; text-align: left;
 }
 .sidebar-row:hover:where(:not([data-navigating] *)), .sidebar-row:focus-visible { background: var(--panel); }
-.sidebar-row.selected { background: var(--accent-soft); color: var(--strong); box-shadow: inset 3px 0 var(--accent); }
+.sidebar-row.selected { background: var(--accent-soft); color: var(--strong); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent); }
 /*
  * Moved by a controller or the keys (spatial.ts marks the side): the side with the focus stands out and the other
  * greys back, and the row with the focus is filled (the focus box rounds it), so it's plain which side the next press goes to.
@@ -2263,7 +2351,7 @@ html[data-halo] :focus-visible { outline-color: transparent; }
  */
 .library-split > :is(.library-sidebar, .library-pane) { transition: opacity 0.15s; }
 .library-split[data-focus-side="list"] > .library-pane, .library-split[data-focus-side="page"] > .library-sidebar { opacity: 0.42; }
-.library-split[data-focus-side="list"] .sidebar-row:focus-visible { border-radius: 10px; background: var(--accent-soft); color: var(--strong); }
+.library-split[data-focus-side="list"] .sidebar-row:focus-visible { border-radius: 8px; background: var(--accent-soft); color: var(--strong); }
 /* Not installed: dimmed. */
 .sidebar-row[data-installed="false"] .sidebar-name { color: var(--muted); }
 .sidebar-row[data-installed="false"] .sidebar-icon { opacity: 0.55; filter: grayscale(0.7); }
@@ -2271,14 +2359,14 @@ html[data-halo] :focus-visible { outline-color: transparent; }
 .sidebar-line { display: flex; align-items: baseline; min-width: 0; }
 .sidebar-name, .sidebar-other { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 /* The other name, the app's or the game's, under it. */
-.sidebar-other { color: var(--text-3); font-size: 11.5px; line-height: 1.3; }
+.sidebar-other { color: var(--text-3); font-size: 12px; line-height: 1.3; }
 .sidebar-row[data-lines="2"] { min-height: 40px; }
 .sidebar-note { flex-shrink: 0; margin-left: 0.3em; color: var(--link); font-size: 12px; white-space: nowrap; }
 /* An app kept on its version, beside its name: it gets no updates. */
 .sidebar-pin { flex-shrink: 0; align-self: center; margin-left: 5px; color: var(--muted); }
 .sidebar-row[data-state="error"] .sidebar-note { color: var(--danger); }
 /* One size for every row, whether it shows one name or two, so the icons line up and the names start at the same place. */
-.sidebar-icon { flex-shrink: 0; width: 28px; height: 28px; border-radius: 5px; overflow: hidden; }
+.sidebar-icon { flex-shrink: 0; width: 28px; height: 28px; border-radius: 4px; overflow: hidden; }
 .sidebar-icon .card-art img { object-fit: contain; filter: none; }
 .sidebar-icon .card-art.icon img { width: 100%; height: 100%; }
 .sidebar-icon .card-art-blur { display: none; }
@@ -2287,7 +2375,7 @@ html[data-halo] :focus-visible { outline-color: transparent; }
 .sidebar-foot { display: flex; align-items: center; gap: 6px; padding: 8px 10px; border-top: 1px solid var(--line); }
 /* As tall as the controller's hints beside it (pad-hints.tsx makes them as tall as this), so their tops are one line. */
 .library-sidebar .sidebar-foot { min-height: var(--pad-hints, 0px); }
-.sidebar-add { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 7px 8px; border-radius: 7px; background: none; color: var(--text-2); font-size: 13px; font-weight: 500; }
+.sidebar-add { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 7px 8px; border-radius: 8px; background: none; color: var(--text-2); font-size: 13px; font-weight: 500; }
 .sidebar-add:hover, .sidebar-add:focus-visible { background: var(--panel); color: var(--strong); }
 /*
  * The open app's page, narrower than the window, so its columns stack sooner.
@@ -2300,9 +2388,9 @@ html[data-halo] :focus-visible { outline-color: transparent; }
   .library-pane .app-version { max-width: none; justify-content: flex-start; flex-basis: 100%; }
 }
 /* The sidebar's filters: a panel in the sidebar, under its search and over its apps. */
-.sidebar-filters { display: flex; flex-direction: column; gap: 10px; padding: 10px 12px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); }
+.sidebar-filters { display: flex; flex-direction: column; gap: 10px; padding: 10px 12px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
 .sidebar-filters header { display: flex; align-items: center; justify-content: space-between; margin: -2px -4px -2px 0; }
-.sidebar-filters h2 { color: var(--text-3); font-size: 11px; font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase; }
+.sidebar-filters h2 { color: var(--text-3); font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
 .sidebar-filters header button { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; color: var(--muted); }
 .sidebar-filters .filter-bar { gap: 6px; }
 .sidebar-filters .filter-bar > * { max-width: 100%; }
@@ -2313,7 +2401,7 @@ html[data-halo] :focus-visible { outline-color: transparent; }
 .sidebar-filters .save-playlist:disabled { opacity: 0.5; cursor: default; }
 /* The player's own play, under an app's buttons beside the sidebar. */
 .play-stats { display: flex; flex-wrap: wrap; gap: 8px 32px; margin: 0; }
-.play-stats dt { color: var(--text-3); font-size: 10.5px; font-weight: 600; letter-spacing: 1.4px; text-transform: uppercase; }
+.play-stats dt { color: var(--text-3); font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
 .play-stats dd { margin: 0; color: var(--text-2); font-size: 14px; }
 .sidebar-filters-foot { gap: 10px; }
 /* Back to top: over the bottom corner of a long page, under any dialog. */
@@ -2327,8 +2415,8 @@ html[data-halo] :focus-visible { outline-color: transparent; }
  * page and its dialogs, which leave room for it (--pad-hints, its height).
  */
 /* In the Sidebar layout the room is the page's own, beside the sidebar, so the sidebar (sticky, in the layout) runs to the window's bottom. */
-.shell:has(> main > div:not([hidden]) > .library-split) { padding-bottom: env(safe-area-inset-bottom, 0px); }
-main > div:not([hidden]) > .library-split > .library-pane { padding-bottom: var(--pad-hints, 0px); }
+.shell:has(> main > div:not([hidden]) > .kept-screen > .kept-box > .library-split) { padding-bottom: env(safe-area-inset-bottom, 0px); }
+main > div:not([hidden]) > .kept-screen > .kept-box > .library-split > .library-pane { padding-bottom: var(--pad-hints, 0px); }
 /* And above Steam's on-screen keyboard over the window's lower part while a field is edited with it (spatial.ts
    sets --steam-keyboard, its height): a dialog stays above it, scrolling if it must, rather than its field (a
    sign-in's password, on a Steam Deck) being under it. */
@@ -2359,7 +2447,7 @@ main > div:not([hidden]) > .library-split > .library-pane { padding-bottom: var(
 .downloads-ring circle.spin { transform-box: fill-box; transform-origin: center; animation: spin 1.2s linear infinite; }
 .downloads-count {
   position: absolute; top: -3px; right: -5px; min-width: 17px; height: 17px; padding: 0 4px; border-radius: 999px;
-  background: var(--accent); color: var(--on-accent); font-size: 10.5px; font-weight: 700; line-height: 17px; text-align: center;
+  background: var(--accent); color: var(--on-accent); font-size: 11px; font-weight: 700; line-height: 17px; text-align: center;
 }
 /* The strip above the library while something is happening. */
 .downloads-strip { padding: 10px 14px; }
@@ -2378,25 +2466,25 @@ main > div:not([hidden]) > .library-split > .library-pane { padding-bottom: var(
 .sidebar-downloads[data-busy] svg { color: var(--accent); }
 /* The page: Downloading, Updates available and Recently finished, a row per app. */
 .downloads-page { display: flex; flex-direction: column; gap: 28px; padding: 20px var(--gutter) 0; }
-.downloads-page h1 { font-size: 32px; margin: -14px 0 -8px; }
+.downloads-page h1 { font-size: 28px; margin: -14px 0 -8px; }
 /* As in Steam: the heading, a line across to the section's button, then the button. */
 .download-section header { display: flex; align-items: center; gap: 16px; margin-bottom: 12px; }
-.download-section h2 { flex: 1; display: flex; align-items: center; gap: 8px; font-size: 19px; font-weight: 600; white-space: nowrap; }
+.download-section h2 { flex: 1; display: flex; align-items: center; gap: 8px; font-size: 18px; font-weight: 600; white-space: nowrap; }
 .download-section h2::after { content: ""; flex: 1; height: 1px; margin-left: 8px; background: var(--line); }
 .download-count { color: var(--muted); font-weight: 400; }
-.download-section header button { padding: 7px 14px; border-radius: 7px; font-weight: 500; font-size: 13px; }
+.download-section header button { padding: 7px 14px; border-radius: 8px; font-weight: 500; font-size: 13px; }
 .download-section header button:not(.primary) { background: var(--field); }
 .download-section ul { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
 .download-section > .muted { padding: 4px 2px; }
-.download-row { display: flex; align-items: center; gap: 16px; padding: 8px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); }
-.download-thumb { flex-shrink: 0; display: grid; place-items: center; width: 128px; height: 60px; padding: 0; overflow: hidden; border-radius: 6px; background: var(--field); }
+.download-row { display: flex; align-items: center; gap: 16px; padding: 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
+.download-thumb { flex-shrink: 0; display: grid; place-items: center; width: 128px; height: 60px; padding: 0; overflow: hidden; border-radius: 8px; background: var(--field); }
 .download-thumb .artwork { width: 100%; height: 100%; padding: 8px; }
 .download-thumb .artwork.cover-photo { padding: 0; }
 .download-names { flex: 1; min-width: 0; display: grid; gap: 2px; }
-.download-name { justify-self: start; max-width: 100%; padding: 0; background: none; color: var(--strong); font-size: 15px; font-weight: 600; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.download-name { justify-self: start; max-width: 100%; padding: 0; background: none; color: var(--strong); font-size: 14px; font-weight: 600; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .download-name:is(button):hover, .download-name:is(button):focus-visible { color: var(--accent); }
 .download-other { color: var(--text-3); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.download-detail { color: var(--muted); font-size: 12.5px; }
+.download-detail { color: var(--muted); font-size: 13px; }
 .download-action { flex: 0 0 auto; width: 260px; }
 .download-action button { white-space: nowrap; }
 .download-action .job-error p { margin-bottom: 6px; }
@@ -2406,7 +2494,7 @@ main > div:not([hidden]) > .library-split > .library-pane { padding-bottom: var(
 /* An update, waiting or finished: See changelog beside Update or Play, with room for both. */
 .download-buttons { display: flex; gap: 8px; }
 .download-buttons > button:not(.primary) {
-  display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; gap: 7px; padding: 7px 14px; border-radius: 7px;
+  display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; gap: 7px; padding: 7px 14px; border-radius: 8px;
   background: var(--field); color: var(--text-2); font-size: 13px; font-weight: 500;
 }
 .download-buttons > button:not(.primary):hover { background: var(--field-hover); color: var(--strong); }
@@ -2424,13 +2512,13 @@ main > div:not([hidden]) > .library-split > .library-pane { padding-bottom: var(
  * is the page, a row per section, and a section opens on its own.
  */
 .settings-page { display: flex; flex-direction: column; gap: 20px; padding: 20px var(--gutter) 0; }
-.settings-page h1 { font-size: 32px; margin: -14px 0 -4px; }
+.settings-page h1 { font-size: 28px; margin: -14px 0 -4px; }
 .settings-columns { display: flex; align-items: flex-start; gap: 40px; }
 .settings-nav { position: sticky; top: 20px; flex: 0 0 210px; display: grid; gap: 2px; }
 .settings-nav button { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-radius: 8px; background: none; color: var(--text-2); font-size: 14px; font-weight: 500; text-align: left; }
 .settings-nav button svg { flex-shrink: 0; color: var(--muted); }
 .settings-nav button:hover { background: var(--panel); color: var(--strong); }
-.settings-nav button[aria-current="page"] { background: var(--panel); color: var(--strong); box-shadow: inset 3px 0 var(--accent); }
+.settings-nav button[aria-current="page"] { background: var(--accent-soft); color: var(--strong); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent); }
 .settings-nav button[aria-current="page"] svg { color: var(--accent); }
 .settings-nav-more { margin-left: auto; }
 /* Main's space under a page (main.app-main's 40px) inside the columns: outside them, it pushed the list up off a short window at the page's end, with room for all of it. */
@@ -2463,7 +2551,7 @@ main > div:not([hidden]) > .library-split > .library-pane { padding-bottom: var(
 .settings-search input { min-width: 0; }
 .settings-results { gap: 36px; }
 .settings-search-group { display: grid; align-content: start; gap: 14px; min-width: 0; }
-.settings-no-match { color: var(--muted); font-size: 15px; }
+.settings-no-match { color: var(--muted); font-size: 14px; }
 /* A line between results, not over a section's first (what was before it may be hidden). */
 .settings-search-group > :is(.toggle, .ql-field, .settings-section, .controls) { padding-top: 0; border-top: 0; }
 .settings-search-group > :not(h2, [data-search-hidden]) ~ :is(.toggle, .ql-field) { padding-top: 12px; border-top: 1px solid var(--line); }
@@ -2483,8 +2571,8 @@ main > div:not([hidden]) > .library-split > .library-pane { padding-bottom: var(
 .shell:has(.library-background) > .topbar { background: linear-gradient(var(--topbar), var(--topbar)), var(--bg); }
 .settings-page:not([data-side-by-side]) .settings-columns { flex-direction: column; align-items: stretch; gap: 16px; }
 .settings-page:not([data-side-by-side]) .settings-side { position: static; flex: 1; }
-.settings-page:not([data-side-by-side]) .settings-nav { position: static; flex: 1; gap: 0; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); overflow: hidden; }
-.settings-page:not([data-side-by-side]) .settings-nav button { padding: 15px 16px; border-radius: 0; font-size: 15px; }
+.settings-page:not([data-side-by-side]) .settings-nav { position: static; flex: 1; gap: 0; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); overflow: hidden; }
+.settings-page:not([data-side-by-side]) .settings-nav button { padding: 15px 16px; border-radius: 0; font-size: 14px; }
 .settings-page:not([data-side-by-side]) .settings-nav button + button { border-top: 1px solid var(--line); }
 .settings-page:not([data-side-by-side]) .settings-nav button:hover { background: var(--field); }
 
@@ -2494,7 +2582,7 @@ main > div:not([hidden]) > .library-split > .library-pane { padding-bottom: var(
 .announcement-banner p, .announcement-list p { overflow-wrap: break-word; white-space: pre-line; }
 .announcement-banner a, .announcement-list a { color: var(--link); text-decoration: underline; }
 .announcement-list { display: flex; flex-direction: column; gap: 8px; margin: 0; padding: 0; list-style: none; }
-.announcement { display: flex; align-items: flex-start; gap: 12px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 9px; background: var(--panel); font-size: 14px; }
+.announcement { display: flex; align-items: flex-start; gap: 12px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); font-size: 14px; }
 .announcement > div { flex: 1; min-width: 0; display: grid; gap: 4px; }
 .announcement .muted { font-size: 12px; }
 .announcement.dismissed { opacity: 0.7; }
@@ -2502,7 +2590,7 @@ main > div:not([hidden]) > .library-split > .library-pane { padding-bottom: var(
 .choose .announcement button.announcement-dismiss { width: 30px; height: 30px; padding: 0; border-radius: 50%; background: none; color: var(--muted); }
 .choose .announcement button.announcement-dismiss:hover { background: var(--field); color: var(--strong); }
 /* The Sidebar layout's: a strip across the window under the top bar, edge to edge. */
-main:has(> div:not([hidden]) > .library-split) > div > .banner-stack > .banner.announcement-banner.edge {
+main:has(> div:not([hidden]) > .kept-screen > .kept-box > .library-split) > div > .banner-stack > .banner.announcement-banner.edge {
   margin: 0; padding: 10px 14px; border-width: 0 0 1px; border-radius: 0;
 }
 
@@ -2510,7 +2598,7 @@ main:has(> div:not([hidden]) > .library-split) > div > .banner-stack > .banner.a
  * TV mode (App.tsx's .tv-mode): the library and Browse across a TV or a Steam Deck, for a controller from the couch.
  */
 .tv-clock { font-size: 18px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.tv-leave { display: inline-flex; flex-shrink: 0; align-items: center; gap: 8px; height: 38px; padding: 0 14px; border-radius: 10px; background: var(--field); color: inherit; font-size: 14px; font-weight: 600; white-space: nowrap; }
+.tv-leave { display: inline-flex; flex-shrink: 0; align-items: center; gap: 8px; height: 38px; padding: 0 14px; border-radius: 8px; background: var(--field); color: inherit; font-size: 14px; font-weight: 600; white-space: nowrap; }
 .tv-leave:hover { background: var(--field-hover); color: var(--strong); }
 /*
  * Moving costs nothing it needn't: the focus box is the focus's mark, so a card neither lifts, nor relights its frame,
@@ -2541,7 +2629,7 @@ main:has(> div:not([hidden]) > .library-split) > div > .banner-stack > .banner.a
 .tv-mode .account-button > span { display: none; }
 /* :has, as the menu is over the page, outside the shell. */
 body:has(.tv-mode) .account-menu-name { display: block; }
-.tv-mode .topbar nav button { font-size: 17px; font-weight: 600; }
+.tv-mode .topbar nav button { font-size: 16px; font-weight: 600; }
 .tv-mode .topbar nav button:is(.active, :hover) { background: none; }
 .tv-mode .topbar nav button.active { color: var(--accent); font-weight: 600; }
 .tv-mode .topbar nav button.active::after { bottom: 0; height: 4px; border-radius: 4px; }
@@ -2556,24 +2644,24 @@ body:has(.tv-mode) .account-menu-name { display: block; }
 .tv-mode :is(.library-search, .browse-search) > svg { width: 18px; height: 18px; }
 .tv-mode :is(.library-search, .browse-search) input { font-size: 16px; }
 .tv-mode :is(.library-search, .browse-search) .search-clear { width: 30px; height: 30px; }
-.tv-mode .page-tools .quiet-select select { padding: 0 38px 0 16px; border: 1px solid var(--line-strong); border-radius: 12px; background: var(--field); color: var(--strong); font-size: 15px; font-weight: 600; }
+.tv-mode .page-tools .quiet-select select { padding: 0 38px 0 16px; border: 1px solid var(--line-strong); border-radius: 12px; background: var(--field); color: var(--strong); font-size: 14px; font-weight: 600; }
 .tv-mode .page-tools .quiet-select select:is(:hover, :focus-visible) { background: var(--field-hover); }
 .tv-mode .page-tools .quiet-select select:disabled { background: transparent; color: var(--muted); }
 .tv-mode .page-tools .quiet-select > svg { right: 14px; }
-.tv-mode .page-tools .tool { padding: 0 18px; border-color: var(--line-strong); border-radius: 12px; background: var(--field); color: var(--strong); font-size: 15px; font-weight: 600; }
+.tv-mode .page-tools .tool { padding: 0 18px; border-color: var(--line-strong); border-radius: 12px; background: var(--field); color: var(--strong); font-size: 14px; font-weight: 600; }
 .tv-mode .page-tools .tool:is(:hover, [aria-expanded="true"]) { background: var(--field-hover); }
 .tv-mode .page-tools .tool.on { background: var(--accent-soft); border-color: var(--accent); }
 .tv-mode .page-tools .tool.icon-only { width: 46px; padding: 0; }
 /* The tabs, where they fit beside the tools, as large: More and Add a playlist with them. */
 .tv-mode .library-bar .playlists { gap: 10px; }
-.tv-mode .library-bar .playlists button:not(.menu-button), .tv-mode .playlists .more-tabs select { height: 46px; padding: 0 20px; font-size: 15px; font-weight: 600; }
+.tv-mode .library-bar .playlists button:not(.menu-button), .tv-mode .playlists .more-tabs select { height: 46px; padding: 0 20px; font-size: 14px; font-weight: 600; }
 .tv-mode .playlists .more-tabs select { padding-right: 40px; }
 .tv-mode .more-select > svg { right: 16px; }
 .tv-mode .library-bar .playlists .menu-button { width: 46px; height: 46px; }
 .tv-mode .library-show { gap: 12px; }
 .tv-mode .library-show .menu-button { width: 46px; height: 46px; border: 1px solid var(--line-strong); border-radius: 12px; background: var(--field); color: var(--strong); }
 .tv-mode .library-show .menu-button:is(:hover, [aria-expanded="true"]) { background: var(--field-hover); }
-.tv-mode .console-section h2 { font-size: 21px; color: var(--strong); }
+.tv-mode .console-section h2 { font-size: 22px; color: var(--strong); }
 /* An app's page has no edge under the bar: its art comes in from the page's background. */
 .tv-mode .page-layer .app-backdrop { background: none; }
 .tv-mode .page-layer .backdrop-art { mask-image: linear-gradient(transparent, #000 96px); }
@@ -2585,11 +2673,11 @@ body:has(.tv-mode) .account-menu-name { display: block; }
 .app-page[data-tv] .app-backdrop.has-art .backdrop-inner { min-height: 46vh; }
 .app-page[data-tv] .backdrop-inner { padding-top: 36px; }
 .app-page[data-tv] .app-hero h1 { font-size: 48px; }
-.app-page[data-tv] .app-tagline { max-width: 820px; font-size: 16.5px; }
-.app-page[data-tv] .app-actions button, .app-page[data-tv] .app-actions .row > button { min-height: 54px; padding: 0 28px; border-radius: 12px; font-size: 17px; }
+.app-page[data-tv] .app-tagline { max-width: 820px; font-size: 18px; }
+.app-page[data-tv] .app-actions button, .app-page[data-tv] .app-actions .row > button { min-height: 54px; padding: 0 28px; border-radius: 12px; font-size: 18px; }
 .app-page[data-tv] .app-actions .progress { width: 340px; height: 54px; border-radius: 12px; }
-.app-page[data-tv] .app-actions button.own-copy-chip { min-height: 40px; padding: 0 16px; border-radius: 999px; font-size: 15px; }
-.app-page[data-tv] .app-content { font-size: 15px; }
+.app-page[data-tv] .app-actions button.own-copy-chip { min-height: 40px; padding: 0 16px; border-radius: 999px; font-size: 16px; }
+.app-page[data-tv] .app-content { font-size: 16px; }
 .app-page[data-tv] .content-panel dl { font-size: 14px; }
 .tv-readme { width: 100%; justify-content: flex-start; padding: 18px 22px; border-radius: 12px; font-size: 16px; }
 /* A phone: Leave TV mode an icon (so it's on the screen, not past its edge), and no clock (the phone has its own). */
@@ -2617,12 +2705,12 @@ body:has(.tv-mode) .account-menu-name { display: block; }
   .letters-wrap { grid-template-columns: minmax(0, 1fr) 0; column-gap: 0; }
   .letters-wrap > .letter-index { width: max-content; margin-left: calc((var(--gutter) - 34px) / 2); }
 }
-.letter-index > button { display: grid; place-items: center; width: 26px; height: 22px; padding: 0; border-radius: 7px; background: none; color: var(--text-3); font-size: 11.5px; font-weight: 700; line-height: 1; }
+.letter-index > button { display: grid; place-items: center; width: 26px; height: 22px; padding: 0; border-radius: 8px; background: none; color: var(--text-3); font-size: 12px; font-weight: 700; line-height: 1; }
 .letter-index > button:hover { color: var(--strong); background: var(--field); }
 .letter-index > button[data-current] { color: var(--on-accent); background: var(--accent); }
 .letter-big {
   position: fixed; left: 50%; top: 50%; z-index: 900; display: grid; place-items: center; width: 136px; height: 136px; translate: -50% -50%;
-  border-radius: 28px; background: color-mix(in srgb, var(--panel) 88%, transparent); box-shadow: 0 20px 50px var(--shadow);
+  border-radius: 16px; background: color-mix(in srgb, var(--panel) 88%, transparent); box-shadow: 0 20px 50px var(--shadow);
   color: var(--accent); font-size: 80px; font-weight: 700; line-height: 1; pointer-events: none; animation: letter-big 0.9s ease forwards;
 }
 @keyframes letter-big {
@@ -2649,15 +2737,15 @@ body:has(.tv-mode) .account-menu-name { display: block; }
 .old-pictures legend { padding: 0; margin-bottom: 4px; color: var(--strong); font-weight: 600; }
 .old-pictures p { margin: 0; }
 .old-pictures-choices { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
-.old-picture { position: relative; display: grid; grid-template-rows: auto 1fr; gap: 8px; padding: 10px; border: 1px solid var(--line-strong); border-radius: 10px; background: var(--field); cursor: pointer; }
+.old-picture { position: relative; display: grid; grid-template-rows: auto 1fr; gap: 8px; padding: 10px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--field); cursor: pointer; }
 .old-picture[data-on] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); background: var(--accent-soft); }
 .old-picture input { position: absolute; top: 10px; left: 10px; margin: 0; z-index: 1; }
 .old-picture-frame { display: flex; align-items: center; justify-content: center; height: 110px; }
-.old-picture-shape { display: block; height: 100%; max-width: 100%; overflow: hidden; border-radius: 6px; border: 1px solid var(--line-strong); background: var(--panel); }
+.old-picture-shape { display: block; height: 100%; max-width: 100%; overflow: hidden; border-radius: 8px; border: 1px solid var(--line-strong); background: var(--panel); }
 .old-picture[data-slot="cover"] .old-picture-shape { width: 100%; height: auto; }
 .old-picture-shape img { display: block; width: 100%; height: 100%; object-fit: cover; }
 .old-picture-words { display: grid; gap: 2px; min-width: 0; }
-.old-picture-words strong { color: var(--strong); font-size: 13.5px; }
+.old-picture-words strong { color: var(--strong); font-size: 14px; }
 .old-picture-words small { color: var(--muted); font-size: 12px; line-height: 1.35; }
 @media (max-width: 560px) { .old-pictures-choices { grid-template-columns: minmax(0, 1fr); } }
 /* In the library's banner: the boxes alone, on a line of their own under its question. */
@@ -2705,7 +2793,7 @@ body:has(.tv-mode) .account-menu-name { display: block; }
 .tick-bar {
   position: fixed; left: 50%; bottom: calc(20px + var(--pad-hints, env(safe-area-inset-bottom, 0px))); z-index: 24; transform: translateX(-50%);
   display: flex; align-items: center; gap: 8px; width: max-content; max-width: calc(100vw - 24px); padding: 8px 10px 8px 8px;
-  border: 1px solid var(--line-strong); border-radius: 14px; background: var(--raised); color: var(--strong); box-shadow: 0 12px 32px rgb(0 0 0 / 0.5);
+  border: 1px solid var(--line-strong); border-radius: 12px; background: var(--raised); color: var(--strong); box-shadow: 0 12px 32px rgb(0 0 0 / 0.5);
 }
 body:has(.tick-bar) .toast { bottom: calc(92px + var(--pad-hints, env(safe-area-inset-bottom, 0px))); }
 /* Room under the last row of cards, so the bar doesn't cover them; the Sidebar layout's list scrolls in its own box. */
@@ -2737,20 +2825,20 @@ main:has(.tick-bar) { scroll-padding-bottom: 96px; }
 /* Scrolling, not squeezed: the headings keep their height. */
 .tick-menu > * { flex-shrink: 0; }
 .tick-menu button[aria-checked="mixed"] .game-menu-check { color: var(--muted); }
-.tv-mode .tick-bar .tool, .tv-mode .tick-bar .tick-done { height: 44px; font-size: 15px; }
+.tv-mode .tick-bar .tool, .tv-mode .tick-bar .tick-done { height: 44px; font-size: 14px; }
 
 /* Settings › Apps folder: each console folder's name and place (console-folders.tsx), one line each in one box. */
 .console-folders { margin: 4px 0 8px; }
 .console-folders > summary { cursor: pointer; color: var(--strong); font-weight: 600; }
 .console-folders > p { margin: 6px 0 10px; font-size: 13px; }
-.console-folder-list { margin: 0 0 10px; padding: 0; list-style: none; border: 1px solid var(--line); border-radius: 10px; }
+.console-folder-list { margin: 0 0 10px; padding: 0; list-style: none; border: 1px solid var(--line); border-radius: 8px; }
 .console-folder { display: grid; grid-template-columns: minmax(7em, 9.5em) minmax(0, 1fr); align-items: center; gap: 4px 12px; padding: 7px 10px; }
 .console-folder + .console-folder { border-top: 1px solid var(--line); }
-.console-folder-name { display: grid; min-width: 0; color: var(--strong); font-weight: 600; font-size: 13.5px; line-height: 1.25; }
+.console-folder-name { display: grid; min-width: 0; color: var(--strong); font-weight: 600; font-size: 14px; line-height: 1.25; }
 .console-folder-name .muted { font-size: 12px; font-weight: 400; }
 .console-folder-edit { display: flex; align-items: center; gap: 6px; min-width: 0; }
 .console-folder-edit > button { flex: none; white-space: nowrap; }
-.console-folder-path { flex: 1 1 auto; min-width: 0; min-height: 32px; padding: 4px 9px; border: 1px solid var(--line-strong); border-radius: 7px; background: var(--input-bg); color: var(--fg); font-size: 13px; text-overflow: ellipsis; }
+.console-folder-path { flex: 1 1 auto; min-width: 0; min-height: 32px; padding: 4px 9px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--input-bg); color: var(--fg); font-size: 13px; text-overflow: ellipsis; }
 .console-folder-path::placeholder { color: var(--muted); opacity: 0.8; }
 .console-folder-path[aria-invalid="true"] { border-color: var(--danger); }
 .console-folder-note, .console-folder-left { grid-column: 2; margin: 0; font-size: 13px; overflow-wrap: anywhere; }
@@ -2765,17 +2853,17 @@ main:has(.tick-bar) { scroll-padding-bottom: 96px; }
   .console-folder-edit { flex-wrap: wrap; }
   .console-folder-path { flex-basis: 100%; }
 }
-.system-naming { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin: 4px 0 10px; font-size: 13.5px; }
+.system-naming { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin: 4px 0 10px; font-size: 14px; }
 .system-naming select { min-width: 0; max-width: 100%; }
 /* Apps that stay at the top of the apps folder, in groups by why: said once, then a line for each app. */
 .stays-group { margin: 10px 0 0; max-width: 760px; }
 .stays-head { margin: 0 0 6px; font-size: 13px; }
 .stays-head strong { color: var(--strong); }
-.stays-list { margin: 0; padding: 0; list-style: none; border: 1px solid var(--line); border-radius: 10px; }
+.stays-list { margin: 0; padding: 0; list-style: none; border: 1px solid var(--line); border-radius: 8px; }
 .stays-list li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 12px; min-height: 40px; padding: 5px 10px; }
 .stays-list li + li { border-top: 1px solid var(--line); }
 .stays-app { min-width: 0; color: var(--fg); font-size: 13px; font-weight: 600; overflow-wrap: anywhere; }
-.settings-pane .stays-list .choose-system { flex: 0 1 13em; min-width: 0; padding: 4px 8px; font-size: 12.5px; }
+.settings-pane .stays-list .choose-system { flex: 0 1 13em; min-width: 0; padding: 4px 8px; font-size: 13px; }
 .choose-system-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 6px; min-width: 0; }
 .choose-system-row .chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .choose-system-row .chip { display: inline-flex; align-items: center; height: 26px; padding: 0 10px; font-size: 12px; cursor: pointer; }
@@ -2785,11 +2873,11 @@ main:has(.tick-bar) { scroll-padding-bottom: 96px; }
 .system-folders { display: grid; gap: 10px; margin: 2px 0 14px; padding: 2px 0 2px 14px; border-left: 2px solid var(--line); }
 .system-folders > p.muted { margin: 0; font-size: 13px; }
 .system-folders .system-naming, .system-folders .console-folders, .system-folders .apps-staying { margin: 0; }
-.system-sort { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; padding: 8px 8px 8px 12px; border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent); background: var(--accent-soft); border-radius: 10px; font-size: 13.5px; color: var(--fg); }
+.system-sort { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; padding: 8px 8px 8px 12px; border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent); background: var(--accent-soft); border-radius: 8px; font-size: 14px; color: var(--fg); }
 .settings-pane .system-sort button { flex: 0 0 auto; }
 .system-folders .stays-group:first-of-type { margin-top: 8px; }
 /* Its two folds alike: the apps that stay, and the system folders' names and places. */
-.system-folders details > summary { cursor: pointer; color: var(--strong); font-size: 13.5px; font-weight: 600; }
+.system-folders details > summary { cursor: pointer; color: var(--strong); font-size: 14px; font-weight: 600; }
 /* An apps folder's path on one line: what it's in shortens with an ellipsis, its own name stays (title: all of it). */
 .apps-folder-name { flex-wrap: nowrap; }
 .apps-folder-path { display: flex; min-width: 0; white-space: nowrap; }
@@ -2805,7 +2893,7 @@ main:has(.tick-bar) { scroll-padding-bottom: 96px; }
 .release-files-help { margin: -4px 0 0; padding-left: 18px; display: grid; gap: 3px; }
 .release-files code { font-size: 12px; padding: 0 4px; border-radius: 4px; background: color-mix(in srgb, var(--line) 60%, transparent); }
 .release-files-preview ul { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 4px; max-height: 220px; overflow: auto; }
-.release-files-preview li { display: flex; align-items: center; gap: 6px; font-size: 12.5px; overflow-wrap: anywhere; }
+.release-files-preview li { display: flex; align-items: center; gap: 6px; font-size: 13px; overflow-wrap: anywhere; }
 .release-files-preview li.kept svg { color: var(--green); flex: none; }
 .release-files-preview li.left-out { color: var(--text-3); text-decoration: line-through; }
 .release-files-preview li.left-out svg { flex: none; }
@@ -2817,7 +2905,7 @@ main:has(.tick-bar) { scroll-padding-bottom: 96px; }
 [data-dragging], [data-dragging] * { cursor: grabbing !important; user-select: none; }
 .panel-tab.drop-before::before, .panel-tab.drop-after::after,
 .playlist-tab.drop-before::before, .playlist-tab.drop-after::after {
-  content: ""; position: absolute; border-radius: 2px; background: var(--accent); pointer-events: none;
+  content: ""; position: absolute; border-radius: 4px; background: var(--accent); pointer-events: none;
 }
 .panel-tab.drop-before::before, .panel-tab.drop-after::after { left: 4px; right: 4px; height: 2px; }
 .panel-tab.drop-before::before { top: -2px; }

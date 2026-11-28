@@ -11,6 +11,7 @@ import { Artwork, EntryCard, ScrollingText } from "@quiverlauncher/ui";
 import { useBrowseCards } from "./library-view";
 import { useLauncher } from "./store";
 import { byPlayerFeedback } from "./catalog";
+import { answer, appKey, keptAnswer } from "./app-memory";
 
 /** How a version reads, as on the website: "PlayStation version", "PlayStation · Director's Cut". */
 export function gameVersionLabel(version: BasedOn, consoleNames: Record<string, string>) {
@@ -115,14 +116,16 @@ export function GamePage({
 }) {
   const { client, library, consoleNames, remember, withShownTags } = useLauncher();
   const looks = useBrowseCards();
-  const [data, setData] = useState<GameDetail | null | undefined>(() => seen.get(link.slug));
+  // One asked ahead (app-memory.ts's prefetchGame) draws the page whole at once.
+  const [data, setData] = useState<GameDetail | null | undefined>(() => seen.get(link.slug) ?? keptAnswer<GameDetail | null>(appKey.game(link.slug)));
   const [failed, setFailed] = useState(false);
   const [round, setRound] = useState(0);
   const [expanded, setExpanded] = useState(false);
   useEffect(() => {
     let live = true;
     setFailed(false);
-    client.game(link.slug).then(
+    // Asked again on a retry, not the answer that failed.
+    (round ? client.game(link.slug) : answer(appKey.game(link.slug), () => client.game(link.slug))).then(
       (d) => {
         if (!live) return;
         seen.set(link.slug, d);

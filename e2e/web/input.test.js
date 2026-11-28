@@ -22,7 +22,7 @@ test("with a controller connected, the bottom says what its buttons do, as it la
   await app.execute(() => document.querySelector(".library-tile .card-open").focus());
   await s.until(async () => (await hints()).join(", ").startsWith("A Play, Y Menu"));
   // On a catalog card: A opens it, Y opens its menu, X adds it, with that button showing X.
-  await open("button", { text: "Browse" });
+  await open("button", { text: "Discover" });
   await app.execute(() => document.querySelector('article[data-slug="tampered-port"] .card-open').focus());
   await s.until(async () => (await hints()).join(", ").startsWith("A Open, Y Menu, X Add"));
   await s.until(() => app.execute(() => document.querySelector('article[data-slug="tampered-port"] .card-action .primary')?.getAttribute("data-pad-glyph") === "X"));
@@ -85,7 +85,7 @@ test("after a mouse click, and back in front of other windows, a controller's fo
   await home();
   const ringed = () => app.execute(() => document.activeElement?.matches(":focus-visible") ?? false);
   // A click with the mouse, then the d-pad: the browser alone would leave the ring off.
-  await page.getByRole("button", { name: /^Browse ?\d*$/ }).click();
+  await page.getByRole("button", { name: /^Discover ?\d*$/ }).click();
   await reach.press(app, "DPadDown");
   assert.ok(await ringed(), "the d-pad's focus shows after a click");
   // Back in front of other windows, as the controller left it: the ring the browser dropped comes back. A script's
@@ -104,7 +104,7 @@ test("outside TV mode, the shoulder buttons go between Library and Browse, as th
   const showing = () => app.execute(() => document.querySelector('.topbar [data-tabs] [aria-current="page"]')?.innerText.trim() ?? "");
   assert.match(await showing(), /^Library/);
   await reach.press(app, "RightTrigger");
-  await s.until(async () => /^Browse/.test(await showing()));
+  await s.until(async () => /^Discover/.test(await showing()));
   await reach.press(app, "LeftTrigger");
   await s.until(async () => /^Library/.test(await showing()));
 });

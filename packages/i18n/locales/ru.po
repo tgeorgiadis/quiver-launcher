@@ -24,8 +24,8 @@ msgstr "{0, plural, one {# приложение для других платфо
 
 #. placeholder {0}: changed.length
 #: ../../apps/launcher/src/browse-ticking.tsx
-msgid "{0, plural, one {# app hidden from Browse.} other {# apps hidden from Browse.}}"
-msgstr "{0, plural, one {# приложение скрыто из обзора.} few {# приложения скрыты из обзора.} many {# приложений скрыто из обзора.} other {# приложения скрыты из обзора.}}"
+msgid "{0, plural, one {# app hidden from Discover.} other {# apps hidden from Discover.}}"
+msgstr "{0, plural, one {# приложение скрыто из каталога.} few {# приложения скрыты из каталога.} many {# приложений скрыто из каталога.} other {# приложения скрыты из каталога.}}"
 
 #. placeholder {0}: ids.length
 #: ../../apps/launcher/src/library-ticking.tsx
@@ -51,8 +51,8 @@ msgstr "{0, plural, one {Просмотрено # приложение} few {П�
 
 #. placeholder {0}: changed.length
 #: ../../apps/launcher/src/browse-ticking.tsx
-msgid "{0, plural, one {# app shows in Browse again.} other {# apps show in Browse again.}}"
-msgstr "{0, plural, one {# приложение снова видно в обзоре.} few {# приложения снова видны в обзоре.} many {# приложений снова видны в обзоре.} other {# приложения снова видны в обзоре.}}"
+msgid "{0, plural, one {# app shows in Discover again.} other {# apps show in Discover again.}}"
+msgstr "{0, plural, one {# приложение снова видно в каталоге.} few {# приложения снова видны в каталоге.} many {# приложений снова видны в каталоге.} other {# приложения снова видны в каталоге.}}"
 
 #. placeholder {0}: ids.length
 #: ../../apps/launcher/src/library-ticking.tsx
@@ -127,6 +127,11 @@ msgstr "{0, plural, one {# из них, возможно, хранит сохр�
 #: ../../apps/launcher/src/library-ticking.tsx
 msgid "{0, plural, one {# of them may keep your saves in its folder. Uninstalling sends them to the trash too.} other {# of them may keep your saves in their folders. Uninstalling sends them to the trash too.}}"
 msgstr "{0, plural, one {# из них может хранить ваши сохранения в своей папке. При удалении они тоже попадут в корзину.} few {# из них могут хранить ваши сохранения в своих папках. При удалении они тоже попадут в корзину.} many {# из них могут хранить ваши сохранения в своих папках. При удалении они тоже попадут в корзину.} other {# из них могут хранить ваши сохранения в своих папках. При удалении они тоже попадут в корзину.}}"
+
+#. placeholder {0}: listed.length
+#: ../../apps/launcher/src/detail.tsx
+msgid "{0, plural, one {# other file} other {# other files}}"
+msgstr ""
 
 #. placeholder {0}: library.apps.length
 #: ../../apps/launcher/src/old-library.tsx
@@ -1090,9 +1095,18 @@ msgstr "Прозрачный PNG. Для ярлыка в Steam."
 msgid "Abbreviated (N64, GBC, PS2)"
 msgstr "Сокращённые (N64, GBC, PS2)"
 
+#: ../../apps/launcher/src/App.tsx
+msgid "About {app}"
+msgstr ""
+
 #: ../../apps/launcher/src/detail.tsx
 msgid "About this app"
 msgstr "О приложении"
+
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/discussions.tsx
+msgid "About this discussion"
+msgstr ""
 
 #. Reason for reporting a post
 #: ../../apps/launcher/src/discussions.tsx
@@ -1221,7 +1235,7 @@ msgstr "Добавить папки для консоли"
 msgid "Add folders…"
 msgstr "Добавить папки…"
 
-#. Button over the apps selected in Browse: adds them to the library without installing them
+#. Button over the apps selected in Discover: adds them to the library without installing them
 #: ../../apps/launcher/src/browse-ticking.tsx
 msgid "Add to library"
 msgstr "Добавить в библиотеку"
@@ -1334,6 +1348,10 @@ msgstr "Все приложения"
 #: ../../apps/launcher/src/library.tsx
 msgid "All consoles"
 msgstr "Все консоли"
+
+#: ../../apps/launcher/src/discussions.tsx
+msgid "All discussions"
+msgstr ""
 
 #. Menu item, last under Manage: opens the app's page at its Manage tab
 #: ../../apps/launcher/src/card-menu.tsx
@@ -1728,6 +1746,10 @@ msgid "Based on the project's README, checked {date}"
 msgstr "По README проекта, проверено {date}"
 
 #: ../../apps/launcher/src/feedback.tsx
+msgid "Be the first to say how it runs"
+msgstr ""
+
+#: ../../apps/launcher/src/feedback.tsx
 msgid "Be the first to say how it went."
 msgstr "Расскажите первым, как всё прошло."
 
@@ -1778,17 +1800,9 @@ msgid "Bring your apps over from Quiver Launcher 3?"
 msgstr "Перенести ваши приложения из Quiver Launcher 3?"
 
 #. Tab listing mods to install
-#. The tab with the catalog of apps
-#. The tab with the catalog of apps
-#: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/mods.tsx
 msgid "Browse"
 msgstr "Обзор"
-
-#. Settings section: how the catalog's cards look in Browse
-#: ../../apps/launcher/src/settings-page.tsx
-msgid "Browse cards"
-msgstr "Карточки в обзоре"
 
 #: ../../apps/launcher/src/console-folders.tsx
 msgid "Browse for a folder for {name}"
@@ -2018,6 +2032,10 @@ msgstr "Выбрать резервную копию…"
 #: ../../apps/launcher/src/own-copy-settings.tsx
 msgid "Choose a console…"
 msgstr "Выберите консоль…"
+
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Choose a discussion to read it here."
+msgstr ""
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Choose a download"
@@ -2310,6 +2328,10 @@ msgstr "Закрыть {title}"
 msgid "Close a game by holding buttons together for a second, for games with no way to quit"
 msgstr "Закрывать игру, зажав кнопки вместе на секунду: для игр, из которых не выйти"
 
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Close discussion"
+msgstr ""
+
 #: ../../apps/launcher/src/library-sidebar.tsx
 msgid "Close filters"
 msgstr "Закрыть фильтры"
@@ -2376,6 +2398,7 @@ msgstr "Переходите с Quiver Launcher 3? Покажите Quiver, гд
 msgid "Comment"
 msgstr "Отправить"
 
+#. How many comments a discussion has
 #: ../../apps/launcher/src/discussions.tsx
 msgid "Comments"
 msgstr "Комментарии"
@@ -2420,6 +2443,10 @@ msgstr "Продолжить без восстановления"
 #: ../../apps/launcher/src/controls.tsx
 msgid "Controller"
 msgstr "Контроллер"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Controller support"
+msgstr ""
 
 #: ../../apps/launcher/src/controls.tsx
 #: ../../apps/launcher/src/settings-page.tsx
@@ -2704,6 +2731,23 @@ msgstr "Разработчики отмечают некоторые выпус�
 #: ../../apps/launcher/src/downloads-page.tsx
 msgid "Didn't finish"
 msgstr "Не завершено"
+
+#. The tab with the catalog of apps
+#. The tab with the catalog of apps
+#. The tab with the catalog of apps
+#: ../../apps/launcher/src/App.tsx
+msgid "Discover"
+msgstr "Каталог"
+
+#. Settings section: how the catalog's cards look in Discover
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Discover cards"
+msgstr "Карточки в каталоге"
+
+#. Heading over a discussion's facts, in the column beside it
+#: ../../apps/launcher/src/discussions.tsx
+msgid "DISCUSSION"
+msgstr ""
 
 #. Tab on an app's page: players' threads about it
 #: ../../apps/launcher/src/App.tsx
@@ -3019,6 +3063,11 @@ msgstr "Очень широкая"
 msgid "Featured"
 msgstr "Рекомендуемые"
 
+#. Heading over a port's features, as Widescreen or Controller support
+#: ../../apps/launcher/src/detail.tsx
+msgid "FEATURES"
+msgstr ""
+
 #: ../../apps/launcher/src/App.tsx
 msgid "File"
 msgstr "Файл"
@@ -3026,6 +3075,11 @@ msgstr "Файл"
 #: ../../apps/launcher/src/app-files.tsx
 msgid "File name, like config.ini"
 msgstr "Имя файла, например config.ini"
+
+#. Over a release's files
+#: ../../apps/launcher/src/detail.tsx
+msgid "Files"
+msgstr ""
 
 #: ../../apps/launcher/src/release-files.tsx
 msgid "Files of {version}"
@@ -3089,6 +3143,10 @@ msgstr "Имя папки"
 #: ../../apps/launcher/src/discussions.tsx
 msgid "Follow"
 msgstr "Отслеживать"
+
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Follow it to see its new comments in Community's Following."
+msgstr ""
 
 #. Community tab: the discussions the player follows
 #: ../../apps/launcher/src/discussions.tsx
@@ -3229,6 +3287,10 @@ msgstr "Игры"
 msgid "General"
 msgstr "Общие"
 
+#: ../../apps/launcher/src/detail.tsx
+msgid "Get {version}"
+msgstr ""
+
 #. Button on the player's Discord profile that opens Quiver Launcher's download page, for their friends. Discord cuts it at 32 characters
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Get Quiver Launcher"
@@ -3265,10 +3327,6 @@ msgstr "Токен GitLab"
 #: ../../apps/launcher/src/App.tsx
 msgid "Go back"
 msgstr "Назад"
-
-#: ../../apps/launcher/src/discussions.tsx
-msgid "Go to Community"
-msgstr "Перейти в сообщество"
 
 #. Where an app goes once its systems are chosen, such as Ports/Multi-system
 #: ../../apps/launcher/src/settings-page.tsx
@@ -3391,8 +3449,8 @@ msgstr "Не показывать скрытые"
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/browse-ticking.tsx
 #: ../../apps/launcher/src/card-menu.tsx
-msgid "Hide from Browse"
-msgstr "Скрыть из обзора"
+msgid "Hide from Discover"
+msgstr "Скрыть из каталога"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/card-menu.tsx
@@ -3470,6 +3528,11 @@ msgstr "Как всё прошло?"
 #: ../../apps/launcher/src/feedback.tsx
 msgid "How did it run"
 msgstr "Как работало"
+
+#. Heading beside an app's README: what players said of how it runs
+#: ../../apps/launcher/src/feedback.tsx
+msgid "HOW IT RUNS"
+msgstr ""
 
 #: ../../apps/launcher/src/setup.tsx
 msgid "How should apps update?"
@@ -3578,7 +3641,11 @@ msgstr "Включать предварительные версии прило�
 msgid "Include preview updates"
 msgstr "Получать предварительные версии"
 
-#. Button over the apps selected in Browse: installs them
+#: ../../apps/launcher/src/detail.tsx
+msgid "Increased internal resolution"
+msgstr ""
+
+#. Button over the apps selected in Discover: installs them
 #. Button that installs a mod
 #. Button that installs an app
 #. Button that installs an app
@@ -4053,6 +4120,7 @@ msgid "Keyboard"
 msgstr "Клавиатура"
 
 #: ../../apps/launcher/src/controls.tsx
+#: ../../apps/launcher/src/detail.tsx
 msgid "Keyboard and mouse"
 msgstr "Клавиатура и мышь"
 
@@ -4073,6 +4141,11 @@ msgstr "Крупный"
 #: ../../apps/launcher/src/library-view.tsx
 msgid "Large name"
 msgstr "Крупное название"
+
+#. When a discussion last had a comment
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Last active"
+msgstr ""
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Last backed up {hereWhen}. The saves in your sync folder stay there as a backup. These become your newest."
@@ -4442,6 +4515,10 @@ msgstr "Скучаете по фильтрам тегов из Quiver Launcher 3
 msgid "Mod requirements"
 msgstr "Требования мода"
 
+#: ../../apps/launcher/src/detail.tsx
+msgid "Mod support"
+msgstr ""
+
 #: ../../apps/launcher/src/mods.tsx
 msgid "Mods"
 msgstr "Моды"
@@ -4458,8 +4535,10 @@ msgstr "Моды хранятся в {modsPath} в папке приложени
 msgid "Mods to browse"
 msgstr "Моды для обзора"
 
+#. App page button: a menu of what's seldom wanted (hide from Discover, report a problem)
 #. Button over the selected apps: the rest of what can change on them
 #. Button over the selected apps: the rest of what can change on them
+#: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/library-ticking.tsx
 msgid "More"
 msgstr "Ещё"
@@ -4856,6 +4935,10 @@ msgstr "Пока нет обсуждений приложений из ваше�
 msgid "No discussions yet. Ask a question or share a tip."
 msgstr "Обсуждений пока нет. Задайте вопрос или поделитесь советом."
 
+#: ../../apps/launcher/src/detail.tsx
+msgid "No features listed yet."
+msgstr ""
+
 #. A release with no files Quiver Launcher can install, such as one with only source code
 #: ../ui/src/index.tsx
 msgid "No files"
@@ -5220,6 +5303,14 @@ msgstr "OK"
 #: ../../apps/launcher/src/library-view.tsx
 msgid "One card for each game"
 msgstr "Одна карточка на игру"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Online co-op"
+msgstr ""
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Online multiplayer"
+msgstr ""
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/library.tsx
@@ -5849,10 +5940,6 @@ msgstr "Quiver Launcher не знает, какая это версия. Дос�
 msgid "Quiver Launcher doesn't offer this release by itself"
 msgstr "Quiver Launcher не предлагает эту версию сам"
 
-#: ../../apps/launcher/src/detail.tsx
-msgid "Quiver Launcher doesn't offer this release by itself. Installing one of its files asks you to confirm first."
-msgstr "Quiver Launcher не предлагает эту версию сам. Чтобы установить один из её файлов, сначала нужно подтвердить."
-
 #: ../../apps/launcher/src/main.tsx
 msgid "Quiver Launcher hit a problem"
 msgstr "В Quiver Launcher возникла проблема"
@@ -6039,6 +6126,11 @@ msgstr ""
 msgid "Release files"
 msgstr "Файлы версии"
 
+#. Over a release's notes
+#: ../../apps/launcher/src/detail.tsx
+msgid "Release notes"
+msgstr ""
+
 #. Tab of an app's page
 #. Which of an app's releases it gets: main releases only, or pre-releases too
 #: ../../apps/launcher/src/App.tsx
@@ -6218,10 +6310,14 @@ msgstr "Заменить вашу библиотеку копией от {taken}
 msgid "Report"
 msgstr "Пожаловаться"
 
-#. App page button: tell the maintainers something on the page is wrong or missing
 #: ../../apps/launcher/src/correction.tsx
 msgid "Report a problem"
 msgstr "Сообщить о проблеме"
+
+#. App page menu item: tell the maintainers something on the page is wrong or missing
+#: ../../apps/launcher/src/App.tsx
+msgid "Report a problem…"
+msgstr ""
 
 #: ../../apps/launcher/src/game-report-prompt.tsx
 msgid "Report sent. Thanks."
@@ -6543,6 +6639,10 @@ msgstr "Посмотреть отчёт"
 msgid "See what each app keeps in your account, and remove copies you don't need."
 msgstr "Посмотрите, что хранит в аккаунте каждое приложение, и удалите ненужные копии."
 
+#: ../../apps/launcher/src/feedback.tsx
+msgid "See what players said"
+msgstr ""
+
 #: ../../apps/launcher/src/old-library.tsx
 msgid "See which apps"
 msgstr "Посмотреть, какие приложения"
@@ -6804,8 +6904,8 @@ msgstr "Показывать скрытые приложения"
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/browse-ticking.tsx
 #: ../../apps/launcher/src/card-menu.tsx
-msgid "Show in Browse"
-msgstr "Показать в обзоре"
+msgid "Show in Discover"
+msgstr "Показать в каталоге"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/card-menu.tsx
@@ -7054,6 +7154,14 @@ msgstr "Занятое место"
 msgid "Spam"
 msgstr "Спам"
 
+#: ../../apps/launcher/src/detail.tsx
+msgid "Split screen"
+msgstr ""
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Split-screen co-op"
+msgstr ""
+
 #: ../../apps/launcher/src/custom-art.tsx
 msgid "Square, about 512×512. The app's page, the Icon view and its shortcuts."
 msgstr "Квадратное, примерно 512×512. Страница приложения, вид значков и ярлыки."
@@ -7091,6 +7199,16 @@ msgstr "Какую программу запустить?"
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Start with Windows, in the system tray"
 msgstr "Запускать вместе с Windows в системном трее"
+
+#. When a discussion was started
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Started"
+msgstr ""
+
+#. Who started a discussion
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Started by"
+msgstr ""
 
 #. Who started a discussion, in a list of discussions
 #: ../../apps/launcher/src/discussions.tsx
@@ -7893,6 +8011,10 @@ msgstr "Ввести"
 msgid "Type the folder's whole path, or choose it with Browse…"
 msgstr "Введите полный путь к папке или выберите её через «Обзор…»"
 
+#: ../../apps/launcher/src/detail.tsx
+msgid "Ultrawide"
+msgstr ""
+
 #: ../../apps/launcher/src/sidebar.ts
 msgid "Under a minute"
 msgstr "Меньше минуты"
@@ -7950,6 +8072,10 @@ msgstr "Без ограничений"
 #: ../../apps/launcher/src/discussions.tsx
 msgid "Unlock"
 msgstr "Открыть"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Unlocked framerate"
+msgstr ""
 
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Unpacking your copy…"
@@ -8131,6 +8257,10 @@ msgstr "Обновления устанавливаются сразу посл�
 #: ../../apps/launcher/src/App.tsx
 msgid "Updates keep installing into it. Desktop and Steam shortcuts you made before point at the old name, so make them again."
 msgstr "Обновления продолжат устанавливаться в неё. Созданные раньше ярлыки на рабочем столе и в Steam указывают на старое имя, так что создайте их заново."
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Updates won't install it for you, but you can still install it here. You'll be asked to confirm first."
+msgstr ""
 
 #: ../../apps/launcher/src/downloads-page.tsx
 msgid "Updating Quiver Launcher"
@@ -8539,6 +8669,10 @@ msgid "Wide, about 920×430. The Cover view, and anywhere there's no box art."
 msgstr "Широкое, примерно 920×430. Вид обложек и всё, где нет обложки коробки."
 
 #: ../../apps/launcher/src/detail.tsx
+msgid "Widescreen"
+msgstr ""
+
+#: ../../apps/launcher/src/detail.tsx
 msgid "Windows (Wine)"
 msgstr "Windows (Wine)"
 
@@ -8598,6 +8732,10 @@ msgstr ""
 #: ../../apps/launcher/src/App.tsx
 msgid "You skipped {updateVersion}. Quiver Launcher offers the next new release."
 msgstr "Вы пропустили {updateVersion}. Quiver Launcher предложит следующую новую версию."
+
+#: ../../apps/launcher/src/discussions.tsx
+msgid "You'll see its new comments in Community's Following."
+msgstr ""
 
 #: ../../apps/launcher/src/announcements-ui.tsx
 msgid "You're all caught up."

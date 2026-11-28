@@ -126,7 +126,7 @@ function BrowseMenuItems({ entry, onOpen, close, onReadme, onFeedback }: { entry
       <hr />
       {item(t`Share feedback…`, onFeedback)}
       <hr />
-      {item(hidden ? t`Show in Browse` : t`Hide from Browse`, toggle)}
+      {item(hidden ? t`Show in Discover` : t`Hide from Discover`, toggle)}
       {tickToggle && item(ticked ? t({ message: "Unselect", comment: "Menu item: takes an app out of the apps selected in the library" }) : t({ message: "Select", comment: "Menu item: selects an app in the library, to change several at once" }), () => tickToggle([entry.id]))}
     </div>
   );

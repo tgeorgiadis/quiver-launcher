@@ -9,7 +9,7 @@ Every plural needs all four forms: `one` (1, 21), `few` (2–4, 22–24), `many`
 | app | приложение | |
 | library | библиотека | |
 | playlist | плейлист | |
-| Browse | Обзор | the catalog page |
+| Discover | Каталог | the catalog page |
 | catalog | каталог | |
 | Add / Install | Добавить / Установить | the buttons that put an app in the library, then install it |
 | Play / Play anyway | Играть / Всё равно играть | |

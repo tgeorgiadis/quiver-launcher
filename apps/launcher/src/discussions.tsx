@@ -1,15 +1,15 @@
 /**
  * Discussions, as on the website (its src/components/Discussions.tsx and
  * docs/specs/discussions.md): an app's Discussions tab, the Community page
- * (Recent, General and Following), and a discussion's own page. They read the
+ * (Recent, General and Following), each discussion opening in place there. They read the
  * site's backend live, through the same signed-in Convex client as the
  * library sync (account.tsx).
  */
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { useMutation, usePaginatedQuery, useQuery } from "convex/react";
-import { makeFunctionReference, type FunctionReference } from "convex/server";
+import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
+import { useConvex, useMutation, usePaginatedQuery, useQuery, type ConvexReactClient } from "convex/react";
+import { getFunctionName, makeFunctionReference, type FunctionReference } from "convex/server";
 import { ConvexError } from "convex/values";
-import { ArrowLeft, Bell, ChevronRight, BellOff, Eye, EyeOff, Flag, Lock, LockOpen, MessageSquare, MessagesSquare, Pencil, Pin, PinOff, Search } from "lucide-react";
+import { ArrowLeft, Bell, ChevronRight, BellOff, Eye, EyeOff, Flag, Lock, LockOpen, MessageSquare, MessagesSquare, Pencil, Pin, PinOff, Search, X } from "lucide-react";
 import { msg, plural, t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import type { MessageDescriptor } from "@lingui/core";
@@ -18,7 +18,9 @@ import { Artwork, SourcedImage, fullDate, heroSources, iconSources, relativeTime
 import { useAccount, useLive } from "./account";
 import { ErrorBoundary } from "./boundary";
 import { isOwn } from "./custom";
-import { useLauncher } from "./store";
+import { pageArea } from "./spatial";
+import { tvModeOn, useLauncher } from "./store";
+import { useWiderThan } from "./wide";
 
 /** The site's limits (its convex/limits.ts). */
 export const TITLE_LIMIT = 120;
@@ -115,6 +117,61 @@ export type DiscussionNav = {
 const NavContext = createContext<DiscussionNav>({ openDiscussion: () => {}, openCommunity: () => {}, openApp: () => {}, signIn: () => {} });
 export const DiscussionNavProvider = NavContext.Provider;
 const useNav = () => useContext(NavContext);
+
+/**
+ * A list's discussions open where the list is (ThreadPane): over it in an app's Discussions tab and in a narrow
+ * Community, beside it in a wide one. Not under one, as from a followed one elsewhere, Community opens at it.
+ */
+type ThreadAt = { open: (id: string) => void; current: string | null };
+const ThreadPlace = createContext<ThreadAt | null>(null);
+function useOpenThread() {
+  const place = useContext(ThreadPlace);
+  const { openDiscussion } = useNav();
+  return { open: place?.open ?? openDiscussion, current: place?.current ?? null };
+}
+
+/**
+ * The discussion open in place of a list or beside it, if one is, and the way back: where the list was scrolled to and
+ * the focus on the row it opened from. `beside`, the list stays as it was, so only the focus goes back.
+ */
+export function useThread(initial: string | null = null, beside = false) {
+  const [id, setId] = useState(initial);
+  const from = useRef<{ y: number; id: string } | null>(null);
+  const besideNow = useRef(beside);
+  useLayoutEffect(() => void (besideNow.current = beside));
+  const open = useCallback((next: string) => {
+    from.current = { y: pageArea().scrollTop, id: next };
+    setId(next);
+  }, []);
+  const close = useCallback(() => setId(null), []);
+  useLayoutEffect(() => {
+    const was = from.current;
+    if (id !== null || !was) return;
+    from.current = null;
+    // Braces matter: scrollTo returns a Promise in newer WebView2.
+    if (!besideNow.current) {
+      pageArea().scrollTo(0, was.y);
+    }
+    document.querySelector<HTMLElement>(`[data-thread="${CSS.escape(was.id)}"]`)?.focus({ preventScroll: true });
+  }, [id]);
+  return { id, open, close, show: setId };
+}
+export type OpenThread = ReturnType<typeof useThread>;
+
+/** Escape, or a controller's Back, calls `onClose` while `box` shows, ahead of the page going back: not from under a dialog or menu. */
+function useEscapeCloses(box: RefObject<HTMLElement | null>, onClose: () => void) {
+  const close = useRef(onClose);
+  useLayoutEffect(() => void (close.current = onClose));
+  useEffect(() => {
+    const key = (e: KeyboardEvent) => {
+      if (e.key !== "Escape" || !box.current?.getClientRects().length || document.querySelector('[role="dialog"], [role="menu"], .menu.floating')) return;
+      e.stopImmediatePropagation();
+      close.current();
+    };
+    window.addEventListener("keydown", key, true);
+    return () => window.removeEventListener("keydown", key, true);
+  }, [box]);
+}
 
 /** The site's reason for a refusal ("This discussion is locked"), or `fallback`. */
 function reason(error: unknown, fallback: string) {
@@ -213,11 +270,20 @@ function Flags({ thread }: { thread: Summary }) {
 }
 
 function Row({ thread }: { thread: Summary }) {
-  const { openDiscussion } = useNav();
+  const { open, current } = useOpenThread();
+  const { thread: threadAhead } = useDiscussionsAhead();
   const active = relativeTime(thread.lastActivityAt);
   return (
     <li className="discussion-row">
-      <button type="button" className="discussion-row-link" onClick={() => openDiscussion(thread.id)}>
+      <button
+        type="button"
+        className="discussion-row-link"
+        data-thread={thread.id}
+        aria-current={current === thread.id || undefined}
+        onClick={() => open(thread.id)}
+        onPointerEnter={() => threadAhead(thread.id)}
+        onFocus={() => threadAhead(thread.id)}
+      >
         <span className="discussion-row-title">
           <Flags thread={thread} />
           {thread.title}
@@ -236,14 +302,151 @@ function Row({ thread }: { thread: Summary }) {
   );
 }
 
-/** An app's Discussions tab. */
-export function DiscussionsTab({ entryId }: { entryId: string }) {
+/**
+ * An app's Discussions tab: its list, or a discussion open in its place, Back going back to the list. The list stays
+ * under it, hidden, so it comes back as it was. `detailsBeside`, the page's column has the discussion's facts and
+ * following it (ThreadDetails).
+ */
+export function DiscussionsTab({ entryId, thread, detailsBeside }: { entryId: string; thread: OpenThread; detailsBeside: boolean }) {
+  const place = useMemo(() => ({ open: thread.open, current: thread.id }), [thread.open, thread.id]);
   return (
     <section className="discussions" aria-label={t`Discussions`}>
       <Live>
-        <Board entryId={entryId} />
+        <ThreadPlace.Provider value={place}>
+          <div className="discussion-board" hidden={!!thread.id}>
+            <Board entryId={entryId} />
+          </div>
+          {thread.id && <ThreadPane key={thread.id} id={thread.id} back={t`All discussions`} onClose={thread.close} inApp detailsBeside={detailsBeside} />}
+        </ThreadPlace.Provider>
       </Live>
     </section>
+  );
+}
+
+/**
+ * A discussion open where its list is: in place of it, with Back to it at its top, or `beside` it (a wide Community),
+ * with its own scroll and a close button. Escape or a controller's Back closes it, ahead of the page going back.
+ */
+function ThreadPane({ id, back, onClose, beside, inApp, detailsBeside }: { id: string; back: string; onClose: () => void; beside?: boolean; inApp?: boolean; detailsBeside?: boolean }) {
+  const pane = useRef<HTMLDivElement>(null);
+  const first = useRef<HTMLButtonElement>(null);
+  const room = useRoom(pane, !!beside);
+  useEscapeCloses(pane, onClose);
+  // The focus to it, to read on from with the d-pad, and its top into sight when the list it took the place of was scrolled past it.
+  useLayoutEffect(() => {
+    first.current?.focus({ preventScroll: true });
+    const el = pane.current;
+    const view = el?.closest("main");
+    if (el && view && !beside && el.getBoundingClientRect().top < view.getBoundingClientRect().top) el.scrollIntoView({ block: "start" });
+  }, [beside]);
+  return (
+    <div ref={pane} className="thread-pane" data-beside={beside || undefined} style={beside && room ? { maxHeight: room } : undefined}>
+      {beside ? (
+        <button ref={first} type="button" className="icon thread-close" aria-label={t`Close discussion`} title={t`Close discussion`} onClick={onClose}>
+          <X size={18} aria-hidden="true" />
+        </button>
+      ) : (
+        <button ref={first} type="button" className="back-link" onClick={onClose}>
+          <ArrowLeft size={15} aria-hidden="true" /> {back}
+        </button>
+      )}
+      <Live>
+        <ThreadLoader id={id} inApp={inApp} detailsBeside={detailsBeside} gone={{ label: back, onClose }} />
+      </Live>
+    </div>
+  );
+}
+
+/** How tall `box` can be and stay whole in the window as the page scrolls (it's sticky), when `on`. */
+function useRoom(box: RefObject<HTMLElement | null>, on: boolean) {
+  const [room, setRoom] = useState<number>();
+  useLayoutEffect(() => {
+    const view = box.current?.closest("main");
+    if (!on || !view) return;
+    const measure = () => setRoom(view.clientHeight - 32);
+    measure();
+    if (typeof ResizeObserver === "undefined") return;
+    const sized = new ResizeObserver(measure);
+    sized.observe(view);
+    return () => sized.disconnect();
+  }, [box, on]);
+  return on ? room : undefined;
+}
+
+/** A discussion's facts, in the column beside it on a wide app page: who started it and when, its comments, its last activity, and following or reporting it. */
+export function ThreadDetails({ id }: { id: string }) {
+  if (!useLive()) return null;
+  return (
+    <ErrorBoundary fallback={() => null}>
+      <Details id={id} />
+    </ErrorBoundary>
+  );
+}
+
+function Details({ id }: { id: string }) {
+  const { user } = useAccount();
+  const thread = useQuery(fns.get, { id }) as Thread | null | undefined;
+  const setFollowing = useMutation(fns.setFollowing);
+  if (!thread) return null;
+  return (
+    <section className="panel content-panel thread-details" aria-label={t`About this discussion`}>
+      <h2 className="eyebrow">
+        <Trans comment="Heading over a discussion's facts, in the column beside it">DISCUSSION</Trans>
+      </h2>
+      <dl>
+        <div>
+          <dt>
+            <Trans comment="Who started a discussion">Started by</Trans>
+          </dt>
+          <dd>{thread.author}</dd>
+        </div>
+        <div>
+          <dt>
+            <Trans comment="When a discussion was started">Started</Trans>
+          </dt>
+          <dd title={fullDate(thread.createdAt)}>{relativeTime(thread.createdAt)}</dd>
+        </div>
+        <div>
+          <dt>
+            <Trans comment="How many comments a discussion has">Comments</Trans>
+          </dt>
+          <dd>{thread.comments.toLocaleString(i18n.locale)}</dd>
+        </div>
+        <div>
+          <dt>
+            <Trans comment="When a discussion last had a comment">Last active</Trans>
+          </dt>
+          <dd title={fullDate(thread.lastActivityAt)}>{relativeTime(thread.lastActivityAt)}</dd>
+        </div>
+      </dl>
+      {user && (
+        <div className="discussion-actions">
+          <FollowAction thread={thread} onToggle={() => setFollowing({ id: thread.id, following: !thread.following })} />
+          {!thread.mine && <ReportControl target={{ discussionId: thread.id }} reported={thread.reported} />}
+        </div>
+      )}
+      {user && (
+        <p className="muted thread-details-note">
+          {thread.following ? t`You'll see its new comments in Community's Following.` : t`Follow it to see its new comments in Community's Following.`}
+        </p>
+      )}
+    </section>
+  );
+}
+
+function FollowAction({ thread, onToggle }: { thread: Thread; onToggle: () => Promise<unknown> }) {
+  return (
+    <Action onClick={onToggle}>
+      {thread.following ? (
+        <>
+          <BellOff size={14} aria-hidden="true" /> <Trans comment="Stops new comments showing on the account page">Unfollow</Trans>
+        </>
+      ) : (
+        <>
+          <Bell size={14} aria-hidden="true" /> <Trans comment="Shows new comments on the account page">Follow</Trans>
+        </>
+      )}
+    </Action>
   );
 }
 
@@ -251,6 +454,89 @@ export function DiscussionsTab({ entryId }: { entryId: string }) {
 export function useDiscussionCount(entryId: string, on: boolean) {
   const live = useLive();
   return useSafeQuery<number>(fns.count, live && on ? { entryId } : "skip");
+}
+
+/** Queries asked ahead (useDiscussionsAhead), each watched a minute, the newest few. */
+const ahead = new Map<string, { stop: () => void; timer: number }>();
+const AHEAD_MS = 60_000;
+const AHEAD_MAX = 12;
+
+/** A list's first page, as a paginated query asks for it (useFirstPage reads it). */
+const firstPage = (numItems: number) => ({ numItems, cursor: null });
+
+/** Watches `query` for a minute, or a minute more if it's watched already. */
+function watchAhead(client: ConvexReactClient, query: FunctionReference<"query">, args: Record<string, unknown>) {
+  const key = `${getFunctionName(query)}|${JSON.stringify(args)}`;
+  const had = ahead.get(key);
+  let stop = had?.stop;
+  if (had) {
+    window.clearTimeout(had.timer);
+    ahead.delete(key);
+  } else {
+    try {
+      stop = client.watchQuery(query, args).onUpdate(() => {});
+    } catch {
+      return;
+    }
+  }
+  const timer = window.setTimeout(() => {
+    ahead.get(key)?.stop();
+    ahead.delete(key);
+  }, AHEAD_MS);
+  ahead.set(key, { stop: stop!, timer });
+  for (const [k, kept] of ahead) {
+    if (ahead.size <= AHEAD_MAX) break;
+    window.clearTimeout(kept.timer);
+    kept.stop();
+    ahead.delete(k);
+  }
+}
+
+/**
+ * What the community asks the site for, asked ahead as the pointer or the focus comes to what shows it: an app's
+ * discussion count (its card), its Discussions tab, a discussion (its row), Community (its button). Each is watched a
+ * minute, so the page or tab, opened meanwhile, shows it as it opens rather than a moment after. Nothing without the
+ * site live.
+ */
+export function useDiscussionsAhead() {
+  const client = useConvex();
+  const live = useLive();
+  return useMemo(() => {
+    const watch = (query: FunctionReference<"query">, args: Record<string, unknown>) => live && client && watchAhead(client, query, args);
+    return {
+      count: (entryId: string) => watch(fns.count, { entryId }),
+      board: (entryId: string) => {
+        watch(fns.pinned, { entryId });
+        watch(fns.list, { entryId, paginationOpts: firstPage(BOARD_PAGE) });
+      },
+      thread: (id: string) => {
+        watch(fns.get, { id });
+        watch(fns.comments, { discussionId: id, paginationOpts: firstPage(COMMENTS_PAGE) });
+      },
+      community: () => watch(fns.recent, { order: "activity", paginationOpts: firstPage(RECENT_PAGE) }),
+    };
+  }, [client, live]);
+}
+
+const BOARD_PAGE = 20;
+const COMMENTS_PAGE = 30;
+const RECENT_PAGE = 20;
+
+type Paged = { results: unknown[]; status: string; loadMore: (n: number) => void };
+/**
+ * A paginated list, with the first page one asked ahead has (useDiscussionsAhead) while its own is on its way: each
+ * paginated query asks with an id of its own, so the one asked ahead isn't the one it waits for.
+ */
+function useFirstPage<T extends Paged>(query: FunctionReference<"query">, args: Record<string, unknown> | "skip", numItems: number, list: T): T {
+  const client = useConvex();
+  if (args === "skip" || list.status !== "LoadingFirstPage" || !client) return list;
+  let kept: { page: unknown[]; isDone: boolean } | undefined;
+  try {
+    kept = client.watchQuery(query, { ...args, paginationOpts: firstPage(numItems) }).localQueryResult() as typeof kept;
+  } catch {
+    return list;
+  }
+  return kept ? { ...list, results: kept.page, status: kept.isDone ? "Exhausted" : "CanLoadMore" } : list;
 }
 
 /** A query that answers undefined, not an error, when the site doesn't have it yet. */
@@ -269,7 +555,7 @@ function Board({ entryId, category, search = "" }: { entryId?: string; category?
   const [composing, setComposing] = useState(false);
   const where = entryId ? { entryId } : { category };
   const pinned = useQuery(fns.pinned, where) as Summary[] | undefined;
-  const list = usePaginatedQuery(fns.list, where, { initialNumItems: 20 });
+  const list = useFirstPage(fns.list, where, BOARD_PAGE, usePaginatedQuery(fns.list, where, { initialNumItems: BOARD_PAGE }));
   const results = list.results as Summary[];
   const text = search.trim();
   const found = useQuery(fns.search, text ? { ...where, text } : "skip") as Summary[] | undefined;
@@ -364,7 +650,7 @@ function Composer({
 }) {
   const create = useMutation(fns.create);
   const edit = useMutation(fns.edit);
-  const { openDiscussion } = useNav();
+  const { open: openThread } = useOpenThread();
   const [title, setTitle] = useState(editing?.title ?? "");
   const [body, setBody] = useState(editing?.body ?? "");
   const [busy, setBusy] = useState(false);
@@ -383,7 +669,7 @@ function Composer({
           } else {
             const id = (await create({ ...(entryId ? { entryId } : { category }), title, body })) as string;
             onClose();
-            openDiscussion(id);
+            openThread(id);
           }
         } catch (error) {
           setMessage(reason(error, t`Couldn't post that. Try again.`));
@@ -605,23 +891,9 @@ function When({ at, edited }: { at: number; edited?: number }) {
   );
 }
 
-/** A discussion's own page: its post, comments and the comment box. */
-export function DiscussionPage({ id, back, onBack }: { id: string; back: string; onBack: () => void }) {
-  return (
-    <section className="app-page discussion-page">
-      <button className="back-link" onClick={onBack}>
-        <ArrowLeft size={15} /> {back}
-      </button>
-      <Live>
-        <ThreadLoader id={id} />
-      </Live>
-    </section>
-  );
-}
-
-function ThreadLoader({ id }: { id: string }) {
+/** A discussion: its post, comments and the comment box. Gone (deleted or hidden), the way back to its list. */
+function ThreadLoader({ id, inApp, detailsBeside, gone }: { id: string; inApp?: boolean; detailsBeside?: boolean; gone: { label: string; onClose: () => void } }) {
   const { user } = useAccount();
-  const { openCommunity } = useNav();
   const thread = useQuery(fns.get, { id }) as Thread | null | undefined;
   const markRead = useMutation(fns.markRead);
   const comments = thread?.comments;
@@ -638,15 +910,19 @@ function ThreadLoader({ id }: { id: string }) {
         <p>
           <Trans>It may have been deleted or hidden.</Trans>
         </p>
-        <button type="button" className="button secondary" onClick={openCommunity}>
-          <Trans>Go to Community</Trans>
+        <button type="button" className="button secondary" onClick={gone.onClose}>
+          {gone.label}
         </button>
       </div>
     );
-  return <ThreadView thread={thread} />;
+  return <ThreadView thread={thread} inApp={inApp} detailsBeside={detailsBeside} />;
 }
 
-function ThreadView({ thread }: { thread: Thread }) {
+/**
+ * A discussion's post and comments. `inApp`, on its app's page, without the app over it; `detailsBeside`, following
+ * and reporting it are in the column beside it (ThreadDetails), not under its post.
+ */
+function ThreadView({ thread, inApp, detailsBeside }: { thread: Thread; inApp?: boolean; detailsBeside?: boolean }) {
   const { user } = useAccount();
   const [editing, setEditing] = useState(false);
   const remove = useMutation(fns.remove);
@@ -660,8 +936,8 @@ function ThreadView({ thread }: { thread: Thread }) {
   const hidden = !!(thread.underReview || thread.moderatorHidden);
   return (
     <article className="discussion-thread">
-      {entry ? <DiscussionApp entry={entry} onOpen={() => openApp(entry.id, entry.slug)} /> : <p className="eyebrow">{place}</p>}
-      <h1>{thread.title}</h1>
+      {inApp ? null : entry ? <DiscussionApp entry={entry} onOpen={() => openApp(entry.id, entry.slug)} /> : <p className="eyebrow">{place}</p>}
+      <h2 className="discussion-thread-title">{thread.title}</h2>
       {editing ? (
         <Composer editing={{ id: thread.id, title: thread.title, body: thread.body }} onClose={() => setEditing(false)} />
       ) : (
@@ -685,19 +961,7 @@ function ThreadView({ thread }: { thread: Thread }) {
             </p>
           )}
           <div className="discussion-actions">
-            {user && (
-              <Action onClick={() => setFollowing({ id: thread.id, following: !thread.following })}>
-                {thread.following ? (
-                  <>
-                    <BellOff size={14} aria-hidden="true" /> <Trans comment="Stops new comments showing on the account page">Unfollow</Trans>
-                  </>
-                ) : (
-                  <>
-                    <Bell size={14} aria-hidden="true" /> <Trans comment="Shows new comments on the account page">Follow</Trans>
-                  </>
-                )}
-              </Action>
-            )}
+            {user && !detailsBeside && <FollowAction thread={thread} onToggle={() => setFollowing({ id: thread.id, following: !thread.following })} />}
             {thread.mine && !thread.removed && !thread.locked && (
               <button type="button" className="text-button" onClick={() => setEditing(true)}>
                 <Pencil size={14} aria-hidden="true" /> <Trans>Edit</Trans>
@@ -715,7 +979,7 @@ function ThreadView({ thread }: { thread: Thread }) {
                 }}
               />
             )}
-            {user && !thread.mine && <ReportControl target={{ discussionId: thread.id }} reported={thread.reported} />}
+            {user && !thread.mine && !detailsBeside && <ReportControl target={{ discussionId: thread.id }} reported={thread.reported} />}
             {thread.moderate && (
               <>
                 <Action onClick={() => setPinned({ id: thread.id, pinned: !thread.pinned })}>
@@ -759,11 +1023,11 @@ function ThreadView({ thread }: { thread: Thread }) {
 function Comments({ thread }: { thread: Thread }) {
   const { user } = useAccount();
   const { signIn } = useNav();
-  const list = usePaginatedQuery(fns.comments, { discussionId: thread.id }, { initialNumItems: 30 });
+  const list = useFirstPage(fns.comments, { discussionId: thread.id }, COMMENTS_PAGE, usePaginatedQuery(fns.comments, { discussionId: thread.id }, { initialNumItems: COMMENTS_PAGE }));
   const results = list.results as Comment[];
   return (
     <section className="discussion-comments" aria-label={t`Comments`}>
-      <h2>{plural(thread.comments, { one: "# comment", other: "# comments" })}</h2>
+      <h3>{plural(thread.comments, { one: "# comment", other: "# comments" })}</h3>
       {list.status === "LoadingFirstPage" ? (
         <Spinner label={t`Loading comments…`} />
       ) : (
@@ -912,10 +1176,31 @@ type Place = "recent" | "general" | "following";
 /** What Community's Recent tab shows, as on the site: everything, the library's apps, or by when they started. */
 type RecentFilter = "all" | "mine" | "new";
 
-/** The Community page: Recent across every app and General, General itself, and the discussions the player follows. */
-export function CommunityPage({ back, onBack }: { back: string; onBack: () => void }) {
+/** How wide Community is (not the window) before a discussion opens beside its list rather than in place of it. */
+const SPLIT_FROM = 1080;
+
+/**
+ * The Community page: Recent across every app and General, General itself, and the discussions the player follows.
+ * A discussion opens beside the list, wide enough, or in place of it, narrower and in TV mode; `asked`, a link to one
+ * from elsewhere, opens at it.
+ */
+export function CommunityPage({ asked, back, onBack }: { asked: { thread?: string }; back: string; onBack: () => void }) {
   const { user } = useAccount();
   const live = useLive();
+  const { settings, config } = useLauncher();
+  const page = useRef<HTMLElement>(null);
+  // Without the site live there's nothing to open, so no room kept for it.
+  const beside = useWiderThan(page, SPLIT_FROM) && !tvModeOn(settings, config) && live;
+  const thread = useThread(asked.thread ?? null, beside);
+  const { show } = thread;
+  // Each link again, with the page open already: a new one each time (App.tsx's open).
+  const firstAsk = useRef(asked);
+  useEffect(() => {
+    if (asked !== firstAsk.current && asked.thread) show(asked.thread);
+  }, [asked, show]);
+  const at = useMemo(() => ({ open: thread.open, current: thread.id }), [thread.open, thread.id]);
+  // Narrower, a discussion open takes the list's place, and its tabs' and filters'.
+  const over = !beside && !!thread.id;
   const [place, setPlace] = useState<Place>("recent");
   const [filter, setFilter] = useState<RecentFilter>("all");
   const [search, setSearch] = useState("");
@@ -930,13 +1215,14 @@ export function CommunityPage({ back, onBack }: { back: string; onBack: () => vo
     { id: "general", label: i18n._(CATEGORY_LABELS.general) },
     ...(user ? [{ id: "following" as const, label: t({ message: "Following", comment: "Community tab: the discussions the player follows" }) }] : []),
   ];
+  const listName = tabs.find((tab) => tab.id === shown)?.label ?? t`Community`;
   const filters: { id: RecentFilter; label: string }[] = [
     { id: "all", label: t({ message: "All activity", comment: "Community filter: discussions on every app" }) },
     { id: "mine", label: t({ message: "Apps I have", comment: "Community filter: only discussions on apps in the player's library" }) },
     { id: "new", label: t({ message: "New discussions", comment: "Community filter: newest started first, not newest comment" }) },
   ];
   return (
-    <section className="app-page community-page" aria-label={t`Community`}>
+    <section ref={page} className="app-page community-page" data-split={beside || undefined} aria-label={t`Community`}>
       <button className="back-link" onClick={onBack}>
         <ArrowLeft size={15} /> {back}
       </button>
@@ -949,43 +1235,61 @@ export function CommunityPage({ back, onBack }: { back: string; onBack: () => vo
           <a href={ISSUES_URL}>GitHub Issues</a>.
         </Trans>
       </p>
-      <div className="community-bar">
-        <div className="detail-tabs" role="tablist" aria-label={t({ message: "Community", comment: "The Community page's tabs" })}>
-          {tabs.map((tab) => (
-            <button key={tab.id} type="button" role="tab" aria-selected={shown === tab.id} onClick={() => setPlace(tab.id)}>
-              {tab.label}
-              {tab.id === "following" && live && (
-                <ErrorBoundary fallback={() => null}>
-                  <NewComments className="tab-count" />
-                </ErrorBoundary>
-              )}
-            </button>
-          ))}
-        </div>
-        {shown !== "following" && (
-          <label className="community-search">
-            <Search size={16} aria-hidden="true" />
-            <input type="search" value={typed} placeholder={t`Search titles`} aria-label={t`Search discussion titles`} onChange={(e) => setTyped(e.target.value)} />
-          </label>
-        )}
-      </div>
-      {shown === "recent" && !search.trim() && (
-        <div className="community-filters">
-          <div className="community-chips" role="group" aria-label={t`Show`}>
-            {filters.map((f) => (
-              <button key={f.id} type="button" className="community-chip" aria-pressed={filter === f.id} onClick={() => setFilter(f.id)}>
-                {f.label}
-              </button>
-            ))}
+      <ThreadPlace.Provider value={at}>
+        <div className="community-body">
+          <div className="community-list" hidden={over}>
+          <div className="community-bar">
+            <div className="detail-tabs" role="tablist" aria-label={t({ message: "Community", comment: "The Community page's tabs" })}>
+              {tabs.map((tab) => (
+                <button key={tab.id} type="button" role="tab" aria-selected={shown === tab.id} onClick={() => setPlace(tab.id)}>
+                  {tab.label}
+                  {tab.id === "following" && live && (
+                    <ErrorBoundary fallback={() => null}>
+                      <NewComments className="tab-count" />
+                    </ErrorBoundary>
+                  )}
+                </button>
+              ))}
+            </div>
+            {shown !== "following" && (
+              <label className="community-search">
+                <Search size={16} aria-hidden="true" />
+                <input type="search" value={typed} placeholder={t`Search titles`} aria-label={t`Search discussion titles`} onChange={(e) => setTyped(e.target.value)} />
+              </label>
+            )}
           </div>
-          <p className="muted community-hint">
-            <Trans>Start a discussion from an app's page, or in General.</Trans>
-          </p>
+          {shown === "recent" && !search.trim() && (
+            <div className="community-filters">
+              <div className="community-chips" role="group" aria-label={t`Show`}>
+                {filters.map((f) => (
+                  <button key={f.id} type="button" className="community-chip" aria-pressed={filter === f.id} onClick={() => setFilter(f.id)}>
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+              <p className="muted community-hint">
+                <Trans>Start a discussion from an app's page, or in General.</Trans>
+              </p>
+            </div>
+          )}
+            <Live>
+              {shown === "following" ? <Followed /> : shown === "general" ? <Board key="general" category="general" search={search} /> : <Recent key={filter} filter={filter} search={search} />}
+            </Live>
+          </div>
+          {thread.id ? (
+            <ThreadPane key={thread.id} id={thread.id} back={listName} onClose={thread.close} beside={beside} />
+          ) : (
+            beside && (
+              <div className="thread-pane thread-empty" data-beside>
+                <MessagesSquare size={28} aria-hidden="true" />
+                <p>
+                  <Trans>Choose a discussion to read it here.</Trans>
+                </p>
+              </div>
+            )
+          )}
         </div>
-      )}
-      <Live>
-        {shown === "following" ? <Followed /> : shown === "general" ? <Board key="general" category="general" search={search} /> : <Recent key={filter} filter={filter} search={search} />}
-      </Live>
+      </ThreadPlace.Provider>
     </section>
   );
 }
@@ -1010,7 +1314,8 @@ function Recent({ filter, search }: { filter: RecentFilter; search: string }) {
   const ids = useLibraryEntryIds();
   const unseen = useUnseen();
   const [limit, setLimit] = useState(20);
-  const all = usePaginatedQuery(fns.recent, !text && !mine ? { order: filter === "new" ? "new" : "activity" } : "skip", { initialNumItems: 20 });
+  const recentArgs = !text && !mine ? { order: filter === "new" ? "new" : "activity" } : "skip";
+  const all = useFirstPage(fns.recent, recentArgs, RECENT_PAGE, usePaginatedQuery(fns.recent, recentArgs, { initialNumItems: RECENT_PAGE }));
   const inLibrary = useQuery(fns.recentInApps, !text && mine ? { entryIds: ids, limit } : "skip") as Summary[] | undefined;
   const found = useQuery(fns.search, text ? { text } : "skip") as Summary[] | undefined;
   const rows = text ? found : mine ? inLibrary : all.status === "LoadingFirstPage" ? undefined : (all.results as Summary[]);
@@ -1047,7 +1352,8 @@ function Recent({ filter, search }: { filter: RecentFilter; search: string }) {
 
 /** One discussion in a list across apps, as on the site: its app's icon (or General's), the app's name and consoles, title, who started it, comments and last activity. */
 function ActivityRow({ thread }: { thread: Summary }) {
-  const { openDiscussion } = useNav();
+  const { open, current } = useOpenThread();
+  const { thread: threadAhead } = useDiscussionsAhead();
   const { catalog, consoleNames } = useLauncher();
   const entry = thread.entry;
   const icon = entry ? (entry.icon ?? catalog[entry.id]?.artwork) : undefined;
@@ -1056,7 +1362,15 @@ function ActivityRow({ thread }: { thread: Summary }) {
   const author = thread.author;
   return (
     <li className="discussion-row activity">
-      <button type="button" className="discussion-row-link" onClick={() => openDiscussion(thread.id)}>
+      <button
+        type="button"
+        className="discussion-row-link"
+        data-thread={thread.id}
+        aria-current={current === thread.id || undefined}
+        onClick={() => open(thread.id)}
+        onPointerEnter={() => threadAhead(thread.id)}
+        onFocus={() => threadAhead(thread.id)}
+      >
         {entry ? (
           <Artwork className="discussion-row-icon" src={icon} sources={icon ? iconSources(icon) : undefined} name={entry.name} />
         ) : (
@@ -1116,6 +1430,7 @@ function Followed() {
 export function CommunityButton({ open, onOpen }: { open: boolean; onOpen: () => void }) {
   const { user } = useAccount();
   const live = useLive();
+  const { community } = useDiscussionsAhead();
   return (
     <button
       className={`icon community-button${open ? " active" : ""}`}
@@ -1123,6 +1438,8 @@ export function CommunityButton({ open, onOpen }: { open: boolean; onOpen: () =>
       title={t`Community`}
       aria-current={open ? "page" : undefined}
       onClick={onOpen}
+      onPointerEnter={community}
+      onFocus={community}
     >
       <MessagesSquare size={19} />
       {live && user && (

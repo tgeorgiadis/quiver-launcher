@@ -48,16 +48,16 @@ const SIGN_IN_WAIT = 5 * 60_000;
 const SENT = "quiver-correction-sent";
 
 /**
- * The app page's Report a problem, beside its other actions: a dialog with the form. Signed out, it signs in first and
- * the dialog opens after.
+ * The app page's Report a problem (in its header's More menu): `start` opens a dialog with the form, `dialog`, kept
+ * outside the menu, which closes as it opens. Signed out, it signs in first and the dialog opens after. Closed, the
+ * focus goes back to `focusBack`'s element (the menu's button).
  */
-export function ReportProblem({ entry, installed, onSignIn }: { entry: Entry; installed?: string; onSignIn: () => void }) {
+export function useReportProblem({ entry, installed, onSignIn, focusBack }: { entry: Entry; installed?: string; onSignIn: () => void; focusBack: () => HTMLElement | null | undefined }) {
   const { user } = useAccount();
   const [open, setOpen] = useState(false);
   const [sent, setSent] = useState(false);
   // Asked for while signed out: opens once they've signed in, if that's soon. When it was asked, else 0.
   const [waiting, setWaiting] = useState(0);
-  const button = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     if (!waiting || !user) return;
     setWaiting(0);
@@ -69,42 +69,37 @@ export function ReportProblem({ entry, installed, onSignIn }: { entry: Entry; in
   const close = () => {
     setOpen(false);
     setSent(false);
-    requestAnimationFrame(() => button.current && moveFocus(button.current));
+    requestAnimationFrame(() => {
+      const back = focusBack();
+      if (back) moveFocus(back);
+    });
   };
-  return (
-    <>
-      <button
-        ref={button}
-        type="button"
-        onClick={() => {
-          track("correction_started", { signedIn: Boolean(user) });
-          if (user) return setOpen(true);
-          setWaiting(Date.now());
-          onSignIn();
-        }}
-      >
-        <Flag size={17} aria-hidden="true" /> <Trans comment="App page button: tell the maintainers something on the page is wrong or missing">Report a problem</Trans>
-      </button>
-      {open && user && (
-        <Dialog label={t`Report a problem`} className="correction-dialog" onClose={close}>
-          {sent ? (
-            <ThanksForReporting onDone={close} />
-          ) : (
-            <CorrectionForm
-              entry={entry}
-              userId={user.id}
-              installed={installed}
-              onSent={() => {
-                setSent(true);
-                window.dispatchEvent(new Event(SENT));
-              }}
-              onClose={close}
-            />
-          )}
-        </Dialog>
-      )}
-    </>
-  );
+  const start = () => {
+    track("correction_started", { signedIn: Boolean(user) });
+    if (user) return setOpen(true);
+    setWaiting(Date.now());
+    onSignIn();
+  };
+  const dialog =
+    open && user ? (
+      <Dialog label={t`Report a problem`} className="correction-dialog" onClose={close}>
+        {sent ? (
+          <ThanksForReporting onDone={close} />
+        ) : (
+          <CorrectionForm
+            entry={entry}
+            userId={user.id}
+            installed={installed}
+            onSent={() => {
+              setSent(true);
+              window.dispatchEvent(new Event(SENT));
+            }}
+            onClose={close}
+          />
+        )}
+      </Dialog>
+    ) : null;
+  return { start, dialog };
 }
 
 function ThanksForReporting({ onDone }: { onDone: () => void }) {

@@ -4,7 +4,8 @@
  * rather than Vite, so nothing here may use Lingui's macros or
  * @quiverlauncher/i18n: the pages pass in translated text (alertTitles).
  */
-import ReactMarkdown, { defaultUrlTransform } from "react-markdown";
+import { useMemo, type ComponentProps } from "react";
+import ReactMarkdown, { defaultUrlTransform, type ExtraProps } from "react-markdown";
 import rehypeRaw from "rehype-raw";
 import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
 import remarkGfm from "remark-gfm";
@@ -338,6 +339,28 @@ export function readmeImages(text: string, bases: { rawBase?: string; htmlBase?:
   return [...new Set(found.filter((url) => /^https?:\/\//i.test(url)))];
 }
 
+/** Links: one within the README stays in the page; any other opens in the browser. */
+function MarkdownLink({ node: _node, href, ...props }: ComponentProps<"a"> & ExtraProps) {
+  return href?.startsWith("#") ? <a href={href} {...props} /> : <a href={href} target="_blank" rel="noreferrer" {...props} />;
+}
+
+/** A paragraph, with its alert's icon when it's one (rehypeAlerts). */
+function MarkdownParagraph({ node, children, ...props }: ComponentProps<"p"> & ExtraProps) {
+  const kind = node?.properties?.dataAlert as AlertKind | undefined;
+  const Icon = kind && alerts[kind]?.icon;
+  return (
+    <p {...props}>
+      {Icon && <Icon aria-hidden className="md-alert-icon" />}
+      {children}
+    </p>
+  );
+}
+
+/**
+ * A README drawn. Drawn again only when what it shows changes, not with each render of the page around it: its parts
+ * (links, pictures, paragraphs) are the same components each time, so React keeps them rather than building them
+ * anew, with every picture loading again.
+ */
 export function Markdown({
   text,
   rawBase,
@@ -355,47 +378,38 @@ export function Markdown({
   /** Pictures to show in place of the ones the README links to, by their resolved addresses: a copy kept offline. */
   images?: Record<string, string>;
 }) {
-  return (
-    <div className={`markdown ${className}`}>
-      <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
-        rehypePlugins={[
-          rehypeRaw,
-          // Before sanitising, while a <picture> badge is still whole.
-          rehypeHideStoreBadges,
-          // Before sanitising, which drops <picture> and <source>.
-          rehypeDarkThemeImages,
-          [rehypeSanitize, schema],
-          rehypeNestHeadings,
-          // After sanitising, so their classes aren't stripped.
-          rehypeCentreLoneImages,
-          [rehypeAlerts, alertTitles],
-        ]}
-        urlTransform={(url, key) => resolveUrl(url, key, { rawBase, htmlBase })}
-        components={{
-          a: ({ node: _node, href, ...props }) =>
-            href?.startsWith("#") ? (
-              <a href={href} {...props} />
-            ) : (
-              <a href={href} target="_blank" rel="noreferrer" {...props} />
+  // A new object with each render where it's worked out (alertTitles()): the same headings are the same.
+  const titles = JSON.stringify(alertTitles ?? {});
+  return useMemo(
+    () => (
+      <div className={`markdown ${className}`}>
+        <ReactMarkdown
+          remarkPlugins={[remarkGfm]}
+          rehypePlugins={[
+            rehypeRaw,
+            // Before sanitising, while a <picture> badge is still whole.
+            rehypeHideStoreBadges,
+            // Before sanitising, which drops <picture> and <source>.
+            rehypeDarkThemeImages,
+            [rehypeSanitize, schema],
+            rehypeNestHeadings,
+            // After sanitising, so their classes aren't stripped.
+            rehypeCentreLoneImages,
+            [rehypeAlerts, JSON.parse(titles) as Partial<Record<AlertKind, string>>],
+          ]}
+          urlTransform={(url, key) => resolveUrl(url, key, { rawBase, htmlBase })}
+          components={{
+            a: MarkdownLink,
+            img: ({ node: _node, alt, src, ...props }) => (
+              <img alt={alt ?? ""} loading="lazy" {...props} src={(typeof src === "string" && images?.[src]) || src} />
             ),
-          img: ({ node: _node, alt, src, ...props }) => (
-            <img alt={alt ?? ""} loading="lazy" {...props} src={(typeof src === "string" && images?.[src]) || src} />
-          ),
-          p: ({ node, children, ...props }) => {
-            const kind = node?.properties?.dataAlert as AlertKind | undefined;
-            const Icon = kind && alerts[kind]?.icon;
-            return (
-              <p {...props}>
-                {Icon && <Icon aria-hidden className="md-alert-icon" />}
-                {children}
-              </p>
-            );
-          },
-        }}
-      >
-        {text}
-      </ReactMarkdown>
-    </div>
+            p: MarkdownParagraph,
+          }}
+        >
+          {text}
+        </ReactMarkdown>
+      </div>
+    ),
+    [text, rawBase, htmlBase, className, titles, images],
   );
 }

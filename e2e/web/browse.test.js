@@ -9,7 +9,7 @@ import * as reach from "../reach.js";
 useSharedApp();
 
 test("the catalog, its filters, and Sign in, which B closes", async () => {
-  assert.equal(await open("button", { text: "Browse" }), "main");
+  assert.equal(await open("button", { text: "Discover" }), "main");
   await everything("Browse");
   await open("button", { text: "Filters" });
   await everything("Browse with its filters");
@@ -38,7 +38,7 @@ test("the catalog, its filters, and Sign in, which B closes", async () => {
 });
 
 test("a filter of several choices: A opens its list, A ticks one and another with it open, and B closes it on its pill", async () => {
-  assert.equal(await open("button", { text: "Browse" }), "main");
+  assert.equal(await open("button", { text: "Discover" }), "main");
   await open("button", { text: "Filters" });
   const PILL = ".filter-bar .pill-button";
   assert.doesNotMatch(await reach.pressOn(app, PILL, "South", { text: "Any console" }), /^not reached/);
@@ -60,7 +60,7 @@ test("a filter of several choices: A opens its list, A ticks one and another wit
 });
 
 test("A opens a catalog card, Y opens its menu with Add first, X adds the app and X again installs it", async () => {
-  await open("button", { text: "Browse" });
+  await open("button", { text: "Discover" });
   // Down from a card skips its Add, which X on the card presses.
   await app.execute(() => document.querySelector('article[data-slug="tampered-port"] .card-open').focus());
   await reach.press(app, "DPadDown");
@@ -71,7 +71,7 @@ test("A opens a catalog card, Y opens its menu with Add first, X adds the app an
   await s.until(() => app.execute(() => Boolean(document.querySelector('[role="menu"] .game-menu-main'))));
   const items = await app.execute(() => [...document.querySelectorAll('[role="menu"] [role="menuitem"]')].map((b) => b.innerText.trim()));
   assert.equal(items[0], "Add");
-  assert.ok(items.includes("Hide from Browse"), items.join());
+  assert.ok(items.includes("Hide from Discover"), items.join());
   assert.equal(await app.execute(() => document.activeElement.innerText.trim()), "Add", "the focus is on Add");
   await reach.press(app, "East");
   await s.until(() => app.execute(() => !document.querySelector('[role="menu"]')));
@@ -96,7 +96,7 @@ test("A opens a catalog card, Y opens its menu with Add first, X adds the app an
 
 test("a Browse card's Read the README: the page opens at it, and the d-pad reads on from there", async () => {
   await home();
-  await open("button", { text: "Browse" });
+  await open("button", { text: "Discover" });
   await reach.pressOn(app, 'article[data-slug="test-remake"] .card-open', "North");
   await s.until(() => app.execute(() => Boolean(document.querySelector('[role="menu"] .game-menu-main'))));
   await app.execute(() => [...document.querySelectorAll('[role="menu"] [role="menuitem"]')].find((b) => b.innerText.trim() === "Read the README").focus());
@@ -169,7 +169,7 @@ test("in Steam's desktop layout, where X isn't Quiver's, a catalog card offers i
   await s.emit("pads", ["Steam Deck"]);
   await s.emit("pad-labels", { kind: "steam", south: "A", east: "B", west: "X", north: "Y", desktop: true });
   await page.evaluate(() => new Promise((r) => setTimeout(r)));
-  await open("button", { text: "Browse" });
+  await open("button", { text: "Discover" });
   const CARD = page.locator('article[data-slug="tampered-port"]').first();
   await CARD.locator(".card-open").focus();
   const hints = () => app.execute(() => [...document.querySelectorAll(".pad-hints > span")].map((h) => h.innerText.replace(/\s+/g, " ").trim()).join(", "));
@@ -179,7 +179,7 @@ test("in Steam's desktop layout, where X isn't Quiver's, a catalog card offers i
 });
 
 test("a console shelf's See all puts its maker on the console filter, in place of the front page", async () => {
-  await open("button", { text: "Browse" });
+  await open("button", { text: "Discover" });
   // From the front page: no filters on from the tests before.
   const clear = page.getByRole("button", { name: "Clear all" });
   if (await clear.count()) await clear.click();
@@ -195,7 +195,7 @@ test("a console shelf's See all puts its maker on the console filter, in place o
 });
 
 test("Refresh asks the catalog again for the same search, by the d-pad, and keeps the search", async () => {
-  assert.equal(await open("button", { text: "Browse" }), "main");
+  assert.equal(await open("button", { text: "Discover" }), "main");
   const search = page.getByRole("textbox", { name: "Search the catalog" });
   // The search's own page in first: it comes a moment after the typing.
   const searched = page.waitForResponse((r) => new URL(r.url()).searchParams.get("search") === "port");
@@ -203,7 +203,12 @@ test("Refresh asks the catalog again for the same search, by the d-pad, and keep
   await searched;
   await page.locator(".browse-tools .refresh:not([aria-busy=true])").waitFor();
   const asked = [];
-  const listen = (r) => new URL(r.url()).pathname.endsWith("/apps") && asked.push(new URL(r.url()).searchParams.get("search"));
+  // The grid's pages, not a shelf's: the d-pad resting on a card on its way can bring that app's More like this ahead
+  // (SHELF_SIZE apps).
+  const listen = (r) => {
+    const url = new URL(r.url());
+    if (url.pathname.endsWith("/apps") && url.searchParams.get("limit") !== "20") asked.push(url.searchParams.get("search"));
+  };
   page.on("request", listen);
   try {
     assert.doesNotMatch(await reach.pressOn(app, ".browse-tools .refresh", "South"), /^not reached/);
