@@ -22,6 +22,7 @@ import { ErrorBoundary, errorText } from "./boundary";
 import { showTheme, systemTheme } from "./theme";
 import { startFpsProbe } from "./fps-probe";
 import { invoke } from "@tauri-apps/api/core";
+import { boxZoom, zoom } from "./zoom";
 
 // Until settings load, the window's own theme (set from them at start, or the system's).
 showTheme(systemTheme());
@@ -64,14 +65,26 @@ document.addEventListener(
 );
 
 // A right-click shows no browser menu (Back, Refresh, Print, Inspect): only text fields keep theirs, for cut, copy and
-// paste, and the launcher's own menus open as before. `tauri dev` keeps it, for Inspect.
+// paste, and selected text its own, for copy, and the launcher's own menus open as before. `tauri dev` keeps it, for
+// Inspect.
 const typing = (el: Element | null) => {
   const field = el?.closest?.("input, textarea, [contenteditable]:not([contenteditable='false'])");
   return !!field && !(field instanceof HTMLInputElement && /^(button|checkbox|color|file|hidden|image|radio|range|reset|submit)$/.test(field.type));
 };
+// Only a right-click on the selection itself: anywhere else, even with text selected, the engine opens the page's menu.
+// The pointer is in the screen's pixels, the selection's boxes in getBoundingClientRect's (zoom.ts).
+const onSelection = (e: MouseEvent) => {
+  const selection = getSelection();
+  if (!selection || selection.isCollapsed) return false;
+  const s = boxZoom() / zoom();
+  const [x, y] = [e.clientX * s, e.clientY * s];
+  for (let i = 0; i < selection.rangeCount; i++)
+    for (const r of selection.getRangeAt(i).getClientRects()) if (x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) return true;
+  return false;
+};
 if (!import.meta.env.DEV)
   document.addEventListener("contextmenu", (e) => {
-    if (!typing(e.target as Element)) e.preventDefault();
+    if (!typing(e.target as Element) && !onSelection(e)) e.preventDefault();
   });
 
 /** The launcher, drawn again whole when the language changes: a string worked out outside a component has no hook of its own to follow it. */
