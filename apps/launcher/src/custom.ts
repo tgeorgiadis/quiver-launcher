@@ -92,6 +92,17 @@ export const appsOfRepository = <T extends { provider: string; host?: string; re
   return all.filter((s) => s.repository && keys.has(customKey(s.provider, s.repository, s.host)));
 };
 
+/** The app's slug from a link to its page on quiverlauncher.com (quiverlauncher.com/apps/<slug>); null for anything else. */
+export function catalogSlug(input: string): string | null {
+  const page = /^(?:https?:\/\/)?(?:www\.)?quiverlauncher\.com\/apps\/([^/?#\s]+)\/?(?:[?#]\S*)?$/i.exec(input.trim());
+  if (!page) return null;
+  try {
+    return decodeURIComponent(page[1]);
+  } catch {
+    return null;
+  }
+}
+
 /**
  * The name a repository has now, from its host's releases, when that isn't the one it was added under: renamed, or
  * moved to another owner (github.com/HarbourMasters/2ship2harkinian is 2ship2harkinian/2ship2harkinian), which the

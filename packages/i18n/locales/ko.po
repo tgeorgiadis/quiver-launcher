@@ -5413,6 +5413,10 @@ msgstr "옵션"
 msgid "or"
 msgstr "또는"
 
+#: ../../apps/launcher/src/own.tsx
+msgid "Or paste an app's link from quiverlauncher.com to open its page."
+msgstr "또는 quiverlauncher.com의 앱 링크를 붙여 넣어 해당 페이지를 여세요."
+
 #. A kind of video
 #. Library section for apps with no console, maker, game or developer
 #: ../../apps/launcher/src/group.ts
@@ -6021,6 +6025,10 @@ msgstr "Quiver는 이 버전을 설치하지 않아요."
 #: ../ui/src/index.tsx
 msgid "Quiver won't install this release"
 msgstr "Quiver는 이 버전을 설치하지 않아요"
+
+#: ../../apps/launcher/src/store.tsx
+msgid "Quiver's catalog has no app at that address."
+msgstr "Quiver 카탈로그에 해당 주소의 앱이 없습니다."
 
 #: ../../apps/launcher/src/own.tsx
 msgid "Quiver's catalog lists more than one app from this repository."
